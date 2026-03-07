@@ -120,3 +120,29 @@ export interface MileageCalculateRequest {
   site: string;
   distanceKm: number;
 }
+
+// ── Originals Received ──────────────────────────────────────────────
+
+export interface MarkOriginalsReceivedRequest {
+  site: string;
+  handle: string;
+  received: boolean;
+  markedBy: string;
+}
+
+// ── Unsettled Advances ──────────────────────────────────────────────
+
+export interface GetUnsettledAdvancesRequest {
+  site: string;
+  employeeId: string;
+}
+
+export interface UnsettledAdvance {
+  handle: string;
+  travelHandle: string;
+  travelPurpose: string;
+  amount: number;
+  currency: string;
+  approvedAt: string;
+  daysOutstanding: number;
+}

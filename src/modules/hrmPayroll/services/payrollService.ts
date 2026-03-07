@@ -11,6 +11,14 @@ import type {
   PayrollAdjustmentRequest,
   RunCalculationRequest,
   PayrollApprovalRequest,
+  TaxDeclarationRequest,
+  TaxDeclarationResponse,
+  TaxDeclarationApprovalRequest,
+  LoanRequest,
+  LoanResponse,
+  LoanStatusUpdateRequest,
+  PayrollSummaryResponse,
+  UpdateStatutoryConfigRequest,
 } from '../types/api.types';
 
 const BASE = '/hrm-service/payroll';
@@ -164,5 +172,99 @@ export class HrmPayrollService {
   static async saveStatutoryConfig(payload: StatutoryConfig): Promise<StatutoryConfig> {
     const res = await api.post<StatutoryConfig>(`${BASE}/createStatutoryConfig`, payload);
     return res.data;
+  }
+
+  // ─── Delete / Revert Payroll Run ───────────────────────────────────────────
+
+  static async deletePayrollRun(site: string, payrollRunId: string, performedBy: string): Promise<void> {
+    await api.post(`${BASE}/deletePayrollRun`, { site, payrollRunId, performedBy });
+  }
+
+  static async excludeEmployee(
+    site: string,
+    payrollRunId: string,
+    employeeId: string,
+    reason: string,
+    performedBy: string
+  ): Promise<void> {
+    await api.post(`${BASE}/excludeEmployee`, { site, payrollRunId, employeeId, reason, performedBy });
+  }
+
+  static async revertPayrollRun(site: string, payrollRunId: string, performedBy: string): Promise<PayrollRunSummary> {
+    const res = await api.post<PayrollRunSummary>(`${BASE}/revertPayrollRun`, { site, payrollRunId, performedBy });
+    return res.data;
+  }
+
+  // ─── Statutory Config Update ───────────────────────────────────────────────
+
+  static async updateStatutoryConfig(payload: UpdateStatutoryConfigRequest): Promise<StatutoryConfig> {
+    const res = await api.post<StatutoryConfig>(`${BASE}/updateStatutoryConfig`, payload);
+    return res.data;
+  }
+
+  // ─── Tax Declarations ─────────────────────────────────────────────────────
+
+  static async submitTaxDeclaration(payload: TaxDeclarationRequest): Promise<TaxDeclarationResponse> {
+    const res = await api.post<TaxDeclarationResponse>(`${BASE}/submitTaxDeclaration`, payload);
+    return res.data;
+  }
+
+  static async retrieveTaxDeclaration(
+    site: string,
+    employeeId: string,
+    financialYear: string
+  ): Promise<TaxDeclarationResponse> {
+    const res = await api.post<TaxDeclarationResponse>(`${BASE}/retrieveTaxDeclaration`, {
+      site,
+      employeeId,
+      financialYear,
+    });
+    return res.data;
+  }
+
+  static async approveTaxDeclaration(payload: TaxDeclarationApprovalRequest): Promise<TaxDeclarationResponse> {
+    const res = await api.post<TaxDeclarationResponse>(`${BASE}/approveTaxDeclaration`, payload);
+    return res.data;
+  }
+
+  static async getTaxDeclarationsByEmployee(site: string, employeeId: string): Promise<TaxDeclarationResponse[]> {
+    const res = await api.post<TaxDeclarationResponse[]>(`${BASE}/getTaxDeclarationsByEmployee`, {
+      site,
+      employeeId,
+    });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  // ─── Loans ─────────────────────────────────────────────────────────────────
+
+  static async createLoan(payload: LoanRequest): Promise<LoanResponse> {
+    const res = await api.post<LoanResponse>(`${BASE}/createLoan`, payload);
+    return res.data;
+  }
+
+  static async getLoansByEmployee(site: string, employeeId: string): Promise<LoanResponse[]> {
+    const res = await api.post<LoanResponse[]>(`${BASE}/getLoansByEmployee`, { site, employeeId });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async updateLoanStatus(payload: LoanStatusUpdateRequest): Promise<LoanResponse> {
+    const res = await api.post<LoanResponse>(`${BASE}/updateLoanStatus`, payload);
+    return res.data;
+  }
+
+  // ─── Summary & Export ──────────────────────────────────────────────────────
+
+  static async getPayrollSummary(site: string, payrollRunId: string): Promise<PayrollSummaryResponse> {
+    const res = await api.post<PayrollSummaryResponse>(`${BASE}/getPayrollSummary`, { site, payrollRunId });
+    return res.data;
+  }
+
+  static async exportPayrollReport(site: string, payrollRunId: string, format: string): Promise<Blob> {
+    const res = await api.post(
+      `${BASE}/exportPayrollReport`,
+      { site, payrollRunId, format },
+      { responseType: 'blob' }
+    );
+    return res.data as Blob;
   }
 }

@@ -97,3 +97,53 @@ export interface TravelPolicyUpdatePayload {
   maxFileSizeMb: number;
   maxFileCount: number;
 }
+
+// ── Travel Advance ──────────────────────────────────────────────────
+
+export interface TravelAdvanceRequestPayload {
+  site: string;
+  travelHandle: string;
+  employeeId: string;
+  amount: number;
+  currency: string;
+  purpose: string;
+  requestedBy: string;
+}
+
+export interface TravelAdvanceApproveRequest {
+  site: string;
+  handle: string;
+  approvedBy: string;
+  remarks?: string;
+}
+
+export interface TravelAdvanceSettleRequest {
+  site: string;
+  handle: string;
+  expenseHandle: string;
+  settledBy: string;
+}
+
+export interface TravelAdvanceRetrieveRequest {
+  site: string;
+  handle: string;
+}
+
+export interface TravelAdvance {
+  handle: string;
+  site: string;
+  travelHandle: string;
+  employeeId: string;
+  employeeName: string;
+  amount: number;
+  currency: string;
+  purpose: string;
+  status: "REQUESTED" | "APPROVED" | "SETTLED" | "REJECTED";
+  approvedBy?: string;
+  approvalRemarks?: string;
+  expenseHandle?: string;
+  settledBy?: string;
+  settledAt?: string;
+  createdDateTime: string;
+  createdBy: string;
+}

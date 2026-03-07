@@ -72,3 +72,34 @@ export interface SetActiveTemplateRequest {
   handle: string;
   updatedBy: string;
 }
+
+export interface EmailPayslipsRequest {
+  site: string;
+  payrollRunId: string;
+  payrollYear: number;
+  payrollMonth: number;
+  employeeIds: string[] | null;
+  sentBy: string;
+}
+
+export interface SavePasswordConfigRequest {
+  site: string;
+  passwordPattern: string;
+  description: string;
+  updatedBy: string;
+}
+
+export interface PasswordConfig {
+  site: string;
+  passwordPattern: string;
+  description: string;
+  updatedBy: string;
+  updatedAt: string;
+}
+
+export interface RevokePayslipRequest {
+  site: string;
+  handle: string;
+  revokedBy: string;
+  reason: string;
+}

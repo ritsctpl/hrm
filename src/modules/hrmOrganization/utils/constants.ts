@@ -78,7 +78,18 @@ export const MAIN_TAB_LABELS = {
   company: 'Company Profile',
   businessUnit: 'Business Units',
   department: 'Departments',
+  location: 'Locations',
+  hierarchy: 'Hierarchy',
 } as const;
+
+export const LOCATION_TYPE_OPTIONS = [
+  { label: 'Head Office', value: 'Head Office' },
+  { label: 'Branch Office', value: 'Branch Office' },
+  { label: 'Regional Office', value: 'Regional Office' },
+  { label: 'Warehouse', value: 'Warehouse' },
+  { label: 'Factory', value: 'Factory' },
+  { label: 'Other', value: 'Other' },
+] as const;
 
 export const COMPANY_TAB_LABELS = {
   identity: 'Identity',

@@ -208,3 +208,24 @@ export interface HolidayWorkingSummary {
     projectCode?: string;
   }[];
 }
+
+// ─── Lock Period Types ───────────────────────────────────────────────────────
+
+export interface TimesheetLockPeriodRequest {
+  site: string;
+  lockDate: string;
+  reason?: string;
+  createdBy: string;
+}
+
+export interface TimesheetLockPeriodResponse {
+  handle: string;
+  site: string;
+  lockDate: string;
+  reason?: string;
+  active: number;
+  createdDateTime: string;
+  modifiedDateTime: string;
+  createdBy: string;
+  modifiedBy: string;
+}

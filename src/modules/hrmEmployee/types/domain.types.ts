@@ -123,6 +123,57 @@ export interface ContactDetails {
   emergencyContacts?: EmergencyContact[];
 }
 
+export interface Dependent {
+  dependentId: string;
+  name: string;
+  relationship: string;
+  dateOfBirth?: string;
+  gender?: Gender;
+}
+
+export interface VisaEntry {
+  visaId: string;
+  country: string;
+  visaType: string;
+  issueDate: string;
+  expiryDate: string;
+  status: string;
+}
+
+export interface BankAccount {
+  bankAccountId: string;
+  bankName: string;
+  accountNumber: string;
+  ifscCode: string;
+  isPrimary: boolean;
+}
+
+export interface OnboardingChecklist {
+  handle: string;
+  employeeHandle: string;
+  items: OnboardingItem[];
+  overallStatus: string;
+}
+
+export interface OnboardingItem {
+  itemId: string;
+  title: string;
+  description?: string;
+  isCompleted: boolean;
+  completedAt?: string;
+  completedBy?: string;
+}
+
+export interface AuditLogEntry {
+  handle: string;
+  action: string;
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
+  performedBy: string;
+  performedAt: string;
+}
+
 export interface EmployeeProfile {
   handle: string;
   site: string;

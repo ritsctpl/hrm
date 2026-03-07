@@ -215,6 +215,75 @@ export interface ImportRowError {
   rowData: Record<string, string>;
 }
 
+// ---- Role Clone ----
+
+export interface RoleCloneRequest {
+  site: string;
+  sourceRoleId: string;
+  newRoleName: string;
+  performedBy: string;
+}
+
+// ---- Import Preview ----
+
+export interface ImportPreviewResponse {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  preview: ImportPreviewRow[];
+  errors: ImportRowError[];
+}
+
+export interface ImportPreviewRow {
+  rowNumber: number;
+  data: Record<string, string>;
+  isValid: boolean;
+  validationErrors: string[];
+}
+
+// ---- User Access Report ----
+
+export interface UserAccessReportResponse {
+  userId: string;
+  userDisplayName: string;
+  userEmail: string;
+  roles: UserAccessRoleEntry[];
+  generatedAt: string;
+}
+
+export interface UserAccessRoleEntry {
+  roleCode: string;
+  roleName: string;
+  roleScope: RoleScope;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  assignmentStatus: AssignmentStatus;
+  permissions: UserAccessPermissionEntry[];
+}
+
+export interface UserAccessPermissionEntry {
+  moduleCode: string;
+  moduleName: string;
+  objectName: string | null;
+  action: PermissionAction;
+  scopeValue: string | null;
+}
+
+// ---- Orphaned / Expired Assignments ----
+
+export interface OrphanedExpiredAssignment {
+  handle: string;
+  userId: string;
+  userDisplayName: string;
+  userEmail: string;
+  roleCode: string;
+  roleName: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  assignmentStatus: AssignmentStatus;
+  reason: string;
+}
+
 // ---- Audit ----
 
 export interface RbacAuditLogDto {

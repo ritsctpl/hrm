@@ -10,6 +10,8 @@ import type {
   CompanyProfile,
   BusinessUnit,
   Department,
+  Location,
+  OrgHierarchy,
 } from '../types/domain.types';
 import type {
   MainTabKey,
@@ -17,8 +19,10 @@ import type {
   CompanyProfileState,
   BusinessUnitState,
   DepartmentState,
+  LocationState,
+  HierarchyState,
 } from '../types/ui.types';
-import type { CompanyProfileRequest, BusinessUnitRequest, DepartmentRequest } from '../types/api.types';
+import type { CompanyProfileRequest, BusinessUnitRequest, DepartmentRequest, LocationRequest } from '../types/api.types';
 
 // ============================================
 // Store Interface
@@ -28,6 +32,8 @@ export interface HrmOrganizationState {
   companyProfile: CompanyProfileState;
   businessUnit: BusinessUnitState;
   department: DepartmentState;
+  location: LocationState;
+  hierarchy: HierarchyState;
 
   // Main Tab Actions
   setActiveMainTab: (tab: MainTabKey) => void;
@@ -64,6 +70,20 @@ export interface HrmOrganizationState {
   deleteDepartment: (handle: string) => Promise<void>;
   setDepartmentError: (field: string, error: string) => void;
   clearDepartmentErrors: () => void;
+
+  // Location Actions
+  fetchLocations: () => Promise<void>;
+  selectLocation: (loc: Location | null) => void;
+  setLocationDraft: (draft: Partial<Location>) => void;
+  setLocationCreating: (isCreating: boolean) => void;
+  setLocationSearch: (text: string) => void;
+  saveLocation: () => Promise<void>;
+  deleteLocation: (id: string) => Promise<void>;
+  setLocationError: (field: string, error: string) => void;
+  clearLocationErrors: () => void;
+
+  // Hierarchy Actions
+  fetchHierarchy: () => Promise<void>;
 
   // Global
   reset: () => void;
@@ -107,6 +127,22 @@ const initialDepartmentState: DepartmentState = {
   draft: null,
 };
 
+const initialLocationState: LocationState = {
+  list: [],
+  selected: null,
+  isCreating: false,
+  isLoading: false,
+  isSaving: false,
+  searchText: '',
+  errors: {},
+  draft: null,
+};
+
+const initialHierarchyState: HierarchyState = {
+  data: null,
+  isLoading: false,
+};
+
 // ============================================
 // Helper
 // ============================================
@@ -128,6 +164,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   companyProfile: { ...initialCompanyProfileState },
   businessUnit: { ...initialBusinessUnitState },
   department: { ...initialDepartmentState },
+  location: { ...initialLocationState },
+  hierarchy: { ...initialHierarchyState },
 
   // ------------------------------------------
   // Main Tab
@@ -713,6 +751,221 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   // ------------------------------------------
+  // Locations
+  // ------------------------------------------
+  fetchLocations: async () => {
+    const site = getSite();
+    if (!site) return;
+
+    set((state) => ({
+      location: { ...state.location, isLoading: true, errors: {} },
+    }));
+
+    try {
+      const list = await HrmOrganizationService.fetchAllLocations(site);
+      set((state) => ({
+        location: { ...state.location, list, isLoading: false },
+      }));
+    } catch (error: unknown) {
+      const errMsg =
+        error instanceof Error ? error.message : 'Failed to fetch locations';
+      console.error('fetchLocations error:', errMsg);
+      set((state) => ({
+        location: {
+          ...state.location,
+          isLoading: false,
+          errors: { _general: errMsg },
+        },
+      }));
+    }
+  },
+
+  selectLocation: (loc) =>
+    set((state) => ({
+      location: {
+        ...state.location,
+        selected: loc,
+        draft: loc ? { ...loc } : null,
+        isCreating: false,
+        errors: {},
+      },
+    })),
+
+  setLocationDraft: (draft) =>
+    set((state) => ({
+      location: {
+        ...state.location,
+        draft: { ...state.location.draft, ...draft },
+      },
+    })),
+
+  setLocationCreating: (isCreating) =>
+    set((state) => ({
+      location: {
+        ...state.location,
+        isCreating,
+        selected: isCreating ? null : state.location.selected,
+        draft: isCreating ? {} : state.location.draft,
+        errors: {},
+      },
+    })),
+
+  setLocationSearch: (text) =>
+    set((state) => ({
+      location: { ...state.location, searchText: text },
+    })),
+
+  saveLocation: async () => {
+    const { location } = get();
+    const site = getSite();
+    const userId = getUserId();
+
+    if (!location.draft || !site) return;
+
+    set((state) => ({
+      location: { ...state.location, isSaving: true, errors: {} },
+    }));
+
+    try {
+      const payload: LocationRequest = {
+        site,
+        code: location.draft.code || '',
+        name: location.draft.name || '',
+        addressLine1: location.draft.addressLine1 || '',
+        addressLine2: location.draft.addressLine2 ?? undefined,
+        city: location.draft.city || '',
+        state: location.draft.state || '',
+        country: location.draft.country || 'India',
+        pinZip: location.draft.pinZip || '',
+        active: location.draft.active ?? 1,
+        modifiedBy: userId,
+      };
+
+      if (location.selected?.id && !location.isCreating) {
+        const updated = await HrmOrganizationService.updateLocation(
+          location.selected.id,
+          payload
+        );
+        set((state) => ({
+          location: {
+            ...state.location,
+            list: state.location.list.map((l) =>
+              l.id === updated.id ? (updated as Location) : l
+            ),
+            selected: updated as Location,
+            draft: { ...updated },
+            isSaving: false,
+            isCreating: false,
+          },
+        }));
+      } else {
+        payload.createdBy = userId;
+        const created = await HrmOrganizationService.createLocation(payload);
+        set((state) => ({
+          location: {
+            ...state.location,
+            list: [...state.location.list, created as Location],
+            selected: created as Location,
+            draft: { ...created },
+            isSaving: false,
+            isCreating: false,
+          },
+        }));
+      }
+    } catch (error: unknown) {
+      const errMsg =
+        error instanceof Error ? error.message : 'Failed to save location';
+      console.error('saveLocation error:', errMsg);
+      set((state) => ({
+        location: {
+          ...state.location,
+          isSaving: false,
+          errors: { _general: errMsg },
+        },
+      }));
+    }
+  },
+
+  deleteLocation: async (id) => {
+    const site = getSite();
+    const userId = getUserId();
+    if (!site) return;
+
+    try {
+      await HrmOrganizationService.deleteLocation(site, id, userId);
+      set((state) => ({
+        location: {
+          ...state.location,
+          list: state.location.list.filter((l) => l.id !== id),
+          selected:
+            state.location.selected?.id === id
+              ? null
+              : state.location.selected,
+          draft:
+            state.location.selected?.id === id
+              ? null
+              : state.location.draft,
+        },
+      }));
+    } catch (error: unknown) {
+      const errMsg =
+        error instanceof Error ? error.message : 'Failed to delete location';
+      console.error('deleteLocation error:', errMsg);
+      set((state) => ({
+        location: {
+          ...state.location,
+          errors: { _general: errMsg },
+        },
+      }));
+    }
+  },
+
+  setLocationError: (field, error) =>
+    set((state) => ({
+      location: {
+        ...state.location,
+        errors: { ...state.location.errors, [field]: error },
+      },
+    })),
+
+  clearLocationErrors: () =>
+    set((state) => ({
+      location: { ...state.location, errors: {} },
+    })),
+
+  // ------------------------------------------
+  // Hierarchy
+  // ------------------------------------------
+  fetchHierarchy: async () => {
+    const site = getSite();
+    const { companyProfile } = get();
+    const companyHandle = companyProfile.data?.handle;
+
+    if (!site || !companyHandle) return;
+
+    set((state) => ({
+      hierarchy: { ...state.hierarchy, isLoading: true },
+    }));
+
+    try {
+      const data = await HrmOrganizationService.fetchOrgHierarchy(site, companyHandle);
+      set({
+        hierarchy: {
+          data: data as unknown as OrgHierarchy,
+          isLoading: false,
+        },
+      });
+    } catch (error: unknown) {
+      const errMsg =
+        error instanceof Error ? error.message : 'Failed to fetch hierarchy';
+      console.error('fetchHierarchy error:', errMsg);
+      set({
+        hierarchy: { data: null, isLoading: false },
+      });
+    }
+  },
+
+  // ------------------------------------------
   // Global
   // ------------------------------------------
   reset: () =>
@@ -721,5 +974,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       companyProfile: { ...initialCompanyProfileState },
       businessUnit: { ...initialBusinessUnitState },
       department: { ...initialDepartmentState },
+      location: { ...initialLocationState },
+      hierarchy: { ...initialHierarchyState },
     }),
 }));

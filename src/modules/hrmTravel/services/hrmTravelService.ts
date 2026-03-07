@@ -13,6 +13,11 @@ import type {
   CoTravellerSearchRequest,
   TravelPolicyUpdatePayload,
   SiteRequest,
+  TravelAdvanceRequestPayload,
+  TravelAdvanceApproveRequest,
+  TravelAdvanceSettleRequest,
+  TravelAdvanceRetrieveRequest,
+  TravelAdvance,
 } from "../types/api.types";
 import type { TravelRequest, TravelPolicy, CoTravellerDto } from "../types/domain.types";
 
@@ -116,5 +121,27 @@ export class HrmTravelService {
       responseType: "blob",
     });
     return response.data;
+  }
+
+  // ── Travel Advance ────────────────────────────────────────────────
+
+  static async requestAdvance(payload: TravelAdvanceRequestPayload): Promise<TravelAdvance> {
+    const { data } = await api.post(`${this.BASE}/advance/request`, payload);
+    return data;
+  }
+
+  static async approveAdvance(payload: TravelAdvanceApproveRequest): Promise<TravelAdvance> {
+    const { data } = await api.post(`${this.BASE}/advance/approve`, payload);
+    return data;
+  }
+
+  static async settleAdvance(payload: TravelAdvanceSettleRequest): Promise<TravelAdvance> {
+    const { data } = await api.post(`${this.BASE}/advance/settle`, payload);
+    return data;
+  }
+
+  static async retrieveAdvance(payload: TravelAdvanceRetrieveRequest): Promise<TravelAdvance | null> {
+    const { data } = await api.post(`${this.BASE}/advance/retrieve`, payload);
+    return data ?? null;
   }
 }

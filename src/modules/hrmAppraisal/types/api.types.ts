@@ -79,3 +79,51 @@ export interface RequestPeerFeedbackRequest {
   anonymous: boolean;
   requestedBy: string;
 }
+
+export interface CreateCompetencyRequest {
+  site: string;
+  name: string;
+  category: string;
+  description: string;
+  weightPercentage: number;
+  behavioralIndicators: { ratingValue: number; description: string }[];
+  createdBy: string;
+}
+
+export interface UpdateCompetencyRequest {
+  site: string;
+  name?: string;
+  category?: string;
+  description?: string;
+  weightPercentage?: number;
+  behavioralIndicators?: { ratingValue: number; description: string }[];
+  updatedBy: string;
+}
+
+export interface BulkInitiateReviewsRequest {
+  site: string;
+  cycleId: string;
+  employeeIds: string[];
+  initiatedBy: string;
+}
+
+export interface CreateCalibrationSessionRequest {
+  site: string;
+  cycleId: string;
+  department: string;
+  scheduledDate: string;
+  participants: string[];
+  createdBy: string;
+}
+
+export interface CalibrationSession {
+  sessionId: string;
+  site: string;
+  cycleId: string;
+  department: string;
+  scheduledDate: string;
+  participants: string[];
+  status: string;
+  createdBy: string;
+  createdAt: string;
+}

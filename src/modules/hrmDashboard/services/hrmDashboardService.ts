@@ -127,4 +127,14 @@ export class HrmDashboardService {
   static async resetLayout(site: string, employeeId: string, role: string): Promise<void> {
     await api.post(`${BASE}/resetLayout`, { site, employeeId, role });
   }
+
+  static async getComplianceDashboard(site: string) {
+    const res = await api.post(`${BASE}/getComplianceDashboard`, { site });
+    return res.data;
+  }
+
+  static async getAuditDashboard(site: string) {
+    const res = await api.post(`${BASE}/getAuditDashboard`, { site });
+    return res.data;
+  }
 }

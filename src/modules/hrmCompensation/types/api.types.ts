@@ -94,3 +94,45 @@ export interface CompensationApprovalRequest {
   remarks: string;
   performedBy: string;
 }
+
+// ─── Update Employee Compensation ────────────────────────────────────────────
+
+export interface UpdateEmployeeCompensationRequest {
+  site: string;
+  handle: string;
+  components: CompensationComponentRequest[];
+  remarks: string;
+  modifiedBy: string;
+}
+
+// ─── Bulk Import ─────────────────────────────────────────────────────────────
+
+export interface BulkImportCompensationRequest {
+  site: string;
+  entries: {
+    employeeId: string;
+    effectiveFrom: string;
+    structureCode: string;
+    components: CompensationComponentRequest[];
+    remarks?: string;
+  }[];
+  importedBy: string;
+}
+
+// ─── Revision Report ─────────────────────────────────────────────────────────
+
+export interface RevisionReportResponse {
+  periodStart: string;
+  periodEnd: string;
+  totalRevisions: number;
+  revisions: {
+    employeeId: string;
+    employeeName: string;
+    department: string;
+    previousGross: number;
+    newGross: number;
+    incrementPercent: number;
+    effectiveFrom: string;
+    status: CompensationStatus;
+  }[];
+}

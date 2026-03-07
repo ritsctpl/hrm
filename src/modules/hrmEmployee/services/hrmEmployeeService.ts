@@ -15,14 +15,30 @@ import type {
   UpdateContactRequest,
   BulkImportRequest,
   BulkImportResponse,
+  BulkAssignManagerRequest,
+  BulkChangeDepartmentRequest,
+  BulkAssignBuRequest,
+  BulkOperationResponse,
+  ExpiringAlertResponse,
+  DirectReportResponse,
+  AuditLogResponse,
+  InitiateOnboardingRequest,
+  UpdateOnboardingItemRequest,
+  DocumentSignedUrlResponse,
 } from '../types/api.types';
 import type {
   EmployeeProfile,
+  EmployeeSummary,
   Skill,
   PreviousExperience,
   EducationEntry,
+  TrainingCert,
   JobHistoryEntry,
   EmployeeDocument,
+  OnboardingChecklist,
+  Dependent,
+  VisaEntry,
+  BankAccount,
 } from '../types/domain.types';
 
 export class HrmEmployeeService {
@@ -213,6 +229,419 @@ export class HrmEmployeeService {
       handle,
       docId,
       deletedBy,
+    });
+  }
+
+  /** Fetch employee summary */
+  static async fetchSummary(
+    site: string,
+    handle: string
+  ): Promise<EmployeeSummary> {
+    const response = await api.post(`${this.BASE}/summary`, { site, handle });
+    return response.data;
+  }
+
+  /** Change reporting manager */
+  static async changeManager(
+    site: string,
+    handle: string,
+    newManagerHandle: string,
+    changedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/change-manager`, {
+      site,
+      handle,
+      newManagerHandle,
+      changedBy,
+    });
+  }
+
+  /** Delete employee */
+  static async deleteEmployee(
+    site: string,
+    handle: string,
+    deletedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/delete`, { site, handle, deletedBy });
+  }
+
+  /** Update a skill */
+  static async updateSkill(
+    site: string,
+    handle: string,
+    skill: Skill,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/skill/update`, {
+      site,
+      handle,
+      skill,
+      modifiedBy,
+    });
+  }
+
+  /** Update previous experience */
+  static async updateExperience(
+    site: string,
+    handle: string,
+    experience: PreviousExperience,
+    experienceId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/experience/update`, {
+      site,
+      handle,
+      experience,
+      experienceId,
+      modifiedBy,
+    });
+  }
+
+  /** Remove previous experience */
+  static async removeExperience(
+    site: string,
+    handle: string,
+    experienceId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/experience/remove`, {
+      site,
+      handle,
+      experienceId,
+      modifiedBy,
+    });
+  }
+
+  /** Update education entry */
+  static async updateEducation(
+    site: string,
+    handle: string,
+    education: EducationEntry,
+    educationId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/education/update`, {
+      site,
+      handle,
+      education,
+      educationId,
+      modifiedBy,
+    });
+  }
+
+  /** Remove education entry */
+  static async removeEducation(
+    site: string,
+    handle: string,
+    educationId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/education/remove`, {
+      site,
+      handle,
+      educationId,
+      modifiedBy,
+    });
+  }
+
+  /** Add training/certification */
+  static async addTraining(
+    site: string,
+    handle: string,
+    training: TrainingCert,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/training/add`, {
+      site,
+      handle,
+      training,
+      modifiedBy,
+    });
+  }
+
+  /** Update training/certification */
+  static async updateTraining(
+    site: string,
+    handle: string,
+    training: TrainingCert,
+    trainingId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/training/update`, {
+      site,
+      handle,
+      training,
+      trainingId,
+      modifiedBy,
+    });
+  }
+
+  /** Remove training/certification */
+  static async removeTraining(
+    site: string,
+    handle: string,
+    trainingId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/training/remove`, {
+      site,
+      handle,
+      trainingId,
+      modifiedBy,
+    });
+  }
+
+  /** Get document signed URL */
+  static async getDocumentSignedUrl(
+    site: string,
+    handle: string,
+    docId: string
+  ): Promise<DocumentSignedUrlResponse> {
+    const response = await api.post(`${this.BASE}/document/signed-url`, {
+      site,
+      handle,
+      docId,
+    });
+    return response.data;
+  }
+
+  /** Bulk assign manager */
+  static async bulkAssignManager(
+    payload: BulkAssignManagerRequest
+  ): Promise<BulkOperationResponse> {
+    const response = await api.post(`${this.BASE}/bulk-assign-manager`, payload);
+    return response.data;
+  }
+
+  /** Bulk change department */
+  static async bulkChangeDepartment(
+    payload: BulkChangeDepartmentRequest
+  ): Promise<BulkOperationResponse> {
+    const response = await api.post(`${this.BASE}/bulk-change-department`, payload);
+    return response.data;
+  }
+
+  /** Bulk assign business unit */
+  static async bulkAssignBu(
+    payload: BulkAssignBuRequest
+  ): Promise<BulkOperationResponse> {
+    const response = await api.post(`${this.BASE}/bulk-assign-bu`, payload);
+    return response.data;
+  }
+
+  /** Get expiring documents alert */
+  static async getExpiringDocuments(
+    site: string
+  ): Promise<ExpiringAlertResponse[]> {
+    const response = await api.post(`${this.BASE}/alerts/expiring-documents`, { site });
+    return response.data;
+  }
+
+  /** Get expiring visas alert */
+  static async getExpiringVisas(
+    site: string
+  ): Promise<ExpiringAlertResponse[]> {
+    const response = await api.post(`${this.BASE}/alerts/expiring-visas`, { site });
+    return response.data;
+  }
+
+  /** Get expiring certifications alert */
+  static async getExpiringCertifications(
+    site: string
+  ): Promise<ExpiringAlertResponse[]> {
+    const response = await api.post(`${this.BASE}/alerts/expiring-certifications`, { site });
+    return response.data;
+  }
+
+  /** Get direct reports for a manager */
+  static async getDirectReports(
+    site: string,
+    managerId: string
+  ): Promise<DirectReportResponse[]> {
+    const response = await api.post(`${this.BASE}/direct-reports`, { site, managerId });
+    return response.data;
+  }
+
+  /** Get audit log for an employee */
+  static async getAuditLog(
+    site: string,
+    handle: string,
+    page: number,
+    size: number
+  ): Promise<AuditLogResponse> {
+    const response = await api.post(`${this.BASE}/audit-log`, {
+      site,
+      handle,
+      page,
+      size,
+    });
+    return response.data;
+  }
+
+  /** Upload employee photo */
+  static async uploadPhoto(
+    site: string,
+    handle: string,
+    file: File
+  ): Promise<EmployeeProfile> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('site', site);
+    formData.append('handle', handle);
+    const response = await api.post(`${this.BASE}/photo/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
+  /** Initiate onboarding */
+  static async initiateOnboarding(
+    payload: InitiateOnboardingRequest
+  ): Promise<OnboardingChecklist> {
+    const response = await api.post(`${this.BASE}/onboarding/initiate`, payload);
+    return response.data;
+  }
+
+  /** Get onboarding checklist */
+  static async getOnboardingChecklist(
+    site: string,
+    handle: string
+  ): Promise<OnboardingChecklist> {
+    const response = await api.post(`${this.BASE}/onboarding/checklist`, { site, handle });
+    return response.data;
+  }
+
+  /** Update onboarding item */
+  static async updateOnboardingItem(
+    payload: UpdateOnboardingItemRequest
+  ): Promise<OnboardingChecklist> {
+    const response = await api.post(`${this.BASE}/onboarding/update-item`, payload);
+    return response.data;
+  }
+
+  /** Add dependent */
+  static async addDependent(
+    site: string,
+    handle: string,
+    dependent: Dependent,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/dependent/add`, {
+      site,
+      handle,
+      dependent,
+      modifiedBy,
+    });
+  }
+
+  /** Update dependent */
+  static async updateDependent(
+    site: string,
+    handle: string,
+    dependent: Dependent,
+    dependentId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/dependent/update`, {
+      site,
+      handle,
+      dependent,
+      dependentId,
+      modifiedBy,
+    });
+  }
+
+  /** Remove dependent */
+  static async removeDependent(
+    site: string,
+    handle: string,
+    dependentId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/dependent/remove`, {
+      site,
+      handle,
+      dependentId,
+      modifiedBy,
+    });
+  }
+
+  /** Add visa */
+  static async addVisa(
+    site: string,
+    handle: string,
+    visa: VisaEntry,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/visa/add`, {
+      site,
+      handle,
+      visa,
+      modifiedBy,
+    });
+  }
+
+  /** Update visa */
+  static async updateVisa(
+    site: string,
+    handle: string,
+    visa: VisaEntry,
+    visaId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/visa/update`, {
+      site,
+      handle,
+      visa,
+      visaId,
+      modifiedBy,
+    });
+  }
+
+  /** Remove visa */
+  static async removeVisa(
+    site: string,
+    handle: string,
+    visaId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/visa/remove`, {
+      site,
+      handle,
+      visaId,
+      modifiedBy,
+    });
+  }
+
+  /** Add bank account */
+  static async addBankAccount(
+    site: string,
+    handle: string,
+    bankAccount: BankAccount,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/bank/add`, {
+      site,
+      handle,
+      bankAccount,
+      modifiedBy,
+    });
+  }
+
+  /** Update bank account */
+  static async updateBankAccount(
+    site: string,
+    handle: string,
+    bankAccount: BankAccount,
+    bankAccountId: string,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/bank/update`, {
+      site,
+      handle,
+      bankAccount,
+      bankAccountId,
+      modifiedBy,
     });
   }
 

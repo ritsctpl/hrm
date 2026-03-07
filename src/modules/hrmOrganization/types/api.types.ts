@@ -121,3 +121,73 @@ export interface DepartmentDeleteRequest {
   handle: string;
   deletedBy: string;
 }
+
+// ============================================
+// Location API Types
+// ============================================
+export interface LocationRequest {
+  site: string;
+  code: string;
+  name: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  country: string;
+  pinZip: string;
+  active?: number;
+  createdBy?: string;
+  modifiedBy?: string;
+}
+
+export interface LocationResponse {
+  id: string;
+  site: string;
+  code: string;
+  name: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  country: string;
+  pinZip: string;
+  active: number;
+  createdDateTime: string;
+  modifiedDateTime: string | null;
+}
+
+// ============================================
+// Org Hierarchy API Types
+// ============================================
+export interface OrgHierarchyResponse {
+  company: CompanyProfileResponse;
+  businessUnits: (BusinessUnitResponse & { departments: DepartmentResponse[] })[];
+}
+
+// ============================================
+// Audit Log API Types
+// ============================================
+export interface OrgAuditLogDto {
+  handle: string;
+  entityType: string;
+  entityHandle: string;
+  action: string;
+  fieldKey: string | null;
+  oldValue: unknown;
+  newValue: unknown;
+  performedBy: string;
+  performedAt: string;
+}
+
+// ============================================
+// Data Completeness API Types
+// ============================================
+export interface DataCompletenessReportResponse {
+  entityHandle: string;
+  entityCode: string;
+  entityType: string;
+  requiredFields: number;
+  filledFields: number;
+  missingFields: number;
+  completenessPercent: number;
+}

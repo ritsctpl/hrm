@@ -6,12 +6,18 @@ import type {
   FeedbackEntry,
   RatingDistribution,
   PipRecord,
+  CompetencyDefinition,
 } from "../types/domain.types";
 import type {
   CreateGoalRequest,
   SubmitSelfAssessmentRequest,
   SubmitManagerAssessmentRequest,
   CalibrateRatingRequest,
+  CreateCompetencyRequest,
+  UpdateCompetencyRequest,
+  BulkInitiateReviewsRequest,
+  CreateCalibrationSessionRequest,
+  CalibrationSession,
 } from "../types/api.types";
 
 export class HrmAppraisalService {
@@ -318,6 +324,121 @@ export class HrmAppraisalService {
 
   static async getActivePips(site: string): Promise<PipRecord[]> {
     const res = await api.post<PipRecord[]>(`${this.BASE}/getActivePips`, { site });
+    return res.data ?? [];
+  }
+
+  static async closeCycle(
+    site: string,
+    cycleId: string,
+    closedBy: string
+  ): Promise<AppraisalCycle> {
+    const res = await api.post<AppraisalCycle>(`${this.BASE}/closeCycle`, {
+      site,
+      cycleId,
+      closedBy,
+    });
+    return res.data;
+  }
+
+  static async archiveCycle(
+    site: string,
+    cycleId: string,
+    archivedBy: string
+  ): Promise<AppraisalCycle> {
+    const res = await api.post<AppraisalCycle>(`${this.BASE}/archiveCycle`, {
+      site,
+      cycleId,
+      archivedBy,
+    });
+    return res.data;
+  }
+
+  static async createCompetency(
+    payload: CreateCompetencyRequest
+  ): Promise<CompetencyDefinition> {
+    const res = await api.post<CompetencyDefinition>(`${this.BASE}/createCompetency`, payload);
+    return res.data;
+  }
+
+  static async listCompetencies(site: string): Promise<CompetencyDefinition[]> {
+    const res = await api.post<CompetencyDefinition[]>(`${this.BASE}/listCompetencies`, { site });
+    return res.data ?? [];
+  }
+
+  static async updateCompetency(
+    handle: string,
+    payload: UpdateCompetencyRequest
+  ): Promise<CompetencyDefinition> {
+    const res = await api.post<CompetencyDefinition>(`${this.BASE}/updateCompetency`, {
+      handle,
+      ...payload,
+    });
+    return res.data;
+  }
+
+  static async deleteCompetency(
+    site: string,
+    handle: string,
+    deletedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/deleteCompetency`, { site, handle, deletedBy });
+  }
+
+  static async deleteFeedback(
+    site: string,
+    feedbackId: string,
+    deletedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/deleteFeedback`, { site, feedbackId, deletedBy });
+  }
+
+  static async bulkInitiateReviews(
+    payload: BulkInitiateReviewsRequest
+  ): Promise<AppraisalReview[]> {
+    const res = await api.post<AppraisalReview[]>(`${this.BASE}/bulkInitiateReviews`, payload);
+    return res.data ?? [];
+  }
+
+  static async exportReviews(
+    site: string,
+    cycleId: string,
+    format: string
+  ): Promise<Blob> {
+    const res = await api.post(`${this.BASE}/exportReviews`, { site, cycleId, format }, {
+      responseType: "blob",
+    });
+    return res.data as Blob;
+  }
+
+  static async createCalibrationSession(
+    payload: CreateCalibrationSessionRequest
+  ): Promise<CalibrationSession> {
+    const res = await api.post<CalibrationSession>(
+      `${this.BASE}/createCalibrationSession`,
+      payload
+    );
+    return res.data;
+  }
+
+  static async getCalibrationSession(
+    site: string,
+    sessionId: string
+  ): Promise<CalibrationSession> {
+    const res = await api.post<CalibrationSession>(`${this.BASE}/getCalibrationSession`, {
+      site,
+      sessionId,
+    });
+    return res.data;
+  }
+
+  static async getEmployeePips(
+    site: string,
+    employeeId: string
+  ): Promise<PipRecord[]> {
+    const res = await api.post<PipRecord[]>(`${this.BASE}/getEmployeePips`, {
+      site,
+      employeeId,
+    });
     return res.data ?? [];
   }
 }

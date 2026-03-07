@@ -168,6 +168,141 @@ export interface BulkImportError {
   errorMessage: string;
 }
 
+/** Training operation request */
+export interface TrainingOperationRequest {
+  site: string;
+  handle: string;
+  training: import('./domain.types').TrainingCert;
+  trainingId?: string;
+  modifiedBy: string;
+}
+
+/** Change manager request */
+export interface ChangeManagerRequest {
+  site: string;
+  handle: string;
+  newManagerHandle: string;
+  changedBy: string;
+}
+
+/** Delete employee request */
+export interface DeleteEmployeeRequest {
+  site: string;
+  handle: string;
+  deletedBy: string;
+}
+
+/** Bulk assign manager request */
+export interface BulkAssignManagerRequest {
+  site: string;
+  employeeHandles: string[];
+  managerHandle: string;
+  modifiedBy: string;
+}
+
+/** Bulk change department request */
+export interface BulkChangeDepartmentRequest {
+  site: string;
+  employeeHandles: string[];
+  department: string;
+  modifiedBy: string;
+}
+
+/** Bulk assign BU request */
+export interface BulkAssignBuRequest {
+  site: string;
+  employeeHandles: string[];
+  businessUnit: string;
+  modifiedBy: string;
+}
+
+/** Bulk operation response */
+export interface BulkOperationResponse {
+  totalProcessed: number;
+  successCount: number;
+  failureCount: number;
+  errors: BulkImportError[];
+}
+
+/** Alert response for expiring items */
+export interface ExpiringAlertResponse {
+  handle: string;
+  employeeHandle: string;
+  employeeName: string;
+  itemName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+}
+
+/** Direct reports response */
+export interface DirectReportResponse {
+  handle: string;
+  employeeCode: string;
+  fullName: string;
+  department: string;
+  designation: string;
+  status: EmployeeStatus;
+  photoUrl?: string;
+  workEmail: string;
+}
+
+/** Audit log paginated response */
+export interface AuditLogResponse {
+  content: import('./domain.types').AuditLogEntry[];
+  totalElements: number;
+  page: number;
+  size: number;
+}
+
+/** Onboarding initiate request */
+export interface InitiateOnboardingRequest {
+  site: string;
+  handle: string;
+  initiatedBy: string;
+}
+
+/** Onboarding item update request */
+export interface UpdateOnboardingItemRequest {
+  site: string;
+  handle: string;
+  itemId: string;
+  isCompleted: boolean;
+  completedBy: string;
+}
+
+/** Dependent operation request */
+export interface DependentOperationRequest {
+  site: string;
+  handle: string;
+  dependent: import('./domain.types').Dependent;
+  dependentId?: string;
+  modifiedBy: string;
+}
+
+/** Visa operation request */
+export interface VisaOperationRequest {
+  site: string;
+  handle: string;
+  visa: import('./domain.types').VisaEntry;
+  visaId?: string;
+  modifiedBy: string;
+}
+
+/** Bank account operation request */
+export interface BankAccountOperationRequest {
+  site: string;
+  handle: string;
+  bankAccount: import('./domain.types').BankAccount;
+  bankAccountId?: string;
+  modifiedBy: string;
+}
+
+/** Document signed URL response */
+export interface DocumentSignedUrlResponse {
+  url: string;
+  expiresAt: string;
+}
+
 /** Department / BU lookup */
 export interface LookupOption {
   value: string;

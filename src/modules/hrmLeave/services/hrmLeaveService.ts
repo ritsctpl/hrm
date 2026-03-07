@@ -34,6 +34,18 @@ import {
   LeavePolicy,
   ValidationSummaryResponse,
   LeaveRequest,
+  LeaveTypeByCodeRequest,
+  DeleteLeaveTypeRequest,
+  ActivateDeactivateLeaveTypeRequest,
+  DeletePolicyRequest,
+  EffectivePolicyRequest,
+  BalanceByTypeRequest,
+  TeamCalendarRequest,
+  TeamCalendarEntry,
+  AmendLeaveRequestPayload,
+  SaveApprovalConfigRequest,
+  LeaveApprovalConfig,
+  ExportLeaveReportRequest,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -233,5 +245,76 @@ export class HrmLeaveService {
   static async getGlobalQueue(payload: GlobalQueueRequest): Promise<LeaveRequestResponse[]> {
     const { data } = await api.post(`${this.BASE}/leave-request/global-queue`, payload);
     return data;
+  }
+
+  // ── Leave Type Retrieve / Delete / Toggle ───────────────────────────
+
+  static async getLeaveTypeByCode(payload: LeaveTypeByCodeRequest): Promise<LeaveType | null> {
+    const { data } = await api.post(`${this.BASE}/leave-type/retrieve`, payload);
+    return data ?? null;
+  }
+
+  static async deleteLeaveType(payload: DeleteLeaveTypeRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-type/delete`, payload);
+  }
+
+  static async activateDeactivateLeaveType(payload: ActivateDeactivateLeaveTypeRequest): Promise<LeaveType> {
+    const { data } = await api.post(`${this.BASE}/leave-type/toggle-status`, payload);
+    return data;
+  }
+
+  // ── Policy Delete ─────────────────────────────────────────────────
+
+  static async deletePolicy(payload: DeletePolicyRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-policy/delete`, payload);
+  }
+
+  // ── Effective Policy ──────────────────────────────────────────────
+
+  static async getEffectivePolicy(payload: EffectivePolicyRequest): Promise<LeavePolicy | null> {
+    const { data } = await api.post(`${this.BASE}/leave-policy/effective`, payload);
+    return data ?? null;
+  }
+
+  // ── Balance By Type ───────────────────────────────────────────────
+
+  static async getBalanceByType(payload: BalanceByTypeRequest): Promise<LeaveBalanceResponse | null> {
+    const { data } = await api.post(`${this.BASE}/leave-balance/retrieve-by-type`, payload);
+    return data ?? null;
+  }
+
+  // ── Team Calendar ─────────────────────────────────────────────────
+
+  static async getTeamCalendar(payload: TeamCalendarRequest): Promise<TeamCalendarEntry[]> {
+    const { data } = await api.post(`${this.BASE}/leave-request/team-calendar`, payload);
+    return Array.isArray(data) ? data : [];
+  }
+
+  // ── Amend Leave Request ───────────────────────────────────────────
+
+  static async amendLeaveRequest(payload: AmendLeaveRequestPayload): Promise<LeaveRequest> {
+    const { data } = await api.post(`${this.BASE}/leave-request/amend`, payload);
+    return data;
+  }
+
+  // ── Approval Config ───────────────────────────────────────────────
+
+  static async saveApprovalConfig(payload: SaveApprovalConfigRequest): Promise<LeaveApprovalConfig> {
+    const { data } = await api.post(`${this.BASE}/leave-approval-config/save`, payload);
+    return data;
+  }
+
+  static async getApprovalConfig(payload: SiteRequest): Promise<LeaveApprovalConfig | null> {
+    const { data } = await api.post(`${this.BASE}/leave-approval-config/retrieve`, payload);
+    return data ?? null;
+  }
+
+  // ── Export Leave Report ───────────────────────────────────────────
+
+  static async exportLeaveReport(payload: ExportLeaveReportRequest): Promise<Blob> {
+    const response = await api.post(`${this.BASE}/leave-request/export`, payload, {
+      responseType: "blob",
+    });
+    return response.data;
   }
 }

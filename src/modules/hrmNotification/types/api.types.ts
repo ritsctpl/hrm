@@ -30,3 +30,26 @@ export interface MarkReadPayload {
 export interface UnreadCountResponse {
   unreadCount: number;
 }
+
+export interface DeleteNotificationPayload {
+  site: string;
+  handle: string;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  site: string;
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  inAppEnabled: boolean;
+  categories: Record<string, boolean>;
+}
+
+export interface UpdatePreferencesPayload {
+  site: string;
+  userId: string;
+  emailEnabled?: boolean;
+  pushEnabled?: boolean;
+  inAppEnabled?: boolean;
+  categories?: Record<string, boolean>;
+}

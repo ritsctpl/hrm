@@ -250,3 +250,65 @@ export interface ResourceCalendarResponse {
     capacityStatus: 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
   }[];
 }
+
+// ─── Client Types ────────────────────────────────────────────────────────────
+
+export interface ClientRequest {
+  site: string;
+  clientCode: string;
+  clientName: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  createdBy: string;
+}
+
+export interface ClientResponse {
+  handle: string;
+  site: string;
+  clientCode: string;
+  clientName: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  active: number;
+  createdDateTime: string;
+  modifiedDateTime: string;
+  createdBy: string;
+  modifiedBy: string;
+}
+
+// ─── Billing Types ───────────────────────────────────────────────────────────
+
+export interface BillingConfigRequest {
+  site: string;
+  projectHandle: string;
+  billingModel: 'TIME_AND_MATERIAL' | 'FIXED_PRICE' | 'MILESTONE' | 'RETAINER';
+  currency: string;
+  hourlyRate?: number;
+  fixedAmount?: number;
+  billingCycle?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  configuredBy: string;
+}
+
+export interface BillingSummaryResponse {
+  projectHandle: string;
+  projectCode: string;
+  projectName: string;
+  billingModel: string;
+  currency: string;
+  totalBillableHours: number;
+  totalBilledAmount: number;
+  outstandingAmount: number;
+  periodStart: string;
+  periodEnd: string;
+  entries: {
+    employeeId: string;
+    employeeName: string;
+    billableHours: number;
+    rate: number;
+    amount: number;
+  }[];
+}

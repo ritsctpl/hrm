@@ -12,6 +12,9 @@ import type {
   PreviewCompensationRequest,
   SubmitForApprovalRequest,
   CompensationApprovalRequest,
+  BulkImportCompensationRequest,
+  RevisionReportResponse,
+  UpdateEmployeeCompensationRequest,
 } from '../types/api.types';
 import type {
   PayComponent,
@@ -163,6 +166,76 @@ export class HrmCompensationService {
     const res = await api.post<EmployeeCompensationResponse>(
       `${BASE}/getSalaryBreakdown`,
       { site, employeeId },
+    );
+    return res.data;
+  }
+
+  // ============================================================
+  // Salary Structure Delete / Deactivate
+  // ============================================================
+
+  static async deleteSalaryStructure(site: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deleteSalaryStructure`, { site, handle, deletedBy });
+  }
+
+  static async deactivateSalaryStructure(site: string, handle: string, deactivatedBy: string): Promise<void> {
+    await api.post(`${BASE}/deactivateSalaryStructure`, { site, handle, deactivatedBy });
+  }
+
+  // ============================================================
+  // Update Employee Compensation
+  // ============================================================
+
+  static async updateEmployeeCompensation(
+    payload: UpdateEmployeeCompensationRequest,
+  ): Promise<EmployeeCompensationResponse> {
+    const res = await api.post<EmployeeCompensationResponse>(
+      `${BASE}/updateEmployeeCompensation`,
+      payload,
+    );
+    return res.data;
+  }
+
+  // ============================================================
+  // Get Compensation on Date
+  // ============================================================
+
+  static async getCompensationOnDate(
+    site: string,
+    employeeId: string,
+    date: string,
+  ): Promise<EmployeeCompensationResponse> {
+    const res = await api.post<EmployeeCompensationResponse>(
+      `${BASE}/getCompensationOnDate`,
+      { site, employeeId, date },
+    );
+    return res.data;
+  }
+
+  // ============================================================
+  // Bulk Import
+  // ============================================================
+
+  static async bulkImportCompensation(
+    payload: BulkImportCompensationRequest,
+  ): Promise<{ imported: number; failed: number; errors: string[] }> {
+    const res = await api.post(`${BASE}/bulkImport`, payload);
+    return res.data;
+  }
+
+  // ============================================================
+  // Revision Report
+  // ============================================================
+
+  static async revisionReport(
+    site: string,
+    startDate: string,
+    endDate: string,
+    department?: string,
+  ): Promise<RevisionReportResponse> {
+    const res = await api.post<RevisionReportResponse>(
+      `${BASE}/revisionReport`,
+      { site, startDate, endDate, department },
     );
     return res.data;
   }

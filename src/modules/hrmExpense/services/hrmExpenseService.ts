@@ -15,6 +15,9 @@ import type {
   ExpenseCancelRequest,
   MileageCalculateRequest,
   SiteRequest,
+  MarkOriginalsReceivedRequest,
+  GetUnsettledAdvancesRequest,
+  UnsettledAdvance,
 } from "../types/api.types";
 import type {
   ExpenseReport,
@@ -178,5 +181,17 @@ export class HrmExpenseService {
       responseType: "blob",
     });
     return response.data;
+  }
+
+  // ── Originals Received ──────────────────────────────────────────────
+  static async markOriginalsReceived(payload: MarkOriginalsReceivedRequest): Promise<ExpenseReport> {
+    const { data } = await api.post(`${this.BASE}/originals/received`, payload);
+    return data;
+  }
+
+  // ── Unsettled Advances ──────────────────────────────────────────────
+  static async getUnsettledAdvances(payload: GetUnsettledAdvancesRequest): Promise<UnsettledAdvance[]> {
+    const { data } = await api.post(`${this.BASE}/unsettled-advances`, payload);
+    return Array.isArray(data) ? data : [];
   }
 }

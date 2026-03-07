@@ -61,3 +61,52 @@ export interface SendReminderPayload {
   policyId: string;
   targetStatus: "PENDING" | "OVERDUE";
 }
+
+export interface SubmitForReviewPayload {
+  site: string;
+  handle: string;
+  submittedBy: string;
+}
+
+export interface ApprovePolicyPayload {
+  site: string;
+  handle: string;
+  approvedBy: string;
+  comments?: string;
+}
+
+export interface RetirePolicyPayload {
+  site: string;
+  handle: string;
+  retiredBy: string;
+  reason: string;
+}
+
+export interface SupersedePolicyPayload {
+  site: string;
+  handle: string;
+  newHandle: string;
+  supersededBy: string;
+}
+
+export interface DeletePolicyPayload {
+  site: string;
+  handle: string;
+  deletedBy: string;
+}
+
+export interface GetMyPoliciesPayload {
+  site: string;
+  employeeId: string;
+}
+
+export interface GetEmployeeAcknowledgmentsPayload {
+  site: string;
+  policyHandle: string;
+}
+
+export interface CreateCategoryPayload {
+  site: string;
+  name: string;
+  description?: string;
+}

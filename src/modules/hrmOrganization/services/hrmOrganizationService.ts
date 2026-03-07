@@ -12,8 +12,13 @@ import type {
   BusinessUnitResponse,
   DepartmentRequest,
   DepartmentResponse,
+  LocationRequest,
+  LocationResponse,
+  OrgHierarchyResponse,
+  OrgAuditLogDto,
+  DataCompletenessReportResponse,
 } from '../types/api.types';
-import type { BusinessUnit, Department, DepartmentNode } from '../types/domain.types';
+import type { BusinessUnit, Department, DepartmentNode, Location } from '../types/domain.types';
 
 export class HrmOrganizationService {
   private static readonly BASE = '/hrm-service/organization';
@@ -40,6 +45,26 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  static async fetchCompanyByHandle(site: string, handle: string): Promise<CompanyProfileResponse> {
+    const res = await api.post(`${this.BASE}/company/retrieve`, { site, handle });
+    return res.data;
+  }
+
+  static async deleteCompany(site: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${this.BASE}/company/delete`, { site, handle, deletedBy });
+  }
+
+  static async updateFinancialYear(payload: {
+    site: string;
+    handle: string;
+    financialYearStartMonth: string;
+    financialYearEndMonth: string;
+    modifiedBy: string;
+  }): Promise<CompanyProfileResponse> {
+    const res = await api.post(`${this.BASE}/company/updateFinancialYear`, payload);
+    return res.data;
+  }
+
   static async uploadLogo(
     site: string,
     companyHandle: string,
@@ -60,6 +85,24 @@ export class HrmOrganizationService {
   // ============================================
   // Business Units
   // ============================================
+
+  static async fetchBusinessUnit(site: string, handle: string): Promise<BusinessUnitResponse> {
+    const res = await api.post(`${this.BASE}/businessUnit/retrieve`, { site, handle });
+    return res.data;
+  }
+
+  static async fetchBusinessUnitsByState(
+    site: string,
+    companyHandle: string,
+    state: string
+  ): Promise<BusinessUnitResponse[]> {
+    const res = await api.post(`${this.BASE}/businessUnit/retrieveByState`, {
+      site,
+      companyHandle,
+      state,
+    });
+    return res.data;
+  }
 
   static async fetchBusinessUnits(
     site: string,
@@ -97,6 +140,11 @@ export class HrmOrganizationService {
   // Departments
   // ============================================
 
+  static async fetchDepartment(site: string, handle: string): Promise<DepartmentResponse> {
+    const res = await api.post(`${this.BASE}/department/retrieve`, { site, handle });
+    return res.data;
+  }
+
   static async fetchDepartments(site: string, buHandle: string): Promise<Department[]> {
     const res = await api.post(`${this.BASE}/department/retrieveAll`, { site, buHandle });
     return res.data;
@@ -129,5 +177,101 @@ export class HrmOrganizationService {
     deletedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/department/delete`, { site, handle, deletedBy });
+  }
+
+  // ============================================
+  // Locations
+  // ============================================
+
+  static async createLocation(payload: LocationRequest): Promise<LocationResponse> {
+    const res = await api.post(`${this.BASE}/location/create`, payload);
+    return res.data;
+  }
+
+  static async fetchLocation(site: string, id: string): Promise<LocationResponse> {
+    const res = await api.post(`${this.BASE}/location/retrieve`, { site, id });
+    return res.data;
+  }
+
+  static async fetchAllLocations(site: string): Promise<Location[]> {
+    const res = await api.post(`${this.BASE}/location/retrieveAll`, { site });
+    return res.data;
+  }
+
+  static async updateLocation(
+    id: string,
+    payload: LocationRequest
+  ): Promise<LocationResponse> {
+    const res = await api.post(`${this.BASE}/location/update`, { ...payload, id });
+    return res.data;
+  }
+
+  static async deleteLocation(
+    site: string,
+    id: string,
+    deletedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/location/delete`, { site, id, deletedBy });
+  }
+
+  // ============================================
+  // Org Hierarchy
+  // ============================================
+
+  static async fetchOrgHierarchy(
+    site: string,
+    companyHandle: string
+  ): Promise<OrgHierarchyResponse> {
+    const res = await api.post(`${this.BASE}/hierarchy`, { site, companyHandle });
+    return res.data;
+  }
+
+  // ============================================
+  // Audit Log
+  // ============================================
+
+  static async fetchAuditLog(
+    site: string,
+    entityType: string,
+    entityHandle: string,
+    page?: number,
+    size?: number
+  ): Promise<OrgAuditLogDto[]> {
+    const res = await api.post(`${this.BASE}/audit/retrieve`, {
+      site,
+      entityType,
+      entityHandle,
+      page: page ?? 0,
+      size: size ?? 20,
+    });
+    return res.data;
+  }
+
+  // ============================================
+  // Reports
+  // ============================================
+
+  static async generateDataCompletenessReport(
+    site: string,
+    entityType?: string
+  ): Promise<DataCompletenessReportResponse[]> {
+    const res = await api.post(`${this.BASE}/report/dataCompleteness`, {
+      site,
+      ...(entityType ? { entityType } : {}),
+    });
+    return res.data;
+  }
+
+  // ============================================
+  // Export
+  // ============================================
+
+  static async exportToCSV(site: string, entityType?: string): Promise<Blob> {
+    const res = await api.post(
+      `${this.BASE}/export`,
+      { site, ...(entityType ? { entityType } : {}) },
+      { responseType: 'blob' }
+    );
+    return res.data;
   }
 }

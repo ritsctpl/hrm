@@ -15,6 +15,9 @@ import type {
   AccessCheckResponse,
   PermissionsMatrixResponse,
   ImportResultResponse,
+  ImportPreviewResponse,
+  UserAccessReportResponse,
+  OrphanedExpiredAssignment,
   RbacAuditLogDto,
 } from '../types/api.types';
 
@@ -276,6 +279,63 @@ export class HrmAccessService {
     const res = await api.post(`${BASE}/import/userAssignments`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return res.data;
+  }
+
+  // ---- Role Clone ----
+
+  static async cloneRole(
+    site: string,
+    sourceRoleId: string,
+    newRoleName: string,
+    performedBy: string
+  ): Promise<RoleResponse> {
+    const res = await api.post(`${BASE}/role/clone`, {
+      site,
+      sourceRoleId,
+      newRoleName,
+      performedBy,
+    });
+    return res.data;
+  }
+
+  // ---- Import Preview ----
+
+  static async previewImport(site: string, file: File): Promise<ImportPreviewResponse> {
+    const formData = new FormData();
+    formData.append('site', site);
+    formData.append('file', file);
+    const res = await api.post(`${BASE}/import/preview`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
+
+  // ---- Export Role Permissions ----
+
+  static async exportRolePermissions(site: string, format: 'csv' | 'xlsx'): Promise<Blob> {
+    const res = await api.post(
+      `${BASE}/export/rolePermissions`,
+      { site, format },
+      { responseType: 'blob' }
+    );
+    return res.data;
+  }
+
+  // ---- Reports ----
+
+  static async getUserAccessReport(
+    site: string,
+    userId?: string | null
+  ): Promise<UserAccessReportResponse[]> {
+    const res = await api.post(`${BASE}/report/userAccess`, { site, ...(userId ? { userId } : {}) });
+    return res.data;
+  }
+
+  static async getOrphanedExpiredAssignments(
+    site: string
+  ): Promise<OrphanedExpiredAssignment[]> {
+    const res = await api.post(`${BASE}/report/orphanedExpired`, { site });
     return res.data;
   }
 

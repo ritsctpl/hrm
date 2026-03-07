@@ -59,4 +59,32 @@ export class HrmAnnouncementService {
     const res = await api.post(`${BASE}/getAnnouncementEngagement`, { site, announcementId });
     return res.data;
   }
+
+  static async deleteAnnouncement(
+    site: string,
+    handle: string,
+    deletedBy: string
+  ): Promise<void> {
+    await api.post(`${BASE}/deleteAnnouncement`, { site, handle, deletedBy });
+  }
+
+  static async downloadAttachment(
+    site: string,
+    handle: string,
+    attachmentId: string
+  ): Promise<Blob> {
+    const res = await api.post(`${BASE}/downloadAttachment`, { site, handle, attachmentId }, {
+      responseType: "blob",
+    });
+    return res.data as Blob;
+  }
+
+  static async sendReadReminder(
+    site: string,
+    handle: string,
+    employeeIds: string[],
+    sentBy: string
+  ): Promise<void> {
+    await api.post(`${BASE}/sendReadReminder`, { site, handle, employeeIds, sentBy });
+  }
 }

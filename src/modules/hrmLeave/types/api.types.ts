@@ -427,3 +427,120 @@ export interface LeavePolicyQueryRequest {
   site: string;
   leaveTypeId: string;
 }
+
+// ── Leave Type Retrieve / Delete / Toggle ────────────────────────────
+
+export interface LeaveTypeByCodeRequest {
+  site: string;
+  code: string;
+}
+
+export interface DeleteLeaveTypeRequest {
+  site: string;
+  handle: string;
+  deletedBy: string;
+}
+
+export interface ActivateDeactivateLeaveTypeRequest {
+  site: string;
+  handle: string;
+  active: boolean;
+  modifiedBy: string;
+}
+
+// ── Policy Delete ────────────────────────────────────────────────────
+
+export interface DeletePolicyRequest {
+  site: string;
+  handle: string;
+  deletedBy: string;
+}
+
+// ── Effective Policy ─────────────────────────────────────────────────
+
+export interface EffectivePolicyRequest {
+  site: string;
+  leaveTypeCode: string;
+  buCode?: string;
+  deptCode?: string;
+}
+
+// ── Balance By Type ──────────────────────────────────────────────────
+
+export interface BalanceByTypeRequest {
+  site: string;
+  employeeId: string;
+  leaveTypeCode: string;
+  year: number;
+}
+
+// ── Team Calendar ────────────────────────────────────────────────────
+
+export interface TeamCalendarRequest {
+  site: string;
+  managerId: string;
+  month: number;
+  year: number;
+}
+
+export interface TeamCalendarEntry {
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  dayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  status: LeaveRequestStatus;
+}
+
+// ── Amend Leave Request ──────────────────────────────────────────────
+
+export interface AmendLeaveRequestPayload {
+  site: string;
+  handle: string;
+  startDate?: string;
+  endDate?: string;
+  startDayType?: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  endDayType?: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  totalDays?: number;
+  reason?: string;
+  amendedBy: string;
+}
+
+// ── Approval Config ──────────────────────────────────────────────────
+
+export interface LeaveApprovalConfig {
+  site: string;
+  levels: ApprovalLevel[];
+  autoEscalateDays: number;
+  notifyHrOnEscalation: boolean;
+  modifiedBy?: string;
+}
+
+export interface ApprovalLevel {
+  level: number;
+  role: "SUPERVISOR" | "NEXT_SUPERIOR" | "HR";
+  required: boolean;
+}
+
+export interface SaveApprovalConfigRequest {
+  site: string;
+  levels: ApprovalLevel[];
+  autoEscalateDays: number;
+  notifyHrOnEscalation: boolean;
+  modifiedBy: string;
+}
+
+// ── Export Leave Report ──────────────────────────────────────────────
+
+export interface ExportLeaveReportRequest {
+  site: string;
+  reportType: string;
+  fromDate?: string;
+  toDate?: string;
+  leaveTypeCode?: string;
+  buId?: string;
+  deptId?: string;
+  year?: number;
+  format?: "CSV" | "XLSX";
+}

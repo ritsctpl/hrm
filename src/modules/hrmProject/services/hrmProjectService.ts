@@ -15,6 +15,10 @@ import type {
   ProjectAllocationVsActualReport,
   ResourceUtilizationReport,
   CapacityDemandReport,
+  ClientRequest,
+  ClientResponse,
+  BillingConfigRequest,
+  BillingSummaryResponse,
 } from '../types/api.types';
 
 const BASE = '/hrm-service/project';
@@ -151,5 +155,57 @@ export class HrmProjectService {
   ): Promise<Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; isHoliday: boolean; isLeave: boolean; capacityStatus: string }> }>> {
     const res = await api.post(`${BASE}/capacityCalendar`, { site, weekStart, buCode, departmentCode });
     return Array.isArray(res.data) ? res.data : [];
+  }
+
+  // ─── Retrieve by Code ──────────────────────────────────────────────────────
+
+  static async getProjectByCode(site: string, projectCode: string): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/retrieveByCode`, { site, projectCode });
+    return res.data;
+  }
+
+  // ─── Allocation Retrieve ───────────────────────────────────────────────────
+
+  static async getAllocation(site: string, handle: string): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/retrieve`, { site, handle });
+    return res.data;
+  }
+
+  // ─── Client CRUD ───────────────────────────────────────────────────────────
+
+  static async createClient(payload: ClientRequest): Promise<ClientResponse> {
+    const res = await api.post(`${BASE}/client/create`, payload);
+    return res.data;
+  }
+
+  static async getClient(site: string, code: string): Promise<ClientResponse> {
+    const res = await api.post(`${BASE}/client/retrieve`, { site, code });
+    return res.data;
+  }
+
+  static async listClients(site: string): Promise<ClientResponse[]> {
+    const res = await api.post(`${BASE}/client/list`, { site });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async updateClient(handle: string, payload: Partial<ClientRequest>): Promise<ClientResponse> {
+    const res = await api.post(`${BASE}/client/update`, { handle, ...payload });
+    return res.data;
+  }
+
+  static async deleteClient(site: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/client/delete`, { site, handle, deletedBy });
+  }
+
+  // ─── Billing ───────────────────────────────────────────────────────────────
+
+  static async configureBilling(payload: BillingConfigRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/billing/configure`, payload);
+    return res.data;
+  }
+
+  static async getBillingSummary(site: string, projectHandle: string, startDate: string, endDate: string): Promise<BillingSummaryResponse> {
+    const res = await api.post(`${BASE}/billing/summary`, { site, projectHandle, startDate, endDate });
+    return res.data;
   }
 }

@@ -18,6 +18,8 @@ import type {
   SubmissionComplianceReport,
   UnplannedWorkReport,
   HolidayWorkingSummary,
+  TimesheetLockPeriodRequest,
+  TimesheetLockPeriodResponse,
 } from '../types/api.types';
 
 export class HrmTimesheetService {
@@ -141,5 +143,32 @@ export class HrmTimesheetService {
   static async getHolidayWorkingSummary(site: string, startDate: string, endDate: string): Promise<HolidayWorkingSummary> {
     const res = await api.post(`${this.BASE}/report/holidayWorking`, { site, startDate, endDate });
     return res.data;
+  }
+
+  // ─── CSV Export ────────────────────────────────────────────────────────────
+
+  static async exportCsv(site: string, startDate: string, endDate: string, department?: string): Promise<Blob> {
+    const res = await api.post(
+      `${this.BASE}/export`,
+      { site, startDate, endDate, department },
+      { responseType: 'blob' }
+    );
+    return res.data as Blob;
+  }
+
+  // ─── Lock Periods ──────────────────────────────────────────────────────────
+
+  static async saveLockPeriod(payload: TimesheetLockPeriodRequest): Promise<TimesheetLockPeriodResponse> {
+    const res = await api.post(`${this.BASE}/lock/save`, payload);
+    return res.data;
+  }
+
+  static async getLockPeriods(site: string): Promise<TimesheetLockPeriodResponse[]> {
+    const res = await api.post(`${this.BASE}/lock/list`, { site });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async deleteLockPeriod(site: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${this.BASE}/lock/delete`, { site, handle, deletedBy });
   }
 }

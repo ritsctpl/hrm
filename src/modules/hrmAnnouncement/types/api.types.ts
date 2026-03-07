@@ -49,3 +49,22 @@ export interface WithdrawAnnouncementPayload {
   announcementId: string;
   reason?: string;
 }
+
+export interface DeleteAnnouncementPayload {
+  site: string;
+  handle: string;
+  deletedBy: string;
+}
+
+export interface DownloadAttachmentPayload {
+  site: string;
+  handle: string;
+  attachmentId: string;
+}
+
+export interface SendReadReminderPayload {
+  site: string;
+  handle: string;
+  employeeIds: string[];
+  sentBy: string;
+}

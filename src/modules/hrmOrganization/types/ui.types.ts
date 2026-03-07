@@ -3,12 +3,12 @@
  * Types specific to component props and UI state
  */
 
-import type { CompanyProfile, BusinessUnit, Department, DepartmentNode } from './domain.types';
+import type { CompanyProfile, BusinessUnit, Department, DepartmentNode, Location, OrgHierarchy } from './domain.types';
 
 // ============================================
 // Tab Types
 // ============================================
-export type MainTabKey = 'company' | 'businessUnit' | 'department';
+export type MainTabKey = 'company' | 'businessUnit' | 'department' | 'location' | 'hierarchy';
 
 export type CompanyTabKey = 'identity' | 'statutory' | 'bank' | 'address' | 'contact';
 
@@ -170,4 +170,39 @@ export interface TreeNodeData {
   key: string;
   title: string;
   children?: TreeNodeData[];
+}
+
+// ============================================
+// Location State & Props
+// ============================================
+export interface LocationState {
+  list: Location[];
+  selected: Location | null;
+  isCreating: boolean;
+  isLoading: boolean;
+  isSaving: boolean;
+  searchText: string;
+  errors: Record<string, string>;
+  draft: Partial<Location> | null;
+}
+
+export interface LocationTableProps {
+  onSelect: (loc: Location) => void;
+  onAdd: () => void;
+}
+
+export interface LocationFormProps {
+  onClose: () => void;
+}
+
+// ============================================
+// Hierarchy State & Props
+// ============================================
+export interface HierarchyState {
+  data: OrgHierarchy | null;
+  isLoading: boolean;
+}
+
+export interface OrgHierarchyTreeProps {
+  /* no external props needed; reads from store */
 }

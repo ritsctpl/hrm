@@ -88,3 +88,48 @@ export interface Department {
 export interface DepartmentNode extends Department {
   children?: DepartmentNode[];
 }
+
+export interface Location {
+  id: string;
+  site: string;
+  code: string;
+  name: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  country: string;
+  pinZip: string;
+  active: number;
+  createdBy?: string;
+  modifiedBy?: string;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+}
+
+export interface OrgHierarchy {
+  company: CompanyProfile;
+  businessUnits: (BusinessUnit & { departments: DepartmentNode[] })[];
+}
+
+export interface OrgAuditLogEntry {
+  handle: string;
+  entityType: string;
+  entityHandle: string;
+  action: string;
+  fieldKey: string | null;
+  oldValue: unknown;
+  newValue: unknown;
+  performedBy: string;
+  performedAt: string;
+}
+
+export interface DataCompletenessRow {
+  entityHandle: string;
+  entityCode: string;
+  entityType: string;
+  requiredFields: number;
+  filledFields: number;
+  missingFields: number;
+  completenessPercent: number;
+}
