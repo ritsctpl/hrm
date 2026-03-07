@@ -142,7 +142,7 @@ const BulkImportPanel: React.FC<BulkImportPanelProps> = ({ open, onClose }) => {
             style={{ marginBottom: 16 }}
           />
 
-          {result.errors.length > 0 && (
+          {result.errors?.length > 0 && (
             <Table<BulkImportError>
               columns={errorColumns}
               dataSource={result.errors}

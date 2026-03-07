@@ -27,7 +27,7 @@ export default function HolidayWorkingReportPanel() {
     try {
       const data = await HrmTimesheetService.getHolidayWorkingSummary(site, reportPeriodStart, reportPeriodEnd);
       setReport(data);
-      if (data.entries.length === 0) message.info('No holiday working entries for this period');
+      if (!data?.entries?.length) message.info('No holiday working entries for this period');
     } catch (err) {
       message.error('Failed to generate holiday working report');
     } finally {

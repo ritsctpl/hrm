@@ -17,7 +17,7 @@ import type {
 import type { TravelRequest, TravelPolicy, CoTravellerDto } from "../types/domain.types";
 
 export class HrmTravelService {
-  private static readonly BASE = "app/v1/hrm-service/travel";
+  private static readonly BASE = "/hrm-service/travel";
 
   // ── My Requests ──────────────────────────────────────────────────────
   static async getMyRequests(payload: TravelListRequest): Promise<TravelRequest[]> {
@@ -26,7 +26,7 @@ export class HrmTravelService {
   }
 
   static async getRequestByHandle(payload: GetTravelByHandleRequest): Promise<TravelRequest> {
-    const { data } = await api.post(`${this.BASE}/retrieve`, payload);
+    const { data } = await api.post(`${this.BASE}/get`, payload);
     return data;
   }
 
@@ -79,7 +79,7 @@ export class HrmTravelService {
 
   // ── Co-Travellers ────────────────────────────────────────────────────
   static async searchCoTravellers(payload: CoTravellerSearchRequest): Promise<CoTravellerDto[]> {
-    const { data } = await api.post(`${this.BASE}/co-travellers/search`, payload);
+    const { data } = await api.post(`${this.BASE}/eligible-cotravellers`, payload);
     return data;
   }
 

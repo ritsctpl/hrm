@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Tabs } from 'antd';
 import { parseCookies } from 'nookies';
+import CommonAppBar from '@/components/CommonAppBar';
 import RoleManagementTemplate from './components/templates/RoleManagementTemplate';
 import PermissionMatrixTemplate from './components/templates/PermissionMatrixTemplate';
 import UserRoleAssignmentTemplate from './components/templates/UserRoleAssignmentTemplate';
@@ -59,6 +60,7 @@ const HrmAccessLanding: React.FC = () => {
 
   return (
     <div className={styles.rbacLanding}>
+      <CommonAppBar appTitle="Access Control (RBAC)" />
       <div className={styles.tabsWrapper}>
         <Tabs
           activeKey={activeMainTab}

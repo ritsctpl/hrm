@@ -24,7 +24,7 @@ import type {
 } from "../types/domain.types";
 
 export class HrmExpenseService {
-  private static readonly BASE = "app/v1/hrm-service/expense";
+  private static readonly BASE = "/hrm-service/expense";
 
   // ── My Expenses ──────────────────────────────────────────────────────
   static async getMyExpenses(payload: ExpenseListRequest): Promise<ExpenseReport[]> {
@@ -33,7 +33,7 @@ export class HrmExpenseService {
   }
 
   static async getExpenseByHandle(payload: GetExpenseByHandleRequest): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/retrieve`, payload);
+    const { data } = await api.post(`${this.BASE}/get`, payload);
     return data;
   }
 
@@ -95,27 +95,27 @@ export class HrmExpenseService {
   }
 
   static async supervisorApprove(payload: ExpenseApprovalPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/supervisor-approve`, payload);
+    const { data } = await api.post(`${this.BASE}/supervisor/approve`, payload);
     return data;
   }
 
   static async supervisorReject(payload: ExpenseRejectPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/supervisor-reject`, payload);
+    const { data } = await api.post(`${this.BASE}/supervisor/reject`, payload);
     return data;
   }
 
   static async financeSanction(payload: ExpenseFinanceSanctionPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/finance-sanction`, payload);
+    const { data } = await api.post(`${this.BASE}/finance/approve`, payload);
     return data;
   }
 
   static async financeReject(payload: ExpenseRejectPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/finance-reject`, payload);
+    const { data } = await api.post(`${this.BASE}/finance/reject`, payload);
     return data;
   }
 
   static async markAsPaid(payload: ExpensePaymentPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/mark-paid`, payload);
+    const { data } = await api.post(`${this.BASE}/finance/payment`, payload);
     return data;
   }
 
@@ -149,17 +149,17 @@ export class HrmExpenseService {
 
   // ── Config ────────────────────────────────────────────────────────────
   static async getCategories(payload: SiteRequest): Promise<ExpenseCategory[]> {
-    const { data } = await api.post(`${this.BASE}/categories/retrieve`, payload);
+    const { data } = await api.post(`${this.BASE}/category/list`, payload);
     return data;
   }
 
   static async saveCategory(payload: Partial<ExpenseCategory> & { site: string }): Promise<ExpenseCategory> {
-    const { data } = await api.post(`${this.BASE}/categories/save`, payload);
+    const { data } = await api.post(`${this.BASE}/category/save`, payload);
     return data;
   }
 
   static async deleteCategory(payload: { site: string; handle: string }): Promise<void> {
-    await api.post(`${this.BASE}/categories/delete`, payload);
+    await api.post(`${this.BASE}/category/delete`, payload);
   }
 
   static async getMileageConfig(payload: SiteRequest): Promise<MileageConfig> {

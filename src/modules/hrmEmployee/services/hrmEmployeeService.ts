@@ -36,12 +36,12 @@ export class HrmEmployeeService {
     return response.data;
   }
 
-  /** Search employees by keyword */
+  /** Search employees by keyword (uses directory with keyword filter) */
   static async searchByKeyword(
     site: string,
     keyword: string
   ): Promise<EmployeeDirectoryResponse> {
-    const response = await api.post(`${this.BASE}/search`, { site, keyword });
+    const response = await api.post(`${this.BASE}/directory`, { site, keyword });
     return response.data;
   }
 
@@ -66,7 +66,7 @@ export class HrmEmployeeService {
   static async updateBasicDetails(
     payload: UpdateBasicRequest
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/updateBasic`, payload);
+    const response = await api.post(`${this.BASE}/update-basic`, payload);
     return response.data;
   }
 
@@ -74,7 +74,7 @@ export class HrmEmployeeService {
   static async updateOfficialDetails(
     payload: UpdateOfficialRequest
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/updateOfficial`, payload);
+    const response = await api.post(`${this.BASE}/update-official`, payload);
     return response.data;
   }
 
@@ -82,7 +82,7 @@ export class HrmEmployeeService {
   static async updatePersonalDetails(
     payload: UpdatePersonalRequest
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/updatePersonal`, payload);
+    const response = await api.post(`${this.BASE}/update-personal`, payload);
     return response.data;
   }
 
@@ -90,7 +90,7 @@ export class HrmEmployeeService {
   static async updateContactDetails(
     payload: UpdateContactRequest
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/updateContact`, payload);
+    const response = await api.post(`${this.BASE}/update-contact`, payload);
     return response.data;
   }
 
@@ -101,7 +101,7 @@ export class HrmEmployeeService {
     status: string,
     modifiedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/changeStatus`, {
+    await api.post(`${this.BASE}/change-status`, {
       site,
       handle,
       status,
@@ -144,7 +144,7 @@ export class HrmEmployeeService {
     site: string,
     handle: string
   ): Promise<JobHistoryEntry[]> {
-    const response = await api.post(`${this.BASE}/jobHistory`, {
+    const response = await api.post(`${this.BASE}/job-history/retrieve`, {
       site,
       handle,
     });
@@ -220,7 +220,7 @@ export class HrmEmployeeService {
   static async bulkImport(
     payload: BulkImportRequest
   ): Promise<BulkImportResponse> {
-    const response = await api.post(`${this.BASE}/bulkImport`, payload);
+    const response = await api.post(`${this.BASE}/bulk-import`, payload);
     return response.data;
   }
 }

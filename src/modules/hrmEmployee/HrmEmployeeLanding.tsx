@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import CommonAppBar from '@/components/CommonAppBar';
 import { useEmployeeDirectory } from './hooks/useHrmEmployeeData';
 import EmployeeDirectoryTemplate from './components/templates/EmployeeDirectoryTemplate';
 import OnboardingWizard from './components/organisms/OnboardingWizard';
@@ -66,7 +67,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   );
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f0f2f5' }}>
+      <CommonAppBar appTitle="Employee Directory" />
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <EmployeeDirectoryTemplate
         employees={employees}
         totalCount={totalCount}
@@ -96,7 +99,8 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
         open={bulkImportOpen}
         onClose={() => setBulkImportOpen(false)}
       />
-    </>
+      </div>
+    </div>
   );
 };
 

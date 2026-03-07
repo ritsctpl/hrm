@@ -41,7 +41,7 @@ export class HrmPayslipService {
   }
 
   static async setActiveTemplate(payload: SetActiveTemplateRequest): Promise<void> {
-    await api.post(`${BASE}/setActivePayslipTemplate`, payload);
+    await api.post(`${BASE}/activatePayslipTemplate`, payload);
   }
 
   static async generatePayslips(

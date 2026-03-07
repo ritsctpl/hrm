@@ -74,10 +74,9 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
 
   return (
     <div className={styles.landingWrapper}>
-      {/* Header */}
+      {/* Action Bar */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Employees</h1>
           <div className={styles.countBadges}>
             <span className={styles.countActive}>Active {activeCount}</span>
             <span className={styles.countInactive}>Inactive {inactiveCount}</span>

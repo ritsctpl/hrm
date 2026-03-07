@@ -32,7 +32,7 @@ interface UserIdProp {
 const fetchRuntimeConfig = async (): Promise<Record<string, string>> => {
     if (!runtimeConfig) {
         try {
-            const response = await fetch("/manufacturing/api/config");
+            const response = await fetch("/hrm/api/config");
             runtimeConfig = await response.json();
             console.log("Fetched runtime config:", runtimeConfig);
 

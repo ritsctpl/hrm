@@ -155,10 +155,25 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for error handling
+// Add response interceptor for unwrapping backend response wrappers and error handling
 api.interceptors.response.use(
   (response) => {
-    // Response interceptor: clean for production, no debug logs
+    // Only unwrap responses from HRM service endpoints
+    const url = response.config?.url ?? '';
+    const isHrmService = url.includes('/hrm-service/');
+    if (!isHrmService) return response;
+
+    const data = response.data;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      // Backend wrapper format 1: { handle, message_details, errorCode, response }
+      if ('response' in data && 'message_details' in data) {
+        response.data = data.response;
+      }
+      // Backend wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }
+      else if ('data' in data && 'success' in data && 'messageCode' in data) {
+        response.data = data.data;
+      }
+    }
     return response;
   },
   (error) => {

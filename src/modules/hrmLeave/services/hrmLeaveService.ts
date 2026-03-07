@@ -37,7 +37,7 @@ import {
 } from "../types/api.types";
 
 export class HrmLeaveService {
-  private static readonly BASE = "app/v1/hrm-service";
+  private static readonly BASE = "/hrm-service";
 
   // ── Leave Type CRUD ──────────────────────────────────────────────────
 

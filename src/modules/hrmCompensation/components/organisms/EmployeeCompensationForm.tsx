@@ -57,10 +57,10 @@ const EmployeeCompensationForm: React.FC = () => {
       setEffectiveFrom(currentCompensation.effectiveFrom);
       setRemarks(currentCompensation.remarks ?? '');
       setEarningComponents(
-        currentCompensation.components.filter((c) => c.componentType === 'EARNING'),
+        (currentCompensation.components ?? []).filter((c) => c.componentType === 'EARNING'),
       );
       setDeductionComponents(
-        currentCompensation.components.filter((c) => c.componentType === 'DEDUCTION'),
+        (currentCompensation.components ?? []).filter((c) => c.componentType === 'DEDUCTION'),
       );
     } else if (!selectedEmployeeId) {
       setStructureCode('');

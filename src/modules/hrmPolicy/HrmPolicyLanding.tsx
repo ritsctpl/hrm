@@ -103,7 +103,7 @@ const HrmPolicyLanding: React.FC = () => {
   if (showPolicyViewer && selectedPolicy) {
     return (
       <div className={styles.landing}>
-        <CommonAppBar title={`HR Policies > ${selectedPolicy.title}`} showBack={false} />
+        <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`} showBack={false} />
         <HrmPolicyScreen policy={selectedPolicy} onBack={closePolicyViewer} />
       </div>
     );
@@ -162,7 +162,7 @@ const HrmPolicyLanding: React.FC = () => {
 
   return (
     <div className={styles.landing}>
-      <CommonAppBar title="HR Policies & SOPs" showBack={false} />
+      <CommonAppBar appTitle="HR Policies & SOPs" showBack={false} />
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as "library" | "admin")}

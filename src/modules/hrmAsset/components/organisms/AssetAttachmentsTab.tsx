@@ -13,7 +13,7 @@ interface AssetAttachmentsTabProps {
 }
 
 export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmentsTabProps) {
-  if (asset.attachments.length === 0) {
+  if (!asset.attachments?.length) {
     return (
       <div className={styles.tabContent}>
         <Empty description="No attachments" style={{ marginTop: 32 }} />
@@ -31,7 +31,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
           <Button icon={<AttachFileIcon style={{ fontSize: 16 }} />} size="small">Upload File</Button>
         </div>
       )}
-      {asset.attachments.map((att) => (
+      {(asset.attachments ?? []).map((att) => (
         <div key={att.attachmentId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
           <AttachFileIcon style={{ fontSize: 16, color: '#1890ff' }} />
           <div style={{ flex: 1 }}>

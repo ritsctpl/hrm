@@ -1,7 +1,8 @@
 'use client';
 import React, { useEffect, useMemo } from 'react';
-import { Tabs, Button, Modal, Typography } from 'antd';
+import { Tabs, Button, Modal } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmProjectStore } from './stores/hrmProjectStore';
 import { useProjectData } from './hooks/useProjectData';
 import ProjectDashboardHeader from './components/organisms/ProjectDashboardHeader';
@@ -13,8 +14,6 @@ import ProjectReportPanel from './components/organisms/ProjectReportPanel';
 import ProjectForm from './components/organisms/ProjectForm';
 import AllocationForm from './components/organisms/AllocationForm';
 import styles from './styles/HrmProject.module.css';
-
-const { Title } = Typography;
 
 export default function HrmProjectLanding() {
   const {
@@ -84,19 +83,15 @@ export default function HrmProjectLanding() {
 
   return (
     <div className={styles.hrmProjectLanding}>
-      <div style={{ padding: '12px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title level={4} style={{ margin: 0 }}>Projects & Resource Allocation</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
-          New Project
-        </Button>
+      <CommonAppBar appTitle="Projects & Resource Allocation" />
+      <div className={styles.content}>
+        <Tabs
+          className={styles.mainTabs}
+          activeKey={activeTab}
+          onChange={(k) => setActiveTab(k as typeof activeTab)}
+          items={tabItems}
+        />
       </div>
-
-      <Tabs
-        className={styles.mainTabs}
-        activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as typeof activeTab)}
-        items={tabItems}
-      />
 
       <Modal
         title={selectedProject ? `Edit — ${selectedProject.projectCode}` : 'New Project'}

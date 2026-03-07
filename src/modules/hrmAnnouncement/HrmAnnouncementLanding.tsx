@@ -154,7 +154,7 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   return (
     <div className={styles.landing}>
-      <CommonAppBar title="Announcements" showBack={false} />
+      <CommonAppBar appTitle="Announcements" showBack={false} />
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as "feed" | "admin")}

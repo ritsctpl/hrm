@@ -15,7 +15,7 @@ interface AssetAttributesTabProps {
 }
 
 export default function AssetAttributesTab({ asset, category, canEdit, onEditAttributes }: AssetAttributesTabProps) {
-  if (asset.attributes.length === 0) {
+  if (!asset.attributes?.length) {
     return <Empty description="No attributes defined for this category" style={{ marginTop: 32 }} />;
   }
 

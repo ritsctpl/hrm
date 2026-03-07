@@ -79,7 +79,7 @@ const HrmAppraisalLanding: React.FC = () => {
 
   return (
     <div className={styles.landingRoot}>
-      <CommonAppBar title="Performance Appraisal" showBack={false} />
+      <CommonAppBar appTitle="Performance Appraisal" showBack={false} />
       <div className={styles.content}>
         <Tabs
           activeKey={activeTab}

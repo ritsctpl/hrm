@@ -38,7 +38,7 @@ const StructureListRow: React.FC<StructureListRowProps> = ({
         {structure.structureName}
       </Typography.Text>
       <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
-        {structure.components.length} components
+        {structure.components?.length ?? 0} components
       </div>
     </div>
   );

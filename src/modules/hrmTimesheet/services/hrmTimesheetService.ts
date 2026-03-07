@@ -31,17 +31,17 @@ export class HrmTimesheetService {
   }
 
   static async getTimesheet(site: string, handle: string): Promise<TimesheetResponse> {
-    const res = await api.post(`${this.BASE}/retrieve`, { site, handle });
+    const res = await api.post(`${this.BASE}/getByDate`, { site, handle });
     return res.data;
   }
 
   static async getTimesheetByDate(site: string, employeeId: string, date: string): Promise<TimesheetResponse> {
-    const res = await api.post(`${this.BASE}/retrieveByDate`, { site, employeeId, date });
+    const res = await api.post(`${this.BASE}/getByDate`, { site, employeeId, date });
     return res.data;
   }
 
   static async getWeeklyTimesheet(site: string, employeeId: string, weekStartDate: string): Promise<WeeklyTimesheetResponse> {
-    const res = await api.post(`${this.BASE}/retrieveWeekly`, { site, employeeId, weekStartDate });
+    const res = await api.post(`${this.BASE}/weeklyView`, { site, employeeId, weekStartDate });
     return res.data;
   }
 
@@ -58,7 +58,7 @@ export class HrmTimesheetService {
   }
 
   static async bulkSubmitWeekly(payload: WeeklyBulkSubmitRequest): Promise<BulkSubmitResponse> {
-    const res = await api.post(`${this.BASE}/submitWeekly`, payload);
+    const res = await api.post(`${this.BASE}/bulkSubmit`, payload);
     return res.data;
   }
 
@@ -84,12 +84,12 @@ export class HrmTimesheetService {
   // ─── Team View ────────────────────────────────────────────────────────────
 
   static async getTeamTimesheets(site: string, supervisorId: string, startDate: string, endDate: string): Promise<TeamTimesheetSummaryResponse[]> {
-    const res = await api.post(`${this.BASE}/team/list`, { site, supervisorId, startDate, endDate });
+    const res = await api.post(`${this.BASE}/teamView`, { site, supervisorId, startDate, endDate });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getPendingApprovals(site: string, supervisorId: string): Promise<TimesheetResponse[]> {
-    const res = await api.post(`${this.BASE}/team/pendingApprovals`, { site, supervisorId });
+    const res = await api.post(`${this.BASE}/pendingApprovals`, { site, supervisorId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -124,17 +124,17 @@ export class HrmTimesheetService {
   // ─── Reports ──────────────────────────────────────────────────────────────
 
   static async exportPayroll(site: string, startDate: string, endDate: string, department?: string): Promise<PayrollExportRow[]> {
-    const res = await api.post(`${this.BASE}/report/payrollExport`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/payrollExport`, { site, startDate, endDate, department });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getComplianceReport(site: string, startDate: string, endDate: string, department?: string): Promise<SubmissionComplianceReport> {
-    const res = await api.post(`${this.BASE}/report/compliance`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/complianceReport`, { site, startDate, endDate, department });
     return res.data;
   }
 
   static async getUnplannedWorkReport(site: string, startDate: string, endDate: string, department?: string): Promise<UnplannedWorkReport> {
-    const res = await api.post(`${this.BASE}/report/unplannedWork`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/unplannedWorkReport`, { site, startDate, endDate, department });
     return res.data;
   }
 

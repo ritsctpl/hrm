@@ -10,7 +10,7 @@ const BellCurveChart: React.FC<BellCurveChartProps> = ({
   highlightEmployeeRating,
   height = 300,
 }) => {
-  const { buckets } = distribution;
+  const buckets = distribution?.buckets ?? [];
 
   const option = {
     tooltip: { trigger: "axis" },

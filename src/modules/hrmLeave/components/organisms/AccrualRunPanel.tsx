@@ -124,7 +124,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
             <Statistic title="Total Days to Credit" value={accrualPreview.totalDaysToCredit} precision={1} />
           </Space>
 
-          {accrualPreview.errors.length > 0 && (
+          {accrualPreview.errors?.length > 0 && (
             <Alert
               type="warning"
               message="Accrual Errors"
@@ -134,7 +134,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
           )}
 
           <div className={styles.accrualLines}>
-            {accrualPreview.lines.map((line, i) => (
+            {(accrualPreview.lines ?? []).map((line, i) => (
               <AccrualPreviewLine key={`${line.employeeId}-${i}`} line={line} />
             ))}
           </div>

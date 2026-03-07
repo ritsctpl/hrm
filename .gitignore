@@ -1,12 +1,50 @@
-node_modules/
-.next/
-out/
-build/
-*.tsbuildinfo
-.env*.local
-.vercel
+
+# dependencies
+/node_modules
+/docs
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+/docs
+/.playwright-mcp
+/.env.local
+/e2e_test_screenshots/
+/playwright-report/
+/test-results/
+/tests/
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+*.md
+*.log
+*.gitignore
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+nul
+.claude/settings.local.jsons
+
+
 .DS_Store
 *.pem

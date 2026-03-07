@@ -101,7 +101,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
   };
 
   const handleRevoke = async (assignmentHandle: string) => {
-    const activeAssignments = userAssignment.assignments.filter(
+    const activeAssignments = (userAssignment.assignments ?? []).filter(
       (a) => a.assignmentStatus === 'ACTIVE'
     );
     const target = activeAssignments.find((a) => a.handle === assignmentHandle);

@@ -18,7 +18,7 @@ import type {
   RbacAuditLogDto,
 } from '../types/api.types';
 
-const BASE = 'app/v1/hrm-service/rbac';
+const BASE = '/hrm-service/rbac';
 
 export class HrmAccessService {
 
@@ -111,7 +111,7 @@ export class HrmAccessService {
 
   static async fetchAllRoles(site: string): Promise<RoleResponse[]> {
     const res = await api.post(`${BASE}/role/retrieveAll`, { site });
-    return res.data;
+    return Array.isArray(res.data) ? res.data : res.data?.content ?? [];
   }
 
   static async fetchActiveRoles(site: string): Promise<RoleResponse[]> {

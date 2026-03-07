@@ -304,7 +304,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       (activity) => activity.description === newValue
     );
     if (selectedActivity) {
-      const cleanedUrl = `/manufacturing${selectedActivity.url.replace(
+      const cleanedUrl = `/hrm${selectedActivity.url.replace(
         /\/index\.html$/,
         ""
       )}`;

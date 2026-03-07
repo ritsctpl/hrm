@@ -28,7 +28,7 @@ const STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 
 export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOverviewTabProps) {
   const { updateAssetInList, openReturnModal } = useHrmAssetStore();
-  const warrantyAttr = asset.attributes.find((a) => a.attrName.toLowerCase().includes('warranty'));
+  const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
 
   const handleStatusChange = async (newStatus: string) => {
     const { site, userId } = parseCookies();

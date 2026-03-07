@@ -155,4 +155,15 @@ export class HrmCompensationService {
     );
     return res.data;
   }
+
+  static async getSalaryBreakdown(
+    site: string,
+    employeeId: string,
+  ): Promise<EmployeeCompensationResponse> {
+    const res = await api.post<EmployeeCompensationResponse>(
+      `${BASE}/getSalaryBreakdown`,
+      { site, employeeId },
+    );
+    return res.data;
+  }
 }

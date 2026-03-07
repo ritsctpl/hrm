@@ -65,7 +65,7 @@ export class HrmOrganizationService {
     site: string,
     companyHandle: string
   ): Promise<BusinessUnit[]> {
-    const res = await api.post(`${this.BASE}/business-unit/retrieveAll`, {
+    const res = await api.post(`${this.BASE}/businessUnit/retrieveAll`, {
       site,
       companyHandle,
     });
@@ -73,7 +73,7 @@ export class HrmOrganizationService {
   }
 
   static async createBusinessUnit(payload: BusinessUnitRequest): Promise<BusinessUnitResponse> {
-    const res = await api.post(`${this.BASE}/business-unit/create`, payload);
+    const res = await api.post(`${this.BASE}/businessUnit/create`, payload);
     return res.data;
   }
 
@@ -81,7 +81,7 @@ export class HrmOrganizationService {
     handle: string,
     payload: BusinessUnitRequest
   ): Promise<BusinessUnitResponse> {
-    const res = await api.post(`${this.BASE}/business-unit/update`, { ...payload, handle });
+    const res = await api.post(`${this.BASE}/businessUnit/update`, { ...payload, handle });
     return res.data;
   }
 
@@ -90,7 +90,7 @@ export class HrmOrganizationService {
     handle: string,
     deletedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/business-unit/delete`, { site, handle, deletedBy });
+    await api.post(`${this.BASE}/businessUnit/delete`, { site, handle, deletedBy });
   }
 
   // ============================================

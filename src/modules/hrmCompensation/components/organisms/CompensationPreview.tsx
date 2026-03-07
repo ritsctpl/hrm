@@ -7,8 +7,8 @@ import { formatINRPlain } from '../../utils/compensationFormatters';
 import previewStyles from '../../styles/CompensationPreview.module.css';
 
 const CompensationPreview: React.FC<CompensationPreviewProps> = ({ data }) => {
-  const earnings = data.components.filter((c) => c.componentType === 'EARNING');
-  const deductions = data.components.filter((c) => c.componentType === 'DEDUCTION');
+  const earnings = (data.components ?? []).filter((c) => c.componentType === 'EARNING');
+  const deductions = (data.components ?? []).filter((c) => c.componentType === 'DEDUCTION');
 
   return (
     <div className={previewStyles.previewCard}>

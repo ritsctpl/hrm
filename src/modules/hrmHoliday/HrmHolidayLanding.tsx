@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { parseCookies } from 'nookies';
 import { message } from 'antd';
+import CommonAppBar from '@/components/CommonAppBar';
 import HolidayGroupSearchBar from './components/molecules/HolidayGroupSearchBar';
 import HolidaysMasterDetail from './components/templates/HolidaysMasterDetail';
 import HolidayGroupsTable from './components/organisms/HolidayGroupsTable';
@@ -54,12 +55,8 @@ export default function HrmHolidayLanding() {
           requestingUserRole: userRole,
           buHandle: searchParams.buHandle,
         });
-        if (res.success) {
-          setGroups(res.data.map((g) => ({ ...g, mappings: g.mappings ?? [] })));
-        } else {
-          setGroupsError(res.message);
-          message.error(res.message || 'Failed to load holiday groups');
-        }
+        const groups = Array.isArray(res) ? res : [];
+        setGroups(groups.map((g: HolidayGroup) => ({ ...g, mappings: g.mappings ?? [] })));
       } catch {
         const errMsg = 'Failed to load holiday groups';
         setGroupsError(errMsg);
@@ -86,6 +83,7 @@ export default function HrmHolidayLanding() {
 
   return (
     <div className={styles.landing}>
+      <CommonAppBar appTitle="Holiday Management" />
       <HolidayGroupSearchBar
         searchParams={searchParams}
         onSearchChange={(params) => setSearchParams(params)}

@@ -161,12 +161,12 @@ const InstructionModal: React.FC<InstructionModalProps> = ({ children ,isButton,
              {isButton ? (
                 <InfoCircleOutlined onClick={() => {
                     document.cookie = `lastVisitedPage=${title || 'manual'}; path=/; max-age=60`;
-                    window.open('/manufacturing/rits/user_manual', "_blank");
+                    window.open('/hrm/rits/user_manual', "_blank");
                 }} />
             ) : (
                 <Button onClick={() => {
                     document.cookie = `lastVisitedPage=${title || 'manual'}; path=/; max-age=60`;
-                    window.open('/manufacturing/rits/user_manual', "_blank");
+                    window.open('/hrm/rits/user_manual', "_blank");
                 }} >
                     <InfoCircleOutlined />
                 </Button>

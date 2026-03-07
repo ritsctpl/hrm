@@ -183,7 +183,7 @@ const SalaryRevisionTable: React.FC = () => {
                   <span className={styles.currentInfoLabel}>Current Basic</span>
                   <span className={styles.currentInfoValue}>
                     {formatINRPlain(
-                      currentCompensation.components.find((c) => c.componentCode === 'BASIC')
+                      (currentCompensation.components ?? []).find((c) => c.componentCode === 'BASIC')
                         ?.derivedAmount ?? 0,
                     )}
                   </span>
@@ -252,7 +252,7 @@ const SalaryRevisionTable: React.FC = () => {
                   employeeId: selectedEmployeeId,
                   effectiveFrom: indivEffectiveFrom,
                   structureCode: currentCompensation.structureCode,
-                  components: currentCompensation.components.map((c) => ({
+                  components: (currentCompensation.components ?? []).map((c) => ({
                     componentCode: c.componentCode,
                     calculationMethod: c.calculationMethod,
                     amount: c.calculationMethod === 'FIXED'

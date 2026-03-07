@@ -142,12 +142,12 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
         <Descriptions.Item label="Purpose" span={2}>{req.purpose}</Descriptions.Item>
       </Descriptions>
 
-      {req.approvalHistory.length > 0 && (
+      {req.approvalHistory?.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>Approval Trail</Typography.Text>
           <Timeline
             style={{ marginTop: 4 }}
-            items={req.approvalHistory.map((a) => ({
+            items={(req.approvalHistory ?? []).map((a) => ({
               children: (
                 <Typography.Text style={{ fontSize: 11 }}>
                   {a.actorName} ({a.actorRole}) — {a.action} — {formatDateTime(a.actionAt)}

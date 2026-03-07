@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect } from 'react';
-import { Tabs, Typography } from 'antd';
-import BusinessIcon from '@mui/icons-material/Business';
+import { Tabs } from 'antd';
+import CommonAppBar from '@/components/CommonAppBar';
 import CompanyProfileTemplate from './components/templates/CompanyProfileTemplate';
 import BusinessUnitTemplate from './components/templates/BusinessUnitTemplate';
 import DepartmentTemplate from './components/templates/DepartmentTemplate';
@@ -10,8 +10,6 @@ import { useHrmOrganizationStore } from './stores/hrmOrganizationStore';
 import { MAIN_TAB_LABELS } from './utils/constants';
 import type { MainTabKey } from './types/ui.types';
 import styles from './styles/HrmOrganization.module.css';
-
-const { Title } = Typography;
 
 const HrmOrganizationLanding: React.FC = () => {
   const { activeMainTab, setActiveMainTab, fetchCompanyProfile, reset } =
@@ -52,11 +50,8 @@ const HrmOrganizationLanding: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <Title level={4} className={styles.headerTitle}>
-          <BusinessIcon fontSize="small" style={{ marginRight: 8, verticalAlign: 'middle' }} />
-          Organization Setup
-        </Title>
+      <CommonAppBar appTitle="Organization Setup" />
+      <div className={styles.content}>
         <Tabs
           activeKey={activeMainTab}
           onChange={handleTabChange}
