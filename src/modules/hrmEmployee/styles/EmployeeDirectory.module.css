@@ -1,0 +1,40 @@
+.directoryWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.listArea {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 20px;
+}
+
+.paginationRow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.employeeTable {
+  background: #fff;
+}
+
+.employeeTable :global(.ant-table-row) {
+  cursor: pointer;
+}
+
+.employeeTable :global(.ant-table-row:hover > td) {
+  background: #e6f4ff !important;
+}
+
+.employeeCard {
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+}
+
+.employeeCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}

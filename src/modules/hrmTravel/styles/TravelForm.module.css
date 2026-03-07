@@ -1,0 +1,50 @@
+.formSection {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.fieldRow > * {
+  flex: 1;
+}
+
+.modeGroup {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modeButton {
+  min-width: 64px;
+}
+
+.cotravellerList {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}

@@ -1,0 +1,69 @@
+/* HRM Compensation — Preview Card Styles */
+
+.previewCard {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.previewTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.previewRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.previewRowName {
+  color: #595959;
+}
+
+.previewRowAmount {
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.previewDivider {
+  border-top: 1px solid #d9d9d9;
+  margin: 8px 0;
+}
+
+.previewTotalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.previewGross {
+  color: #52c41a;
+}
+
+.previewDeduction {
+  color: #ff4d4f;
+}
+
+.previewNet {
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.sectionHeader {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 4px;
+}

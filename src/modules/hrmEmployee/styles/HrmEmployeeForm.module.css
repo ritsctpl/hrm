@@ -1,0 +1,184 @@
+/* HrmEmployeeForm.module.css - Forms, modals, and onboarding wizard */
+
+/* ----- Onboarding Wizard ----- */
+.wizardContent {
+  padding: 16px 0;
+}
+
+.wizardStepBody {
+  padding: 12px 0;
+}
+
+.formSection {
+  margin-bottom: 20px;
+}
+
+.formSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.formRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.formRow > * {
+  flex: 1;
+}
+
+.formField {
+  margin-bottom: 14px;
+}
+
+.formFieldLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.formFieldRequired::after {
+  content: ' *';
+  color: #ff4d4f;
+}
+
+.formFieldError {
+  font-size: 11px;
+  color: #ff4d4f;
+  margin-top: 2px;
+}
+
+/* ----- Review step ----- */
+.reviewSection {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.reviewSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a237e;
+  margin-bottom: 8px;
+}
+
+.reviewRow {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.reviewLabel {
+  color: #64748b;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.reviewValue {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* ----- Profile edit form ----- */
+.editFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.editFormFull {
+  grid-column: 1 / -1;
+}
+
+.editFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ----- Address form ----- */
+.addressBlock {
+  padding: 12px;
+  background: #fafbfc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.addressBlockTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+/* ----- Emergency contact ----- */
+.contactItem {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.contactItemInfo {
+  flex: 1;
+}
+
+.contactItemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.contactItemMeta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ----- Bulk import ----- */
+.bulkImportDropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background: #fafbfc;
+}
+
+.bulkImportDropZone:hover {
+  border-color: #1a237e;
+}
+
+.bulkImportResults {
+  margin-top: 16px;
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .editFormGrid {
+    grid-template-columns: 1fr;
+  }
+}

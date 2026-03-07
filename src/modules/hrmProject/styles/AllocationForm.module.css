@@ -1,0 +1,37 @@
+.allocationFormModal {
+  padding: 8px 0;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  font-size: 13px;
+  color: #595959;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.capacityTable {
+  margin-top: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.capacityGreen {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.capacityYellow {
+  background: #fffbe6;
+  border-color: #ffe58f;
+}
+
+.capacityRed {
+  background: #fff2f0;
+  border-color: #ffa39e;
+}

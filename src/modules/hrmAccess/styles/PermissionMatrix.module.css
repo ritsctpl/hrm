@@ -1,0 +1,125 @@
+.matrixTemplate {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.toolbar {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matrixWrapper {
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 12px;
+}
+
+.matrixTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.matrixTable th,
+.matrixTable td {
+  border: 1px solid #f0f0f0;
+  padding: 5px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.moduleHeader {
+  text-align: left !important;
+  min-width: 200px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+}
+
+.roleHeader {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.actionHeader {
+  background: #fafafa;
+  font-weight: 500;
+  width: 28px;
+}
+
+.moduleRow {
+  background: #fafafa;
+}
+
+.moduleRow td {
+  font-weight: 600;
+}
+
+.objectRow td {
+  padding-left: 24px;
+}
+
+.moduleLabel {
+  text-align: left;
+  padding: 5px 10px;
+  position: sticky;
+  left: 0;
+  background: inherit;
+}
+
+.matrixCell {
+  text-align: center;
+}
+
+.grantedIcon {
+  color: #52c41a;
+}
+
+.deniedDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 50%;
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: #595959;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendKeys {
+  color: #8c8c8c;
+  margin-left: 8px;
+}
+
+.noData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #8c8c8c;
+}

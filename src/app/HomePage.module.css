@@ -1,0 +1,63 @@
+/* src/app/HomePage.module.css */
+
+.container {
+  margin-top: 20px;
+  padding: 0;
+  background-color: #fafafa;
+  min-height: 100vh;
+}
+
+.appBar {
+  background-color: #124561;
+  height: 56px; /* Adjust the height of the app bar */
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  color: white;
+  font-family: "Roboto", Arial, sans-serif;
+  font-weight: bold;
+  margin-left: 16px; /* Add margin for better spacing */
+}
+
+.searchField {
+  flex-grow: 1; /* Center the search field */
+  margin: 0 16px; /* Adjust margin for better alignment */
+  max-width: 400px; /* Restrict the maximum width */
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  color: white;
+  margin-right: 16px; /* Adjust the margin */
+}
+
+.logoutButton {
+  color: white;
+  font-size: 14px; /* Adjusted font size */
+  padding: 6px 12px; /* Adjusted padding */
+  margin-left: 8px; /* Add margin between user info and button */
+}
+
+.content {
+  padding: 20px;
+}
+
+.tabPanel {
+  padding: 24px; /* Adjusted padding */
+}
+
+.tileWrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}

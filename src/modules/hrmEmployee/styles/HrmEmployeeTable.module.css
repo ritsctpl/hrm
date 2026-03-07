@@ -1,0 +1,287 @@
+/* HrmEmployeeTable.module.css - Table, cards, profile tab content */
+
+/* ----- Table ----- */
+.tableWrapper {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nameCellText {
+  display: flex;
+  flex-direction: column;
+}
+
+.nameCellName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.nameCellEmail {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.actionBtnGroup {
+  display: flex;
+  gap: 4px;
+}
+
+/* ----- Employee card ----- */
+.empCard {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.empCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.empCardStatus {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.empCardName {
+  margin: 8px 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+}
+
+.empCardRole {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.empCardDetails {
+  width: 100%;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 6px 8px;
+  flex: 1;
+}
+
+.empCardDetailRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+  color: #475569;
+}
+
+.empCardDetailRow svg {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.empCardFooter {
+  width: 100%;
+  text-align: center;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ----- Profile tabs content ----- */
+.tabContent {
+  padding: 16px 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.detailValueEmpty {
+  font-size: 14px;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* ----- Timeline (Job History) ----- */
+.timelineItem {
+  padding: 8px 0;
+}
+
+.timelineTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.timelineSub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ----- Skills list ----- */
+.skillsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+/* ----- Document row ----- */
+.docRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.docRow:hover {
+  background: #f8fafc;
+}
+
+.docRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.docRowIcon {
+  font-size: 20px;
+  color: #64748b;
+}
+
+.docRowInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.docRowName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.docRowMeta {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.docRowActions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ----- Experience / Education entries ----- */
+.entryCard {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border-left: 3px solid #1a237e;
+}
+
+.entryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.entrySub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.entryDesc {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 6px;
+}
+
+/* ----- Training/Cert expiry alert ----- */
+.expiryWarning {
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.expiryExpired {
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ----- Assets table ----- */
+.assetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.assetInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.assetName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.assetMeta {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 768px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,92 @@
+.calendarContainer {
+  background: #fff;
+  padding: 8px;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #f0f0f0;
+}
+
+.calendarDayHeader {
+  background: #fafafa;
+  text-align: center;
+  padding: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #595959;
+}
+
+.calendarDay {
+  background: #fff;
+  min-height: 60px;
+  padding: 4px;
+  position: relative;
+}
+
+.calendarDayNumber {
+  font-size: 12px;
+  color: #595959;
+  margin-bottom: 2px;
+}
+
+.calendarDayWeekend {
+  background: #fafafa;
+}
+
+.calendarDayToday {
+  background: #e6f7ff;
+}
+
+.calendarLeaveBar {
+  border-radius: 2px;
+  font-size: 9px;
+  padding: 1px 3px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+}
+
+.calendarLeaveBarPending {
+  background-image: repeating-linear-gradient(
+    45deg,
+    currentColor 0,
+    currentColor 1px,
+    transparent 0,
+    transparent 50%
+  );
+  background-size: 4px 4px;
+  color: #595959;
+  border: 1px solid currentColor;
+}
+
+.calendarLegend {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 11px;
+}
+
+.calendarLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendarLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}

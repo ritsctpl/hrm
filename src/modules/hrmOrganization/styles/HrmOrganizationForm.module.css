@@ -1,0 +1,114 @@
+/* HRM Organization Module - Form Styles */
+
+.formField {
+  margin-bottom: 16px;
+}
+
+.formFieldLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #595959;
+  margin-bottom: 4px;
+}
+
+.formFieldRequired::after {
+  content: ' *';
+  color: #ff4d4f;
+}
+
+.formFieldError {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Search bar */
+.searchBar {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* Save button */
+.saveButton {
+  min-width: 100px;
+}
+
+/* Bank account modal form */
+.bankFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.bankFormFullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Address fields layout */
+.addressFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.addressFieldFull {
+  grid-column: 1 / -1;
+}
+
+/* BU form tabs */
+.buFormTabs {
+  margin-top: 8px;
+}
+
+.buFormTabs :global(.ant-tabs-nav) {
+  margin-bottom: 12px;
+}
+
+/* Department form */
+.deptFormSection {
+  margin-bottom: 20px;
+}
+
+.deptFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Statutory fields grid */
+.statutoryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Contact fields */
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Identity section */
+.identityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.identityFullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bankFormGrid,
+  .addressFields,
+  .deptFormGrid,
+  .statutoryGrid,
+  .contactGrid,
+  .identityGrid {
+    grid-template-columns: 1fr;
+  }
+}

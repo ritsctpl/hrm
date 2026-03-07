@@ -1,0 +1,80 @@
+/* HRM Asset Module — Form Styles */
+
+.formSection {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #595959;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.categoryCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.categoryCard:hover {
+  border-color: #1890ff;
+}
+
+.categoryCardSelected {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  background: #e6f4ff;
+}
+
+.requestCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.requestCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.attributeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .categoryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .attributeRow {
+    grid-template-columns: 1fr;
+  }
+}

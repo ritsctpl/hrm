@@ -1,0 +1,403 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --icon-color: #124561;
+  --tab-active-color: #124561;
+  --tab-text-color: #124561;
+  --button-color: #124561;
+  --primary-color: var(--button-color);
+  --text-color: #ffffff;
+  --background-color: #ffffff;
+  --line-color: #ffffff;
+
+  /* HRM Module Colors */
+  --hrm-primary: #1976d2;
+  --hrm-primary-dark: #155fa0;
+  --hrm-status-active: #52c41a;
+  --hrm-status-pending: #faad14;
+  --hrm-status-rejected: #ff4d4f;
+  --hrm-status-inactive: #8c8c8c;
+  --hrm-leave-casual: #1890ff;
+  --hrm-leave-sick: #ff7875;
+  --hrm-leave-annual: #95de64;
+  --hrm-leave-maternity: #b37feb;
+  --hrm-bg-page: #f4f7fa;
+  --hrm-bg-surface: #ffffff;
+}
+body {
+  margin: 0;
+  font-family: "Roboto", "Arial", sans-serif;
+}
+
+.app-tiles {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.app-tile {
+  margin: 10px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.tiles-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tile {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
+  text-align: center;
+  flex: 1 0 21%; /* Adjust to fit four tiles per row */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tile a {
+  text-decoration: none;
+  color: #333;
+}
+
+.appBar {
+  background-color: #124561;
+  height: fit-content;
+}
+
+/* .ant-btn-primary{
+background: #006568;
+}
+.ant-btn-primary:hover{
+  background: #006568 !important;
+  } */
+
+.tabContainer .ant-tabs-nav .ant-tabs-tab-active {
+  border-bottom: 2px solid #ff5722; /* Customize the border color here */
+}
+
+.home-tiles {
+  padding: 10px 33px;
+}
+:where(.css-dev-only-do-not-override-d2lrxs).ant-tabs .ant-tabs-tab-btn {
+  font-weight: 500;
+  text-shadow: 0 0 0.25px currentcolor;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+}
+:where(.css-dev-only-do-not-override-1c0na6j).ant-tabs .ant-tabs-tab-btn {
+  outline: none;
+  transition: all 0.3s;
+  text-transform: uppercase !important;
+}
+
+:where(.css-dev-only-do-not-override-1c0na6j).ant-tabs
+  .ant-tabs-tab
+  + .ant-tabs-tab {
+  margin: 0px !important;
+}
+:where(.css-dev-only-do-not-override-1c0na6j).ant-tabs .ant-tabs-tab-btn {
+  padding: 0px 25px;
+}
+.ant-form-item {
+  width: 100%;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+
+.css-1oo1365-MuiPaper-root-MuiAccordion-root.Mui-expanded {
+  margin: 0px 0;
+}
+.css-sljhth-MuiPaper-root-MuiAccordion-root.Mui-expanded {
+  margin: 0px 0;
+}
+.css-t16ucf-MuiAccordionDetails-root {
+  padding-bottom: 0px;
+}
+
+:where(.css-dev-only-do-not-override-qnu6hi).ant-spin .ant-spin-dot-holder {
+  color: #bfa061 !important;
+}
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  width: 200px;
+  gap: 15px; /* Space between plates */
+}
+.ant-table-body {
+  /* overflow-y: auto !important; */
+  scrollbar-width: thin;
+  scrollbar-color: #868888 transparent;
+}
+
+.ant-table-body::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background-color: #868888;
+  border-radius: 4px;
+}
+.color-plate {
+  width: 20px; /* Adjust size as needed */
+  height: 20px; /* Adjust size as needed */
+  border-radius: 50%; /* Makes the plate round */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white; /* Text color */
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow for effect */
+  cursor: pointer; /* Pointer cursor for interactivity */
+  transition: transform 0.2s; /* Smooth scale effect */
+}
+
+.color-plate:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+.css-1r6fkxf.Mui-expanded {
+  margin: 0px 0;
+}
+
+h4:where(.css-dev-only-do-not-override-5wsri9).ant-typography {
+  color: white;
+}
+.ant-table-cell .ant-table-cell-row-hover {
+  background-color: #cd1616;
+}
+
+/* .ant-table-wrapper .ant-table{
+  font-family: 'robot';
+} */
+
+.react-flow__attribution a {
+  display: none;
+}
+
+/* theme css */
+.anticon {
+  color: var(--icon-color) !important;
+}
+.MuiSvgIcon-root {
+  fill: var(--icon-color) !important;
+}
+/* Ant Design Tabs */
+.ant-tabs-tab-active {
+  color: var(--tab-active-color) !important;
+}
+
+.ant-tabs-tab {
+  color: var(--tab-text-color) !important;
+}
+
+/* Material UI Tabs */
+.MuiTabs-indicator {
+  background-color: var(--tab-active-color) !important;
+}
+
+.MuiTab-root {
+  color: var(--tab-text-color) !important;
+}
+
+.Mui-selected {
+  color: var(--tab-active-color) !important;
+}
+/* Material UI Button - Primary Color */
+.MuiButton-containedPrimary {
+  background-color: var(--button-color) !important;
+  color: white !important;
+}
+.MuiButton-containedPrimary:hover {
+  background-color: var(--button-color) !important;
+  color: white !important;
+}
+/* Reset Ant Design Message Icons to Default */
+.ant-message-success .anticon {
+  color: #52c41a !important; /* Default Green for Success */
+}
+
+.ant-message-error .anticon {
+  color: #ff4d4f !important; /* Default Red for Error */
+}
+
+.ant-message-warning .anticon {
+  color: #faad14 !important; /* Default Yellow for Warning */
+}
+
+.ant-message-info .anticon {
+  color: #1890ff !important; /* Default Blue for Info */
+}
+.ant-btn-color-primary {
+  box-shadow: none !important;
+}
+/* //remove shadow from all input  & add white background to dropdown selections */
+/* Ensure dropdown selections use a white background */
+.ant-select-item-option-selected,
+.ant-dropdown-menu-item-selected,
+.ant-menu-item-selected {
+  background-color: #e6f4ff !important;
+  color: black !important;
+}
+/* Remove focus shadow from all Ant Design input fields */
+.ant-input:focus,
+.ant-input-focused,
+.ant-input:hover,
+.ant-picker-focused,
+.ant-select-focused .ant-select-selector,
+.ant-select-selection-item:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper:focus-within {
+  box-shadow: none !important;
+  border-color: var(--primary-color) !important;
+  outline: none !important;
+}
+
+/* Remove focus shadow from TextArea */
+.ant-input-textarea:focus,
+.ant-input-textarea:focus-within {
+  box-shadow: none !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Remove focus shadow from Select dropdown */
+.ant-select-selector:focus,
+.ant-select-selector:active,
+.ant-select-focused .ant-select-selector {
+  box-shadow: none !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Remove focus shadow from DatePicker */
+.ant-picker:focus,
+.ant-picker-focused {
+  box-shadow: none !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Remove focus shadow from InputNumber */
+.ant-input-number:focus,
+.ant-input-number-focused {
+  box-shadow: none !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Remove focus shadow from Checkbox and Radio */
+.ant-checkbox-wrapper:hover,
+.ant-radio-wrapper:hover {
+  box-shadow: none !important;
+}
+/* and t model */
+/* Apply global theme to all Ant Design confirm modals */
+.ant-modal-confirm .ant-btn-primary {
+  background-color: var(--button-color) !important;
+  border-color: var(--button-color) !important;
+  color: white !important;
+}
+/* Apply global theme to cancel button in confirm modals */
+.ant-modal-confirm .ant-btn-default {
+  border-color: var(--button-color) !important;
+  color: black !important;
+}
+/* Apply default color to selected rows in Ant Design tables */
+:where(.ant-table-wrapper) .ant-table-tbody .ant-table-row.ant-table-row-selected > .ant-table-cell {
+  background: #e6f4ff !important;
+}
+.css-c8l8d1.Mui-expanded {
+  margin:0;
+}
+
+/* Change the selected items background color */
+.ant-transfer-list .ant-transfer-list-content-item-checked {
+  background-color: #e6f4ff !important;
+}
+/* Override specifically for Ant Design Transfer arrows when active */
+.ant-transfer-operation .ant-btn-primary:not([disabled]) .anticon {
+  color: white !important;
+}
+.ant-message {
+  top: 37px !important;
+}
+
+.field-config-panel{
+  border-radius: 0px !important;
+}
+
+
+
+/* increase selector specificity by targeting the rich text editor class */
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  font-style: italic;
+}
+
+[contenteditable] table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+
+[contenteditable] td {
+  border: 1px solid #d9d9d9;
+  padding: 6px;
+  min-width: 20px;
+}
+
+[contenteditable] ul, [contenteditable] ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+/* added defaults */
+[contenteditable] ul { list-style: disc; }
+[contenteditable] ol { list-style: decimal; }
+
+[contenteditable] blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 16px;
+  margin: 8px 0;
+  color: #666;
+}
+
+[contenteditable] h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+[contenteditable] h2 {
+  font-size: 1.5em;
+  margin: 0.75em 0;
+}
+
+[contenteditable] h3 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
+
+p.MsoListParagraph {
+  text-indent: 0 !important;     /* remove negative indent */
+  margin-left: 1.5em !important; /* standard bullet spacing */
+}
+
+
+.ant-table-filter-dropdown .ant-table-filter-dropdown-btns .ant-btn-link {
+  display: none !important;
+}
+
+/* Global left padding for all Material-UI Typography components */
+.MuiTypography-root {
+  padding-left: 6px !important;
+}

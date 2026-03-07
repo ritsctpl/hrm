@@ -1,0 +1,230 @@
+/* ============================================================
+   HRM Shared Styles
+   Reusable CSS module classes for all HRM components.
+   ============================================================ */
+
+/* --- Dashboard KPI Card --- */
+.dashboardCard {
+  border-radius: 8px;
+  border-left: 4px solid var(--hrm-card-accent, #1890ff);
+  transition: box-shadow 0.2s ease;
+}
+
+.dashboardCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.dashboardCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dashboardCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(24, 144, 255, 0.08);
+  color: var(--hrm-card-accent, #1890ff);
+  font-size: 20px;
+}
+
+.dashboardCardValue {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 4px 0;
+}
+
+.dashboardCardTitle {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.dashboardCardTrend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trendUp {
+  color: #52c41a;
+}
+
+.trendDown {
+  color: #ff4d4f;
+}
+
+/* --- Approval Card --- */
+.approvalCard {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.approvalCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.approvalCardRequester {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.approvalCardType {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin: 0 0 4px 0;
+}
+
+.approvalCardDate {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+.approvalCardDescription {
+  font-size: 13px;
+  color: #595959;
+  margin: 12px 0;
+  padding: 8px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.approvalCardActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* --- Empty State --- */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.emptyStateTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+  margin: 16px 0 8px 0;
+}
+
+.emptyStateDescription {
+  font-size: 13px;
+  color: #8c8c8c;
+  max-width: 320px;
+  margin: 0 0 16px 0;
+}
+
+/* --- Balance Bar --- */
+.balanceBar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.balanceBarLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #595959;
+}
+
+.balanceBarCount {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+/* --- Calendar Event --- */
+.calendarEvent {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin: 1px;
+}
+
+.calendarEventList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.calendarEventTag {
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 0 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* --- Filter Drawer --- */
+.filterDrawerFooter {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px 0 0 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* --- File Upload --- */
+.fileUploadHint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+/* --- Status Badge Small --- */
+.statusBadgeSm {
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 6px;
+}
+
+/* --- Loading Skeleton Variants --- */
+.skeletonCard {
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.skeletonTable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonTableRow {
+  display: flex;
+  gap: 16px;
+}
+
+.skeletonForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

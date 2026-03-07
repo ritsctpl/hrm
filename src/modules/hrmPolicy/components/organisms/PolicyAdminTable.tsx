@@ -1,0 +1,112 @@
+"use client";
+
+import React from "react";
+import { Table, Space, Button, Popconfirm } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined } from "@ant-design/icons";
+import { PolicyDocument } from "../../types/domain.types";
+import { PolicyAdminTableProps } from "../../types/ui.types";
+import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
+import PolicyStatusTag from "../atoms/PolicyStatusTag";
+
+const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
+  policies,
+  loading,
+  onEdit,
+  onPublish,
+  onArchive,
+  onViewDetail,
+}) => {
+  const columns: ColumnsType<PolicyDocument> = [
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+      render: (title, record) => (
+        <Button type="link" onClick={() => onViewDetail(record)} style={{ padding: 0 }}>
+          {title}
+        </Button>
+      ),
+    },
+    {
+      title: "Type",
+      dataIndex: "docType",
+      key: "docType",
+      width: 110,
+      render: (docType) => <PolicyTypeBadge docType={docType} />,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 110,
+      render: (status) => <PolicyStatusTag status={status} />,
+    },
+    {
+      title: "Category",
+      dataIndex: "categoryName",
+      key: "categoryName",
+      width: 140,
+    },
+    {
+      title: "Version",
+      dataIndex: "currentVersion",
+      key: "currentVersion",
+      width: 80,
+      render: (v) => `v${v}`,
+    },
+    {
+      title: "Effective",
+      dataIndex: "effectiveDate",
+      key: "effectiveDate",
+      width: 110,
+      render: (date) =>
+        date
+          ? new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+          : "-",
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 140,
+      render: (_, record) => (
+        <Space size={4}>
+          <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
+          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+          {record.status === "DRAFT" && (
+            <Popconfirm
+              title="Publish this policy?"
+              onConfirm={() => onPublish(record.id)}
+              okText="Publish"
+            >
+              <Button size="small" icon={<CheckCircleOutlined />} type="primary" />
+            </Popconfirm>
+          )}
+          {record.status === "PUBLISHED" && (
+            <Popconfirm
+              title="Archive this policy?"
+              onConfirm={() => onArchive(record.id)}
+              okText="Archive"
+              okButtonProps={{ danger: true }}
+            >
+              <Button size="small" icon={<StopOutlined />} danger />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <Table
+      columns={columns}
+      dataSource={policies}
+      rowKey="id"
+      loading={loading}
+      size="small"
+      pagination={{ pageSize: 20, showSizeChanger: false, showTotal: (total) => `${total} policies` }}
+    />
+  );
+};
+
+export default PolicyAdminTable;

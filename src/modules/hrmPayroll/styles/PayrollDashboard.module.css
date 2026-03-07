@@ -1,0 +1,48 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.currentRunCard {
+  border-radius: 8px;
+  border-left: 4px solid #1890ff;
+}
+
+.currentRunRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pipelineCard {
+  border-radius: 8px;
+}
+
+.pipeline {
+  padding: 8px 0;
+}
+
+.alertsPanel {
+  margin-bottom: 16px;
+}
+
+.summaryCard {
+  border-radius: 8px;
+}
+
+.cardIcon {
+  display: flex;
+  justify-content: flex-end;
+  color: #bfbfbf;
+  margin-bottom: 4px;
+}

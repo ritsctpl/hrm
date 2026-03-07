@@ -1,0 +1,67 @@
+.goalSettingRoot {
+  padding: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.goalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.weightCounter {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.weightWarning {
+  margin-bottom: 12px;
+}
+
+.goalCard {
+  margin-bottom: 12px;
+}
+
+.goalCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.goalMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #666;
+  margin: 8px 0;
+}
+
+.keyResultsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.keyResultsTable th,
+.keyResultsTable td {
+  padding: 6px 8px;
+  border: 1px solid #f0f0f0;
+  text-align: left;
+}
+
+.keyResultsTable th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.submitBar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+}

@@ -1,0 +1,63 @@
+/* HRM Payroll Module — Wizard Layout */
+
+.wizardPage {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.wizardStepsBar {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.wizardCard {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  padding: 24px;
+}
+
+.wizardCardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1f1f1f;
+}
+
+.wizardNavRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+  border-radius: 0 0 8px 8px;
+}
+
+.progressBar {
+  margin: 16px 0;
+}
+
+.computeStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .computeStats {
+    grid-template-columns: 1fr;
+  }
+
+  .wizardPage {
+    padding: 12px 8px;
+  }
+}

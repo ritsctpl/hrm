@@ -1,0 +1,87 @@
+.landing {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--hrm-bg-page, #f4f7fa);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.libraryTemplate {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.libraryGrid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.libraryList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px;
+}
+
+.categorySection {
+  margin-bottom: 24px;
+}
+
+.categoryTitle {
+  margin-bottom: 12px !important;
+  color: var(--text-secondary, #8c8c8c);
+}
+
+.policyCard {
+  height: 160px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.policyCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.policyCardTitle {
+  margin: 4px 0 !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.policyCardMeta {
+  font-size: 11px;
+}
+
+.policyAckLabel {
+  font-size: 11px;
+}
+
+.policyListRow {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.policyListRow:hover {
+  background: #fafafa;
+}
+
+.loadingCenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}

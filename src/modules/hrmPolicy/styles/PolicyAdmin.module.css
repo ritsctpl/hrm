@@ -1,0 +1,13 @@
+.adminTemplate {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 16px 24px;
+}
+
+.adminToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}

@@ -1,0 +1,63 @@
+.wizardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.wizardSteps {
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.wizardBody {
+  flex: 1;
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stepCard {
+  border-radius: 8px;
+}
+
+.checklistGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.filterBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.errorRow {
+  background-color: #fff2f0 !important;
+}
+
+.errorRow:hover > td {
+  background-color: #ffedeb !important;
+}
+
+.wizardNav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid #f0f0f0;
+}

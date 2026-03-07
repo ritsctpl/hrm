@@ -1,0 +1,30 @@
+.hrmProjectLanding {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f0f2f5;
+}
+
+.mainTabs {
+  flex: 1;
+  padding: 0 16px 16px;
+}
+
+.masterDetailLayout {
+  display: flex;
+  gap: 16px;
+  min-height: 0;
+}
+
+.masterPane {
+  flex: 0 0 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailPane {
+  flex: 1;
+  min-width: 0;
+}

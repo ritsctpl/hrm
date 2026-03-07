@@ -1,0 +1,103 @@
+.formDrawer {
+  /* Applied to Ant Design Drawer */
+}
+
+.formStepsBar {
+  margin-bottom: 20px;
+}
+
+.stepContent {
+  min-height: 300px;
+  padding: 8px 0;
+}
+
+/* Step 1 — Leave Type Selection */
+.typeSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.typeOption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.typeOption:hover {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.typeOptionSelected {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.typeOptionLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.typeOptionBalance {
+  font-weight: 700;
+  font-size: 14px;
+  color: #262626;
+}
+
+.typeOptionZero {
+  color: #bfbfbf;
+}
+
+/* Step 2 — Date Selection */
+.datePicker {
+  width: 100%;
+}
+
+.dateSection {
+  margin-bottom: 16px;
+}
+
+.dateSectionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #595959;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Step 3 — Validation Preview */
+.validationPreview {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+/* Step 4 — Reason */
+.reasonStep {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 20px;
+}
+
+.balanceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}

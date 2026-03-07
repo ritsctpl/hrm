@@ -1,0 +1,14 @@
+.payrollRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #f0f2f5;
+}
+
+.payrollContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}

@@ -1,0 +1,84 @@
+/* HRM Compensation — Salary Structure Builder Styles */
+
+.builderContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.builderHeader {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.availablePool {
+  padding: 12px;
+  background: #f0f7ff;
+  border: 1px dashed #91caff;
+  border-radius: 8px;
+  min-height: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.availablePoolTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #595959;
+  margin-bottom: 8px;
+}
+
+.draggableTag {
+  cursor: grab;
+  user-select: none;
+}
+
+.draggableTag:active {
+  cursor: grabbing;
+}
+
+.dropZone {
+  min-height: 48px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bfbfbf;
+  font-size: 13px;
+  padding: 12px;
+  background: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.dropZone.dragOver {
+  border-color: #1890ff;
+  background: #e6f4ff;
+  color: #1890ff;
+}
+
+.componentRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: #bfbfbf;
+  font-size: 16px;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #595959;
+  margin: 8px 0 4px;
+}

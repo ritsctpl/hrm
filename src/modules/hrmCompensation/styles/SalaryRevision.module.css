@@ -1,0 +1,90 @@
+/* HRM Compensation — Salary Revision Styles */
+
+.revisionPage {
+  padding: 16px 24px;
+}
+
+.revisionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.segmentedControl {
+  margin-bottom: 16px;
+}
+
+.indivCard {
+  max-width: 640px;
+}
+
+.bulkCard {
+  width: 100%;
+}
+
+.bulkToolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  margin-bottom: 12px;
+}
+
+.footerRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footerStat {
+  font-size: 13px;
+  color: #595959;
+}
+
+.footerStatValue {
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-left: 4px;
+}
+
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.currentInfo {
+  background: #f0f7ff;
+  border: 1px solid #91caff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.currentInfoRow {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.currentInfoItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.currentInfoLabel {
+  font-size: 11px;
+  color: #8c8c8c;
+  text-transform: uppercase;
+}
+
+.currentInfoValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}

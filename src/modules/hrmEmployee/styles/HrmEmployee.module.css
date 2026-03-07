@@ -1,0 +1,203 @@
+/* HrmEmployee.module.css - Main layout & landing page styles */
+
+.container {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.landingWrapper {
+  padding: 16px 20px;
+}
+
+/* ----- Header ----- */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a237e;
+  letter-spacing: -0.3px;
+}
+
+.countBadges {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.countActive {
+  color: #15803d;
+}
+
+.countInactive {
+  color: #64748b;
+}
+
+.headerRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ----- Toolbar ----- */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.toolbarLeft {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbarRight {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.viewToggleBtn {
+  height: 32px !important;
+  width: 32px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewToggleActive {
+  color: #1a237e !important;
+  border-color: #1a237e !important;
+  background: #f0f2ff !important;
+}
+
+/* ----- Card Grid ----- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  padding: 4px;
+}
+
+/* ----- Empty state ----- */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.emptyState svg {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* ----- Profile page ----- */
+.profileWrapper {
+  padding: 0;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.profileHeaderInfo {
+  flex: 1;
+}
+
+.profileName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.profileMeta {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.profileActions {
+  display: flex;
+  gap: 8px;
+}
+
+.profileTabsWrapper {
+  padding: 0 20px;
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 768px) {
+  .landingWrapper {
+    padding: 12px;
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .toolbarLeft {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .profileHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* Scrollbar styling */
+.toolbarLeft::-webkit-scrollbar {
+  height: 4px;
+}
+
+.toolbarLeft::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}

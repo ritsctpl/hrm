@@ -1,0 +1,24 @@
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .tableHead {
+    background-color: black;
+  }
+  
+  .tableHeadCell {
+    font-size: larger;
+    font-weight: bold;
+    text-align: left;
+  }
+  
+  .tableCell {
+    font-size: large;
+    border-bottom: 1px solid black;
+  }
+
+  .tableBody{
+    background-color: black;
+  }
+  

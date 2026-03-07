@@ -1,0 +1,47 @@
+.taxConfigPanel {
+  padding: 4px;
+}
+
+.taxConfigForm {
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+}
+
+.slabCard {
+  border-radius: 8px;
+}
+
+.slabError {
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.settingsCard {
+  border-radius: 8px;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+.statutoryForm {
+  max-width: 700px;
+}
+
+.statutoryCard {
+  border-radius: 8px;
+}
+
+.statutoryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+.ptEditor {
+  max-width: 700px;
+}

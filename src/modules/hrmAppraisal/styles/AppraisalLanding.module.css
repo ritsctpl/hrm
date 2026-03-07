@@ -1,0 +1,55 @@
+.landingRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 0 16px 16px;
+}
+
+.cycleBanner {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  color: #fff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.cycleName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.cycleMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 16px;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.summaryCard {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.summaryCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.mainTabs {
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 16px;
+}

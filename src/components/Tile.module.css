@@ -1,0 +1,91 @@
+.tile {
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+  border: 2px solid #80808066;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* padding: 10px; */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+  background-color: #ffffff;
+  /* margin: 12px; */
+}
+
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cardContent {
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.description {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+  font-family: "Roboto", Arial, sans-serif;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 2.8em;
+}
+
+.activityId {
+  font-weight: 300;
+  font-size: 0.8rem;
+  color: #666;
+  font-family: "Roboto", Arial, sans-serif;
+  margin: 0;
+}
+
+.iconButton {
+  align-self: center;
+  margin-top: 6px;
+}
+
+/* src/components/Tile.module.css */
+/*
+.tile {
+  cursor: pointer;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s, transform 0.3s;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 18px;
+  margin: 10px;
+  font-weight: bold;
+  color: #00457c;
+}
+
+.tile:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.05);
+}
+
+.description {
+  margin: 0;
+  color: #00457c;
+}
+*/

@@ -1,0 +1,55 @@
+.reviewRoot {
+  padding: 16px;
+}
+
+.reviewHeader {
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reviewHeaderItem {
+  font-size: 13px;
+}
+
+.panelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.selfPanel {
+  background: #f9f9f9;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.managerPanel {
+  background: #fff;
+  border: 1px solid #91caff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panelTitle {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 12px;
+  color: #1890ff;
+  border-bottom: 1px solid #e8f4ff;
+  padding-bottom: 8px;
+}
+
+.submitBar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+}

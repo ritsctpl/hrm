@@ -1,0 +1,50 @@
+/* HRM Compensation — Pay Component Form Styles */
+
+.form {
+  padding: 4px 0;
+}
+
+.formSection {
+  margin-bottom: 4px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.formulaEditorWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formulaTextarea {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.formulaError {
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.formulaOk {
+  color: #52c41a;
+  font-size: 12px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}

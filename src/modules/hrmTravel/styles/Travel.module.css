@@ -1,0 +1,97 @@
+.landing {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--hrm-bg-page, #f4f7fa);
+}
+
+.masterDetail {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+.listPanel {
+  width: 55%;
+  min-width: 400px;
+  border-right: 1px solid #f0f0f0;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.detailPanel {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  color: #8c8c8c;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.screenContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--hrm-bg-page, #f4f7fa);
+}
+
+.detailBody {
+  flex: 1;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.approvalBar {
+  margin: 16px 16px 0;
+  border: 1px solid #faad14;
+  border-radius: 8px;
+  background: #fffbe6;
+}
+
+.sectionCard {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #f0f0f0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  row-gap: 8px;
+  column-gap: 16px;
+}
+
+.infoLabel {
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+.infoValue {
+  font-size: 13px;
+  color: #262626;
+}

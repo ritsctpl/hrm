@@ -1,0 +1,83 @@
+.payslipPage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.tabsWrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.mainTabs {
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 16px;
+}
+
+.payslipScreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.payslipScreenContent {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.skeletonA4 {
+  width: 794px;
+  height: 1123px;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.generationRoot {
+  padding: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.generationCard {
+  margin-bottom: 16px;
+}
+
+.employeeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.repositoryRoot {
+  padding: 16px;
+}
+
+.filterBar {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}

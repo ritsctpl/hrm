@@ -1,0 +1,69 @@
+.summaryRoot {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.scoreCard {
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6f4ff 100%);
+  border: 1px solid #91caff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.employeePhoto {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e8f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+.finalRating {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+.scoreBreakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.chartContainer {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.signOffPanel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.downloadBar {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+}

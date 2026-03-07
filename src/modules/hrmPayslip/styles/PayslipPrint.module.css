@@ -1,0 +1,22 @@
+@media print {
+  .payslipPage {
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 24px;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .header {
+    page-break-inside: avoid;
+  }
+
+  .payComponents {
+    page-break-inside: avoid;
+  }
+
+  .netPay {
+    page-break-inside: avoid;
+  }
+}

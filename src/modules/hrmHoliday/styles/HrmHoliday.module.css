@@ -1,0 +1,70 @@
+/* HRM Holiday Module — Landing and master-detail layout */
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.masterDetail {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.leftPanel {
+  width: 40%;
+  min-width: 280px;
+  max-width: 480px;
+  border-right: 1px solid #f0f0f0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rightPanel {
+  flex: 1;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyRight {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bfbfbf;
+  font-size: 14px;
+}
+
+/* Stats bar */
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #595959;
+}

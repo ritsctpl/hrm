@@ -1,0 +1,40 @@
+.calibrationRoot {
+  padding: 16px;
+}
+
+.calibrationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bellCurveContainer {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.calibrationTable {
+  margin-bottom: 16px;
+}
+
+.calibrationDetail {
+  background: #f0f5ff;
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calibrationActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+}

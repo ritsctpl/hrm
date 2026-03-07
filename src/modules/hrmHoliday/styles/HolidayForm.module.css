@@ -1,0 +1,7 @@
+/* Holiday Form Drawer */
+
+.drawerFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0;
+}

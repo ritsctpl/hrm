@@ -1,0 +1,54 @@
+.assessmentRoot {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1890ff;
+  padding: 8px 0;
+  border-bottom: 2px solid #1890ff;
+  margin-bottom: 16px;
+}
+
+.goalRatingBlock {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.goalTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.goalMeta {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.ratingRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ratingBtn {
+  min-width: 80px;
+  font-size: 11px;
+}
+
+.submitBar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+}

@@ -1,0 +1,31 @@
+.feedbackRoot {
+  padding: 16px;
+}
+
+.feedbackHeader {
+  margin-bottom: 16px;
+}
+
+.peerTable {
+  width: 100%;
+}
+
+.responseCard {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.aggregateTable {
+  margin-bottom: 16px;
+}
+
+.radarContainer {
+  height: 360px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+}

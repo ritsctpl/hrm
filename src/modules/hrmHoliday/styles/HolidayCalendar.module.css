@@ -1,0 +1,113 @@
+/* Holiday Calendar */
+
+.calendarWrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendarTitle {
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 140px;
+  text-align: center;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dayHeader {
+  background: #fafafa;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 6px 0;
+  color: #595959;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.calendarCell {
+  min-height: 72px;
+  padding: 4px;
+  border-right: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: default;
+  transition: background 0.1s;
+}
+
+.calendarCell:nth-child(7n) {
+  border-right: none;
+}
+
+.calendarCellOutside {
+  background: #fafafa;
+}
+
+.calendarCellToday {
+  background: #e6f4ff;
+}
+
+.calendarCellPast {
+  opacity: 0.7;
+}
+
+.dayNumber {
+  font-size: 12px;
+  color: #262626;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.holidayDots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.holidayDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.holidayDotOptional {
+  border: 1px dashed #595959;
+}
+
+.holidayMoreDot {
+  font-size: 10px;
+  color: #8c8c8c;
+}
+
+/* Legend */
+.legend {
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}

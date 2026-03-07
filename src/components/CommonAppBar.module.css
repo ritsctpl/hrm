@@ -1,0 +1,226 @@
+/* CommonAppBar.module.css    RITS */
+
+.appBar {
+  background-color: #124561;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.logo {
+  height: 40px;
+  cursor: pointer;
+}
+
+.title {
+  font-family: "Roboto", "Arial", sans-serif;
+  font-weight: bold !important;
+  color: white;
+  margin-left: 16px;
+}
+
+.searchBox {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.searchField {
+  width: 400px;
+  background-color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  padding: 0px 8px;
+  box-sizing: border-box;
+}
+.userInfo {
+  display: flex;
+  align-items: center;
+}
+
+.userText {
+  margin-right: 8px;
+  color: white;
+}
+
+.iconButton {
+  color: white;
+}
+
+.logoutButton {
+  color: white;
+  margin-left: 16px;
+}
+
+.searchFieldRoot {
+  min-height: 30px;
+  height: 30px;
+}
+.noBorder {
+  border: none;
+}
+
+.searchFieldRoot {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+.searchField {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+.searchField:hover .MuiOutlinedInput-notchedOutline {
+  border: none;
+}
+
+.searchField.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border: none;
+}
+
+/* CommonAppBar.module.css    HIMALAYA */
+
+.himalayaAppBar {
+  background-color: #006568;
+}
+
+.himalayaToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+}
+
+.himalayaLogo {
+  height: 40px;
+  cursor: pointer;
+}
+
+.himalayaTitle {
+  font-family: "Roboto", "Arial", sans-serif;
+  font-weight: bold;
+  color: white;
+  margin-left: 16px;
+}
+
+.himalaya-searchBox {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.himalaya-Search {
+  width: 400px;
+  background-color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.himalayaUserInfo {
+  display: flex;
+  align-items: center;
+}
+
+.himalayaUserText {
+  margin-right: 8px;
+  color: white;
+}
+
+.himalayaIconButton {
+  color: white;
+}
+
+.himalayaLogoutButton {
+  color: white;
+  margin-left: 16px;
+}
+
+.himalayaSearchFieldRoot {
+  min-height: 30px;
+  height: 30px;
+}
+
+.himalayaNoBorder {
+  border: none;
+}
+
+/* CommonAppBar.module.css    EXIDE */
+
+.exideAppBar {
+  background-color: #ffffff;
+  border-bottom: 2px solid #ff0000;
+}
+
+.exideToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 16px;
+}
+
+.exideLogo {
+  height: 40px;
+  cursor: pointer;
+}
+
+.exideTitle {
+  font-family: "Roboto", "Arial", sans-serif;
+  font-weight: bold;
+  color: #0c4da2;
+  margin-left: 16px;
+}
+
+.exide-searchBox {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.exide-Search {
+  width: 400px;
+  background-color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.exideUserInfo {
+  display: flex;
+  align-items: center;
+}
+
+.exideUserText {
+  margin-right: 8px;
+  color: #0c4da2;
+}
+
+.exideIconButton {
+  color: #0c4da2;
+}
+
+.exideLogoutButton {
+  color: #0c4da2;
+  margin-left: 16px;
+}
+
+.exideSearchFieldRoot {
+  min-height: 30px;
+  height: 30px;
+}
+
+.exideNoBorder {
+  border: none;
+}

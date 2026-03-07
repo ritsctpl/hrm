@@ -1,0 +1,40 @@
+/* HRM Payroll Module — Root Layout */
+
+.payrollRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  background: #f0f2f5;
+}
+
+.payrollContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tabHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: '8px 0';
+  margin-bottom: 12px;
+}
+
+.tabTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.emptyPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+  color: #8c8c8c;
+}

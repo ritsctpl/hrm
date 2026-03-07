@@ -1,0 +1,33 @@
+/* HRM Notification — Bell Icon */
+
+.bellIcon {
+  font-size: 20px;
+  cursor: pointer;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.bellIcon:hover {
+  color: #1890ff;
+}
+
+.bellBadge :global(.ant-badge-count) {
+  font-size: 11px;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+/* Popover overlay */
+.notificationPopoverOverlay :global(.ant-popover-inner) {
+  width: 380px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 0;
+}
+
+@media (max-width: 480px) {
+  .notificationPopoverOverlay :global(.ant-popover-inner) {
+    width: calc(100vw - 24px);
+  }
+}

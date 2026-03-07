@@ -1,0 +1,316 @@
+
+
+.dataField {
+  width: 100%;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  height: fit-content;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+  .datafieldNav {
+    display: flex;
+    padding: 20px 0px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .modals{
+    height: 500px;
+    overflow: auto;
+  }
+  
+  
+  .searchInput {
+    width: 60px;
+    border-radius: 5px;
+    height: 20px;
+  }
+  
+  .searchPaper {
+    padding: 2px 4px;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    width: 250px;
+    border-radius: 5px;
+    height: 32px;
+    box-shadow:
+      0px 1px 2px rgba(28, 28, 29, 0.3),
+      -1px 1px 2px rgba(25, 25, 26, 0.3),
+      0px -1px 2px rgba(17, 17, 19, 0.3);
+  }
+  
+  
+  .floatingButtonContainer {
+    position: static; /* Ensure the container stays fixed */
+    bottom: 20px;    /* Space from the bottom of the viewport */
+    right: 20px;     /* Space from the right of the viewport */
+    display: flex;   /* Align buttons horizontally */
+    gap: 10px;       /* Space between buttons */
+  }
+  
+  .floatingButton {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .saveButton {
+    background-color: var(--button-color);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+ 
+  .saveButton:hover {
+    background-color: var(--button-color);
+  }
+ 
+  .cancelButton {
+    background-color: #fff;
+    color: rgba(0, 0, 0, 0.88);
+    border: 1px solid #d9d9d9;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+ 
+  .cancelButton:hover {
+    color: var(--button-color);
+    border: 1px solid var(--button-color);
+  }
+  
+  
+  .searchIcon {
+    color: #007bff;
+  }
+  
+  .homeButton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+  }
+  
+  .homeButton:hover {
+    background-color: #0056b3;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .buttons{
+    margin-right: 20px;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .blueButton {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    /* padding: 8px 10px; */
+    text-transform: uppercase;
+    cursor: pointer;
+    
+  }
+  
+  .goButton{
+    margin-right: 20px;
+    display: flex;
+    /* gap: 10px; */
+    
+  }
+  
+  .outlinedButton {
+    border: 1px solid #124561;
+    color: #124561;
+    padding: 8px 16px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  
+  .searchFilter{
+    width: 100%;
+  }
+  
+  
+  
+  .dataFieldBody{
+    width: 100%;
+  }
+  
+  .dataFieldBodyContents{
+    margin: 10px 20px;
+    /* display: flex;
+    justify-content: center; */
+  }
+  
+  .heading{
+    background: #FFFFFF;
+    font-size: medium;
+    padding: 5px 20px;
+  }
+  
+  .headings{
+    display: none;
+  }
+  
+  .headingtext{
+    font-size: larger;
+  }
+  
+  .split{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .dataFieldBodyContentsTop{
+    height: auto;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0px;
+  }
+  
+  .dataLength{
+    margin-left: 20px;
+  }
+  
+  .circleButton {
+    color: #124561;  
+    cursor: pointer;  
+    font-size: 20px;
+    margin-right: 20px;
+  }
+  
+  .dataFieldBodyContentsBottom {
+    display: flex;
+    transition-duration: 0.3s;
+    position: relative; 
+    /* height: 88vh; */
+  }
+  
+  .commonTableContainer {
+    width: 100%; 
+    transition: width 0.3s ease;
+  }
+  
+  .commonTableContainer.shrink {
+    width: 60%; 
+    height: 92vh;
+    overflow: auto;
+  }
+  
+  .formContainer {
+    width: 0%;
+    transform: translateX(100%); 
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    position: relative; 
+    border-left: solid 1px #eee4e4;
+  }
+  
+  .formContainer.show {
+    width: 80%;
+    transform: translateX(0);
+    opacity: 1; 
+    height: 92vh;
+    overflow: auto;
+  }
+  
+  .formContainer.showFullScreen {
+    width: 12000%;
+    transform: translateX(0);
+    opacity: 1; 
+    height: 92vh;
+    overflow: auto;
+  }
+  
+  /* ===================================== */
+  
+  .container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: all 0.3s ease;
+    overflow:hidden;
+  }
+  
+  .pageContainer{
+    position:relative;
+  }
+  
+  .splitScreen {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f0f0f0;
+  }
+  
+  .addIcon {
+    cursor: pointer;
+    font-size: 24px;
+  }
+  
+  .tabContent {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  
+  .footer {
+    padding: 10px;
+    background-color: #fff;
+    float:right;
+  }
+  
+  .splitScreen .tabContent {
+    width: 50%;
+  }
+  
+  .splitScreen .footer {
+    display: none; /* Hide footer in split screen mode if needed */
+  }
+  
+  /* YourStyles.module.css */
+  /* YourStyles.module.css */
+  
+  .headingtext {
+    font-weight: bold;
+    font-size: 1.2em;
+  }
+  
+  .dateText {
+    color: #555;
+    margin: 0; /* Remove default margin */
+    line-height: 1.2; /* Adjust line height to control spacing */
+  }
+  
+  .fadedText {
+    color: rgba(0, 0, 0, 0.6); /* Faded black color */
+  }
+  

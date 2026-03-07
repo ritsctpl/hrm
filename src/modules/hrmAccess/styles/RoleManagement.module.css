@@ -1,0 +1,181 @@
+.roleTemplate {
+  display: flex;
+  height: 100%;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.leftPanel {
+  width: 360px;
+  min-width: 280px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.leftToolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.addButton {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.tableFooter {
+  padding-top: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.tableRow {
+  cursor: pointer;
+}
+
+.tableRow:hover {
+  background: #f0f5ff;
+}
+
+.selectedRow {
+  background: #e6f0ff !important;
+}
+
+.roleTable :global(.ant-table-tbody > tr.selectedRow > td) {
+  background: #e6f0ff;
+}
+
+.rightPanel {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Role Form */
+.roleForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formTitle {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.systemRoleAlert {
+  margin-bottom: 8px;
+}
+
+.formInner {
+  flex: 1;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* Permission Grid */
+.permissionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.permGridHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.permTableWrapper {
+  overflow: auto;
+  max-height: 360px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+.permTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.permTable th {
+  background: #fafafa;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.permLabelHeader {
+  text-align: left !important;
+  min-width: 160px;
+}
+
+.permActionHeader {
+  width: 40px;
+}
+
+.moduleRow {
+  background: #fafafa;
+}
+
+.moduleRow td {
+  font-weight: 600;
+}
+
+.objectRow td {
+  padding-left: 20px;
+}
+
+.permLabel {
+  padding: 5px 10px;
+  border-bottom: 1px solid #f5f5f5;
+  white-space: nowrap;
+}
+
+.permCell {
+  padding: 5px;
+  text-align: center;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.permNA {
+  color: #d9d9d9;
+  font-size: 11px;
+}
+
+.permNoData {
+  padding: 20px;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.permSaveBar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}

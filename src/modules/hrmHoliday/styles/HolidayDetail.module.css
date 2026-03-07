@@ -1,0 +1,79 @@
+/* Holiday Detail — Right panel */
+
+.detailLayout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.groupHeader {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.groupTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.groupName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  background: #fafafa;
+}
+
+.detailTabs {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.detailTabs :global(.ant-tabs-content-holder) {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.detailTabs :global(.ant-tabs-nav) {
+  padding: 0 16px;
+  margin-bottom: 0;
+}
+
+/* List table */
+.listTableWrapper {
+  padding: 12px 16px;
+}
+
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* Audit */
+.auditWrapper {
+  padding: 16px;
+}
+
+/* Loading */
+.spinWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}

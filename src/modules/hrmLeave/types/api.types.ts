@@ -1,0 +1,429 @@
+// ── Leave Type ──────────────────────────────────────────────────────
+
+export interface LeaveType {
+  handle: string;
+  site: string;
+  code: string;
+  name: string;
+  alias?: string;
+  unit: string;
+  halfDayAllowed: boolean;
+  active: boolean;
+  category: "STANDARD" | "SPECIAL";
+  sortOrder: number;
+}
+
+export interface LeaveTypeRequest {
+  site: string;
+  code: string;
+  name: string;
+  alias?: string;
+  halfDayAllowed?: boolean;
+  category?: string;
+  sortOrder?: number;
+}
+
+// ── Leave Policy ─────────────────────────────────────────────────────
+
+export interface LeavePolicy {
+  handle: string;
+  site: string;
+  leaveTypeId: string;
+  leaveTypeCode: string;
+  buId?: string;
+  deptId?: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  accrualFrequency: "QUARTERLY" | "MANUAL" | "ANNUAL";
+  accrualQuantity: number;
+  prorateEnabled: boolean;
+  carryForwardAllowed: boolean;
+  carryForwardCap: number;
+  lapseRule: "ALL" | "PARTIAL" | "NONE";
+  lapseDate?: string;
+  encashmentAllowed: boolean;
+  encashWhen?: "YEAR_END" | "SEPARATION" | "ON_DEMAND";
+  encashRateFormula?: "BASIC_PER_26" | "CTC_PER_30";
+  minEncashableDays?: number;
+  maxEncashableDays?: number;
+  encashRounding?: "HALF_UP" | "HALF_DOWN" | "BANKER";
+  negativeBalanceAllowed: boolean;
+  negativeFloor?: number;
+  coExpiryDays?: number;
+  supervisorSlaDays: number;
+  escalationSlaDays: number;
+  version: number;
+  active: number;
+}
+
+export interface LeavePolicyRequest {
+  site: string;
+  leaveTypeId: string;
+  leaveTypeCode: string;
+  buId?: string;
+  deptId?: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  accrualFrequency: string;
+  accrualQuantity: number;
+  prorateEnabled?: boolean;
+  carryForwardAllowed?: boolean;
+  carryForwardCap?: number;
+  lapseRule?: string;
+  lapseDate?: string;
+  encashmentAllowed?: boolean;
+  encashWhen?: string;
+  encashRateFormula?: string;
+  minEncashableDays?: number;
+  maxEncashableDays?: number;
+  encashRounding?: string;
+  negativeBalanceAllowed?: boolean;
+  negativeFloor?: number;
+  coExpiryDays?: number;
+  supervisorSlaDays?: number;
+  escalationSlaDays?: number;
+  createdBy: string;
+}
+
+// ── Balance ───────────────────────────────────────────────────────────
+
+export interface LeaveBalanceResponse {
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  leaveTypeAlias?: string;
+  year: number;
+  openingCarryForward: number;
+  ytdCredits: number;
+  ytdDebits: number;
+  ytdEncashed: number;
+  ytdLapsed: number;
+  pendingApproval: number;
+  currentBalance: number;
+  availableBalance: number;
+  carryForwardAllowed: boolean;
+  carryForwardCap: number;
+  encashmentAllowed: boolean;
+  halfDayAllowed: boolean;
+  lastCalculatedAt: string;
+}
+
+export interface BalanceQueryRequest {
+  site: string;
+  employeeId: string;
+  year: number;
+}
+
+export interface RecalculateRequest {
+  site: string;
+  employeeId: string;
+  leaveTypeCode: string;
+  year: number;
+}
+
+// ── Accrual ───────────────────────────────────────────────────────────
+
+export interface AccrualRunRequest {
+  site: string;
+  periodStart: string;
+  periodEnd: string;
+  quarter: string;
+  year: number;
+  preview: boolean;
+  excludedEmployeeIds?: string[];
+  createdBy: string;
+}
+
+export interface AccrualPreviewResponse {
+  batchId: string;
+  periodStart: string;
+  periodEnd: string;
+  quarter: string;
+  year: number;
+  totalEligibleEmployees: number;
+  totalDaysToCredit: number;
+  lines: AccrualPreviewLineDto[];
+  errors: string[];
+  canPost: boolean;
+}
+
+export interface AccrualPreviewLineDto {
+  employeeId: string;
+  employeeName: string;
+  leaveTypeCode: string;
+  daysToCredit: number;
+  prorated: boolean;
+  prorateReason?: string;
+  excluded: boolean;
+}
+
+export interface AccrualBatch {
+  handle: string;
+  site: string;
+  periodStart: string;
+  periodEnd: string;
+  postDate: string;
+  quarter: string;
+  year: number;
+  status: "PREVIEW" | "POSTED" | "ROLLED_BACK";
+  totalEmployees: number;
+  totalDaysCredited: number;
+  excludedEmployeeIds?: string[];
+  reversedBatchId?: string;
+  active: number;
+  createdDateTime: string;
+  createdBy: string;
+}
+
+export interface RollbackRequest {
+  site: string;
+  batchId: string;
+  requestedBy: string;
+}
+
+export interface YearQueryRequest {
+  site: string;
+  year: number;
+}
+
+// ── Ledger ────────────────────────────────────────────────────────────
+
+export interface LedgerHistoryResponse {
+  handle: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  transactionDate: string;
+  quantity: number;
+  direction: "CR" | "DR";
+  refType: "ACCRUAL" | "LEAVE" | "ADJUST" | "CARRY" | "LAPSE" | "ENCASH" | "CO" | "WFH";
+  reasonCode?: string;
+  notes?: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  locked: boolean;
+  createdDateTime: string;
+  createdBy: string;
+}
+
+export interface LedgerHistoryRequest {
+  site: string;
+  employeeId: string;
+  year: number;
+  leaveTypeCode?: string;
+}
+
+// ── Manual Adjustment ─────────────────────────────────────────────────
+
+export interface ManualAdjustmentRequest {
+  site: string;
+  employeeId: string;
+  leaveTypeCode: string;
+  quantity: number;
+  direction: "CR" | "DR";
+  transactionDate: string;
+  reasonCode: string;
+  notes?: string;
+  attachmentPath?: string;
+  createdBy: string;
+}
+
+export interface BulkAdjustmentRequest {
+  site: string;
+  adjustments: ManualAdjustmentRequest[];
+}
+
+// ── Comp-Off ──────────────────────────────────────────────────────────
+
+export interface CompOffCreditRequest {
+  site: string;
+  employeeId: string;
+  workedOnDate: string;
+  quantity: number;
+  supervisorId?: string;
+  expiryDate?: string;
+  notes?: string;
+  createdBy: string;
+}
+
+// ── Year-End ──────────────────────────────────────────────────────────
+
+export interface YearEndRequest {
+  site: string;
+  year: number;
+  triggeredBy: string;
+}
+
+// ── Payroll Export ────────────────────────────────────────────────────
+
+export interface PayrollExportRequest {
+  site: string;
+  year: number;
+  month: number;
+  format: "CSV" | "XLSX";
+  requestedBy: string;
+}
+
+export interface LockMonthRequest {
+  site: string;
+  year: number;
+  month: number;
+  lockedBy: string;
+}
+
+// ── Reports ───────────────────────────────────────────────────────────
+
+export interface ReportQueryRequest {
+  site: string;
+  year: number;
+  buId?: string;
+  deptId?: string;
+}
+
+export interface LeaveAvailedReportRequest {
+  site: string;
+  fromDate: string;
+  toDate: string;
+  leaveTypeCode?: string;
+}
+
+// ── Leave Request ─────────────────────────────────────────────────────
+
+export interface LeaveRequestCreateDto {
+  site: string;
+  employeeId: string;
+  leaveTypeCode: string;
+  startDate: string;
+  endDate: string;
+  startDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  totalDays: number;
+  reason: string;
+  attachmentPath?: string;
+  createdBy: string;
+}
+
+export interface ValidationSummaryResponse {
+  leaveTypeCode: string;
+  requestedUnits: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  state: "eligible" | "insufficient_balance" | "overlap_detected" | "requires_hr_review";
+  conflictFlags: string[];
+  messages: string[];
+  overlaps: OverlapDetail[];
+}
+
+export interface OverlapDetail {
+  requestId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+export interface LeaveRequestAction {
+  actionId: string;
+  actorId: string;
+  actorName: string;
+  actorRole: "EMPLOYEE" | "SUPERVISOR" | "NEXT_SUPERIOR" | "HR" | "SYSTEM";
+  action: "SUBMIT" | "APPROVE" | "REJECT" | "ESCALATE" | "CANCEL" | "REASSIGN" | "OVERRIDE";
+  fromStatus: string;
+  toStatus: string;
+  remarks?: string;
+  escalationLevel: number;
+  actionDateTime: string;
+}
+
+export interface LeaveRequest {
+  handle: string;
+  site: string;
+  employeeId: string;
+  employeeName: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  startDate: string;
+  endDate: string;
+  startDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  totalDays: number;
+  reason: string;
+  attachmentPath?: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  status: LeaveRequestStatus;
+  currentApproverId?: string;
+  escalationLevel: number;
+  slaDeadline?: string;
+  slaBreached: boolean;
+  supervisorId?: string;
+  nextSuperiorId?: string;
+  hrId?: string;
+  rejectionReason?: string;
+  cancellationReason?: string;
+  ledgerEntryId?: string;
+  actionHistory: LeaveRequestAction[];
+  active: number;
+  createdDateTime: string;
+  createdBy: string;
+}
+
+export type LeaveRequestStatus =
+  | "DRAFT"
+  | "PENDING_SUPERVISOR"
+  | "PENDING_NEXT_SUPERIOR"
+  | "PENDING_HR"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "ESCALATED";
+
+export type LeaveRequestResponse = LeaveRequest;
+
+export interface ApprovalActionRequest {
+  site: string;
+  requestId: string;
+  actorId: string;
+  actorRole: string;
+  remarks?: string;
+  reassignToId?: string;
+}
+
+export interface CancelLeaveRequest {
+  site: string;
+  requestId: string;
+  reason: string;
+  cancelledBy: string;
+}
+
+export interface EmployeeQueryRequest {
+  site: string;
+  employeeId: string;
+}
+
+export interface GetByIdRequest {
+  site: string;
+  id: string;
+}
+
+export interface ApproverInboxRequest {
+  site: string;
+  approverId: string;
+}
+
+export interface GlobalQueueRequest {
+  site: string;
+  buId?: string;
+  deptId?: string;
+  status?: string;
+  leaveTypeCode?: string;
+  slaBreachOnly?: boolean;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface SiteRequest {
+  site: string;
+}
+
+export interface LeavePolicyQueryRequest {
+  site: string;
+  leaveTypeId: string;
+}

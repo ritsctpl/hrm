@@ -1,0 +1,41 @@
+.tabContainer{
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+.submitButton{display: flex;justify-content: end;}
+.insertButtonContainer{
+    display: flex;justify-content: end;
+}
+
+.tableValuecontent{
+    padding-bottom: 10px;
+}
+
+.sitesContainer {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 12px;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.checkbox {
+  margin-left: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.disabledSite {
+  color: #999;
+}
+
+.submitButton {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}

@@ -1,0 +1,81 @@
+"use client";
+
+import React from "react";
+import { Table, Empty } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { BalanceSummaryTableProps } from "../../types/ui.types";
+import { LeaveBalance } from "../../types/domain.types";
+
+const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
+  balances,
+  loading,
+  onRowClick,
+}) => {
+  // Group balances by employee — here we handle flat list per leaveType
+  const columns: ColumnsType<LeaveBalance> = [
+    {
+      title: "Leave Type",
+      dataIndex: "leaveTypeName",
+      key: "leaveTypeName",
+    },
+    {
+      title: "Code",
+      dataIndex: "leaveTypeCode",
+      key: "leaveTypeCode",
+      width: 60,
+    },
+    {
+      title: "Available",
+      dataIndex: "availableBalance",
+      key: "available",
+      width: 90,
+      render: (v: number) => v.toFixed(1),
+      align: "right",
+    },
+    {
+      title: "Used YTD",
+      dataIndex: "ytdDebits",
+      key: "ytdDebits",
+      width: 90,
+      render: (v: number) => v.toFixed(1),
+      align: "right",
+    },
+    {
+      title: "Pending",
+      dataIndex: "pendingApproval",
+      key: "pendingApproval",
+      width: 80,
+      render: (v: number) => v.toFixed(1),
+      align: "right",
+    },
+    {
+      title: "Current",
+      dataIndex: "currentBalance",
+      key: "currentBalance",
+      width: 90,
+      render: (v: number) => v.toFixed(1),
+      align: "right",
+    },
+    {
+      title: "CF",
+      dataIndex: "carryForwardAllowed",
+      key: "cf",
+      width: 50,
+      render: (v: boolean) => (v ? "Yes" : "No"),
+    },
+  ];
+
+  return (
+    <Table
+      dataSource={balances}
+      columns={columns}
+      rowKey={(r) => `${r.leaveTypeCode}-${r.year}`}
+      loading={loading}
+      size="small"
+      pagination={{ pageSize: 30, showSizeChanger: false }}
+      locale={{ emptyText: <Empty description="No balance data" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+    />
+  );
+};
+
+export default BalanceSummaryTable;

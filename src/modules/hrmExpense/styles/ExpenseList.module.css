@@ -1,0 +1,23 @@
+.tableWrapper {
+  padding: 0 16px;
+}
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowSelected {
+  background: #e6f4ff !important;
+}
+
+.recordCount {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #8c8c8c;
+  text-align: right;
+}
+
+.oopIcon {
+  color: #ff4d4f;
+  margin-left: 4px;
+}

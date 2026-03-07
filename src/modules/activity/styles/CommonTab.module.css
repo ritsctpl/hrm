@@ -1,0 +1,17 @@
+.tabContainer {
+    width: 100%;
+  }
+  
+  .tabLabel {
+    font-weight: bold;
+  }
+  
+  .tabPanel {
+    padding: 16px; 
+  }
+  
+  .tabContent {
+    padding: 16px;
+    border-radius: 4px;
+  }
+  
