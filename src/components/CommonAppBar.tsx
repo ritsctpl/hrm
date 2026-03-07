@@ -109,7 +109,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       } else {
         document.title = filteredDescriptions[0];
       }
-    } else if (cleanedUrl === "/manufacturing") {
+    } else if (cleanedUrl === "/manufacturing" || cleanedUrl === "/hrm") {
       document.title = "Welcome";
     } else if (cleanedUrl !== "/rits/pod_app") {
       document.title = "App";
@@ -146,6 +146,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     if (
       !isValidPath &&
       currentPath !== "manufacturing" &&
+      currentPath !== "hrm" &&
       !isUserManualPath &&
       !modalShownRef.current
     ) {
