@@ -1,11 +1,12 @@
 'use client';
 import React from 'react';
 import { Descriptions, Progress, Card, Space, Button, Popconfirm } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import type { Project, ProjectStatus } from '../../types/domain.types';
 import { parseCookies } from 'nookies';
-import { HrmProjectService } from '../../services/hrmProjectService';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
+import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { formatDate } from '../../utils/projectHelpers';
 import styles from '../../styles/ProjectDetail.module.css';
 
@@ -23,23 +24,20 @@ const STATUS_TRANSITIONS: Record<string, ProjectStatus[]> = {
 
 const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const store = useHrmProjectStore();
+  const { deleteProject, updateProjectStatus } = useProjectMutations();
   const util = Math.min(project.utilizationPercentage ?? 0, 100);
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
-    const site = parseCookies().site ?? '';
-    const user = parseCookies().user ?? '';
-    try {
-      await HrmProjectService.updateProjectStatus({
-        site,
-        handle: project.handle,
-        status: newStatus,
-        modifiedBy: user,
-      });
-      store.updateProjectInList({ ...project, status: newStatus });
-      message.success(`Project status changed to ${newStatus}`);
-    } catch {
-      message.error('Failed to update project status');
-    }
+    const user = parseCookies().rl_user_id ?? parseCookies().user ?? '';
+    await updateProjectStatus(project.handle, newStatus as 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED', '', user);
+  };
+
+  const handleEdit = () => {
+    store.openProjectForm(project);
+  };
+
+  const handleDelete = async () => {
+    await deleteProject(project.handle);
   };
 
   return (
@@ -81,22 +79,24 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
           <Progress percent={util} size="small" style={{ marginTop: 8 }} />
         </Card>
 
-        {STATUS_TRANSITIONS[project.status]?.length > 0 && (
-          <Card size="small" title="Status Actions">
-            <Space wrap>
-              {STATUS_TRANSITIONS[project.status].map((nextStatus) => (
-                <Popconfirm
-                  key={nextStatus}
-                  title={`Change status to ${nextStatus}?`}
-                  onConfirm={() => handleStatusChange(nextStatus)}
-                  okText="Confirm"
-                >
-                  <Button size="small">{nextStatus.replace('_', ' ')}</Button>
-                </Popconfirm>
-              ))}
-            </Space>
-          </Card>
-        )}
+        <Card size="small" title="Actions">
+          <Space wrap>
+            <Button size="small" icon={<EditOutlined />} onClick={handleEdit}>Edit Project</Button>
+            {STATUS_TRANSITIONS[project.status]?.map((nextStatus) => (
+              <Popconfirm
+                key={nextStatus}
+                title={`Change status to ${nextStatus}?`}
+                onConfirm={() => handleStatusChange(nextStatus)}
+                okText="Confirm"
+              >
+                <Button size="small">{nextStatus.replace('_', ' ')}</Button>
+              </Popconfirm>
+            ))}
+            <Popconfirm title="Delete this project?" onConfirm={handleDelete} okText="Delete" okType="danger">
+              <Button size="small" danger icon={<DeleteOutlined />}>Delete</Button>
+            </Popconfirm>
+          </Space>
+        </Card>
       </div>
     </div>
   );

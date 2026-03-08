@@ -259,7 +259,7 @@ export class HrmLeaveService {
   }
 
   static async activateDeactivateLeaveType(payload: ActivateDeactivateLeaveTypeRequest): Promise<LeaveType> {
-    const { data } = await api.post(`${this.BASE}/leave-type/toggle-status`, payload);
+    const { data } = await api.post(`${this.BASE}/leave-type/activate-deactivate`, payload);
     return data;
   }
 
@@ -312,9 +312,15 @@ export class HrmLeaveService {
   // ── Export Leave Report ───────────────────────────────────────────
 
   static async exportLeaveReport(payload: ExportLeaveReportRequest): Promise<Blob> {
-    const response = await api.post(`${this.BASE}/leave-request/export`, payload, {
+    const response = await api.post(`${this.BASE}/reports/export`, payload, {
       responseType: "blob",
     });
     return response.data;
+  }
+
+  // ── SLA Escalations ────────────────────────────────────────────────
+
+  static async triggerSlaEscalations(payload: SiteRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-request/sla-escalations`, payload);
   }
 }

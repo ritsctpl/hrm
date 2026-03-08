@@ -3,9 +3,9 @@
 import React, { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Tabs } from "antd";
-import { parseCookies } from "nookies";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmAppraisalStore } from "./stores/hrmAppraisalStore";
+import { useAppraisalAuth } from "./hooks/useAppraisalAuth";
 import styles from "./styles/AppraisalLanding.module.css";
 
 const AppraisalLandingTemplate = dynamic(
@@ -24,25 +24,47 @@ const CycleConfigForm = dynamic(
   () => import("./components/organisms/CycleConfigForm"),
   { ssr: false }
 );
+const HrmAppraisalScreen = dynamic(
+  () => import("./HrmAppraisalScreen"),
+  { ssr: false }
+);
 
 const HrmAppraisalLanding: React.FC = () => {
-  const { activeTab, setActiveTab, fetchCycles, fetchMyGoals, fetchMyFeedback } =
-    useHrmAppraisalStore();
+  const {
+    activeTab,
+    setActiveTab,
+    currentView,
+    activeCycle,
+    fetchCycles,
+    fetchMyGoals,
+    fetchMyReview,
+    fetchMyFeedback,
+    fetchTeamReviews,
+  } = useHrmAppraisalStore();
 
-  const role = parseCookies().role ?? "EMPLOYEE";
-  const isManager = role === "MANAGER" || role === "ADMIN";
-  const isHr = role === "HR" || role === "ADMIN";
+  const { isManager, isHr, isAdmin } = useAppraisalAuth();
 
   useEffect(() => {
-    fetchCycles().then(() => {
-      const cycle = useHrmAppraisalStore.getState().activeCycle;
-      if (cycle) {
-        fetchMyGoals(cycle.cycleId);
-      }
-    });
+    fetchCycles();
     fetchMyFeedback();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeCycle) {
+      fetchMyGoals(activeCycle.cycleId);
+      fetchMyReview(activeCycle.cycleId);
+      if (isManager || isHr || isAdmin) {
+        fetchTeamReviews(activeCycle.cycleId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCycle]);
+
+  // If a detail screen is active, render it instead of the landing
+  if (currentView !== "LANDING") {
+    return <HrmAppraisalScreen />;
+  }
 
   const tabItems = useMemo(() => {
     const items: Array<{ key: string; label: string; children: React.ReactNode }> = [
@@ -53,7 +75,7 @@ const HrmAppraisalLanding: React.FC = () => {
       },
     ];
 
-    if (isManager) {
+    if (isManager || isHr || isAdmin) {
       items.push({
         key: "team-reviews",
         label: "Team Reviews",
@@ -61,7 +83,7 @@ const HrmAppraisalLanding: React.FC = () => {
       });
     }
 
-    if (isHr) {
+    if (isHr || isAdmin) {
       items.push({
         key: "calibration",
         label: "Calibration",
@@ -75,18 +97,19 @@ const HrmAppraisalLanding: React.FC = () => {
     }
 
     return items;
-  }, [isManager, isHr]);
+  }, [isManager, isHr, isAdmin]);
 
   return (
     <div className={styles.landingRoot}>
-      <CommonAppBar appTitle="Performance Appraisal" showBack={false} />
+      <CommonAppBar appTitle="Performance Appraisal" />
       <div className={styles.content}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
           items={tabItems}
           className={styles.mainTabs}
-          style={{ marginTop: 8 }}
+          size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
         />
       </div>
     </div>

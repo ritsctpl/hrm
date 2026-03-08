@@ -16,39 +16,46 @@ const CompanyAddressSection: React.FC<CompanyAddressSectionProps> = ({
   const draft = companyProfile.draft;
   const errors = companyProfile.errors;
 
+  const registeredAddr = draft?.registeredOfficeAddress || draft?.registeredAddress;
+  const corporateAddr = draft?.corporateOfficeAddress || draft?.corporateAddress;
+
   const handleRegisteredChange = useCallback(
     (field: string, value: string) => {
-      const currentAddress = draft?.registeredAddress || { ...EMPTY_ADDRESS };
+      const currentAddress = registeredAddr || { ...EMPTY_ADDRESS };
       setCompanyDraft({
+        registeredOfficeAddress: { ...currentAddress, [field]: value } as Address,
         registeredAddress: { ...currentAddress, [field]: value } as Address,
       });
     },
-    [draft?.registeredAddress, setCompanyDraft]
+    [registeredAddr, setCompanyDraft]
   );
 
   const handleCorporateChange = useCallback(
     (field: string, value: string) => {
-      const currentAddress = draft?.corporateAddress || { ...EMPTY_ADDRESS };
+      const currentAddress = corporateAddr || { ...EMPTY_ADDRESS };
       setCompanyDraft({
+        corporateOfficeAddress: { ...currentAddress, [field]: value } as Address,
         corporateAddress: { ...currentAddress, [field]: value } as Address,
       });
     },
-    [draft?.corporateAddress, setCompanyDraft]
+    [corporateAddr, setCompanyDraft]
   );
 
   const handleSameAsRegistered = useCallback(
     (checked: boolean) => {
-      if (checked && draft?.registeredAddress) {
+      if (checked && registeredAddr) {
         setCompanyDraft({
-          corporateAddress: { ...draft.registeredAddress },
+          corporateOfficeAddress: { ...registeredAddr },
+          corporateAddress: { ...registeredAddr },
         });
       } else {
         setCompanyDraft({
+          corporateOfficeAddress: { ...EMPTY_ADDRESS } as Address,
           corporateAddress: { ...EMPTY_ADDRESS } as Address,
         });
       }
     },
-    [draft?.registeredAddress, setCompanyDraft]
+    [registeredAddr, setCompanyDraft]
   );
 
   return (
@@ -58,7 +65,7 @@ const CompanyAddressSection: React.FC<CompanyAddressSectionProps> = ({
         <div className={mainStyles.addressBlockTitle}>Registered Address</div>
         <OrgAddressFields
           prefix="registeredAddress"
-          address={draft?.registeredAddress || {}}
+          address={registeredAddr || {}}
           onChange={handleRegisteredChange}
           errors={errors}
           disabled={disabled}
@@ -80,7 +87,7 @@ const CompanyAddressSection: React.FC<CompanyAddressSectionProps> = ({
         </div>
         <OrgAddressFields
           prefix="corporateAddress"
-          address={draft?.corporateAddress || {}}
+          address={corporateAddr || {}}
           onChange={handleCorporateChange}
           errors={errors}
           disabled={disabled}

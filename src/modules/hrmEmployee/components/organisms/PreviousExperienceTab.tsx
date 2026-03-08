@@ -33,10 +33,14 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
       const modifiedBy = cookies.username || 'system';
 
       const exp: PreviousExperience = {
-        employer: values.employer,
-        role: values.role,
+        organization: values.employer || values.organization,
+        roleDesignation: values.role || values.roleDesignation,
         fromDate: values.fromDate.format('YYYY-MM-DD'),
         toDate: values.toDate.format('YYYY-MM-DD'),
+        experienceSummary: values.description || values.experienceSummary,
+        // backward compat
+        employer: values.employer,
+        role: values.role,
         description: values.description,
       };
 

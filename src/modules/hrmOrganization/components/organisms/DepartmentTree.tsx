@@ -2,8 +2,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Tree, Select, Button, Spin, Empty } from 'antd';
-import AddIcon from '@mui/icons-material/Add';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import { PlusOutlined, ApartmentOutlined } from '@ant-design/icons';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { Department, DepartmentNode } from '../../types/domain.types';
@@ -132,12 +131,12 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     <div className={mainStyles.treeContainer}>
       <div className={mainStyles.treeHeader}>
         <div className={mainStyles.treeHeaderLeft}>
-          <AccountTreeIcon fontSize="small" style={{ color: '#1890ff' }} />
+          <ApartmentOutlined style={{ color: '#1890ff' }} />
           <span className={mainStyles.listTitle}>Departments</span>
         </div>
         <Button
           type="primary"
-          icon={<AddIcon fontSize="small" />}
+          icon={<PlusOutlined />}
           onClick={onAdd}
           disabled={!selectedBuHandle}
           size="small"

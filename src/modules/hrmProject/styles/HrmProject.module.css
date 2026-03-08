@@ -4,6 +4,7 @@
   height: 100vh;
   min-height: 0;
   background: #f0f2f5;
+  overflow: hidden;
 }
 
 .content {
@@ -15,24 +16,108 @@
 
 .mainTabs {
   flex: 1;
-  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
 }
 
+.mainTabs :global(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: hidden;
+}
+
+.mainTabs :global(.ant-tabs-content) {
+  height: 100%;
+}
+
+.mainTabs :global(.ant-tabs-tabpane) {
+  height: 100%;
+}
+
+/* Master-detail split layout (fentames reference pattern) */
 .masterDetailLayout {
   display: flex;
-  gap: 16px;
-  min-height: 0;
+  height: 100%;
+  position: relative;
 }
 
 .masterPane {
-  flex: 0 0 480px;
-  min-width: 0;
+  width: 100%;
+  transition: width 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.masterPane.shrink {
+  width: 50%;
+  border-right: 1px solid #e8e8e8;
 }
 
 .detailPane {
-  flex: 1;
-  min-width: 0;
+  width: 0%;
+  transform: translateX(100%);
+  transition: opacity 0.3s ease, transform 0.3s ease, width 0.3s ease;
+  opacity: 0;
+  overflow: hidden;
+  border-left: 1px solid #e8e8e8;
+}
+
+.detailPane.show {
+  width: 50%;
+  transform: translateX(0);
+  opacity: 1;
+  overflow: auto;
+}
+
+/* Master pane header */
+.masterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.masterTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+/* Report panel */
+.reportPanel {
+  padding: 0;
+}
+
+/* Form actions */
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .masterDetailLayout {
+    flex-direction: column;
+  }
+
+  .masterPane.shrink {
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .detailPane.show {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #f0f0f0;
+  }
 }

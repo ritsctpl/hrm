@@ -25,8 +25,8 @@ function firstDayOfMonth(d: Date): string {
 interface TimesheetUIState {
   selectedDate: string;
   selectedWeekStart: string;
-  activeTab: 'my' | 'approvals' | 'team' | 'reports';
-  activeReportTab: 'payroll' | 'compliance' | 'unplanned' | 'holiday';
+  activeTab: 'my' | 'approvals' | 'team' | 'reports' | 'admin';
+  activeReportTab: 'payroll' | 'compliance' | 'unplanned' | 'holiday' | 'categories' | 'lockPeriods';
   selectedTimesheetHandle: string | null;
   isDayEditorOpen: boolean;
   reportPeriodStart: string;

@@ -36,8 +36,8 @@ const WizardStepReviewResults: React.FC = () => {
       rows = rows.filter((e) => e.status === 'ERROR');
     } else if (filter === 'highVariance') {
       rows = rows.filter((e) => {
-        const pct = Math.abs(computeVariancePct(e.netPay, e.previousNetPay));
-        return pct >= 20;
+        const pct = Math.abs(computeVariancePct(e.netPay, e.previousNetPay ?? 0));
+        return e.previousNetPay != null && pct >= 20;
       });
     }
     return rows;

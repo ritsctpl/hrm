@@ -10,7 +10,7 @@ export interface NotificationResponse {
   title: string;
   message: string;
   read: boolean;
-  readAt?: string;
+  readAt?: string | null;
   createdAt: string;
   metadata?: Record<string, unknown>;
 }
@@ -18,8 +18,8 @@ export interface NotificationResponse {
 export interface GetMyNotificationsPayload {
   site: string;
   recipientId: string;
-  page: number;
-  size: number;
+  page?: number;
+  size?: number;
 }
 
 export interface MarkReadPayload {
@@ -27,29 +27,25 @@ export interface MarkReadPayload {
   notificationId: string;
 }
 
+export interface MarkAllReadPayload {
+  site: string;
+  recipientId: string;
+}
+
+export interface CountUnreadPayload {
+  site: string;
+  recipientId: string;
+}
+
 export interface UnreadCountResponse {
   unreadCount: number;
 }
 
-export interface DeleteNotificationPayload {
+export interface SendNotificationPayload {
   site: string;
-  handle: string;
-}
-
-export interface NotificationPreferences {
-  userId: string;
-  site: string;
-  emailEnabled: boolean;
-  pushEnabled: boolean;
-  inAppEnabled: boolean;
-  categories: Record<string, boolean>;
-}
-
-export interface UpdatePreferencesPayload {
-  site: string;
-  userId: string;
-  emailEnabled?: boolean;
-  pushEnabled?: boolean;
-  inAppEnabled?: boolean;
-  categories?: Record<string, boolean>;
+  recipientId: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata?: Record<string, unknown>;
 }

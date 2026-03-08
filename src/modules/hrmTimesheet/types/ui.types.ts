@@ -2,7 +2,7 @@
 import type { TimesheetHeader, TimesheetLine, DayColorCode, TimesheetStatus } from './domain.types';
 
 export type TimesheetMainTab = 'my' | 'approvals' | 'team' | 'reports';
-export type ReportTab = 'payroll' | 'compliance' | 'unplanned' | 'holiday';
+export type ReportTab = 'payroll' | 'compliance' | 'unplanned' | 'holiday' | 'categories' | 'lockPeriods';
 
 export interface WeekDaySummary {
   date: string;
@@ -17,7 +17,7 @@ export interface WeekDaySummary {
 
 export interface TimesheetLineFormValues {
   lineId: string;
-  lineType: 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
+  lineType: 'PROJECT' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
   allocationHandle?: string;
   projectCode?: string;
   projectName?: string;

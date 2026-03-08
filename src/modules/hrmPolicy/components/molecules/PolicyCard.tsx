@@ -11,8 +11,8 @@ import styles from "../../styles/PolicyLanding.module.css";
 const { Text, Title } = Typography;
 
 const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onClick }) => {
-  const formattedDate = policy.effectiveDate
-    ? new Date(policy.effectiveDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
+  const formattedDate = policy.effectiveFrom
+    ? new Date(policy.effectiveFrom).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
     : "";
 
   return (
@@ -23,7 +23,7 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onClick }) => {
       size="small"
     >
       <Space direction="vertical" size={4} style={{ width: "100%" }}>
-        <PolicyTypeBadge docType={policy.docType} />
+        <PolicyTypeBadge docType={policy.documentType} />
         <Title level={5} className={styles.policyCardTitle} ellipsis={{ rows: 2 }}>
           {policy.title}
         </Title>

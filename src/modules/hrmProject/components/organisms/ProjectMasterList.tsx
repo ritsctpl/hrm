@@ -14,7 +14,7 @@ interface ProjectMasterListProps {
 }
 
 const ProjectMasterList: React.FC<ProjectMasterListProps> = ({ projects, loading, selectedHandle, onSelect }) => (
-  <Card bodyStyle={{ padding: 0 }} className={styles.projectList}>
+  <Card bodyStyle={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }} className={styles.projectList} style={{ height: '100%' }}>
     <div style={{ padding: '12px 12px 0' }}>
       <ProjectSearchBar />
     </div>
@@ -23,7 +23,7 @@ const ProjectMasterList: React.FC<ProjectMasterListProps> = ({ projects, loading
     ) : projects.length === 0 ? (
       <Empty description="No projects found" style={{ padding: 32 }} />
     ) : (
-      <div style={{ maxHeight: 520, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {projects.map((p) => (
           <ProjectListRow
             key={p.handle}

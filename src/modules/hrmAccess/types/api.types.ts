@@ -4,7 +4,7 @@ export type PermissionAction = 'VIEW' | 'ADD' | 'EDIT' | 'DELETE';
 
 // ---- Role Scope ----
 
-export type RoleScope = 'GLOBAL' | 'BU' | 'DEPARTMENT';
+export type RoleScope = 'GLOBAL' | 'BUSINESS_UNIT' | 'DEPARTMENT';
 
 // ---- Assignment Status ----
 
@@ -68,6 +68,7 @@ export interface RoleRequest {
   roleName: string;
   roleScope?: RoleScope;
   description?: string | null;
+  category?: string;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -135,8 +136,8 @@ export interface UserRoleAssignmentResponse {
   handle: string;
   site: string;
   userId: string;
-  userDisplayName: string;
-  userEmail: string;
+  userDisplayName: string | null;
+  userEmail: string | null;
   roleCode: string;
   roleName: string;
   effectiveFrom: string;
@@ -153,7 +154,7 @@ export interface UserRoleAssignmentResponse {
 
 export interface EffectivePermissionsResponse {
   userId: string;
-  userDisplayName: string;
+  userDisplayName: string | null;
   permissions: EffectivePermissionEntry[];
   evaluatedAt: string;
 }
@@ -194,7 +195,10 @@ export interface PermissionsMatrixResponse {
   moduleCode: string;
   moduleName: string;
   objectName: string | null;
-  rolePermissions: Record<string, PermissionAction[]>;
+  action: PermissionAction;
+  permissionHandle: string;
+  roleAccess: Record<string, boolean>;
+  rolesWithAccess: string[];
 }
 
 // ---- Import ----
@@ -211,8 +215,10 @@ export interface ImportResultResponse {
 
 export interface ImportRowError {
   rowNumber: number;
-  reason: string;
-  rowData: Record<string, string>;
+  field?: string;
+  message?: string;
+  reason?: string;
+  rowData?: Record<string, string>;
 }
 
 // ---- Role Clone ----
@@ -230,59 +236,14 @@ export interface ImportPreviewResponse {
   totalRows: number;
   validRows: number;
   invalidRows: number;
-  preview: ImportPreviewRow[];
   errors: ImportRowError[];
-}
-
-export interface ImportPreviewRow {
-  rowNumber: number;
-  data: Record<string, string>;
-  isValid: boolean;
-  validationErrors: string[];
+  validRoleNames?: string[];
+  message?: string;
 }
 
 // ---- User Access Report ----
-
-export interface UserAccessReportResponse {
-  userId: string;
-  userDisplayName: string;
-  userEmail: string;
-  roles: UserAccessRoleEntry[];
-  generatedAt: string;
-}
-
-export interface UserAccessRoleEntry {
-  roleCode: string;
-  roleName: string;
-  roleScope: RoleScope;
-  effectiveFrom: string;
-  effectiveTo: string | null;
-  assignmentStatus: AssignmentStatus;
-  permissions: UserAccessPermissionEntry[];
-}
-
-export interface UserAccessPermissionEntry {
-  moduleCode: string;
-  moduleName: string;
-  objectName: string | null;
-  action: PermissionAction;
-  scopeValue: string | null;
-}
-
-// ---- Orphaned / Expired Assignments ----
-
-export interface OrphanedExpiredAssignment {
-  handle: string;
-  userId: string;
-  userDisplayName: string;
-  userEmail: string;
-  roleCode: string;
-  roleName: string;
-  effectiveFrom: string;
-  effectiveTo: string | null;
-  assignmentStatus: AssignmentStatus;
-  reason: string;
-}
+// The API returns the same shape as EffectivePermissionsResponse
+export type UserAccessReportResponse = EffectivePermissionsResponse;
 
 // ---- Audit ----
 

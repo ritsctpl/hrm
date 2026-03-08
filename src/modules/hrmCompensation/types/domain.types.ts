@@ -3,7 +3,7 @@
  * Business entity interfaces
  */
 
-export type ComponentType = 'EARNING' | 'DEDUCTION';
+export type ComponentType = 'EARNING' | 'DEDUCTION' | 'EMPLOYER_CONTRIBUTION';
 export type SubType = 'FIXED' | 'VARIABLE' | 'REIMBURSEMENT' | 'STATUTORY';
 export type CalcMethod = 'FIXED' | 'PERCENTAGE' | 'FORMULA';
 export type PayFrequency = 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
@@ -59,6 +59,8 @@ export interface SalaryStructure {
   active: number;
   createdDateTime: string;
   modifiedDateTime: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface CompensationComponent {
@@ -83,6 +85,7 @@ export interface CompensationAuditEntry {
 
 export interface EmployeeCompensationResponse {
   handle: string;
+  site?: string;
   employeeId: string;
   employeeName: string;
   department: string;

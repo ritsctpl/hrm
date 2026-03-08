@@ -8,19 +8,26 @@ export interface LeaveType {
   alias?: string;
   unit: string;
   halfDayAllowed: boolean;
-  active: boolean;
-  category: "STANDARD" | "SPECIAL";
+  active: number;
+  category: string;
   sortOrder: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface LeaveTypeRequest {
   site: string;
+  handle?: string;
   code: string;
   name: string;
   alias?: string;
   halfDayAllowed?: boolean;
+  activeStatus?: boolean;
   category?: string;
   sortOrder?: number;
+  createdBy?: string;
 }
 
 // ── Leave Policy ─────────────────────────────────────────────────────
@@ -28,25 +35,25 @@ export interface LeaveTypeRequest {
 export interface LeavePolicy {
   handle: string;
   site: string;
-  leaveTypeId: string;
-  leaveTypeCode: string;
+  leaveTypeId?: string;
+  leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
   effectiveFrom: string;
   effectiveTo?: string;
-  accrualFrequency: "QUARTERLY" | "MANUAL" | "ANNUAL";
+  accrualFrequency?: string;
   accrualQuantity: number;
   prorateEnabled: boolean;
   carryForwardAllowed: boolean;
   carryForwardCap: number;
-  lapseRule: "ALL" | "PARTIAL" | "NONE";
+  lapseRule?: string;
   lapseDate?: string;
   encashmentAllowed: boolean;
-  encashWhen?: "YEAR_END" | "SEPARATION" | "ON_DEMAND";
-  encashRateFormula?: "BASIC_PER_26" | "CTC_PER_30";
+  encashWhen?: string;
+  encashRateFormula?: string;
   minEncashableDays?: number;
   maxEncashableDays?: number;
-  encashRounding?: "HALF_UP" | "HALF_DOWN" | "BANKER";
+  encashRounding?: string;
   negativeBalanceAllowed: boolean;
   negativeFloor?: number;
   coExpiryDays?: number;
@@ -54,6 +61,10 @@ export interface LeavePolicy {
   escalationSlaDays: number;
   version: number;
   active: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface LeavePolicyRequest {
@@ -437,22 +448,22 @@ export interface LeaveTypeByCodeRequest {
 
 export interface DeleteLeaveTypeRequest {
   site: string;
-  handle: string;
+  leaveTypeId: string;
   deletedBy: string;
 }
 
 export interface ActivateDeactivateLeaveTypeRequest {
   site: string;
   handle: string;
-  active: boolean;
-  modifiedBy: string;
+  activeStatus: boolean;
+  modifiedBy?: string;
 }
 
 // ── Policy Delete ────────────────────────────────────────────────────
 
 export interface DeletePolicyRequest {
   site: string;
-  handle: string;
+  policyId: string;
   deletedBy: string;
 }
 
@@ -460,9 +471,9 @@ export interface DeletePolicyRequest {
 
 export interface EffectivePolicyRequest {
   site: string;
-  leaveTypeCode: string;
-  buCode?: string;
-  deptCode?: string;
+  leaveTypeId: string;
+  buId?: string;
+  deptId?: string;
 }
 
 // ── Balance By Type ──────────────────────────────────────────────────

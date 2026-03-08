@@ -25,7 +25,7 @@ const AckStatusIcon: React.FC<AckStatusIconProps> = ({ ackStatus, acknowledgedAt
       </Tooltip>
     );
   }
-  if (ackStatus === "REQUIRED") {
+  if (ackStatus === "PENDING") {
     return (
       <Tooltip title="Acknowledgment required">
         <ClockCircleOutlined style={{ color: "#faad14" }} />

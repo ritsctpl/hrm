@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { Input, Select, Button, Switch, message } from 'antd';
-import CloseIcon from '@mui/icons-material/Close';
+import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -46,7 +46,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
         <span className={mainStyles.formPanelTitle}>{title}</span>
         <Button
           type="text"
-          icon={<CloseIcon fontSize="small" />}
+          icon={<CloseOutlined />}
           onClick={onClose}
         />
       </div>

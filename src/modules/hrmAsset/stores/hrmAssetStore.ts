@@ -18,7 +18,7 @@ interface HrmAssetState {
   // UI state
   selectedAsset: Asset | null;
   selectedRequest: AssetRequest | null;
-  activeTab: 'assets' | 'requests' | 'approvals';
+  activeTab: 'assets' | 'requests';
   activeDetailTab: AssetDetailTab;
   isAssetFormOpen: boolean;
   isRequestFormOpen: boolean;
@@ -58,7 +58,7 @@ interface HrmAssetState {
   // UI actions
   setSelectedAsset: (asset: Asset | null) => void;
   setSelectedRequest: (request: AssetRequest | null) => void;
-  setActiveTab: (tab: 'assets' | 'requests' | 'approvals') => void;
+  setActiveTab: (tab: 'assets' | 'requests') => void;
   setActiveDetailTab: (tab: AssetDetailTab) => void;
   openAssetForm: () => void;
   closeAssetForm: () => void;

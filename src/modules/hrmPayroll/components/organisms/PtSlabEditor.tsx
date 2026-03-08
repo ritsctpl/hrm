@@ -49,15 +49,18 @@ const PtSlabEditor: React.FC = () => {
   const handleSave = async () => {
     const errors = validatePtSlabs(slabs);
     if (errors.length > 0) {
-      setSlabError(errors[0]);
+      setSlabError(errors[0].message);
       return;
     }
     setSlabError(null);
     await store.saveStatutoryConfig({
+      handle: store.ptConfig?.handle ?? '',
       site: '',
       configType: 'PT',
       state,
       ptSlabs: slabs,
+      active: 1,
+      createdBy: '',
     });
   };
 
@@ -126,7 +129,7 @@ const PtSlabEditor: React.FC = () => {
         <Select
           value={state}
           onChange={setState}
-          options={INDIAN_STATES.map((s) => ({ value: s.code, label: s.name }))}
+          options={INDIAN_STATES.map((s) => ({ value: s, label: s }))}
           style={{ width: 240 }}
           showSearch
           filterOption={(input, option) =>

@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { Tabs, message } from "antd";
-import { parseCookies } from "nookies";
-import CommonAppBar from "@/components/CommonAppBar";
-import { useHrmAnnouncementStore } from "./stores/hrmAnnouncementStore";
-import { HrmAnnouncementService } from "./services/hrmAnnouncementService";
-import { useHrmAnnouncementData } from "./hooks/useHrmAnnouncementData";
-import AnnouncementFeedTemplate from "./components/templates/AnnouncementFeedTemplate";
-import AnnouncementAdminTemplate from "./components/templates/AnnouncementAdminTemplate";
-import AnnouncementDetailPanel from "./components/organisms/AnnouncementDetailPanel";
-import { Announcement } from "./types/domain.types";
-import { ANNOUNCEMENT_HR_ROLES } from "./utils/constants";
-import styles from "./styles/HrmAnnouncement.module.css";
+import React, { useEffect } from 'react';
+import { Tabs, message } from 'antd';
+import { parseCookies } from 'nookies';
+import CommonAppBar from '@/components/CommonAppBar';
+import { useHrmAnnouncementStore } from './stores/hrmAnnouncementStore';
+import { HrmAnnouncementService } from './services/hrmAnnouncementService';
+import { useHrmAnnouncementData } from './hooks/useHrmAnnouncementData';
+import AnnouncementFeedTemplate from './components/templates/AnnouncementFeedTemplate';
+import AnnouncementAdminTemplate from './components/templates/AnnouncementAdminTemplate';
+import AnnouncementDetailPanel from './components/organisms/AnnouncementDetailPanel';
+import { Announcement } from './types/domain.types';
+import { ANNOUNCEMENT_HR_ROLES } from './utils/constants';
+import styles from './styles/HrmAnnouncement.module.css';
 
 const HrmAnnouncementLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "RITS";
-  const employeeId = cookies.userId ?? "";
-  const role = cookies.userRole ?? "EMPLOYEE";
+  const site = cookies.site ?? 'RITS';
+  const employeeId = cookies.userId ?? '';
+  const role = cookies.userRole ?? 'EMPLOYEE';
   const canAdmin = ANNOUNCEMENT_HR_ROLES.includes(role);
 
   const {
@@ -50,58 +50,78 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   useEffect(() => {
     loadFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterCategory, filterPriority]);
 
   useEffect(() => {
-    if (activeTab === "admin" && canAdmin) {
+    if (activeTab === 'admin' && canAdmin) {
       loadAdminAnnouncements();
     }
-  }, [activeTab]);
+  }, [activeTab, canAdmin, loadAdminAnnouncements]);
 
-  const handleMarkRead = async (announcementId: string) => {
+  const handleMarkRead = async (announcementHandle: string) => {
     try {
-      await HrmAnnouncementService.markRead({ site, announcementId, employeeId });
-      markAsRead(announcementId);
+      await HrmAnnouncementService.markRead({ site, announcementHandle, employeeId });
+      markAsRead(announcementHandle);
     } catch {
       // silent
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const unread = [...feed, ...pinnedAnnouncements].filter(
+      (a) => !a.isRead
+    );
+    for (const a of unread) {
+      await handleMarkRead(a.handle);
+    }
+    if (unread.length > 0) {
+      message.success('All announcements marked as read');
     }
   };
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     openDetailPanel(announcement);
     if (!announcement.isRead) {
-      handleMarkRead(announcement.id);
+      handleMarkRead(announcement.handle);
     }
   };
 
-  const handlePublish = async (announcementId: string) => {
+  const handlePublish = async (announcementHandle: string) => {
     setPublishing(true);
     try {
-      await HrmAnnouncementService.publishAnnouncement({ site, announcementId });
-      message.success("Announcement published");
+      await HrmAnnouncementService.publishAnnouncement({ site, announcementHandle });
+      message.success('Announcement published');
       loadAdminAnnouncements();
+      loadFeed();
     } catch {
-      message.error("Failed to publish");
+      message.error('Failed to publish announcement');
     } finally {
       setPublishing(false);
     }
   };
 
-  const handleWithdraw = async (announcementId: string) => {
+  const handleWithdraw = async (announcementHandle: string) => {
     setWithdrawing(true);
     try {
-      await HrmAnnouncementService.withdrawAnnouncement({ site, announcementId });
-      message.success("Announcement withdrawn");
+      await HrmAnnouncementService.withdrawAnnouncement({
+        site,
+        announcementHandle,
+        reason: 'Withdrawn by admin',
+      });
+      message.success('Announcement withdrawn');
       loadAdminAnnouncements();
+      loadFeed();
     } catch {
-      message.error("Failed to withdraw");
+      message.error('Failed to withdraw announcement');
     } finally {
       setWithdrawing(false);
     }
   };
 
   const handleViewStats = (announcement: Announcement) => {
-    loadEngagementStats(announcement.id);
+    loadEngagementStats(announcement.handle);
+    openDetailPanel(announcement);
   };
 
   const handleDrawerSaved = () => {
@@ -110,10 +130,25 @@ const HrmAnnouncementLanding: React.FC = () => {
     loadFeed();
   };
 
+  if (showDetailPanel && selectedAnnouncement) {
+    return (
+      <div className={styles.landing}>
+        <CommonAppBar
+          appTitle={`Announcements > ${selectedAnnouncement.title}`}
+        />
+        <AnnouncementDetailPanel
+          announcement={selectedAnnouncement}
+          onClose={closeDetailPanel}
+          onMarkRead={handleMarkRead}
+        />
+      </div>
+    );
+  }
+
   const tabItems = [
     {
-      key: "feed",
-      label: "Announcements",
+      key: 'feed',
+      label: 'Announcement Feed',
       children: (
         <AnnouncementFeedTemplate
           pinnedAnnouncements={pinnedAnnouncements}
@@ -121,9 +156,12 @@ const HrmAnnouncementLanding: React.FC = () => {
           loading={feedLoading}
           filterCategory={filterCategory}
           filterPriority={filterPriority}
+          canAdmin={canAdmin}
           onAnnouncementClick={handleAnnouncementClick}
           onCategoryFilter={setFilterCategory}
           onPriorityFilter={setFilterPriority}
+          onMarkAllRead={handleMarkAllRead}
+          onCreateNew={() => openComposeDrawer()}
         />
       ),
     },
@@ -131,8 +169,8 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   if (canAdmin) {
     tabItems.push({
-      key: "admin",
-      label: "Admin",
+      key: 'admin',
+      label: 'Admin',
       children: (
         <AnnouncementAdminTemplate
           announcements={adminAnnouncements}
@@ -154,20 +192,15 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   return (
     <div className={styles.landing}>
-      <CommonAppBar appTitle="Announcements" showBack={false} />
+      <CommonAppBar appTitle="Announcements" />
       <Tabs
         activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as "feed" | "admin")}
+        onChange={(key) => setActiveTab(key as 'feed' | 'admin')}
         items={tabItems}
-        style={{ flex: 1, overflow: "hidden", padding: "0 24px" }}
+        size="small"
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+        style={{ flex: 1, overflow: 'hidden' }}
       />
-      {showDetailPanel && selectedAnnouncement && (
-        <AnnouncementDetailPanel
-          announcement={selectedAnnouncement}
-          onClose={closeDetailPanel}
-          onMarkRead={handleMarkRead}
-        />
-      )}
     </div>
   );
 };

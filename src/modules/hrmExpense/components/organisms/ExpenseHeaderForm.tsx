@@ -45,8 +45,8 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly }) =
         <Form.Item label="Travel Reference (optional)">
           <Input
             placeholder="TR-2025-0001 — link to approved travel request"
-            value={formState.travelRefHandle ?? ""}
-            onChange={(e) => onChange({ travelRefHandle: e.target.value || null })}
+            value={formState.travelRequestHandle ?? ""}
+            onChange={(e) => onChange({ travelRequestHandle: e.target.value || null })}
             disabled={readonly}
           />
         </Form.Item>

@@ -66,6 +66,8 @@ const HrmLeaveLanding: React.FC = () => {
     setSelectedRequest,
     setBalancesYear,
     openLeaveForm,
+    activeTab,
+    setActiveTab,
     activeHrTab,
     showLeaveForm,
   } = useHrmLeaveStore();
@@ -177,7 +179,7 @@ const HrmLeaveLanding: React.FC = () => {
 
     return (
       <div className={styles.landing}>
-        <CommonAppBar appTitle="Leave Management" showBack={false} />
+        <CommonAppBar appTitle="Leave Management" />
         <EmployeeDashboard
           balances={balances}
           year={balancesYear}
@@ -187,8 +189,11 @@ const HrmLeaveLanding: React.FC = () => {
         />
         <LeaveFilterBar role={role} permissions={permissions} />
         <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={tabItems}
           size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
           style={{ flex: 1, overflow: "hidden" }}
         />
         {showLeaveForm && (
@@ -232,9 +237,27 @@ const HrmLeaveLanding: React.FC = () => {
 
     return (
       <div className={styles.landing}>
-        <CommonAppBar appTitle="Leave Management — Approvals" showBack={false} />
+        <CommonAppBar appTitle="Leave Management — Approvals" />
+        <EmployeeDashboard
+          balances={balances}
+          year={balancesYear}
+          onYearChange={setBalancesYear}
+          onApplyLeave={openLeaveForm}
+          loading={balancesLoading}
+        />
         <LeaveFilterBar role={role} permissions={permissions} />
-        <Tabs items={tabItems} size="small" style={{ flex: 1, overflow: "hidden" }} />
+        <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
+        {showLeaveForm && (
+          <LeaveRequestFormDrawer
+            site={site}
+            employeeId={employeeId}
+            balances={balances}
+            onSubmitted={() => {
+              loadMyRequests();
+              loadBalances();
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -254,30 +277,23 @@ const HrmLeaveLanding: React.FC = () => {
   );
 
   const ledgerPanel = (
-    <LeaveMasterDetail leftWidth="35%">
-      <BalanceSummaryTable
-        balances={balanceSummary}
-        loading={balanceSummaryLoading}
-      />
-      <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
-    </LeaveMasterDetail>
+    <div>
+      <LeaveMasterDetail leftWidth="35%">
+        <BalanceSummaryTable
+          balances={balanceSummary}
+          loading={balanceSummaryLoading}
+        />
+        <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+      </LeaveMasterDetail>
+      <div style={{ display: "flex", gap: 32, padding: 16, borderTop: "1px solid #f0f0f0" }}>
+        <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+        <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
+      </div>
+    </div>
   );
 
   const accrualPanel = (
     <AccrualRunPanel site={site} onPosted={() => loadBalanceSummary(balancesYear)} />
-  );
-
-  const adjustmentsPanel = (
-    <div style={{ display: "flex", gap: 32, padding: 16 }}>
-      <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
-      <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
-    </div>
-  );
-
-  const reportsPanel = (
-    <div style={{ padding: 24 }}>
-      <Text type="secondary">Reports — Export Balance Summary and Leave Availed reports.</Text>
-    </div>
   );
 
   const policyPanel = (
@@ -291,7 +307,7 @@ const HrmLeaveLanding: React.FC = () => {
 
   return (
     <div className={styles.landing}>
-      <CommonAppBar appTitle="Leave Management — HR Console" showBack={false} />
+      <CommonAppBar appTitle="Leave Management — HR Console" />
       <LeaveFilterBar
         role={role}
         permissions={permissions}
@@ -301,8 +317,6 @@ const HrmLeaveLanding: React.FC = () => {
         queuePanel={queuePanel}
         ledgerPanel={ledgerPanel}
         accrualPanel={accrualPanel}
-        adjustmentsPanel={adjustmentsPanel}
-        reportsPanel={reportsPanel}
         policyPanel={policyPanel}
       />
     </div>

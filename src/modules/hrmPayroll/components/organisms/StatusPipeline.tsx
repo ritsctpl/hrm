@@ -11,10 +11,11 @@ interface StatusPipelineProps {
 
 const STATUS_STEPS: { key: PayrollRunStatus; label: string }[] = [
   { key: 'DRAFT', label: 'Draft' },
-  { key: 'VALIDATED', label: 'Validated' },
+  { key: 'PROCESSING', label: 'Processing' },
+  { key: 'COMPUTED', label: 'Computed' },
   { key: 'APPROVED', label: 'Approved' },
-  { key: 'FINALIZED', label: 'Finalized' },
-  { key: 'PUBLISHED', label: 'Published' },
+  { key: 'PAID', label: 'Paid' },
+  { key: 'LOCKED', label: 'Locked' },
 ];
 
 const StatusPipeline: React.FC<StatusPipelineProps> = ({ currentStatus }) => {

@@ -1,59 +1,37 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { Tabs } from 'antd';
-import { parseCookies } from 'nookies';
+import dayjs from 'dayjs';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmTimesheetStore } from './stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from './hooks/useHrmTimesheetData';
-import { useHrmTimesheetUI } from './hooks/useHrmTimesheetUI';
-import WeekCalendarBar from './components/organisms/WeekCalendarBar';
-import DailyTimesheetEditor from './components/organisms/DailyTimesheetEditor';
-import WeeklySubmitPanel from './components/organisms/WeeklySubmitPanel';
-import ApprovalInbox from './components/organisms/ApprovalInbox';
+import TimesheetEmployeeTemplate from './components/templates/TimesheetEmployeeTemplate';
+import TimesheetSupervisorTemplate from './components/templates/TimesheetSupervisorTemplate';
 import TeamTimesheetGrid from './components/organisms/TeamTimesheetGrid';
-import PayrollExportPanel from './components/organisms/PayrollExportPanel';
-import ComplianceReportPanel from './components/organisms/ComplianceReportPanel';
-import UnplannedWorkReportPanel from './components/organisms/UnplannedWorkReportPanel';
-import HolidayWorkingReportPanel from './components/organisms/HolidayWorkingReportPanel';
+import WeekNavigator from './components/molecules/WeekNavigator';
+import TimesheetReportsTemplate from './components/templates/TimesheetReportsTemplate';
 import styles from './styles/HrmTimesheet.module.css';
 
 export default function HrmTimesheetLanding() {
   const {
     activeTab,
-    activeReportTab,
-    selectedDate,
     selectedWeekStart,
-    weeklyTimesheets,
-    loadingWeek,
     setActiveTab,
-    setActiveReportTab,
-    setSelectedWeekStart,
   } = useHrmTimesheetStore();
 
   const {
     loadWeeklyTimesheets,
-    loadDayTimesheet,
+    loadUnplannedCategories,
     loadPendingApprovals,
     loadTeamTimesheets,
-    loadUnplannedCategories,
   } = useHrmTimesheetData();
 
-  const { saveTimesheet, submitTimesheet, submitWeek, approveTimesheet, copyFromPreviousDay } =
-    useHrmTimesheetUI();
-
-  const { site } = parseCookies();
-
-  // Load weekly data on mount and when week changes
+  // Load initial data
   useEffect(() => {
     void loadWeeklyTimesheets();
     void loadUnplannedCategories();
   }, [loadWeeklyTimesheets, loadUnplannedCategories]);
-
-  // Load day timesheet when selected date changes
-  useEffect(() => {
-    void loadDayTimesheet(selectedDate);
-  }, [selectedDate, loadDayTimesheet]);
 
   // Load approval/team data when switching to those tabs
   useEffect(() => {
@@ -61,86 +39,54 @@ export default function HrmTimesheetLanding() {
     if (activeTab === 'team') void loadTeamTimesheets();
   }, [activeTab, loadPendingApprovals, loadTeamTimesheets]);
 
-  const navigateWeek = useCallback(
-    (direction: -1 | 1) => {
-      const d = new Date(selectedWeekStart);
-      d.setDate(d.getDate() + direction * 7);
-      setSelectedWeekStart(d.toISOString().slice(0, 10));
-    },
-    [selectedWeekStart, setSelectedWeekStart]
-  );
-
-  const reportTabs = [
-    { key: 'payroll', label: 'Payroll Export', children: <PayrollExportPanel /> },
-    { key: 'compliance', label: 'Compliance', children: <ComplianceReportPanel /> },
-    { key: 'unplanned', label: 'Unplanned Work', children: <UnplannedWorkReportPanel /> },
-    { key: 'holiday', label: 'Holiday Working', children: <HolidayWorkingReportPanel /> },
-  ];
+  // Week label for AppBar subtitle
+  const weekEnd = dayjs(selectedWeekStart).add(6, 'day');
+  const weekLabel = `${dayjs(selectedWeekStart).format('DD MMM')} \u2013 ${weekEnd.format('DD MMM YYYY')}`;
 
   const mainTabs = [
     {
       key: 'my',
-      label: 'My Timesheet',
-      children: (
-        <div className={styles.timesheetLayout}>
-          <WeekCalendarBar weeklyTimesheets={weeklyTimesheets} loading={loadingWeek} />
-          <WeeklySubmitPanel onSubmitWeek={submitWeek} />
-          <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px' }}>
-            <DailyTimesheetEditor
-              onSave={saveTimesheet}
-              onSubmit={submitTimesheet}
-              onCopyFromPrev={copyFromPreviousDay}
-            />
-          </div>
-        </div>
-      ),
+      label: 'My Timesheets',
+      children: <TimesheetEmployeeTemplate />,
     },
     {
       key: 'approvals',
       label: 'Approvals',
-      children: <ApprovalInbox onApprove={approveTimesheet} />,
+      children: <TimesheetSupervisorTemplate />,
     },
     {
       key: 'team',
-      label: 'Team View',
+      label: 'Team',
       children: (
         <div style={{ padding: '12px 16px' }}>
+          <div style={{ marginBottom: 12 }}>
+            <WeekNavigator />
+          </div>
           <TeamTimesheetGrid />
         </div>
       ),
     },
     {
       key: 'reports',
-      label: 'Reports',
+      label: 'Reports & Admin',
       children: (
         <div style={{ padding: '12px 16px' }}>
-          <Tabs
-            activeKey={activeReportTab}
-            onChange={(k) => setActiveReportTab(k as typeof activeReportTab)}
-            items={reportTabs}
-            size="small"
-          />
+          <TimesheetReportsTemplate />
         </div>
       ),
     },
   ];
 
-  // Week label for AppBar subtitle
-  const weekEnd = new Date(selectedWeekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  const weekLabel = `${fmt(new Date(selectedWeekStart))} – ${fmt(weekEnd)}`;
-
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <CommonAppBar appTitle={`Timesheets — ${weekLabel}`} showBack={false} />
+      <CommonAppBar appTitle={`Timesheets \u2014 ${weekLabel}`} />
       <Tabs
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k as typeof activeTab)}
         items={mainTabs}
+        size="small"
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
         style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
-        tabBarStyle={{ paddingLeft: 16, paddingRight: 16, marginBottom: 0 }}
       />
     </div>
   );

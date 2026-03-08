@@ -20,12 +20,12 @@ export function useHrmPayrollUI() {
   }, [store.allRuns]);
 
   const activeRunCount = useMemo(
-    () => store.allRuns.filter((r) => !['PUBLISHED', 'CANCELLED'].includes(r.status)).length,
+    () => store.allRuns.filter((r) => !['LOCKED', 'CANCELLED'].includes(r.status)).length,
     [store.allRuns],
   );
 
   const canStartNewRun = useMemo(
-    () => store.allRuns.every((r) => ['PUBLISHED', 'CANCELLED'].includes(r.status)),
+    () => store.allRuns.every((r) => ['LOCKED', 'CANCELLED'].includes(r.status)),
     [store.allRuns],
   );
 

@@ -18,13 +18,10 @@ export default function AdminAlertsWidget() {
         <div className={styles.emptyState}>No system alerts</div>
       ) : (
         adminAlerts.map((alert) => (
-          <div key={alert.id} className={styles.alertRow}>
+          <div key={alert.handle} className={styles.alertRow}>
             <AlertSeverityDot severity={alert.severity} size={8} />
             <span className={styles.alertMessage}>{alert.message}</span>
-            {alert.count !== undefined && (
-              <span className={styles.alertCount}>({alert.count})</span>
-            )}
-            <span className={styles.alertTime}>{dayjs(alert.createdAt).fromNow()}</span>
+            <span className={styles.alertTime}>{dayjs(alert.createdDateTime).fromNow()}</span>
           </div>
         ))
       )}

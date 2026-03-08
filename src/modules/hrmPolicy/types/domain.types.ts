@@ -1,13 +1,23 @@
-export type PolicyDocType = "POLICY" | "SOP" | "REFERENCE" | "HANDBOOK";
-export type PolicyStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-export type AckStatus = "REQUIRED" | "ACKNOWLEDGED" | "OVERDUE" | "NONE";
+export type PolicyDocType = "POLICY" | "SOP" | "REGULATION" | "GUIDELINE" | "CODE_OF_CONDUCT";
+export type PolicyStatus = "DRAFT" | "REVIEW" | "APPROVED" | "PUBLISHED" | "RETIRED" | "SUPERSEDED";
+export type AckStatus = "ACKNOWLEDGED" | "PENDING" | "OVERDUE" | "WAIVED";
+export type ContentType = "TEXT" | "FILE";
+export type AcknowledgmentFrequency = "ONE_TIME" | "ANNUAL" | "ON_REVISION";
 
 export interface PolicyCategory {
-  id: string;
+  handle: string;
   site: string;
-  name: string;
+  categoryCode: string;
+  categoryName: string;
   description?: string;
-  documentCount?: number;
+  iconName?: string;
+  color?: string;
+  displayOrder?: number;
+  active?: number;
+  createdDateTime?: string;
+  createdBy?: string;
+  modifiedDateTime?: string;
+  modifiedBy?: string;
 }
 
 export interface PolicyVersion {
@@ -27,46 +37,70 @@ export interface PolicyAttachment {
 }
 
 export interface PolicyDocument {
-  id: string;
+  handle: string;
   site: string;
+  policyCode: string;
+  policyNumber?: string;
   title: string;
-  docType: PolicyDocType;
-  status: PolicyStatus;
-  categoryId: string;
+  description?: string;
+  documentType: PolicyDocType;
+  categoryHandle: string;
   categoryName?: string;
   currentVersion: string;
-  effectiveDate: string;
-  nextReviewDate?: string;
-  owner?: string;
-  approvedBy?: string;
-  approvedAt?: string;
-  summary?: string;
-  content?: string;
+  status: PolicyStatus;
+  contentType?: ContentType;
+  textContent?: string;
+  fileHandle?: string;
+  fileName?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  reviewDate?: string;
+  expiryDate?: string;
+  acknowledgmentRequired?: boolean;
+  acknowledgmentFrequency?: AcknowledgmentFrequency;
+  acknowledgmentDeadlineDays?: string;
+  totalApplicableEmployees?: number;
+  acknowledgedCount?: number;
+  acknowledgmentRate?: number;
   tags?: string[];
   attachments?: PolicyAttachment[];
-  relatedDocumentIds?: string[];
-  relatedDocuments?: { id: string; title: string }[];
-  ackStatus?: AckStatus;
-  acknowledgedAt?: string;
-  createdAt: string;
-  updatedAt?: string;
+  relatedPolicies?: { handle: string; title: string }[];
+  applicableDepartments?: string[];
+  applicableBusinessUnits?: string[];
+  applicableRoles?: string[];
+  allEmployees?: boolean;
+  reviewerId?: string;
+  approverId?: string;
+  publishedDateTime?: string;
+  publishedBy?: string;
+  createdBy?: string;
+  messageDetails?: unknown;
 }
 
 export interface AcknowledgmentRecord {
+  handle?: string;
+  policyHandle?: string;
+  policyTitle?: string;
+  policyVersion?: string;
   employeeId: string;
-  employeeName: string;
+  employeeName?: string;
   department?: string;
-  ackStatus: AckStatus;
-  acknowledgedAt?: string;
+  status: AckStatus;
+  dueDate?: string;
+  acknowledgedDate?: string;
+  acknowledgedVia?: string;
 }
 
 export interface AcknowledgmentReport {
-  policyId: string;
-  totalRequired: number;
+  policyHandle: string;
+  policyTitle?: string;
+  policyVersion?: string;
+  totalApplicable: number;
   acknowledged: number;
   pending: number;
   overdue: number;
-  percentage: number;
+  waived?: number;
+  acknowledgmentRate: number;
   records: AcknowledgmentRecord[];
 }
 
@@ -79,4 +113,14 @@ export interface PolicyCycle {
   nextReviewDate: string;
   policyIds: string[];
   isActive: boolean;
+}
+
+export interface EmployeePolicyPortal {
+  employeeId: string;
+  publishedPolicies: PolicyDocument[];
+  pendingAcknowledgments: AcknowledgmentRecord[];
+  completedAcknowledgments: AcknowledgmentRecord[];
+  totalPolicies: number;
+  acknowledgedCount: number;
+  pendingCount: number;
 }

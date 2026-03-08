@@ -10,17 +10,11 @@ export type DirectoryViewMode = 'table' | 'card';
 
 /** Profile tab keys */
 export type ProfileTabKey =
-  | 'basic'
-  | 'official'
-  | 'personal'
-  | 'contact'
-  | 'skills'
-  | 'jobHistory'
-  | 'experience'
-  | 'education'
-  | 'training'
-  | 'documents'
-  | 'assets';
+  | 'overview'
+  | 'contactFamily'
+  | 'career'
+  | 'documentsAssets'
+  | 'compensation';
 
 /** Directory filter state */
 export interface DirectoryFilters {

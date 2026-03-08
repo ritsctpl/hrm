@@ -33,6 +33,11 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
       const edu: EducationEntry = {
         institution: values.institution,
+        qualification: values.degree || values.qualification || '',
+        yearOfPassing: values.year || values.yearOfPassing,
+        fieldOfStudy: values.field || values.fieldOfStudy,
+        gradePercentage: values.grade || values.gradePercentage,
+        // backward compat
         degree: values.degree,
         field: values.field,
         year: values.year,

@@ -12,9 +12,11 @@ export interface KpiCardProps {
   title: string;
   value: string | number;
   unit?: string;
-  trend?: number;
-  trendLabel?: string;
+  trend?: "UP" | "DOWN" | "STABLE" | string | null;
+  trendPercentage?: number | null;
+  trendLabel?: string | null;
   color?: string;
+  colorIndicator?: "GREEN" | "YELLOW" | "RED" | string | null;
   icon?: ReactNode;
 }
 

@@ -1,6 +1,7 @@
 /**
  * HRM Organization Module - Service Layer
  * Static class handling all API calls for organization operations
+ * Aligned with backend API from docs/HRM/design-ui-v2/01-organization-setup-ui-api.md
  */
 
 import api from '@services/api';
@@ -37,11 +38,12 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /** Update company. Backend expects { handle, companyProfileRequest: {...} } */
   static async updateCompany(
     handle: string,
-    payload: CompanyProfileRequest
+    companyProfileRequest: CompanyProfileRequest
   ): Promise<CompanyProfileResponse> {
-    const res = await api.post(`${this.BASE}/company/update`, { ...payload, handle });
+    const res = await api.post(`${this.BASE}/company/update`, { handle, companyProfileRequest });
     return res.data;
   }
 
@@ -105,12 +107,10 @@ export class HrmOrganizationService {
   }
 
   static async fetchBusinessUnits(
-    site: string,
-    companyHandle: string
+    site: string
   ): Promise<BusinessUnit[]> {
     const res = await api.post(`${this.BASE}/businessUnit/retrieveAll`, {
       site,
-      companyHandle,
     });
     return res.data;
   }
@@ -120,11 +120,12 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /** Update BU. Backend expects { handle, businessUnitRequest: {...} } */
   static async updateBusinessUnit(
     handle: string,
-    payload: BusinessUnitRequest
+    businessUnitRequest: BusinessUnitRequest
   ): Promise<BusinessUnitResponse> {
-    const res = await api.post(`${this.BASE}/businessUnit/update`, { ...payload, handle });
+    const res = await api.post(`${this.BASE}/businessUnit/update`, { handle, businessUnitRequest });
     return res.data;
   }
 
@@ -163,11 +164,12 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /** Update department. Backend expects { handle, departmentRequest: {...} } */
   static async updateDepartment(
     handle: string,
-    payload: DepartmentRequest
+    departmentRequest: DepartmentRequest
   ): Promise<DepartmentResponse> {
-    const res = await api.post(`${this.BASE}/department/update`, { ...payload, handle });
+    const res = await api.post(`${this.BASE}/department/update`, { handle, departmentRequest });
     return res.data;
   }
 
@@ -198,11 +200,12 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /** Update location. Backend expects { id, locationRequest: {...} } */
   static async updateLocation(
     id: string,
-    payload: LocationRequest
+    locationRequest: LocationRequest
   ): Promise<LocationResponse> {
-    const res = await api.post(`${this.BASE}/location/update`, { ...payload, id });
+    const res = await api.post(`${this.BASE}/location/update`, { id, locationRequest });
     return res.data;
   }
 
@@ -233,16 +236,12 @@ export class HrmOrganizationService {
   static async fetchAuditLog(
     site: string,
     entityType: string,
-    entityHandle: string,
-    page?: number,
-    size?: number
+    entityHandle: string
   ): Promise<OrgAuditLogDto[]> {
     const res = await api.post(`${this.BASE}/audit/retrieve`, {
       site,
       entityType,
       entityHandle,
-      page: page ?? 0,
-      size: size ?? 20,
     });
     return res.data;
   }

@@ -6,8 +6,6 @@ import api from '@/services/api';
 import type {
   NotificationResponse,
   UnreadCountResponse,
-  NotificationPreferences,
-  UpdatePreferencesPayload,
 } from '../types/api.types';
 
 export class HrmNotificationService {
@@ -28,14 +26,6 @@ export class HrmNotificationService {
     return res.data;
   }
 
-  static async getUnreadTopFive(
-    site: string,
-    recipientId: string
-  ): Promise<NotificationResponse[]> {
-    const res = await api.post(`${this.BASE}/unread-top5`, { site, recipientId });
-    return res.data;
-  }
-
   static async markAsRead(
     site: string,
     notificationId: string
@@ -53,22 +43,16 @@ export class HrmNotificationService {
     return (res.data as UnreadCountResponse).unreadCount;
   }
 
-  static async deleteNotification(site: string, handle: string): Promise<void> {
-    await api.post(`${this.BASE}/delete`, { site, handle });
-  }
-
-  static async getPreferences(
-    site: string,
-    userId: string
-  ): Promise<NotificationPreferences> {
-    const res = await api.post<NotificationPreferences>(`${this.BASE}/preferences/retrieve`, {
-      site,
-      userId,
-    });
+  // Send Notification (Admin / System)
+  static async sendNotification(request: {
+    site: string;
+    recipientId: string;
+    type: string;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<NotificationResponse> {
+    const res = await api.post(`${this.BASE}/send`, request);
     return res.data;
-  }
-
-  static async updatePreferences(payload: UpdatePreferencesPayload): Promise<void> {
-    await api.post(`${this.BASE}/preferences/update`, payload);
   }
 }

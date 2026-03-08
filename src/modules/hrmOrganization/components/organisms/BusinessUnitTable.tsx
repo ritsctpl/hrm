@@ -3,8 +3,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -99,7 +98,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
                 type="text"
                 size="small"
                 danger
-                icon={<DeleteIcon fontSize="small" />}
+                icon={<DeleteOutlined />}
                 onClick={(e) => e.stopPropagation()}
               />
             </Tooltip>
@@ -129,7 +128,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
             placeholder="Search by code, name, or type..."
           />
         </div>
-        <Button type="primary" icon={<AddIcon fontSize="small" />} onClick={onAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
           Add Business Unit
         </Button>
       </div>

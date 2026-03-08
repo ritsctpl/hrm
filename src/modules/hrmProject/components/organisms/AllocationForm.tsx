@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { Form, Select, InputNumber, DatePicker, Checkbox, Radio, Button, Space, Divider, Alert } from 'antd';
 import dayjs from 'dayjs';
+import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
@@ -35,6 +36,7 @@ export default function AllocationForm({ projectHandle }: Props) {
   }, [watchEmployee, watchStart, watchEnd]);
 
   const handleSubmit = async (values: AllocationFormValues) => {
+    const userId = parseCookies().userId ?? parseCookies().user ?? '';
     await createAllocation(
       projectHandle,
       {
@@ -42,7 +44,7 @@ export default function AllocationForm({ projectHandle }: Props) {
         startDate: dayjs(values.startDate).format('YYYY-MM-DD'),
         endDate: dayjs(values.endDate).format('YYYY-MM-DD'),
       },
-      'current-user'
+      userId,
     );
   };
 
@@ -94,8 +96,8 @@ export default function AllocationForm({ projectHandle }: Props) {
             {capacityCheck.dailyCapacities.slice(0, 7).map((d) => (
               <div key={d.date} className={styles.capacityRow}>
                 <span>{d.date}</span>
-                <span>{d.isHoliday ? 'HOLIDAY' : d.isLeave ? 'LEAVE' : `Avail: ${d.availableHours.toFixed(1)}h`}</span>
-                <CapacityColorDot status={d.isHoliday || d.isLeave ? 'GREY' : d.capacityStatus} />
+                <span>{d.holiday ? 'HOLIDAY' : d.leave ? 'LEAVE' : `Avail: ${d.availableHours.toFixed(1)}h`}</span>
+                <CapacityColorDot status={d.holiday || d.leave ? 'GREY' : d.capacityStatus} />
               </div>
             ))}
           </div>

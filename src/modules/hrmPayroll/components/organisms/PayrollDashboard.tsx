@@ -10,7 +10,6 @@ import AlertsPanel from './AlertsPanel';
 import PayrollRunsTable from './PayrollRunsTable';
 import PayrollStatusTag from '../atoms/PayrollStatusTag';
 import { formatINR, formatPayrollPeriod, computeVariancePct } from '../../utils/payrollFormatters';
-import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
 import type { PayrollRunSummary } from '../../types/domain.types';
 import styles from '../../styles/PayrollDashboard.module.css';
 
@@ -48,7 +47,7 @@ const PayrollDashboard: React.FC = () => {
           <div className={styles.currentRunRow}>
             <div>
               <Text strong style={{ fontSize: 16 }}>
-                {formatPayrollPeriod(current.payrollMonth, current.payrollYear, PAYROLL_MONTHS)}
+                {formatPayrollPeriod(current.payrollYear, current.payrollMonth)}
               </Text>
               <Text type="secondary" style={{ marginLeft: 12 }}>
                 {current.runId}

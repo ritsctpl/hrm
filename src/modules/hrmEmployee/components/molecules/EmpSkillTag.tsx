@@ -11,8 +11,8 @@ import { PROFICIENCY_COLORS, PROFICIENCY_LABELS } from '../../utils/constants';
 import type { EmpSkillTagProps } from '../../types/ui.types';
 
 const EmpSkillTag: React.FC<EmpSkillTagProps> = ({ skill, onRemove, removable = false }) => {
-  const color = PROFICIENCY_COLORS[skill.proficiency] || 'default';
-  const profLabel = PROFICIENCY_LABELS[skill.proficiency] || skill.proficiency;
+  const color = PROFICIENCY_COLORS[skill.proficiencyLevel] || 'default';
+  const profLabel = PROFICIENCY_LABELS[skill.proficiencyLevel] || skill.proficiencyLevel;
 
   return (
     <Tag

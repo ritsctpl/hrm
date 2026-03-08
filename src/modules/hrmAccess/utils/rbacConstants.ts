@@ -2,7 +2,7 @@ import type { RoleScope, PermissionAction } from '../types/api.types';
 
 export const ROLE_SCOPES: { value: RoleScope; label: string }[] = [
   { value: 'GLOBAL', label: 'Global' },
-  { value: 'BU', label: 'Business Unit' },
+  { value: 'BUSINESS_UNIT', label: 'Business Unit' },
   { value: 'DEPARTMENT', label: 'Department' },
 ];
 

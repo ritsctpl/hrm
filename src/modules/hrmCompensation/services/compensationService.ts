@@ -55,6 +55,10 @@ export class HrmCompensationService {
     await api.post(`${BASE}/deactivatePayComponent`, payload);
   }
 
+  static async deletePayComponent(site: string, componentId: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deletePayComponent`, { site, componentId, deletedBy });
+  }
+
   // ============================================================
   // Salary Structures
   // ============================================================
@@ -174,12 +178,12 @@ export class HrmCompensationService {
   // Salary Structure Delete / Deactivate
   // ============================================================
 
-  static async deleteSalaryStructure(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/deleteSalaryStructure`, { site, handle, deletedBy });
+  static async deleteSalaryStructure(site: string, structureId: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deleteSalaryStructure`, { site, structureId, deletedBy });
   }
 
-  static async deactivateSalaryStructure(site: string, handle: string, deactivatedBy: string): Promise<void> {
-    await api.post(`${BASE}/deactivateSalaryStructure`, { site, handle, deactivatedBy });
+  static async deactivateSalaryStructure(site: string, structureId: string, updatedBy: string): Promise<void> {
+    await api.post(`${BASE}/deactivateSalaryStructure`, { site, structureId, updatedBy });
   }
 
   // ============================================================

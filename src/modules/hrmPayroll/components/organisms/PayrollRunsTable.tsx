@@ -6,7 +6,6 @@ import type { ColumnsType } from 'antd/es/table';
 import type { PayrollRunSummary } from '../../types/domain.types';
 import PayrollStatusTag from '../atoms/PayrollStatusTag';
 import { formatINR, formatPayrollPeriod } from '../../utils/payrollFormatters';
-import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
 
 interface PayrollRunsTableProps {
   runs: PayrollRunSummary[];
@@ -27,7 +26,7 @@ const PayrollRunsTable: React.FC<PayrollRunsTableProps> = ({
       title: 'Period',
       key: 'period',
       render: (_: unknown, record: PayrollRunSummary) =>
-        formatPayrollPeriod(record.payrollMonth, record.payrollYear, PAYROLL_MONTHS),
+        formatPayrollPeriod(record.payrollYear, record.payrollMonth),
     },
     {
       title: 'Status',
@@ -58,7 +57,7 @@ const PayrollRunsTable: React.FC<PayrollRunsTableProps> = ({
       width: 140,
       render: (_: unknown, record: PayrollRunSummary) => (
         <>
-          {record.status !== 'PUBLISHED' && record.status !== 'FINALIZED' && onResumeWizard && (
+          {record.status !== 'LOCKED' && record.status !== 'PAID' && onResumeWizard && (
             <Button
               size="small"
               type="link"

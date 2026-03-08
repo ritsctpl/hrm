@@ -2,33 +2,38 @@
 
 import { useCallback } from 'react';
 import { useHrmOrganizationStore } from '../stores/hrmOrganizationStore';
-import type { MainTabKey } from '../types/ui.types';
+import type { DetailTabKey } from '../types/ui.types';
 
 /**
  * UI state hook for the HRM Organization module.
- * Provides tab switching and common UI interactions.
+ * Provides view switching and tab interactions.
  */
 export function useHrmOrganizationUI() {
-  const activeMainTab = useHrmOrganizationStore((s) => s.activeMainTab);
-  const setActiveMainTab = useHrmOrganizationStore((s) => s.setActiveMainTab);
+  const view = useHrmOrganizationStore((s) => s.view);
+  const activeDetailTab = useHrmOrganizationStore((s) => s.activeDetailTab);
+  const setActiveDetailTab = useHrmOrganizationStore((s) => s.setActiveDetailTab);
+  const navigateToList = useHrmOrganizationStore((s) => s.navigateToList);
+  const navigateToDetail = useHrmOrganizationStore((s) => s.navigateToDetail);
   const fetchBusinessUnits = useHrmOrganizationStore((s) => s.fetchBusinessUnits);
   const companyHandle = useHrmOrganizationStore((s) => s.companyProfile.data?.handle);
 
-  const handleMainTabChange = useCallback(
+  const handleDetailTabChange = useCallback(
     (key: string) => {
-      const tab = key as MainTabKey;
-      setActiveMainTab(tab);
+      const tab = key as DetailTabKey;
+      setActiveDetailTab(tab);
 
-      // Auto-load BUs when switching to business unit tab
-      if (tab === 'businessUnit' && companyHandle) {
+      if (tab === 'businessUnits' && companyHandle) {
         fetchBusinessUnits();
       }
     },
-    [setActiveMainTab, fetchBusinessUnits, companyHandle],
+    [setActiveDetailTab, fetchBusinessUnits, companyHandle],
   );
 
   return {
-    activeMainTab,
-    handleMainTabChange,
+    view,
+    activeDetailTab,
+    handleDetailTabChange,
+    navigateToList,
+    navigateToDetail,
   };
 }

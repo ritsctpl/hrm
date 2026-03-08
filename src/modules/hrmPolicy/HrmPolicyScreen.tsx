@@ -47,7 +47,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
     const loadHistory = async () => {
       setVersionHistoryLoading(true);
       try {
-        const data = await HrmPolicyService.getVersionHistory({ site, policyId: policy.id });
+        const data = await HrmPolicyService.getVersionHistory({ site, policyHandle: policy.handle });
         setVersionHistory(data);
       } catch {
         // silent
@@ -61,7 +61,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
       const loadReport = async () => {
         setAckReportLoading(true);
         try {
-          const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyId: policy.id });
+          const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyHandle: policy.handle });
           setAckReport(data);
         } catch {
           // silent
@@ -71,7 +71,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
       };
       loadReport();
     }
-  }, [policy.id, site, canAdmin]);
+  }, [policy.handle, site, canAdmin]);
 
   const handleAcknowledge = async () => {
     if (!ackChecked) {
@@ -82,12 +82,12 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
     try {
       await HrmPolicyService.acknowledgePolicy({
         site,
-        policyId: policy.id,
+        policyHandle: policy.handle,
         employeeId,
-        version: policy.currentVersion,
+        acknowledgedVia: "WEB",
       });
       const ackDate = new Date().toISOString();
-      updatePolicyAckStatus(policy.id, ackDate);
+      updatePolicyAckStatus(policy.handle, ackDate);
       message.success("Policy acknowledged successfully");
     } catch {
       message.error("Failed to acknowledge policy");
@@ -97,12 +97,9 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
   };
 
   const handleSendReminder = async () => {
-    try {
-      await HrmPolicyService.sendReminder({ site, policyId: policy.id, targetStatus: "PENDING" });
-      message.success("Reminder sent to pending employees");
-    } catch {
-      message.error("Failed to send reminder");
-    }
+    // Note: The backend has waiveAcknowledgment, not a "send reminder" endpoint.
+    // This would need a separate backend endpoint or notification service.
+    message.info("Reminder functionality requires backend notification service");
   };
 
   const isAcknowledged = policy.ackStatus === "ACKNOWLEDGED";
@@ -115,7 +112,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
         </Button>
         <Space direction="vertical" size={4} style={{ width: "100%", marginBottom: 16 }}>
           <Space wrap>
-            <PolicyTypeBadge docType={policy.docType} />
+            <PolicyTypeBadge docType={policy.documentType} />
             <PolicyStatusTag status={policy.status} />
           </Space>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -123,15 +120,15 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
           </Typography.Title>
           <Space split={<Divider type="vertical" />} wrap>
             <Typography.Text type="secondary">Version {policy.currentVersion}</Typography.Text>
-            {policy.owner && <Typography.Text type="secondary">Owner: {policy.owner}</Typography.Text>}
-            {policy.effectiveDate && (
+            {policy.createdBy && <Typography.Text type="secondary">Owner: {policy.createdBy}</Typography.Text>}
+            {policy.effectiveFrom && (
               <Typography.Text type="secondary">
-                Effective: {new Date(policy.effectiveDate).toLocaleDateString("en-IN")}
+                Effective: {new Date(policy.effectiveFrom).toLocaleDateString("en-IN")}
               </Typography.Text>
             )}
-            {policy.nextReviewDate && (
+            {policy.reviewDate && (
               <Typography.Text type="secondary">
-                Next Review: {new Date(policy.nextReviewDate).toLocaleDateString("en-IN")}
+                Next Review: {new Date(policy.reviewDate).toLocaleDateString("en-IN")}
               </Typography.Text>
             )}
           </Space>
@@ -143,7 +140,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
         </Space>
 
         <PolicyContentRenderer
-          content={policy.content}
+          content={policy.textContent}
           contentType="html"
         />
 
@@ -168,7 +165,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
           </>
         )}
 
-        {policy.ackStatus === "REQUIRED" || policy.ackStatus === "OVERDUE" ? (
+        {policy.ackStatus === "PENDING" || policy.ackStatus === "OVERDUE" ? (
           <div className={styles.ackBanner}>
             <Alert
               type={policy.ackStatus === "OVERDUE" ? "error" : "warning"}

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Tabs, Button, Descriptions, Modal, Input, Space, Typography } from "antd";
-import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined } from "@ant-design/icons";
+import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseMutations } from "./hooks/useExpenseMutations";
@@ -17,7 +17,7 @@ import ExpenseStatusChip from "./components/atoms/ExpenseStatusChip";
 import ExpenseScreenHeader from "./components/organisms/ExpenseScreenHeader";
 import type { ExpenseReport } from "./types/domain.types";
 import type { ExpenseDetailTab } from "./types/ui.types";
-import { CANCELLABLE_STATUSES } from "./utils/expenseConstants";
+import { CANCELLABLE_STATUSES, RECALLABLE_STATUSES } from "./utils/expenseConstants";
 import { isExpenseFormValid } from "./utils/expenseValidations";
 import { HrmExpenseService } from "./services/hrmExpenseService";
 import styles from "./styles/Expense.module.css";
@@ -66,17 +66,21 @@ const HrmExpenseScreen: React.FC<Props> = ({
     financeReject,
     markAsPaid,
     cancelExpense,
+    recallExpense,
     deleteExpense,
   } = useExpenseMutations();
 
   const [cancelModal, setCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [recallModal, setRecallModal] = useState(false);
+  const [recallReason, setRecallReason] = useState("");
   const [deleteModal, setDeleteModal] = useState(false);
   const [bankDetails, setBankDetails] = useState<import("./types/domain.types").EmployeeBankDetails | null>(null);
 
   const isReadonly = mode === "view";
   const isNew = mode === "create";
   const canCancel = expense && CANCELLABLE_STATUSES.includes(expense.status);
+  const canRecall = expense && RECALLABLE_STATUSES.includes(expense.status);
   const canDelete = expense && expense.status === "DRAFT";
   const formValid = isExpenseFormValid(formState);
 
@@ -103,58 +107,25 @@ const HrmExpenseScreen: React.FC<Props> = ({
     onActionComplete();
   }, [formState, expense?.handle]);
 
-  const handleAddLineItem = async (item: Omit<import("./types/domain.types").ExpenseLineItem, "lineItemId" | "amountInr">) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.addLineItem({
-      site,
-      handle: expense.handle,
-      expenseDate: item.expenseDate,
-      categoryCode: item.categoryCode,
-      description: item.description,
-      amount: item.amount,
-      currency: item.currency,
-    });
-    onActionComplete();
-  };
-
-  const handleRemoveLineItem = async (lineItemId: string) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.removeLineItem({ site, handle: expense.handle, lineItemId });
-    onActionComplete();
-  };
-
-  const handleAddMileageItem = async (item: Omit<import("./types/domain.types").MileageLineItem, "lineItemId">) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.addMileageItem({ site, handle: expense.handle, ...item });
-    onActionComplete();
-  };
-
-  const handleRemoveMileageItem = async (lineItemId: string) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.removeMileageItem({ site, handle: expense.handle, lineItemId });
-    onActionComplete();
-  };
-
   const handleUploadAttachment = async (file: File) => {
     if (!expense?.handle) return;
-    await HrmExpenseService.uploadAttachment(expense.handle, file, site);
-    onActionComplete();
-  };
-
-  const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.deleteAttachment({ site, handle: expense.handle, attachmentId });
+    await HrmExpenseService.uploadAttachment(expense.handle, file, site, 0);
     onActionComplete();
   };
 
   const barTitle = isNew
     ? "New Expense Report"
     : expense
-    ? `${expense.reportId} — ${expense.purpose}`
+    ? `${expense.requestId} — ${expense.purpose}`
     : "Expense Report";
 
   const barActions = isReadonly ? (
     <Space>
+      {canRecall && (
+        <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
+          Recall
+        </Button>
+      )}
       {canCancel && (
         <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
           Cancel
@@ -183,28 +154,29 @@ const HrmExpenseScreen: React.FC<Props> = ({
     </Space>
   );
 
+  // Items are now a flat array in the response (items), containing both regular and mileage items
+  const expenseItems = expense?.items ?? [];
+  const mileageItems = expenseItems.filter((item) => item.distanceKm != null);
+  const regularItems = expenseItems.filter((item) => item.distanceKm == null);
+
   const lineItemsTab =
     expense?.expenseType === "MILEAGE" ? (
       <div className={styles.detailBody}>
         <MileageLineItemsTable
-          mileageItems={expense?.mileageItems ?? []}
+          mileageItems={mileageItems}
           ratePerKm={mileageConfig?.ratePerKm}
           readonly={isReadonly}
-          onAddItem={handleAddMileageItem}
-          onRemoveItem={handleRemoveMileageItem}
         />
       </div>
     ) : (
       <div className={styles.detailBody}>
         <ExpenseLineItemsTable
-          lineItems={expense?.lineItems ?? []}
+          lineItems={regularItems}
           categories={categories}
           readonly={isReadonly}
           outOfPolicy={expense?.outOfPolicy}
           justification={formState.outOfPolicyJustification}
           onJustificationChange={(v) => updateFormState({ outOfPolicyJustification: v })}
-          onAddItem={handleAddLineItem as never}
-          onRemoveItem={handleRemoveLineItem}
         />
       </div>
     );
@@ -217,18 +189,24 @@ const HrmExpenseScreen: React.FC<Props> = ({
         <div className={styles.detailBody}>
           {isReadonly && expense ? (
             <Descriptions bordered column={1} size="small" labelStyle={{ width: 160, background: "#fafafa" }}>
-              <Descriptions.Item label="Report ID">{expense.reportId}</Descriptions.Item>
+              <Descriptions.Item label="Report ID">{expense.requestId}</Descriptions.Item>
               <Descriptions.Item label="Expense Type">{expense.expenseType}</Descriptions.Item>
               <Descriptions.Item label="Purpose">{expense.purpose}</Descriptions.Item>
-              {expense.travelRefId && (
+              {expense.travelRequestId && (
                 <Descriptions.Item label="Travel Reference">
-                  {expense.travelRefId}{expense.travelRefSummary ? ` (${expense.travelRefSummary})` : ""}
+                  {expense.travelRequestId}
                 </Descriptions.Item>
               )}
               <Descriptions.Item label="Date Range">
-                {expense.fromDate} – {expense.toDate}
+                {expense.items?.[0]?.expenseDate ?? "—"} – {expense.items?.[expense.items.length - 1]?.expenseDate ?? "—"}
               </Descriptions.Item>
               <Descriptions.Item label="Cost Center">{expense.costCenter}</Descriptions.Item>
+              {expense.projectCode && (
+                <Descriptions.Item label="Project Code">{expense.projectCode}</Descriptions.Item>
+              )}
+              {expense.wbsCode && (
+                <Descriptions.Item label="WBS Code">{expense.wbsCode}</Descriptions.Item>
+              )}
               <Descriptions.Item label="Currency">
                 {expense.currency} (Rate: {expense.exchangeRate})
               </Descriptions.Item>
@@ -240,15 +218,22 @@ const HrmExpenseScreen: React.FC<Props> = ({
                   INR {expense.sanctionedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </Descriptions.Item>
               )}
+              {expense.perDiemAmount != null && (
+                <Descriptions.Item label="Per Diem">
+                  INR {expense.perDiemAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </Descriptions.Item>
+              )}
               {expense.paymentReference && (
                 <Descriptions.Item label="Payment Reference">{expense.paymentReference}</Descriptions.Item>
               )}
               {expense.paymentDate && (
                 <Descriptions.Item label="Payment Date">{expense.paymentDate}</Descriptions.Item>
               )}
-              <Descriptions.Item label="Originals Received">
-                {expense.originalsReceived ? "Yes" : "No"}
-              </Descriptions.Item>
+              {expense.originalsReceived != null && (
+                <Descriptions.Item label="Originals Received">
+                  {expense.originalsReceived ? "Yes" : "No"}
+                </Descriptions.Item>
+              )}
             </Descriptions>
           ) : (
             <ExpenseHeaderForm formState={formState} onChange={updateFormState} readonly={isReadonly} />
@@ -258,9 +243,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     },
     {
       key: "lineitems",
-      label: `Line Items${expense?.lineItems?.length || expense?.mileageItems?.length
-        ? ` (${(expense?.lineItems?.length ?? 0) + (expense?.mileageItems?.length ?? 0)})`
-        : ""}`,
+      label: `Line Items${expenseItems.length ? ` (${expenseItems.length})` : ""}`,
       children: lineItemsTab,
     },
     {
@@ -275,7 +258,6 @@ const HrmExpenseScreen: React.FC<Props> = ({
             originalsReceived={isFinance ? financePanel.originalsReceived : expense?.originalsReceived}
             onOriginalsChange={(v) => updateFinancePanel({ originalsReceived: v })}
             onUpload={handleUploadAttachment}
-            onDelete={handleDeleteAttachment}
           />
         </div>
       ),
@@ -288,7 +270,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
       label: "Timeline",
       children: (
         <div className={styles.detailBody}>
-          <ExpenseApprovalTimeline actions={expense.actionHistory} />
+          <ExpenseApprovalTimeline actions={expense.approvalHistory} />
         </div>
       ),
     });
@@ -305,7 +287,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
       {isApprover && expense && (
         <SupervisorApprovalBar
-          reportId={expense.reportId}
+          reportId={expense.requestId}
           loading={approving}
           onApprove={(remarks) => supervisorApprove(expense.handle, remarks).then(onActionComplete)}
           onReject={(remarks) => supervisorReject(expense.handle, remarks).then(onActionComplete)}
@@ -314,8 +296,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
       {isFinance && expense && (
         <FinanceApprovalPanel
-          reportId={expense.reportId}
-          totalClaimedInr={expense.totalClaimedInr}
+          reportId={expense.requestId}
+          totalClaimedAmountInr={expense.totalClaimedAmountInr}
           panel={financePanel}
           bankDetails={bankDetails}
           loading={approving}
@@ -334,6 +316,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
         items={tabItems}
       />
 
+      {/* Cancel Modal */}
       <Modal
         title="Cancel Expense"
         open={cancelModal}
@@ -356,6 +339,30 @@ const HrmExpenseScreen: React.FC<Props> = ({
         />
       </Modal>
 
+      {/* Recall Modal */}
+      <Modal
+        title="Recall Expense Report"
+        open={recallModal}
+        onCancel={() => setRecallModal(false)}
+        onOk={() => {
+          recallExpense(expense!.handle, recallReason).then(() => {
+            setRecallModal(false);
+            setRecallReason("");
+            onActionComplete();
+          });
+        }}
+        okText="Confirm Recall"
+        okButtonProps={{ disabled: !recallReason.trim() }}
+      >
+        <Input.TextArea
+          placeholder="Reason for recalling (required)"
+          value={recallReason}
+          onChange={(e) => setRecallReason(e.target.value)}
+          rows={3}
+        />
+      </Modal>
+
+      {/* Delete Modal */}
       <Modal
         title="Delete Expense"
         open={deleteModal}

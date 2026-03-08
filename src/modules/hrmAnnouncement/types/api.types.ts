@@ -3,6 +3,8 @@ import { AnnouncementPriority, AnnouncementCategory, AnnouncementStatus } from "
 export interface GetAnnouncementsPayload {
   site: string;
   employeeId?: string;
+  department?: string;
+  role?: string;
   category?: AnnouncementCategory;
   priority?: AnnouncementPriority;
   status?: AnnouncementStatus;
@@ -12,59 +14,73 @@ export interface GetAnnouncementsPayload {
 
 export interface GetAnnouncementDetailPayload {
   site: string;
-  announcementId: string;
-  employeeId?: string;
+  announcementHandle: string;
+}
+
+export interface ListAnnouncementsPayload {
+  site: string;
+  status?: string;
+  category?: string;
+  page?: number;
+  size?: number;
 }
 
 export interface MarkReadPayload {
   site: string;
-  announcementId: string;
+  announcementHandle: string;
   employeeId: string;
+  readVia?: string;
 }
 
 export interface CreateAnnouncementPayload {
   site: string;
   title: string;
   content: string;
-  summary?: string;
-  priority: AnnouncementPriority;
   category: AnnouncementCategory;
-  isPinned?: boolean;
-  scheduledAt?: string;
+  priority?: AnnouncementPriority;
+  scheduledPublishAt?: string;
   expiresAt?: string;
-  targetAudience?: string[];
+  allEmployees?: boolean;
+  targetDepartments?: string[];
+  targetBusinessUnits?: string[];
+  targetRoles?: string[];
+  targetEmployeeIds?: string[];
+  sendEmailNotification?: boolean;
+  sendPushNotification?: boolean;
+  pinToTop?: boolean;
+  pinnedUntil?: string;
+  createdBy?: string;
 }
 
 export interface UpdateAnnouncementPayload extends Partial<CreateAnnouncementPayload> {
-  announcementId: string;
+  site: string;
+  announcementHandle: string;
 }
 
 export interface PublishAnnouncementPayload {
   site: string;
-  announcementId: string;
+  announcementHandle: string;
+  publishedBy?: string;
 }
 
 export interface WithdrawAnnouncementPayload {
   site: string;
-  announcementId: string;
+  announcementHandle: string;
+  withdrawnBy?: string;
   reason?: string;
 }
 
 export interface DeleteAnnouncementPayload {
   site: string;
-  handle: string;
+  announcementId: string;
   deletedBy: string;
 }
 
-export interface DownloadAttachmentPayload {
+export interface GetEngagementPayload {
   site: string;
-  handle: string;
-  attachmentId: string;
+  announcementHandle: string;
 }
 
-export interface SendReadReminderPayload {
+export interface GetPinnedPayload {
   site: string;
-  handle: string;
-  employeeIds: string[];
-  sentBy: string;
 }

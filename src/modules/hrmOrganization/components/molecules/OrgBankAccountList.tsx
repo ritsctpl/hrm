@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button, Empty } from 'antd';
-import AddIcon from '@mui/icons-material/Add';
+import { PlusOutlined } from '@ant-design/icons';
 import OrgBankAccountCard from './OrgBankAccountCard';
 import type { OrgBankAccountListProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
@@ -20,7 +20,7 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
       <div className={styles.listHeader}>
         <span className={styles.listTitle}>Bank Accounts</span>
         {!disabled && (
-          <Button type="primary" icon={<AddIcon fontSize="small" />} onClick={onAdd} size="small">
+          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
             Add Account
           </Button>
         )}

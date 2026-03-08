@@ -1,6 +1,7 @@
 /**
  * HRM Organization Module - API Types
  * Request/response interfaces for all API operations
+ * Aligned with backend API from docs/HRM/design-ui-v2/01-organization-setup-ui-api.md
  */
 
 import type {
@@ -10,6 +11,8 @@ import type {
   DepartmentNode,
   Address,
   BankAccount,
+  OrgHierarchyBuEntry,
+  OrgAuditLogEntry,
 } from './domain.types';
 
 // ============================================
@@ -27,25 +30,22 @@ export interface ApiResponse<T> {
 // ============================================
 export interface CompanyProfileRequest {
   site: string;
+  companyName?: string;
   legalName: string;
-  tradeName?: string;
-  industry: string;
-  incorporationDate: string;
-  logoUrl?: string;
+  registrationNumber?: string;
   pan?: string;
-  tan?: string;
   cin?: string;
-  pfRegistrationNo?: string;
-  esiRegistrationNo?: string;
-  msmeRegistrationNo?: string;
-  ptRegistrationNo?: string;
-  lwfRegistrationNo?: string;
-  bankAccounts: BankAccount[];
-  registeredAddress: Address;
-  corporateAddress?: Address;
+  industryType?: string;
+  foundedDate?: string;
+  website?: string;
   officialEmail: string;
   officialPhone: string;
-  active: number;
+  gstin?: string;
+  pfEstablishmentCode?: string;
+  financialYearStartMonth?: string;
+  registeredOfficeAddress?: Address;
+  corporateOfficeAddress?: Address;
+  bankAccounts?: BankAccount[];
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -54,6 +54,9 @@ export type CompanyProfileResponse = CompanyProfile;
 
 export interface CompanyLogoUploadResponse {
   logoUrl: string;
+  logoFileName?: string;
+  logoContentType?: string;
+  logoFileSizeBytes?: number;
 }
 
 // ============================================
@@ -61,7 +64,6 @@ export interface CompanyLogoUploadResponse {
 // ============================================
 export interface BusinessUnitRetrieveAllRequest {
   site: string;
-  companyHandle: string;
 }
 
 export interface BusinessUnitRequest {
@@ -69,14 +71,14 @@ export interface BusinessUnitRequest {
   companyHandle: string;
   buCode: string;
   buName: string;
-  buType: string;
+  description?: string;
+  headOfBu?: string;
+  status?: string;
   state: string;
-  city: string;
+  placeOfSupply?: string;
+  gstin?: string;
   address?: Address;
-  contactEmail?: string;
-  contactPhone?: string;
-  statutoryDetails?: Record<string, string>;
-  active: number;
+  primaryContact?: string;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -100,12 +102,11 @@ export interface DepartmentRetrieveAllRequest {
 export interface DepartmentRequest {
   site: string;
   buHandle: string;
+  companyHandle?: string;
   deptCode: string;
   deptName: string;
   parentDeptHandle?: string;
-  headEmployeeHandle?: string;
-  headEmployeeName?: string;
-  active: number;
+  headOfDepartmentEmployeeId?: string;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -129,13 +130,15 @@ export interface LocationRequest {
   site: string;
   code: string;
   name: string;
+  type?: string;
   addressLine1: string;
   addressLine2?: string;
   city: string;
   state: string;
   country: string;
-  pinZip: string;
-  active?: number;
+  pincode: string;
+  /** UI alias for backward compat */
+  pinZip?: string;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -145,15 +148,18 @@ export interface LocationResponse {
   site: string;
   code: string;
   name: string;
+  type?: string;
   addressLine1: string;
   addressLine2: string | null;
   city: string;
   state: string;
   country: string;
-  pinZip: string;
+  pincode: string;
   active: number;
-  createdDateTime: string;
-  modifiedDateTime: string | null;
+  createdBy?: string;
+  modifiedBy?: string;
+  createdAt: string;
+  modifiedAt: string | null;
 }
 
 // ============================================
@@ -161,33 +167,21 @@ export interface LocationResponse {
 // ============================================
 export interface OrgHierarchyResponse {
   company: CompanyProfileResponse;
-  businessUnits: (BusinessUnitResponse & { departments: DepartmentResponse[] })[];
+  businessUnits: OrgHierarchyBuEntry[];
 }
 
 // ============================================
 // Audit Log API Types
 // ============================================
-export interface OrgAuditLogDto {
-  handle: string;
-  entityType: string;
-  entityHandle: string;
-  action: string;
-  fieldKey: string | null;
-  oldValue: unknown;
-  newValue: unknown;
-  performedBy: string;
-  performedAt: string;
-}
+export type OrgAuditLogDto = OrgAuditLogEntry;
 
 // ============================================
 // Data Completeness API Types
 // ============================================
 export interface DataCompletenessReportResponse {
-  entityHandle: string;
-  entityCode: string;
   entityType: string;
-  requiredFields: number;
-  filledFields: number;
-  missingFields: number;
-  completenessPercent: number;
+  entityHandle: string;
+  entityName: string;
+  missingFields: string[];
+  completenessPercentage: number;
 }

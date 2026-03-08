@@ -10,6 +10,7 @@ import SalaryStructureList from '../organisms/SalaryStructureList';
 import SalaryStructureBuilder from '../organisms/SalaryStructureBuilder';
 import EmployeeCompensationForm from '../organisms/EmployeeCompensationForm';
 import SalaryRevisionTable from '../organisms/SalaryRevisionTable';
+import ApprovalInbox from '../organisms/ApprovalInbox';
 import styles from '../../styles/Compensation.module.css';
 
 const CompensationTabLayout: React.FC = () => {
@@ -55,6 +56,11 @@ const CompensationTabLayout: React.FC = () => {
       label: 'Revision',
       children: <SalaryRevisionTable />,
     },
+    {
+      key: 'approvals' as CompensationTabKey,
+      label: 'Approvals',
+      children: <ApprovalInbox />,
+    },
   ];
 
   return (
@@ -63,6 +69,8 @@ const CompensationTabLayout: React.FC = () => {
       onChange={(key) => setActiveTab(key as CompensationTabKey)}
       items={tabItems}
       className={styles.mainTabs}
+      size="small"
+      tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
     />
   );
 };

@@ -2,11 +2,10 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { Button } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmAppraisalStore } from "./stores/hrmAppraisalStore";
 import type { AppraisalScreenView } from "./types/ui.types";
+import styles from "./styles/AppraisalLanding.module.css";
 
 const GoalSettingTemplate = dynamic(
   () => import("./components/templates/GoalSettingTemplate"),
@@ -25,6 +24,14 @@ const PeerFeedbackOrchestrator = dynamic(
   { ssr: false }
 );
 const PIPPanel = dynamic(() => import("./components/organisms/PIPPanel"), { ssr: false });
+const CalibrationTemplate = dynamic(
+  () => import("./components/templates/CalibrationTemplate"),
+  { ssr: false }
+);
+const AppraisalSummaryTemplate = dynamic(
+  () => import("./components/templates/AppraisalSummaryTemplate"),
+  { ssr: false }
+);
 
 const SCREEN_TITLES: Record<AppraisalScreenView, string> = {
   LANDING: "Performance Appraisal",
@@ -50,6 +57,10 @@ const HrmAppraisalScreen: React.FC = () => {
         return <ManagerReviewPanel />;
       case "FEEDBACK_360":
         return <PeerFeedbackOrchestrator />;
+      case "APPRAISAL_SUMMARY":
+        return <AppraisalSummaryTemplate />;
+      case "CALIBRATION":
+        return <CalibrationTemplate />;
       case "PIP":
         return <PIPPanel />;
       default:
@@ -58,13 +69,11 @@ const HrmAppraisalScreen: React.FC = () => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div className={styles.landingRoot}>
       <CommonAppBar
-        title={SCREEN_TITLES[currentView]}
-        showBack
-        onBack={() => setCurrentView("LANDING")}
+        appTitle={SCREEN_TITLES[currentView]}
       />
-      <div style={{ flex: 1, overflow: "auto" }}>{renderContent()}</div>
+      <div className={styles.content}>{renderContent()}</div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   Card,
   DatePicker,
   Input,
+  InputNumber,
   Segmented,
   Upload,
   Spin,
@@ -77,6 +78,23 @@ const SalaryRevisionTable: React.FC = () => {
     }
   }, [currentCompensation, submitCompensationForApproval]);
 
+  const handleEmployeeSearch = useCallback((value: string) => {
+    setSelectedEmployeeId(value);
+    if (value) {
+      loadEmployeeCompensation(value);
+    }
+  }, [setSelectedEmployeeId, loadEmployeeCompensation]);
+
+  // Compute preview values for individual revision
+  const currentBasic = currentCompensation
+    ? (currentCompensation.components ?? []).find((c) => c.componentCode === 'BASIC')?.derivedAmount ?? 0
+    : 0;
+  const newBasicEstimate = Math.round(currentBasic * (1 + indivIncrementPct / 100));
+  const grossRatio = currentCompensation && currentBasic > 0
+    ? currentCompensation.grossEarnings / currentBasic
+    : 1;
+  const newGrossEstimate = Math.round(newBasicEstimate * grossRatio);
+
   const bulkColumns: ColumnsType<SalaryRevisionRow> = [
     {
       title: 'Emp ID',
@@ -106,13 +124,13 @@ const SalaryRevisionTable: React.FC = () => {
       dataIndex: 'incrementPercent',
       width: 90,
       render: (val: number, record) => (
-        <input
-          type="number"
+        <InputNumber
           min={0}
           max={100}
           value={val}
-          onChange={(e) => handleIncrementChange(record.employeeId, parseFloat(e.target.value) || 0)}
-          style={{ width: 60, padding: '2px 4px', border: '1px solid #d9d9d9', borderRadius: 4 }}
+          onChange={(v) => handleIncrementChange(record.employeeId, v ?? 0)}
+          size="small"
+          style={{ width: 70 }}
         />
       ),
     },
@@ -156,23 +174,14 @@ const SalaryRevisionTable: React.FC = () => {
         <Card size="small" className={styles.indivCard}>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Employee</div>
-            <input
-              type="text"
+            <Input.Search
               placeholder="Enter employee ID"
               value={selectedEmployeeId ?? ''}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              onBlur={() => {
-                if (selectedEmployeeId) {
-                  loadEmployeeCompensation(selectedEmployeeId);
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '4px 8px',
-                border: '1px solid #d9d9d9',
-                borderRadius: 6,
-                fontSize: 13,
-              }}
+              onSearch={handleEmployeeSearch}
+              enterButton="Load"
+              size="middle"
+              style={{ maxWidth: 400 }}
             />
           </div>
 
@@ -182,10 +191,7 @@ const SalaryRevisionTable: React.FC = () => {
                 <div className={styles.currentInfoItem}>
                   <span className={styles.currentInfoLabel}>Current Basic</span>
                   <span className={styles.currentInfoValue}>
-                    {formatINRPlain(
-                      (currentCompensation.components ?? []).find((c) => c.componentCode === 'BASIC')
-                        ?.derivedAmount ?? 0,
-                    )}
+                    {formatINRPlain(currentBasic)}
                   </span>
                 </div>
                 <div className={styles.currentInfoItem}>
@@ -204,22 +210,15 @@ const SalaryRevisionTable: React.FC = () => {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12, alignItems: 'flex-end' }}>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Increment %</div>
-              <input
-                type="number"
+              <InputNumber
                 min={0}
                 max={100}
                 value={indivIncrementPct}
-                onChange={(e) => setIndivIncrementPct(parseFloat(e.target.value) || 0)}
-                style={{
-                  width: '100%',
-                  padding: '4px 8px',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: 6,
-                  fontSize: 13,
-                }}
+                onChange={(v) => setIndivIncrementPct(v ?? 0)}
+                style={{ width: '100%' }}
               />
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
@@ -231,6 +230,16 @@ const SalaryRevisionTable: React.FC = () => {
                 format="DD-MMM-YYYY"
               />
             </div>
+            {currentCompensation && indivIncrementPct > 0 && (
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Estimated Result</div>
+                <div style={{ fontSize: 13 }}>
+                  <span>New Basic: <strong style={{ color: '#389e0d' }}>{formatINRPlain(newBasicEstimate)}</strong></span>
+                  {' | '}
+                  <span>New Gross: <strong>{formatINRPlain(newGrossEstimate)}</strong></span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -292,7 +301,6 @@ const SalaryRevisionTable: React.FC = () => {
               icon={<DownloadIcon style={{ fontSize: 14 }} />}
               size="small"
               onClick={() => {
-                // Trigger template download
                 const link = document.createElement('a');
                 link.href = '/templates/salary-revision-template.xlsx';
                 link.download = 'salary-revision-template.xlsx';
@@ -376,7 +384,19 @@ const SalaryRevisionTable: React.FC = () => {
                     size="small"
                     disabled={selectedRevisionIds.length === 0}
                     onClick={() => {
-                      // Preview selected — show first selected employee
+                      // Preview selected -- show first selected employee
+                      const first = selectedRows[0];
+                      if (first) {
+                        runPreview({
+                          site: '',
+                          employeeId: first.employeeId,
+                          effectiveFrom: first.effectiveFrom || bulkEffectiveFrom,
+                          structureCode: '',
+                          components: [],
+                          remarks: `Bulk revision: ${first.incrementPercent}% increment`,
+                          createdBy: '',
+                        });
+                      }
                     }}
                   >
                     Preview Selected

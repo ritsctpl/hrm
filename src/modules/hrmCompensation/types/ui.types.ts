@@ -10,13 +10,13 @@ import type {
   SalaryRevisionRow,
 } from './domain.types';
 
-export type CompensationTabKey = 'components' | 'structures' | 'assignment' | 'revision';
+export type CompensationTabKey = 'components' | 'structures' | 'assignment' | 'revision' | 'approvals';
 export type RevisionMode = 'individual' | 'bulk';
 
 export interface PayComponentFormState {
   componentCode: string;
   componentName: string;
-  componentType: 'EARNING' | 'DEDUCTION';
+  componentType: 'EARNING' | 'DEDUCTION' | 'EMPLOYER_CONTRIBUTION';
   subType: string;
   calculationMethod: string;
   fixedAmount?: number;

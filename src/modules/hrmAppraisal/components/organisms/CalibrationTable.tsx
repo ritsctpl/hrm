@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { Button, Input, InputNumber, Table, Typography } from "antd";
-import type { ColumnsType, ExpandableConfig } from "antd/es/table";
+import type { ColumnsType } from "antd/es/table";
+import type { ExpandableConfig } from "antd/es/table/interface";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import type { AppraisalReview } from "../../types/domain.types";
 import styles from "../../styles/Calibration.module.css";

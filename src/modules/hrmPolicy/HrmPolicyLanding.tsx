@@ -68,10 +68,11 @@ const HrmPolicyLanding: React.FC = () => {
     }
   }, [activeTab]);
 
-  const handlePublish = async (policyId: string) => {
+  const handlePublish = async (policyHandle: string) => {
     setPublishing(true);
     try {
-      await HrmPolicyService.publishPolicy({ site, policyId });
+      const user = cookies.userId ?? "system";
+      await HrmPolicyService.publishPolicy({ site, policyHandle, publishedBy: user });
       message.success("Policy published");
       loadAdminPolicies();
     } catch {
@@ -81,14 +82,15 @@ const HrmPolicyLanding: React.FC = () => {
     }
   };
 
-  const handleArchive = async (policyId: string) => {
+  const handleArchive = async (policyHandle: string) => {
     setArchiving(true);
     try {
-      await HrmPolicyService.archivePolicy({ site, policyId });
-      message.success("Policy archived");
+      const user = cookies.userId ?? "system";
+      await HrmPolicyService.retirePolicy({ site, policyHandle, retiredBy: user, reason: "Retired by admin" });
+      message.success("Policy retired");
       loadAdminPolicies();
     } catch {
-      message.error("Failed to archive policy");
+      message.error("Failed to retire policy");
     } finally {
       setArchiving(false);
     }
@@ -103,7 +105,7 @@ const HrmPolicyLanding: React.FC = () => {
   if (showPolicyViewer && selectedPolicy) {
     return (
       <div className={styles.landing}>
-        <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`} showBack={false} />
+        <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`}  />
         <HrmPolicyScreen policy={selectedPolicy} onBack={closePolicyViewer} />
       </div>
     );
@@ -162,12 +164,14 @@ const HrmPolicyLanding: React.FC = () => {
 
   return (
     <div className={styles.landing}>
-      <CommonAppBar appTitle="HR Policies & SOPs" showBack={false} />
+      <CommonAppBar appTitle="HR Policies & SOPs"  />
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as "library" | "admin")}
         items={tabItems}
-        style={{ flex: 1, overflow: "hidden", padding: "0 24px" }}
+        size="small"
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+        style={{ flex: 1, overflow: "hidden" }}
       />
     </div>
   );

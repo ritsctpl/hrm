@@ -1,6 +1,6 @@
 import type { ExpenseStatus, ExpenseType } from "../types/domain.types";
 
-export const EXPENSE_STATUS_COLORS: Record<ExpenseStatus, string> = {
+export const EXPENSE_STATUS_COLORS: Record<string, string> = {
   DRAFT: "default",
   PENDING_SUPERVISOR: "warning",
   ESCALATED: "volcano",
@@ -8,10 +8,11 @@ export const EXPENSE_STATUS_COLORS: Record<ExpenseStatus, string> = {
   APPROVED: "success",
   REJECTED: "error",
   PAID: "cyan",
+  RECALLED: "orange",
   CANCELLED: "default",
 };
 
-export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
+export const EXPENSE_STATUS_LABELS: Record<string, string> = {
   DRAFT: "Draft",
   PENDING_SUPERVISOR: "Pending Supervisor",
   ESCALATED: "Escalated",
@@ -19,19 +20,24 @@ export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
   APPROVED: "Approved",
   REJECTED: "Rejected",
   PAID: "Paid",
+  RECALLED: "Recalled",
   CANCELLED: "Cancelled",
 };
 
-export const EXPENSE_TYPE_COLORS: Record<ExpenseType, string> = {
+export const EXPENSE_TYPE_COLORS: Record<string, string> = {
   ADVANCE: "blue",
   REIMBURSEMENT: "green",
   MILEAGE: "purple",
+  TRAVEL: "geekblue",
+  GENERAL: "default",
 };
 
-export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {
+export const EXPENSE_TYPE_LABELS: Record<string, string> = {
   ADVANCE: "Advance",
   REIMBURSEMENT: "Reimbursement",
   MILEAGE: "Mileage",
+  TRAVEL: "Travel",
+  GENERAL: "General",
 };
 
 export const PAYMENT_MODE_OPTIONS = [
@@ -47,7 +53,7 @@ export const RECALLABLE_STATUSES: ExpenseStatus[] = ["PENDING_SUPERVISOR", "ESCA
 export const DEFAULT_EXPENSE_FORM: import("../types/ui.types").ExpenseFormState = {
   expenseType: null,
   purpose: "",
-  travelRefHandle: null,
+  travelRequestHandle: null,
   fromDate: null,
   toDate: null,
   costCenter: "",
@@ -60,7 +66,7 @@ export const DEFAULT_EXPENSE_FORM: import("../types/ui.types").ExpenseFormState 
 
 export const DEFAULT_FINANCE_PANEL: import("../types/ui.types").FinancePanelState = {
   sanctionedAmount: null,
-  perDiem: null,
+  perDiemAmount: null,
   exchangeRate: 1,
   originalsReceived: false,
   paymentMode: null,

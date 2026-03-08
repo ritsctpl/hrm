@@ -15,13 +15,17 @@ export function useEmployeeWidgets() {
     store.setLoadingProfile(true);
     try {
       const res = await HrmDashboardService.getEmployeeDashboard({ site, employeeId });
-      if (res?.employeeProfile) store.setEmployeeProfile(res.employeeProfile);
-      if (res?.leaveBalances) store.setLeaveBalances(res.leaveBalances);
-      if (res?.pendingRequests) store.setPendingRequests(res.pendingRequests);
-      if (res?.recentPayslips) store.setRecentPayslips(res.recentPayslips);
-      if (res?.myGoals) store.setMyGoals(res.myGoals, res.goalsOverall ?? 0);
-      if (res?.upcomingHolidays) store.setUpcomingHolidays(res.upcomingHolidays);
-      if (res?.announcementAlerts) store.setAnnouncementAlerts(res.announcementAlerts);
+      // The backend returns { widgets: DashboardWidget[], layout, alerts, ... }
+      // Store the full response; components should read from widgets array
+      if (res?.widgets) {
+        store.setDashboardWidgets(res.widgets);
+      }
+      if (res?.layout) {
+        store.setDashboardLayout(res.layout);
+      }
+      if (res?.alerts) {
+        store.setDashboardAlerts(res.alerts);
+      }
     } catch {
       // silently handle — widget shows empty state
     } finally {

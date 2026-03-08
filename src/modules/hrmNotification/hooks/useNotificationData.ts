@@ -54,8 +54,12 @@ export function useNotificationData() {
     const { site, recipientId } = getSiteAndUser();
     store.setLoadingPopover(true);
     try {
-      const data = await HrmNotificationService.getUnreadTopFive(site, recipientId);
-      store.setPopoverNotifications(data);
+      const data = await HrmNotificationService.getMyNotifications(site, recipientId, 0, 5);
+      const mapped: Notification[] = data.map((d) => ({
+        ...d,
+        type: d.type,
+      }));
+      store.setPopoverNotifications(mapped);
     } catch {
       store.setPopoverNotifications([]);
     } finally {

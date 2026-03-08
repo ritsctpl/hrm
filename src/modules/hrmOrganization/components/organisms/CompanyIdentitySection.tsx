@@ -2,8 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { Input, Select, DatePicker, Upload, Button, message } from 'antd';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import BusinessIcon from '@mui/icons-material/Business';
+import { CloudUploadOutlined, ShopOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import OrgFormField from '../molecules/OrgFormField';
@@ -32,7 +31,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
   const handleDateChange = useCallback(
     (_date: dayjs.Dayjs | null, dateString: string | string[]) => {
       const value = Array.isArray(dateString) ? dateString[0] : dateString;
-      setCompanyDraft({ incorporationDate: value });
+      setCompanyDraft({ foundedDate: value });
     },
     [setCompanyDraft]
   );
@@ -91,17 +90,17 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
           <img src={draft.logoUrl} alt="Company Logo" className={mainStyles.logoPreview} />
         ) : (
           <div className={mainStyles.logoPlaceholder}>
-            <BusinessIcon fontSize="inherit" />
+            <ShopOutlined />
           </div>
         )}
         <div className={mainStyles.logoInfo}>
           <Upload
             showUploadList={false}
-            beforeUpload={handleLogoUpload as (file: RcFile, fileList: RcFile[]) => boolean}
+            beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}
             accept="image/*"
             disabled={disabled}
           >
-            <Button icon={<CloudUploadIcon fontSize="small" />} disabled={disabled}>
+            <Button icon={<CloudUploadOutlined />} disabled={disabled}>
               Upload Logo
             </Button>
           </Upload>
@@ -122,19 +121,19 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
           />
         </OrgFormField>
 
-        <OrgFormField label="Trade Name" error={errors.tradeName}>
+        <OrgFormField label="Trade Name" error={errors.companyName}>
           <Input
-            value={draft?.tradeName || ''}
-            onChange={(e) => handleFieldChange('tradeName', e.target.value)}
+            value={draft?.companyName || ''}
+            onChange={(e) => handleFieldChange('companyName', e.target.value)}
             placeholder="Enter trade name"
             disabled={disabled}
           />
         </OrgFormField>
 
-        <OrgFormField label="Industry" required error={errors.industry}>
+        <OrgFormField label="Industry" required error={errors.industryType || errors.industry}>
           <Select
-            value={draft?.industry || undefined}
-            onChange={(val) => handleFieldChange('industry', val)}
+            value={draft?.industryType || draft?.industry || undefined}
+            onChange={(val) => handleFieldChange('industryType', val)}
             placeholder="Select industry"
             options={[...INDUSTRY_OPTIONS]}
             showSearch
@@ -144,9 +143,9 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
           />
         </OrgFormField>
 
-        <OrgFormField label="Incorporation Date" required error={errors.incorporationDate}>
+        <OrgFormField label="Founded Date" required error={errors.foundedDate || errors.incorporationDate}>
           <DatePicker
-            value={draft?.incorporationDate ? dayjs(draft.incorporationDate) : null}
+            value={(draft?.foundedDate || draft?.incorporationDate) ? dayjs(draft?.foundedDate || draft?.incorporationDate) : null}
             onChange={handleDateChange}
             format="YYYY-MM-DD"
             placeholder="Select date"

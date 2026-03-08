@@ -66,32 +66,35 @@ export interface TaxDeclarationItem {
   declaredAmount: number;
   proofSubmitted: boolean;
   proofUrl?: string;
+  approvedAmount?: number;
 }
 
 export interface TaxDeclarationResponse {
   handle: string;
   site: string;
   employeeId: string;
-  employeeName: string;
+  employeeName?: string;
   financialYear: string;
   regime: 'OLD' | 'NEW';
   declarations: TaxDeclarationItem[];
-  totalDeclaredAmount: number;
+  totalDeclaredAmount?: number;
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  submittedAt?: string;
   approvedBy?: string;
-  approvedOn?: string;
+  approvedAt?: string;
   remarks?: string;
   active: number;
-  createdDateTime: string;
-  modifiedDateTime: string;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface TaxDeclarationApprovalRequest {
   site: string;
-  declarationHandle: string;
-  action: 'APPROVE' | 'REJECT';
-  remarks?: string;
-  performedBy: string;
+  employeeId: string;
+  financialYear: string;
+  approvedBy: string;
 }
 
 // ─── Loan Types ──────────────────────────────────────────────────────────────
@@ -160,10 +163,68 @@ export interface PayrollSummaryResponse {
 
 // ─── Statutory Config Update ─────────────────────────────────────────────────
 
-export interface UpdateStatutoryConfigRequest {
+// ─── Variance Report Types ──────────────────────────────────────────────────
+
+export interface VarianceReportRequest {
   site: string;
+  currentRunId: string;
+  previousRunId: string;
+}
+
+export interface VarianceReportEntry {
+  employeeId: string;
+  employeeName: string | null;
+  previousNetPay: number;
+  currentNetPay: number;
+  netPayVariance: number;
+  previousGrossEarnings: number;
+  currentGrossEarnings: number;
+  grossVariance: number;
+  previousTotalDeductions: number;
+  currentTotalDeductions: number;
+  deductionVariance: number;
+}
+
+// ─── Bank File Types ────────────────────────────────────────────────────────
+
+export interface GenerateBankFileRequest {
+  site: string;
+  payrollRunId: string;
+  bankFormat?: 'NEFT' | 'RTGS' | 'IMPS';
+}
+
+// ─── Payroll Schedule Types ─────────────────────────────────────────────────
+
+export interface PayrollScheduleRequest {
+  site: string;
+  name: string;
+  frequency: 'MONTHLY' | 'BIWEEKLY';
+  payDay: number;
+  cutoffDay: number;
+  active?: boolean;
+  createdBy: string;
+}
+
+export interface PayrollScheduleResponse {
   handle: string;
-  configType: 'PF' | 'ESI' | 'PT';
+  site: string;
+  name: string;
+  frequency: 'MONTHLY' | 'BIWEEKLY';
+  payDay: number;
+  cutoffDay: number;
+  active: boolean;
+  createdDateTime: string;
+  modifiedDateTime: string;
+  createdBy: string;
+  modifiedBy: string | null;
+}
+
+// ─── Statutory Config Update ─────────────────────────────────────────────────
+
+export interface UpdateStatutoryConfigRequest {
+  handle: string;
+  site?: string;
+  configType?: 'PF' | 'ESI' | 'PT';
   pfEmployeeRate?: number;
   pfEmployerRate?: number;
   pfWageCeiling?: number;
@@ -171,5 +232,5 @@ export interface UpdateStatutoryConfigRequest {
   esiEmployeeRate?: number;
   esiEmployerRate?: number;
   esiWageCeiling?: number;
-  modifiedBy: string;
+  updatedBy: string;
 }

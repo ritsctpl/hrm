@@ -8,13 +8,13 @@ export interface AnnouncementCardProps {
 export interface AnnouncementListRowProps {
   announcement: Announcement;
   onClick: (announcement: Announcement) => void;
-  onMarkRead?: (announcementId: string) => void;
+  onMarkRead?: (handle: string) => void;
 }
 
 export interface AnnouncementDetailPanelProps {
   announcement: Announcement;
   onClose: () => void;
-  onMarkRead?: (announcementId: string) => void;
+  onMarkRead?: (handle: string) => void;
 }
 
 export interface AnnouncementComposeDrawerProps {

@@ -58,8 +58,8 @@ export default function ResourceCalendarView() {
               {weekDates.map((d) => {
                 const day = emp.days.find((x) => x.date === d);
                 if (!day) return <div key={d} className={styles.dayCellEmpty} />;
-                const status: CapacityStatus = day.isHoliday || day.isLeave ? 'GREY' : day.capacityStatus;
-                const label = day.isHoliday ? 'HOL' : day.isLeave ? 'LVE' : `${day.allocatedHours.toFixed(1)}h`;
+                const status: CapacityStatus = day.holiday || day.leave ? 'GREY' : day.capacityStatus;
+                const label = day.holiday ? 'HOL' : day.leave ? 'LVE' : `${day.allocatedHours.toFixed(1)}h`;
                 return (
                   <Tooltip key={d} title={`${d}: ${label}`}>
                     <div className={styles.dayCell}>

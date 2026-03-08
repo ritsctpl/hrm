@@ -1,5 +1,3 @@
-'use client';
-
 import api from '@/services/api';
 import type {
   ProjectRequest,
@@ -64,17 +62,17 @@ export class HrmProjectService {
     milestone: { milestoneName: string; targetDate: string; description?: string },
     createdBy: string
   ): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/addMilestone`, { projectHandle, ...milestone, createdBy });
+    const res = await api.post(`${BASE}/milestone/add`, { projectHandle, milestone, createdBy });
     return res.data;
   }
 
   static async updateMilestoneStatus(payload: MilestoneStatusUpdateRequest): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/updateMilestoneStatus`, payload);
+    const res = await api.post(`${BASE}/milestone/updateStatus`, payload);
     return res.data;
   }
 
   static async removeMilestone(projectHandle: string, milestoneId: string, removedBy: string): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/removeMilestone`, { projectHandle, milestoneId, removedBy });
+    const res = await api.post(`${BASE}/milestone/remove`, { projectHandle, milestoneId, removedBy });
     return res.data;
   }
 
@@ -84,17 +82,17 @@ export class HrmProjectService {
   }
 
   static async getAllocationsByProject(site: string, projectHandle: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/listAllocationsByProject`, { site, projectHandle });
+    const res = await api.post(`${BASE}/allocation/listByProject`, { site, projectHandle });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getAllocationsByEmployee(site: string, employeeId: string, status?: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/listAllocationsByEmployee`, { site, employeeId, status });
+    const res = await api.post(`${BASE}/allocation/listByEmployee`, { site, employeeId, status });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getPendingApprovals(site: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/pendingAllocations`, { site });
+    const res = await api.post(`${BASE}/allocation/pending`, { site });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -109,31 +107,31 @@ export class HrmProjectService {
   }
 
   static async cancelAllocation(site: string, handle: string, cancelledBy: string): Promise<void> {
-    await api.post(`${BASE}/cancelAllocation`, { site, handle, cancelledBy });
+    await api.post(`${BASE}/allocation/cancel`, { site, handle, cancelledBy });
   }
 
   static async checkCapacity(payload: CapacityCheckRequest): Promise<CapacityCheckResponse> {
-    const res = await api.post(`${BASE}/checkCapacity`, payload);
+    const res = await api.post(`${BASE}/capacity/check`, payload);
     return res.data;
   }
 
   static async getCalendarCapacity(site: string, weekStart: string, buCode?: string, departmentCode?: string): Promise<CapacityCheckResponse[]> {
-    const res = await api.post(`${BASE}/capacityCalendar`, { site, weekStart, buCode, departmentCode });
+    const res = await api.post(`${BASE}/capacity/calendar`, { site, weekStart, buCode, departmentCode });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getAllocationVsActual(site: string, projectHandle: string): Promise<ProjectAllocationVsActualReport> {
-    const res = await api.post(`${BASE}/allocationVsActualReport`, { site, projectHandle });
+    const res = await api.post(`${BASE}/report/allocationVsActual`, { site, projectHandle });
     return res.data;
   }
 
   static async getResourceUtilization(site: string, startDate: string, endDate: string, department?: string): Promise<ResourceUtilizationReport> {
-    const res = await api.post(`${BASE}/resourceUtilizationReport`, { site, startDate, endDate, department });
+    const res = await api.post(`${BASE}/report/resourceUtilization`, { site, startDate, endDate, department });
     return res.data;
   }
 
   static async getCapacityDemand(site: string, startDate: string, endDate: string): Promise<CapacityDemandReport> {
-    const res = await api.post(`${BASE}/capacityDemandReport`, { site, startDate, endDate });
+    const res = await api.post(`${BASE}/report/capacityDemand`, { site, startDate, endDate });
     return res.data;
   }
 
@@ -143,7 +141,7 @@ export class HrmProjectService {
   }
 
   static async getPendingAllocations(site: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/pendingAllocations`, { site });
+    const res = await api.post(`${BASE}/allocation/pending`, { site });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -152,8 +150,8 @@ export class HrmProjectService {
     weekStart: string,
     buCode?: string,
     departmentCode?: string
-  ): Promise<Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; isHoliday: boolean; isLeave: boolean; capacityStatus: string }> }>> {
-    const res = await api.post(`${BASE}/capacityCalendar`, { site, weekStart, buCode, departmentCode });
+  ): Promise<Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; holiday: boolean; leave: boolean; capacityStatus: string }> }>> {
+    const res = await api.post(`${BASE}/capacity/calendar`, { site, weekStart, buCode, departmentCode });
     return Array.isArray(res.data) ? res.data : [];
   }
 

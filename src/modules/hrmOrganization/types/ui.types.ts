@@ -6,13 +6,41 @@
 import type { CompanyProfile, BusinessUnit, Department, DepartmentNode, Location, OrgHierarchy } from './domain.types';
 
 // ============================================
-// Tab Types
+// View & Tab Types
 // ============================================
-export type MainTabKey = 'company' | 'businessUnit' | 'department' | 'location' | 'hierarchy';
+export type MainView = 'list' | 'detail';
+
+export type DetailTabKey = 'profile' | 'businessUnits' | 'departments' | 'locations' | 'hierarchy' | 'audit' | 'reports';
 
 export type CompanyTabKey = 'identity' | 'statutory' | 'bank' | 'address' | 'contact';
 
 export type BusinessUnitTabKey = 'general' | 'contact' | 'address' | 'statutory';
+
+export type StructureSubView = 'departments' | 'locations' | 'hierarchy';
+
+// Keep backward compat alias
+export type MainTabKey = DetailTabKey;
+
+// ============================================
+// Company List State (for list view)
+// ============================================
+export interface CompanyListState {
+  items: CompanyListItem[];
+  isLoading: boolean;
+  searchText: string;
+  statusFilter: 'all' | 'active' | 'inactive';
+}
+
+export interface CompanyListItem {
+  handle: string;
+  legalName: string;
+  tradeName?: string;
+  industry: string;
+  officialEmail: string;
+  officialPhone: string;
+  active: number;
+  createdDateTime?: string;
+}
 
 // ============================================
 // Store State Types
@@ -91,7 +119,9 @@ export interface OrgAddressFieldsProps {
     line2: string;
     city: string;
     state: string;
+    pincode: string;
     pinCode: string;
+    postalCode: string;
     country: string;
   }>;
   onChange: (field: string, value: string) => void;

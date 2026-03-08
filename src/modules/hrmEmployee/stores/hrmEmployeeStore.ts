@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../services/hrmEmployeeService';
-import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep } from '../utils/transformations';
+import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile } from '../utils/transformations';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
 import type { EmployeeSummary, EmployeeProfile } from '../types/domain.types';
 import type { CreateEmployeeRequest } from '../types/api.types';
@@ -100,7 +100,7 @@ const initialProfile: ProfileState = {
   isLoading: false,
   isSaving: false,
   isEditing: false,
-  activeTab: 'basic',
+  activeTab: 'overview',
   errors: {},
 };
 
@@ -142,8 +142,8 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
             department: departmentFilter || undefined,
             status: statusFilter,
             businessUnit: buFilter || undefined,
-            page: currentPage,
-            pageSize,
+            page: currentPage - 1, // Backend expects 0-indexed page
+            size: pageSize,        // Backend expects 'size' not 'pageSize'
           });
 
       const employees = (response.employees || []).map(mapDirectoryRowToSummary);
@@ -203,7 +203,8 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const site = parseCookies().site;
       if (!site) throw new Error('Site not found in cookies');
 
-      const data = await HrmEmployeeService.fetchProfile(site, handle);
+      const raw = await HrmEmployeeService.fetchProfile(site, handle);
+      const data = mapApiProfileToEmployeeProfile(raw as unknown as Record<string, unknown>);
       set({ profile: { ...get().profile, data, isLoading: false } });
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to load profile';
@@ -234,26 +235,30 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const modifiedBy = cookies.username || 'system';
       const basePayload = { site, handle: profile.handle, modifiedBy, ...data };
 
-      let updated: EmployeeProfile | undefined;
-
       switch (section) {
         case 'basic':
-          updated = await HrmEmployeeService.updateBasicDetails(
+          await HrmEmployeeService.updateBasicDetails(
             basePayload as Parameters<typeof HrmEmployeeService.updateBasicDetails>[0]
           );
           break;
-        case 'official':
-          updated = await HrmEmployeeService.updateOfficialDetails(
-            basePayload as Parameters<typeof HrmEmployeeService.updateOfficialDetails>[0]
+        case 'official': {
+          // Map UI 'designation' field to backend 'role' field
+          const officialPayload = { ...basePayload } as Record<string, unknown>;
+          if (officialPayload.designation && !officialPayload.role) {
+            officialPayload.role = officialPayload.designation;
+          }
+          await HrmEmployeeService.updateOfficialDetails(
+            officialPayload as unknown as Parameters<typeof HrmEmployeeService.updateOfficialDetails>[0]
           );
           break;
+        }
         case 'personal':
-          updated = await HrmEmployeeService.updatePersonalDetails(
+          await HrmEmployeeService.updatePersonalDetails(
             basePayload as Parameters<typeof HrmEmployeeService.updatePersonalDetails>[0]
           );
           break;
         case 'contact':
-          updated = await HrmEmployeeService.updateContactDetails(
+          await HrmEmployeeService.updateContactDetails(
             basePayload as Parameters<typeof HrmEmployeeService.updateContactDetails>[0]
           );
           break;
@@ -261,13 +266,9 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
           throw new Error(`Unknown section: ${section}`);
       }
 
-      if (updated) {
-        set({ profile: { ...get().profile, data: updated, isSaving: false, isEditing: false } });
-      } else {
-        // Re-fetch profile if update response doesn't include the full profile
-        await get().fetchProfile(profile.handle);
-        set({ profile: { ...get().profile, isSaving: false, isEditing: false } });
-      }
+      // Backend returns just a handle string, not full profile — always re-fetch
+      await get().fetchProfile(profile.handle);
+      set({ profile: { ...get().profile, isSaving: false, isEditing: false } });
 
       message.success('Details updated successfully');
     } catch (error) {

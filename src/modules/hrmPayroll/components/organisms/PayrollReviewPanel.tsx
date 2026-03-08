@@ -9,15 +9,13 @@ import PayrollReviewTable from './PayrollReviewTable';
 import EmployeePayrollModal from './EmployeePayrollModal';
 import PayrollStatusTag from '../atoms/PayrollStatusTag';
 import type { PayrollEntry } from '../../types/domain.types';
-import { formatPayrollPeriod } from '../../utils/payrollFormatters';
-import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
-import { computeVariancePct } from '../../utils/payrollFormatters';
+import { formatPayrollPeriod, computeVariancePct } from '../../utils/payrollFormatters';
 import styles from '../../styles/PayrollReview.module.css';
 
 type StatusFilter = 'ALL' | 'COMPUTED' | 'ERROR' | 'ADJUSTED' | 'LOCKED';
 type VarianceFilter = 'ALL' | 'gt5' | 'gt10' | 'gt20';
 
-const WizardStepReviewResults: React.FC = () => {
+const PayrollReviewPanel: React.FC = () => {
   const store = useHrmPayrollStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -72,7 +70,7 @@ const WizardStepReviewResults: React.FC = () => {
 
   const runOptions = store.allRuns.map((r) => ({
     value: r.runId,
-    label: `${r.runId} — ${formatPayrollPeriod(r.payrollMonth, r.payrollYear, PAYROLL_MONTHS)}`,
+    label: `${r.runId} — ${formatPayrollPeriod(r.payrollYear, r.payrollMonth)}`,
   }));
 
   return (
@@ -156,4 +154,4 @@ const WizardStepReviewResults: React.FC = () => {
   );
 };
 
-export default WizardStepReviewResults;
+export default PayrollReviewPanel;

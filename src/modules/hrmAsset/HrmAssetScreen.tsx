@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { Tabs, Button, Space, Typography } from 'antd';
-import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
+import { CloseOutlined, EditOutlined } from '@ant-design/icons';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import AssetOverviewTab from './components/organisms/AssetOverviewTab';
 import AssetAttributesTab from './components/organisms/AssetAttributesTab';
@@ -96,7 +95,7 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = ({
           {canEdit && (
             <Button
               size="small"
-              icon={<EditIcon style={{ fontSize: 14 }} />}
+              icon={<EditOutlined />}
               onClick={openAssetForm}
             >
               Edit
@@ -104,7 +103,7 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = ({
           )}
           <Button
             size="small"
-            icon={<CloseIcon style={{ fontSize: 14 }} />}
+            icon={<CloseOutlined />}
             onClick={() => setSelectedAsset(null)}
           />
         </Space>

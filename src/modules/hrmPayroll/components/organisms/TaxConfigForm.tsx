@@ -66,16 +66,20 @@ const TaxConfigForm: React.FC = () => {
   const handleSave = async () => {
     const errors = validateTaxSlabs(slabs);
     if (errors.length > 0) {
-      setSlabError(errors[0]);
+      setSlabError(errors[0].message);
       return;
     }
     setSlabError(null);
     const vals = await form.validateFields();
     await store.saveTaxConfig({
+      handle: store.taxConfig?.handle ?? '',
       site: '',
       financialYearStart: financialYear,
+      financialYearEnd: financialYear + 1,
       regime,
       slabs,
+      active: 1,
+      createdBy: '',
       ...vals,
     });
   };

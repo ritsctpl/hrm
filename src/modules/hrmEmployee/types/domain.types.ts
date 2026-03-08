@@ -1,6 +1,7 @@
 /**
  * HRM Employee Domain Types
  * Core business entities for the Employee Master module
+ * Aligned with backend API from docs/HRM/design-ui-v2/03-employee-master-ui-api.md
  */
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE';
@@ -25,50 +26,79 @@ export interface EmergencyContact {
 }
 
 export interface Skill {
-  skillId: string;
+  skillId?: string;
   skillName: string;
-  proficiency: SkillProficiency;
+  proficiencyLevel: SkillProficiency;
+  yearsOfExperience?: number;
+  certificationLink?: string;
+  certifiedOn?: string;
+  expiryDate?: string;
 }
 
 export interface JobHistoryEntry {
-  date: string;
-  fromRole: string;
-  toRole: string;
-  fromDept: string;
-  toDept: string;
-  reason: string;
+  entryId?: string;
+  designation: string;
+  department: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  grade?: string;
+  changeReason?: string;
+  changedBy?: string;
 }
 
 export interface PreviousExperience {
-  employer: string;
-  role: string;
+  expId?: string;
+  organization: string;
+  roleDesignation: string;
   fromDate: string;
   toDate: string;
+  experienceSummary?: string;
+  /** @deprecated UI backward compat aliases */
+  employer?: string;
+  role?: string;
   description?: string;
 }
 
 export interface EducationEntry {
+  eduId?: string;
+  qualification: string;
   institution: string;
-  degree: string;
-  field: string;
-  year: number;
+  yearOfPassing: number;
+  gradePercentage?: string;
+  fieldOfStudy?: string;
+  /** @deprecated UI backward compat aliases */
+  degree?: string;
+  field?: string;
+  year?: number;
   grade?: string;
 }
 
 export interface TrainingCert {
-  name: string;
-  issuer: string;
-  issueDate: string;
+  trainId?: string;
+  trainingName: string;
+  provider: string;
+  validityFrom: string;
+  validityTo?: string;
+  certificateDocUrl?: string;
+  /** @deprecated UI backward compat aliases */
+  name?: string;
+  issuer?: string;
+  issueDate?: string;
   expiryDate?: string;
   certificateUrl?: string;
 }
 
 export interface EmployeeDocument {
   docId: string;
-  docType: string;
-  fileName: string;
-  uploadedAt: string;
+  documentType: string;
+  documentName: string;
+  storagePath?: string;
   expiryDate?: string;
+  tags?: string[];
+  uploadedAt: string;
+  /** @deprecated UI backward compat aliases */
+  docType?: string;
+  fileName?: string;
 }
 
 export interface AssetDetail {
@@ -83,11 +113,18 @@ export interface EmployeeSummary {
   handle: string;
   employeeCode: string;
   fullName: string;
-  department: string;
-  designation: string;
-  status: EmployeeStatus;
-  photoUrl?: string;
   workEmail: string;
+  phone?: string;
+  photoUrl?: string;
+  status: EmployeeStatus;
+  department: string;
+  role?: string;
+  /** UI alias - mapped from backend 'role' field for backward compat */
+  designation?: string;
+  location?: string;
+  businessUnits?: string[];
+  reportingManager?: string;
+  reportingManagerName?: string;
 }
 
 export interface BasicDetails {
@@ -96,17 +133,29 @@ export interface BasicDetails {
   phone: string;
   photoUrl?: string;
   status: string;
+  employeeCode?: string;
 }
 
 export interface OfficialDetails {
   firstName: string;
   lastName: string;
+  nickName?: string;
   title: string;
   department: string;
-  designation: string;
+  departmentName?: string;
+  /** Backend field name for position/role */
+  role?: string;
+  roleName?: string;
+  /** UI alias - mapped from backend 'role' field for backward compat */
+  designation?: string;
   reportingManager?: string;
+  reportingManagerName?: string;
+  employeeCode?: string;
+  location?: string;
+  locationName?: string;
   businessUnits: string[];
-  joiningDate: string;
+  businessUnitNames?: string[];
+  joiningDate?: string;
 }
 
 export interface PersonalDetails {
@@ -114,17 +163,24 @@ export interface PersonalDetails {
   gender?: Gender;
   maritalStatus?: MaritalStatus;
   bloodGroup?: BloodGroup;
+  nationality?: string;
+  govtIds?: Record<string, string>;
+  /** @deprecated UI backward compat alias */
   governmentIds?: Record<string, string>;
 }
 
 export interface ContactDetails {
-  presentAddress?: Address;
-  permanentAddress?: Address;
+  presentAddress?: string;
+  permanentAddress?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pinZip?: string;
   emergencyContacts?: EmergencyContact[];
 }
 
 export interface Dependent {
-  dependentId: string;
+  dependentId?: string;
   name: string;
   relationship: string;
   dateOfBirth?: string;
@@ -132,7 +188,7 @@ export interface Dependent {
 }
 
 export interface VisaEntry {
-  visaId: string;
+  visaId?: string;
   country: string;
   visaType: string;
   issueDate: string;
@@ -141,7 +197,7 @@ export interface VisaEntry {
 }
 
 export interface BankAccount {
-  bankAccountId: string;
+  bankAccountId?: string;
   bankName: string;
   accountNumber: string;
   ifscCode: string;
@@ -174,19 +230,60 @@ export interface AuditLogEntry {
   performedAt: string;
 }
 
+export interface Remuneration {
+  currency: string;
+  basicPay: number;
+  hra: number;
+  transportAllowance: number;
+  otherAllowances: number;
+  providentFundDeduction: number;
+  taxDeduction: number;
+  otherDeductions?: number;
+  ctc: number;
+  effectiveFrom: string;
+  payrollGrade: string;
+  approvedBy: string;
+  /** @deprecated UI backward compat aliases */
+  transport?: number;
+  pfDeduction?: number;
+  tax?: number;
+}
+
+export interface LeaveSummary {
+  leaveType: string;
+  balance: number;
+  used: number;
+  pending: number;
+}
+
 export interface EmployeeProfile {
   handle: string;
-  site: string;
-  employeeCode: string;
+  site?: string;
+  employeeCode?: string;
   basicDetails: BasicDetails;
   officialDetails: OfficialDetails;
   personalDetails: PersonalDetails;
   contactDetails: ContactDetails;
   skills: Skill[];
   jobHistory: JobHistoryEntry[];
-  previousExperience: PreviousExperience[];
-  education: EducationEntry[];
-  trainingCerts: TrainingCert[];
+  previousExperiences: PreviousExperience[];
+  educationEntries: EducationEntry[];
+  trainingCertifications: TrainingCert[];
   documents: EmployeeDocument[];
-  assets: AssetDetail[];
+  additionalDetails?: unknown;
+  paySlips?: unknown;
+  securityCredentials?: unknown;
+  assetDetails: AssetDetail[];
+  remuneration?: Remuneration;
+  leaveSummary?: LeaveSummary[];
+  dependents?: Dependent[];
+  visaImmigration?: VisaEntry[];
+  benefits?: unknown;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  /** @deprecated UI backward compat aliases */
+  previousExperience?: PreviousExperience[];
+  education?: EducationEntry[];
+  trainingCerts?: TrainingCert[];
+  assets?: AssetDetail[];
 }

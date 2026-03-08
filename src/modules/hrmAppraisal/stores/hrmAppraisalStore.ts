@@ -235,7 +235,7 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
     const site = getSite();
     set({ savingGoal: true, error: null });
     try {
-      await HrmAppraisalService.updateGoal({ ...payload, site } as unknown as AppraisalGoal);
+      await HrmAppraisalService.updateGoal({ ...payload, site });
       message.success("Goal updated");
       set({ goalFormOpen: false });
       await get().fetchMyGoals(payload.cycleId);
@@ -274,10 +274,14 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   submitSelfAssessment: async (reviewId, data) => {
     set({ submittingAssessment: true });
     try {
-      await HrmAppraisalService.submitSelfAssessment(
+      const site = getSite();
+      const employeeId = getEmployee();
+      await HrmAppraisalService.submitSelfAssessment({
+        site,
         reviewId,
-        data as Omit<import("../types/api.types").SubmitSelfAssessmentRequest, "reviewId">
-      );
+        employeeId,
+        ...(data as object),
+      } as import("../types/api.types").SubmitSelfAssessmentRequest);
       message.success("Self assessment submitted");
       const cycle = get().activeCycle;
       if (cycle) await get().fetchMyReview(cycle.cycleId);
@@ -291,10 +295,14 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   submitManagerAssessment: async (reviewId, data) => {
     set({ submittingAssessment: true });
     try {
-      await HrmAppraisalService.submitManagerAssessment(
+      const site = getSite();
+      const managerId = getEmployee();
+      await HrmAppraisalService.submitManagerAssessment({
+        site,
         reviewId,
-        data as Omit<import("../types/api.types").SubmitManagerAssessmentRequest, "reviewId">
-      );
+        managerId,
+        ...(data as object),
+      } as import("../types/api.types").SubmitManagerAssessmentRequest);
       message.success("Manager assessment submitted");
       const cycle = get().activeCycle;
       if (cycle) await get().fetchTeamReviews(cycle.cycleId);
@@ -307,7 +315,12 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
 
   submitPeerFeedback: async (reviewId, data) => {
     try {
-      await HrmAppraisalService.submitPeerFeedback(reviewId, data);
+      const site = getSite();
+      await HrmAppraisalService.submitPeerFeedback({
+        site,
+        reviewId,
+        ...(data as object),
+      } as import("../types/api.types").SubmitPeerFeedbackRequest);
       message.success("Peer feedback submitted");
     } catch {
       message.error("Failed to submit peer feedback");
@@ -323,7 +336,7 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
         site,
         reviewId,
         calibratedRating,
-        notes,
+        calibrationNotes: notes,
         calibratedBy,
       });
       message.success("Calibration saved");

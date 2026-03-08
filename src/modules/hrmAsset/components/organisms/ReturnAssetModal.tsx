@@ -26,6 +26,7 @@ export default function ReturnAssetModal() {
         returnDate: dayjs(values.returnDate).format('YYYY-MM-DD'),
         returnRemarks: values.returnRemarks,
         handoverReceiptNo: values.handoverReceiptNo,
+        checklistCompleted: true,
       });
       updateAssetInList(selectedAsset!.assetId, {
         currentHolderEmployeeId: undefined,

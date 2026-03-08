@@ -27,12 +27,12 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       if (editPolicy) {
         form.setFieldsValue({
           title: editPolicy.title,
-          docType: editPolicy.docType,
-          categoryId: editPolicy.categoryId,
-          summary: editPolicy.summary,
-          content: editPolicy.content,
-          effectiveDate: editPolicy.effectiveDate ? dayjs(editPolicy.effectiveDate) : undefined,
-          nextReviewDate: editPolicy.nextReviewDate ? dayjs(editPolicy.nextReviewDate) : undefined,
+          documentType: editPolicy.documentType,
+          categoryHandle: editPolicy.categoryHandle,
+          description: editPolicy.description,
+          textContent: editPolicy.textContent,
+          effectiveFrom: editPolicy.effectiveFrom ? dayjs(editPolicy.effectiveFrom) : undefined,
+          reviewDate: editPolicy.reviewDate ? dayjs(editPolicy.reviewDate) : undefined,
           tags: editPolicy.tags,
         });
       } else {
@@ -48,11 +48,11 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       const payload = {
         ...values,
         site,
-        effectiveDate: values.effectiveDate?.format("YYYY-MM-DD"),
-        nextReviewDate: values.nextReviewDate?.format("YYYY-MM-DD"),
+        effectiveFrom: values.effectiveFrom?.format("YYYY-MM-DD"),
+        reviewDate: values.reviewDate?.format("YYYY-MM-DD"),
       };
       if (editPolicy) {
-        await HrmPolicyService.updatePolicy({ ...payload, policyId: editPolicy.id });
+        await HrmPolicyService.updatePolicy({ ...payload, policyHandle: editPolicy.handle });
       } else {
         await HrmPolicyService.createPolicy(payload);
       }
@@ -84,30 +84,30 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
         <Form.Item name="title" label="Title" rules={[{ required: true }]}>
           <Input placeholder="Policy title" />
         </Form.Item>
-        <Form.Item name="docType" label="Document Type" rules={[{ required: true }]}>
+        <Form.Item name="documentType" label="Document Type" rules={[{ required: true }]}>
           <Select placeholder="Select type">
             {Object.entries(POLICY_DOC_TYPE_LABELS).map(([value, label]) => (
               <Option key={value} value={value}>{label}</Option>
             ))}
           </Select>
         </Form.Item>
-        <Form.Item name="categoryId" label="Category" rules={[{ required: true }]}>
+        <Form.Item name="categoryHandle" label="Category" rules={[{ required: true }]}>
           <Select placeholder="Select category">
             {categories.map((cat) => (
-              <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+              <Option key={cat.handle} value={cat.handle}>{cat.categoryName}</Option>
             ))}
           </Select>
         </Form.Item>
-        <Form.Item name="summary" label="Summary">
+        <Form.Item name="description" label="Summary">
           <TextArea rows={2} placeholder="Brief summary of this policy" />
         </Form.Item>
-        <Form.Item name="content" label="Content">
+        <Form.Item name="textContent" label="Content">
           <TextArea rows={6} placeholder="Policy content (HTML supported)" />
         </Form.Item>
-        <Form.Item name="effectiveDate" label="Effective Date" rules={[{ required: true }]}>
+        <Form.Item name="effectiveFrom" label="Effective Date" rules={[{ required: true }]}>
           <DatePicker style={{ width: "100%" }} format="DD-MMM-YYYY" />
         </Form.Item>
-        <Form.Item name="nextReviewDate" label="Next Review Date">
+        <Form.Item name="reviewDate" label="Next Review Date">
           <DatePicker style={{ width: "100%" }} format="DD-MMM-YYYY" />
         </Form.Item>
         <Form.Item name="tags" label="Tags">

@@ -22,7 +22,7 @@ const TYPE_OPTIONS = [
   { value: "", label: "All Types" },
   { value: "LOCAL", label: "Local" },
   { value: "DOMESTIC", label: "Domestic" },
-  { value: "OVERSEAS", label: "Overseas" },
+  { value: "INTERNATIONAL", label: "International" },
 ];
 
 interface Props {

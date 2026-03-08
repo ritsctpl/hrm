@@ -2,9 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tree, Spin, Empty, Button } from 'antd';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
+import { ApartmentOutlined, NodeExpandOutlined, NodeCollapseOutlined } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { OrgHierarchy } from '../../types/domain.types';
 import type { DepartmentNode } from '../../types/domain.types';
@@ -34,18 +32,23 @@ function buildTreeData(hierarchy: OrgHierarchy): AntTreeNode[] {
     key: `company-${hierarchy.company?.handle ?? 'root'}`,
     title: (
       <strong>
-        {hierarchy.company?.legalName ?? hierarchy.company?.tradeName ?? 'Company'}
+        {hierarchy.company?.legalName ?? hierarchy.company?.companyName ?? 'Company'}
       </strong>
     ),
-    children: (hierarchy.businessUnits ?? []).map((bu) => ({
-      key: `bu-${bu.handle}`,
-      title: `${bu.buName} (${bu.buCode})`,
-      children:
-        bu.departments && bu.departments.length > 0
-          ? buildDeptNodes(bu.departments as unknown as DepartmentNode[])
-          : undefined,
-      isLeaf: !bu.departments || bu.departments.length === 0,
-    })),
+    children: (hierarchy.businessUnits ?? []).map((entry) => {
+      // API returns { businessUnit: {...}, departments: [...] }
+      const bu = entry.businessUnit || entry;
+      const depts = entry.departments || (entry as unknown as Record<string, unknown>).departments;
+      return {
+        key: `bu-${bu.handle}`,
+        title: `${bu.buName} (${bu.buCode})`,
+        children:
+          depts && (depts as DepartmentNode[]).length > 0
+            ? buildDeptNodes(depts as DepartmentNode[])
+            : undefined,
+        isLeaf: !depts || (depts as DepartmentNode[]).length === 0,
+      };
+    }),
   };
 
   return [companyNode];
@@ -121,20 +124,20 @@ const OrgHierarchyTree: React.FC = () => {
     <div className={mainStyles.treeContainer}>
       <div className={mainStyles.treeHeader}>
         <div className={mainStyles.treeHeaderLeft}>
-          <AccountTreeIcon fontSize="small" style={{ color: '#1890ff' }} />
+          <ApartmentOutlined style={{ color: '#1890ff' }} />
           <span className={mainStyles.listTitle}>Organization Hierarchy</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button
             size="small"
-            icon={<UnfoldMoreIcon fontSize="small" />}
+            icon={<NodeExpandOutlined />}
             onClick={handleExpandAll}
           >
             Expand All
           </Button>
           <Button
             size="small"
-            icon={<UnfoldLessIcon fontSize="small" />}
+            icon={<NodeCollapseOutlined />}
             onClick={handleCollapseAll}
           >
             Collapse

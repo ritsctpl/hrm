@@ -1,4 +1,3 @@
-'use client';
 // src/modules/hrmTimesheet/services/hrmTimesheetService.ts
 import api from '@/services/api';
 import type {
@@ -33,17 +32,17 @@ export class HrmTimesheetService {
   }
 
   static async getTimesheet(site: string, handle: string): Promise<TimesheetResponse> {
-    const res = await api.post(`${this.BASE}/getByDate`, { site, handle });
+    const res = await api.post(`${this.BASE}/retrieve`, { site, handle });
     return res.data;
   }
 
   static async getTimesheetByDate(site: string, employeeId: string, date: string): Promise<TimesheetResponse> {
-    const res = await api.post(`${this.BASE}/getByDate`, { site, employeeId, date });
+    const res = await api.post(`${this.BASE}/retrieveByDate`, { site, employeeId, date });
     return res.data;
   }
 
   static async getWeeklyTimesheet(site: string, employeeId: string, weekStartDate: string): Promise<WeeklyTimesheetResponse> {
-    const res = await api.post(`${this.BASE}/weeklyView`, { site, employeeId, weekStartDate });
+    const res = await api.post(`${this.BASE}/retrieveWeekly`, { site, employeeId, weekStartDate });
     return res.data;
   }
 
@@ -60,7 +59,7 @@ export class HrmTimesheetService {
   }
 
   static async bulkSubmitWeekly(payload: WeeklyBulkSubmitRequest): Promise<BulkSubmitResponse> {
-    const res = await api.post(`${this.BASE}/bulkSubmit`, payload);
+    const res = await api.post(`${this.BASE}/submitWeekly`, payload);
     return res.data;
   }
 
@@ -86,12 +85,12 @@ export class HrmTimesheetService {
   // ─── Team View ────────────────────────────────────────────────────────────
 
   static async getTeamTimesheets(site: string, supervisorId: string, startDate: string, endDate: string): Promise<TeamTimesheetSummaryResponse[]> {
-    const res = await api.post(`${this.BASE}/teamView`, { site, supervisorId, startDate, endDate });
+    const res = await api.post(`${this.BASE}/team/list`, { site, supervisorId, startDate, endDate });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getPendingApprovals(site: string, supervisorId: string): Promise<TimesheetResponse[]> {
-    const res = await api.post(`${this.BASE}/pendingApprovals`, { site, supervisorId });
+    const res = await api.post(`${this.BASE}/team/pendingApprovals`, { site, supervisorId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -105,38 +104,38 @@ export class HrmTimesheetService {
   // ─── Unplanned Categories ─────────────────────────────────────────────────
 
   static async getUnplannedCategories(site: string): Promise<UnplannedCategoryResponse[]> {
-    const res = await api.post(`${this.BASE}/unplannedCategory/list`, { site });
+    const res = await api.post(`${this.BASE}/category/list`, { site });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async createUnplannedCategory(site: string, label: string, description: string, displayOrder: number, createdBy: string): Promise<UnplannedCategoryResponse> {
-    const res = await api.post(`${this.BASE}/unplannedCategory/create`, { site, label, description, displayOrder, createdBy });
+    const res = await api.post(`${this.BASE}/category/create`, { site, label, description, displayOrder, createdBy });
     return res.data;
   }
 
   static async updateUnplannedCategory(site: string, handle: string, label: string, description: string, displayOrder: number, modifiedBy: string): Promise<UnplannedCategoryResponse> {
-    const res = await api.post(`${this.BASE}/unplannedCategory/update`, { site, handle, label, description, displayOrder, modifiedBy });
+    const res = await api.post(`${this.BASE}/category/update`, { site, handle, label, description, displayOrder, modifiedBy });
     return res.data;
   }
 
   static async deleteUnplannedCategory(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${this.BASE}/unplannedCategory/delete`, { site, handle, deletedBy });
+    await api.post(`${this.BASE}/category/delete`, { site, handle, deletedBy });
   }
 
   // ─── Reports ──────────────────────────────────────────────────────────────
 
   static async exportPayroll(site: string, startDate: string, endDate: string, department?: string): Promise<PayrollExportRow[]> {
-    const res = await api.post(`${this.BASE}/payrollExport`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/export/payroll`, { site, startDate, endDate, department });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getComplianceReport(site: string, startDate: string, endDate: string, department?: string): Promise<SubmissionComplianceReport> {
-    const res = await api.post(`${this.BASE}/complianceReport`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/report/submissionCompliance`, { site, startDate, endDate, department });
     return res.data;
   }
 
   static async getUnplannedWorkReport(site: string, startDate: string, endDate: string, department?: string): Promise<UnplannedWorkReport> {
-    const res = await api.post(`${this.BASE}/unplannedWorkReport`, { site, startDate, endDate, department });
+    const res = await api.post(`${this.BASE}/report/unplannedWork`, { site, startDate, endDate, department });
     return res.data;
   }
 
@@ -147,28 +146,28 @@ export class HrmTimesheetService {
 
   // ─── CSV Export ────────────────────────────────────────────────────────────
 
-  static async exportCsv(site: string, startDate: string, endDate: string, department?: string): Promise<Blob> {
+  static async exportCsv(site: string, startDate: string, endDate: string, department?: string): Promise<string> {
     const res = await api.post(
-      `${this.BASE}/export`,
+      `${this.BASE}/export/csv`,
       { site, startDate, endDate, department },
-      { responseType: 'blob' }
+      { responseType: 'text' }
     );
-    return res.data as Blob;
+    return res.data as string;
   }
 
   // ─── Lock Periods ──────────────────────────────────────────────────────────
 
   static async saveLockPeriod(payload: TimesheetLockPeriodRequest): Promise<TimesheetLockPeriodResponse> {
-    const res = await api.post(`${this.BASE}/lock/save`, payload);
+    const res = await api.post(`${this.BASE}/lockPeriod/save`, payload);
     return res.data;
   }
 
   static async getLockPeriods(site: string): Promise<TimesheetLockPeriodResponse[]> {
-    const res = await api.post(`${this.BASE}/lock/list`, { site });
+    const res = await api.post(`${this.BASE}/lockPeriod/retrieve`, { site });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async deleteLockPeriod(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${this.BASE}/lock/delete`, { site, handle, deletedBy });
+    await api.post(`${this.BASE}/lockPeriod/delete`, { site, handle, deletedBy });
   }
 }

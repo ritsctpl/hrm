@@ -9,8 +9,6 @@ interface HrLeaveLayoutProps {
   queuePanel: React.ReactNode;
   ledgerPanel: React.ReactNode;
   accrualPanel: React.ReactNode;
-  adjustmentsPanel: React.ReactNode;
-  reportsPanel: React.ReactNode;
   policyPanel: React.ReactNode;
 }
 
@@ -18,8 +16,6 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
   queuePanel,
   ledgerPanel,
   accrualPanel,
-  adjustmentsPanel,
-  reportsPanel,
   policyPanel,
 }) => {
   const { activeHrTab, setActiveHrTab } = useHrmLeaveStore();
@@ -28,8 +24,6 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     { key: "queue", label: "Requests" },
     { key: "ledger", label: "Ledger & Balances" },
     { key: "accruals", label: "Accruals" },
-    { key: "adjustments", label: "Adjustments" },
-    { key: "reports", label: "Reports" },
     { key: "policy", label: "Policy" },
   ];
 
@@ -37,8 +31,6 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     queue: queuePanel,
     ledger: ledgerPanel,
     accruals: accrualPanel,
-    adjustments: adjustmentsPanel,
-    reports: reportsPanel,
     policy: policyPanel,
   };
 

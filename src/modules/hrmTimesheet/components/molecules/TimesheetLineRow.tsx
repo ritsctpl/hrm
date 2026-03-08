@@ -22,7 +22,7 @@ export default function TimesheetLineRow({ line, allocations, categories, readOn
     <div className={styles.lineRow}>
       <span className={styles.lineType}>{typeLabel}</span>
 
-      {line.lineType === 'ALLOCATED' && (
+      {line.lineType === 'PROJECT' && (
         <span className={styles.lineProject}>
           {line.projectCode ? `${line.projectCode} — ${line.projectName}` : '—'}
         </span>
@@ -57,7 +57,7 @@ export default function TimesheetLineRow({ line, allocations, categories, readOn
         />
       )}
 
-      {line.isOverrun && (
+      {line.overrun && (
         <Tooltip title="Hours exceed allocation"><span className={styles.overrunBadge}>OVR</span></Tooltip>
       )}
 

@@ -69,8 +69,8 @@ export function getDeepLink(notification: Notification): string | null {
     case 'ANNOUNCEMENT': {
       const announcementId = meta.announcementId as string | undefined;
       return announcementId
-        ? `${base}/ritshrms_app?announcementId=${announcementId}`
-        : `${base}/ritshrms_app`;
+        ? `${base}/hrm_announcement_app?announcementId=${announcementId}`
+        : `${base}/hrm_announcement_app`;
     }
     case 'APPRAISAL_DUE': {
       const cycleId = meta.cycleId as string | undefined;
@@ -79,7 +79,7 @@ export function getDeepLink(notification: Notification): string | null {
         : `${base}/hrm_appraisal_app`;
     }
     case 'POLICY_PUBLISHED': {
-      return `${base}/ritshrms_app?tab=policies`;
+      return `${base}/hrm_policy_app?tab=policies`;
     }
     default:
       return null;

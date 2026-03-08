@@ -23,8 +23,8 @@ function buildWeekDays(weekStart: string, timesheets: TimesheetHeader[] = []): W
       totalHours: ts?.totalHours ?? 0,
       colorCode: ts?.colorCode ?? 'GREY',
       status: ts?.status ?? 'EMPTY',
-      isHoliday: ts?.isHoliday ?? false,
-      isLeave: ts?.isLeaveDay ?? false,
+      isHoliday: ts?.holiday ?? false,
+      isLeave: ts?.leaveDay ?? false,
       timesheetHandle: ts?.handle,
     });
   }

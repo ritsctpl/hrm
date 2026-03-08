@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Tabs, Button, Badge } from 'antd';
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { Tabs, Button, Badge, Spin } from 'antd';
+import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import { useHrmAssetData } from './hooks/useHrmAssetData';
@@ -12,13 +11,11 @@ import AssetDashboardHeader from './components/organisms/AssetDashboardHeader';
 import AssetSearchBar from './components/molecules/AssetSearchBar';
 import AssetMasterList from './components/organisms/AssetMasterList';
 import AssetRequestCard from './components/molecules/AssetRequestCard';
-import ApprovalActionBar from './components/molecules/ApprovalActionBar';
+import ApprovalInbox from './components/organisms/ApprovalInbox';
 import AssetForm from './components/organisms/AssetForm';
 import AssetCategoryForm from './components/organisms/AssetCategoryForm';
 import AssetRequestForm from './components/organisms/AssetRequestForm';
-import ApprovalInbox from './components/organisms/ApprovalInbox';
 import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailTemplate';
-import AssetRequestTemplate from './components/templates/AssetRequestTemplate';
 import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
 import styles from './styles/HrmAsset.module.css';
@@ -34,15 +31,16 @@ const HrmAssetLanding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load requests and approvals when switching to that tab
   useEffect(() => {
     if (store.activeTab === 'requests') {
       data.loadMyRequests();
-    } else if (store.activeTab === 'approvals') {
       data.loadPendingApprovals();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.activeTab]);
 
+  // Load asset detail data when selecting an asset
   useEffect(() => {
     if (store.selectedAsset) {
       data.loadAssetDetail(store.selectedAsset.assetId);
@@ -54,7 +52,6 @@ const HrmAssetLanding: React.FC = () => {
 
   const assetsTabContent = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <AssetDashboardHeader dashboard={store.dashboard!} loading={store.loadingDashboard} />
       <div
         style={{
           padding: '8px 16px',
@@ -81,25 +78,42 @@ const HrmAssetLanding: React.FC = () => {
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           <Button
             size="small"
-            icon={<RefreshIcon style={{ fontSize: 14 }} />}
-            onClick={data.loadAssets}
-          />
-          <Button
-            size="small"
+            icon={<SettingOutlined />}
             onClick={() => setCategoryFormOpen(true)}
           >
             Categories
           </Button>
           <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={data.loadAssets}
+          />
+          <Button
             type="primary"
             size="small"
-            icon={<AddIcon style={{ fontSize: 14 }} />}
+            icon={<PlusOutlined />}
             onClick={store.openAssetForm}
           >
             Add Asset
           </Button>
         </div>
       </div>
+
+      {/* Category grid (collapsed into a quick-view section) */}
+      {store.categories.length > 0 && store.filterCategory === '' && (
+        <div className={styles.categoryChips}>
+          {store.categories.map((cat) => (
+            <button
+              key={cat.categoryCode}
+              className={styles.categoryChip}
+              onClick={() => store.setFilterCategory(cat.categoryCode)}
+            >
+              <span className={styles.categoryChipName}>{cat.categoryName}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ flex: 1, overflow: 'hidden' }}>
         <AssetMasterDetailTemplate
           leftPanel={
@@ -116,7 +130,7 @@ const HrmAssetLanding: React.FC = () => {
     </div>
   );
 
-  // ── REQUESTS TAB ─────────────────────────────────────────────────────────
+  // ── REQUESTS & APPROVALS TAB ──────────────────────────────────────────
 
   const requestsTabContent = (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -132,17 +146,27 @@ const HrmAssetLanding: React.FC = () => {
         <Button
           type="primary"
           size="small"
-          icon={<AddIcon style={{ fontSize: 14 }} />}
+          icon={<PlusOutlined />}
           onClick={store.openRequestForm}
         >
           New Request
         </Button>
       </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <AssetRequestTemplate
-          listPanel={
-            <div>
-              {store.loadingRequests ? null : store.myRequests.map((req: AssetRequest) => (
+      <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        {/* My Requests Section */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#262626' }}>
+            My Requests
+          </div>
+          {store.loadingRequests ? (
+            <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+          ) : store.myRequests.length === 0 ? (
+            <div style={{ color: '#8c8c8c', padding: 16, textAlign: 'center' }}>
+              No requests submitted yet. Click &quot;New Request&quot; to create one.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+              {store.myRequests.map((req: AssetRequest) => (
                 <AssetRequestCard
                   key={req.requestId}
                   request={req}
@@ -151,72 +175,61 @@ const HrmAssetLanding: React.FC = () => {
                 />
               ))}
             </div>
-          }
-          detailPanel={
-            store.selectedRequest ? (
-              <ApprovalActionBar
-                request={store.selectedRequest}
-                onApprove={async (_requestId, _remarks) => {
-                  await data.loadMyRequests();
-                }}
-                onReject={async (_requestId, _remarks) => {
-                  await data.loadMyRequests();
-                }}
+          )}
+        </div>
+
+        {/* Approval Inbox Section */}
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#262626' }}>
+            Approval Inbox
+            {ui.approvalsBadgeCount > 0 && (
+              <Badge
+                count={ui.approvalsBadgeCount}
+                size="small"
+                style={{ marginLeft: 8 }}
               />
-            ) : null
-          }
-        />
+            )}
+          </div>
+          <ApprovalInbox
+            isSupervisor={true}
+            isAdmin={true}
+            loading={store.loadingRequests}
+          />
+        </div>
       </div>
-    </div>
-  );
-
-  // ── APPROVALS TAB ────────────────────────────────────────────────────────
-
-  const approvalsTabContent = (
-    <div style={{ height: '100%', overflow: 'auto', padding: 16 }}>
-      <ApprovalInbox
-        isSupervisor={true}
-        isAdmin={true}
-        loading={store.loadingRequests}
-      />
     </div>
   );
 
   const tabItems = [
     {
       key: 'assets',
-      label: 'Asset Register',
+      label: 'Assets',
       children: assetsTabContent,
     },
     {
       key: 'requests',
       label: (
-        <Badge count={ui.requestsBadgeCount} size="small" offset={[6, 0]}>
-          My Requests
+        <Badge count={ui.approvalsBadgeCount + ui.requestsBadgeCount} size="small" offset={[6, 0]}>
+          Requests & Approvals
         </Badge>
       ),
       children: requestsTabContent,
-    },
-    {
-      key: 'approvals',
-      label: (
-        <Badge count={ui.approvalsBadgeCount} size="small" offset={[6, 0]}>
-          Approvals
-        </Badge>
-      ),
-      children: approvalsTabContent,
     },
   ];
 
   return (
     <div className={styles.assetRoot}>
       <CommonAppBar appTitle="Asset Management" />
+      {(store.dashboard || store.loadingDashboard) && (
+        <AssetDashboardHeader dashboard={store.dashboard!} loading={store.loadingDashboard} />
+      )}
       <div className={styles.assetContent}>
         <Tabs
           activeKey={store.activeTab}
-          onChange={(k) => store.setActiveTab(k as typeof store.activeTab)}
+          onChange={(k) => store.setActiveTab(k as 'assets' | 'requests')}
           items={tabItems}
-          size="middle"
+          size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
           style={{ flex: 1, overflow: 'hidden', background: '#fff' }}
           destroyOnHidden={false}
         />
@@ -225,9 +238,8 @@ const HrmAssetLanding: React.FC = () => {
       {store.isAssetFormOpen && (
         <AssetForm editAsset={store.selectedAsset} />
       )}
-      {store.isRequestFormOpen && (
-        <AssetRequestForm />
-      )}
+      {store.isRequestFormOpen && <AssetRequestForm />}
+
       <AssetCategoryForm
         open={categoryFormOpen}
         onClose={() => setCategoryFormOpen(false)}

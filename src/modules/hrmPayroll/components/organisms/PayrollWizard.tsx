@@ -55,7 +55,7 @@ const PayrollWizard: React.FC = () => {
     <div className={styles.wizardContainer}>
       <Steps
         current={wizardStep}
-        items={WIZARD_STEPS.map((s) => ({ title: s.title }))}
+        items={WIZARD_STEPS.map((s) => ({ title: s }))}
         className={styles.wizardSteps}
         size="small"
       />

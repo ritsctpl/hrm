@@ -5,19 +5,24 @@ import type {
   GetExpenseByHandleRequest,
   ExpenseCreatePayload,
   ExpenseUpdatePayload,
-  ExpenseLineItemPayload,
-  MileageLineItemPayload,
   ExpenseSubmitRequest,
   ExpenseApprovalPayload,
   ExpenseRejectPayload,
   ExpenseFinanceSanctionPayload,
   ExpensePaymentPayload,
   ExpenseCancelRequest,
+  ExpenseRecallRequest,
+  ExpenseDeleteRequest,
   MileageCalculateRequest,
+  MileageCalculateResponse,
   SiteRequest,
   MarkOriginalsReceivedRequest,
   GetUnsettledAdvancesRequest,
   UnsettledAdvance,
+  ExpenseCategorySavePayload,
+  ExpenseCategoryDeleteRequest,
+  ExpenseExportRequest,
+  ReceiptUploadResponse,
 } from "../types/api.types";
 import type {
   ExpenseReport,
@@ -56,34 +61,8 @@ export class HrmExpenseService {
     return data;
   }
 
-  static async deleteExpense(payload: { site: string; handle: string }): Promise<void> {
+  static async deleteExpense(payload: ExpenseDeleteRequest): Promise<void> {
     await api.post(`${this.BASE}/delete`, payload);
-  }
-
-  // ── Line Items ────────────────────────────────────────────────────────
-  static async addLineItem(payload: ExpenseLineItemPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/line-item/add`, payload);
-    return data;
-  }
-
-  static async removeLineItem(payload: { site: string; handle: string; lineItemId: string }): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/line-item/remove`, payload);
-    return data;
-  }
-
-  static async addMileageItem(payload: MileageLineItemPayload): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/mileage/add`, payload);
-    return data;
-  }
-
-  static async removeMileageItem(payload: { site: string; handle: string; lineItemId: string }): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/mileage/remove`, payload);
-    return data;
-  }
-
-  static async calculateMileage(payload: MileageCalculateRequest): Promise<{ amount: number; ratePerKm: number }> {
-    const { data } = await api.post(`${this.BASE}/mileage/calculate`, payload);
-    return data;
   }
 
   // ── Approval ─────────────────────────────────────────────────────────
@@ -92,7 +71,7 @@ export class HrmExpenseService {
     return data;
   }
 
-  static async getFinanceInbox(payload: ExpenseApproverInboxRequest): Promise<ExpenseReport[]> {
+  static async getFinanceInbox(payload: SiteRequest): Promise<ExpenseReport[]> {
     const { data } = await api.post(`${this.BASE}/finance-inbox`, payload);
     return data;
   }
@@ -128,26 +107,22 @@ export class HrmExpenseService {
     return data;
   }
 
-  static async recallExpense(payload: { site: string; handle: string; reason: string }): Promise<ExpenseReport> {
+  static async recallExpense(payload: ExpenseRecallRequest): Promise<ExpenseReport> {
     const { data } = await api.post(`${this.BASE}/recall`, payload);
     return data;
   }
 
   // ── Attachments ──────────────────────────────────────────────────────
-  static async uploadAttachment(handle: string, file: File, site: string, lineItemId?: string): Promise<{ attachmentId: string }> {
+  static async uploadAttachment(expenseId: string, file: File, site: string, lineIndex: number): Promise<ReceiptUploadResponse> {
     const form = new FormData();
     form.append("file", file);
-    form.append("handle", handle);
+    form.append("expenseId", expenseId);
     form.append("site", site);
-    if (lineItemId) form.append("lineItemId", lineItemId);
-    const { data } = await api.post(`${this.BASE}/attachments/upload`, form, {
+    form.append("lineIndex", String(lineIndex));
+    const { data } = await api.post(`${this.BASE}/receipt/upload`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data;
-  }
-
-  static async deleteAttachment(payload: { site: string; handle: string; attachmentId: string }): Promise<void> {
-    await api.post(`${this.BASE}/attachments/delete`, payload);
   }
 
   // ── Config ────────────────────────────────────────────────────────────
@@ -156,12 +131,12 @@ export class HrmExpenseService {
     return data;
   }
 
-  static async saveCategory(payload: Partial<ExpenseCategory> & { site: string }): Promise<ExpenseCategory> {
+  static async saveCategory(payload: ExpenseCategorySavePayload): Promise<ExpenseCategory> {
     const { data } = await api.post(`${this.BASE}/category/save`, payload);
     return data;
   }
 
-  static async deleteCategory(payload: { site: string; handle: string }): Promise<void> {
+  static async deleteCategory(payload: ExpenseCategoryDeleteRequest): Promise<void> {
     await api.post(`${this.BASE}/category/delete`, payload);
   }
 
@@ -175,8 +150,14 @@ export class HrmExpenseService {
     return data;
   }
 
+  // ── Mileage ────────────────────────────────────────────────────────
+  static async calculateMileage(payload: MileageCalculateRequest): Promise<MileageCalculateResponse> {
+    const { data } = await api.post(`${this.BASE}/mileage/calculate`, payload);
+    return data;
+  }
+
   // ── Export ────────────────────────────────────────────────────────────
-  static async exportExpenses(payload: ExpenseListRequest): Promise<Blob> {
+  static async exportExpenses(payload: ExpenseExportRequest): Promise<Blob> {
     const response = await api.post(`${this.BASE}/export`, payload, {
       responseType: "blob",
     });
@@ -185,13 +166,35 @@ export class HrmExpenseService {
 
   // ── Originals Received ──────────────────────────────────────────────
   static async markOriginalsReceived(payload: MarkOriginalsReceivedRequest): Promise<ExpenseReport> {
-    const { data } = await api.post(`${this.BASE}/originals/received`, payload);
+    const { data } = await api.post(`${this.BASE}/finance/originals-received`, payload);
     return data;
   }
 
   // ── Unsettled Advances ──────────────────────────────────────────────
   static async getUnsettledAdvances(payload: GetUnsettledAdvancesRequest): Promise<UnsettledAdvance[]> {
-    const { data } = await api.post(`${this.BASE}/unsettled-advances`, payload);
+    const { data } = await api.post(`${this.BASE}/advances/unsettled`, payload);
     return Array.isArray(data) ? data : [];
+  }
+
+  // ── List (all expenses) ────────────────────────────────────────────
+  static async listExpenses(payload: ExpenseListRequest): Promise<ExpenseReport[]> {
+    const { data } = await api.post(`${this.BASE}/list`, payload);
+    return data;
+  }
+
+  // ── Reports ────────────────────────────────────────────────────────
+  static async getOutOfPolicyReport(payload: SiteRequest & Record<string, unknown>): Promise<ExpenseReport[]> {
+    const { data } = await api.post(`${this.BASE}/report/out-of-policy`, payload);
+    return data;
+  }
+
+  static async getOutstandingAdvancesReport(payload: SiteRequest & Record<string, unknown>): Promise<ExpenseReport[]> {
+    const { data } = await api.post(`${this.BASE}/report/outstanding-advances`, payload);
+    return data;
+  }
+
+  static async getByDateReport(payload: SiteRequest & Record<string, unknown>): Promise<ExpenseReport[]> {
+    const { data } = await api.post(`${this.BASE}/report/by-date`, payload);
+    return data;
   }
 }

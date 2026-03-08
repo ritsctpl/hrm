@@ -58,7 +58,7 @@ interface UserRoleAssignmentDraft {
 // ---- Full store shape ----
 
 interface HrmAccessStore {
-  activeMainTab: 'roleManagement' | 'permissionMatrix' | 'userRoleAssignment';
+  activeMainTab: 'modules' | 'roleManagement' | 'permissionMatrix' | 'userRoleAssignment' | 'importExport' | 'reports' | 'audit';
   role: RoleState;
   permission: PermissionState;
   permissionMatrix: PermissionMatrixState;
@@ -109,7 +109,7 @@ interface HrmAccessStore {
 }
 
 export const useHrmAccessStore = create<HrmAccessStore>((set) => ({
-  activeMainTab: 'roleManagement',
+  activeMainTab: 'modules',
 
   role: {
     list: [],

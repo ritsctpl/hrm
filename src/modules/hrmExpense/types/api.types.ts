@@ -1,4 +1,4 @@
-import type { ExpenseStatus, ExpenseType, PaymentMode } from "./domain.types";
+import type { ExpenseType, PaymentMode } from "./domain.types";
 
 export interface SiteRequest {
   site: string;
@@ -6,9 +6,9 @@ export interface SiteRequest {
 
 export interface ExpenseListRequest {
   site: string;
-  employeeId: string;
+  employeeId?: string;
   expenseType?: ExpenseType;
-  status?: ExpenseStatus;
+  status?: string;
   searchTerm?: string;
   fromDate?: string;
   toDate?: string;
@@ -16,98 +16,108 @@ export interface ExpenseListRequest {
 
 export interface ExpenseApproverInboxRequest {
   site: string;
-  approverId: string;
-  inboxType: "PENDING" | "ESCALATED" | "DECIDED";
-  role: "SUPERVISOR" | "FINANCE";
-  expenseType?: ExpenseType;
-  fromDate?: string;
-  toDate?: string;
+  empId: string;
 }
 
 export interface GetExpenseByHandleRequest {
-  site: string;
   handle: string;
+}
+
+export interface ExpenseItemDto {
+  categoryId: string;
+  expenseDate: string;
+  description: string;
+  amount?: number;
+  currency: string;
+  fromLocation?: string;
+  toLocation?: string;
+  distanceKm?: number;
+  attachmentRef?: string;
 }
 
 export interface ExpenseCreatePayload {
   site: string;
-  employeeId: string;
   expenseType: ExpenseType;
   purpose: string;
-  travelRefHandle?: string;
-  fromDate: string;
-  toDate: string;
-  costCenter: string;
+  travelRequestHandle?: string;
+  costCenter?: string;
   projectCode?: string;
   wbsCode?: string;
   currency: string;
-  exchangeRate: number;
+  fromDate: string;
+  toDate: string;
   outOfPolicyJustification?: string;
+  items: ExpenseItemDto[];
+  attachmentRefs?: string[];
+  createdBy: string;
 }
 
-export interface ExpenseUpdatePayload extends ExpenseCreatePayload {
+export interface ExpenseUpdatePayload {
   handle: string;
-}
-
-export interface ExpenseLineItemPayload {
-  handle: string;
-  site: string;
-  lineItemId?: string;
-  expenseDate: string;
-  categoryCode: string;
-  description: string;
-  amount: number;
-  currency: string;
-}
-
-export interface MileageLineItemPayload {
-  handle: string;
-  site: string;
-  lineItemId?: string;
-  tripDate: string;
-  fromLocation: string;
-  toLocation: string;
-  distanceKm: number;
+  data: {
+    site: string;
+    expenseType: ExpenseType;
+    purpose: string;
+    currency: string;
+    fromDate: string;
+    toDate: string;
+    costCenter?: string;
+    projectCode?: string;
+    wbsCode?: string;
+    outOfPolicyJustification?: string;
+    items: ExpenseItemDto[];
+    createdBy: string;
+  };
 }
 
 export interface ExpenseSubmitRequest {
   site: string;
   handle: string;
+  submittedBy: string;
 }
 
 export interface ExpenseApprovalPayload {
   site: string;
-  handle: string;
-  approverId: string;
+  expenseRequestHandle: string;
+  action: "APPROVE" | "REJECT";
   remarks?: string;
+  actorEmpId: string;
+  actorName: string;
 }
 
 export interface ExpenseRejectPayload {
   site: string;
-  handle: string;
-  approverId: string;
+  expenseRequestHandle: string;
+  action: "REJECT";
   remarks: string;
+  actorEmpId: string;
+  actorName: string;
 }
 
 export interface ExpenseFinanceSanctionPayload {
   site: string;
-  handle: string;
-  financeId: string;
-  sanctionedAmount: number;
-  perDiem?: number;
+  expenseRequestHandle: string;
+  action: "APPROVE";
+  sanctionedAmount?: number;
+  perDiemAmount?: number;
   exchangeRate?: number;
-  originalsReceived: boolean;
+  originalsReceived?: boolean;
   remarks?: string;
+  actorEmpId: string;
+  actorName: string;
 }
 
 export interface ExpensePaymentPayload {
   site: string;
-  handle: string;
-  financeId: string;
-  paymentMode: PaymentMode;
+  expenseRequestHandle: string;
+  action: "PAY";
   paymentReference: string;
+  paymentMode: PaymentMode;
   paymentDate: string;
+  sanctionedAmount?: number;
   remarks?: string;
+  actorEmpId: string;
+  actorName: string;
 }
 
 export interface ExpenseCancelRequest {
@@ -116,15 +126,34 @@ export interface ExpenseCancelRequest {
   reason: string;
 }
 
+export interface ExpenseRecallRequest {
+  site: string;
+  expenseId: string;
+  recalledBy: string;
+  reason: string;
+}
+
+export interface ExpenseDeleteRequest {
+  site: string;
+  expenseId: string;
+  deletedBy: string;
+}
+
 export interface MileageCalculateRequest {
   site: string;
+  categoryId: string;
   distanceKm: number;
+}
+
+export interface MileageCalculateResponse {
+  distanceKm: number;
+  ratePerKm: number;
+  calculatedAmount: number;
 }
 
 // ── Originals Received ──────────────────────────────────────────────
 
 export interface MarkOriginalsReceivedRequest {
-  site: string;
   handle: string;
   received: boolean;
   markedBy: string;
@@ -134,7 +163,7 @@ export interface MarkOriginalsReceivedRequest {
 
 export interface GetUnsettledAdvancesRequest {
   site: string;
-  employeeId: string;
+  empId: string;
 }
 
 export interface UnsettledAdvance {
@@ -145,4 +174,43 @@ export interface UnsettledAdvance {
   currency: string;
   approvedAt: string;
   daysOutstanding: number;
+}
+
+// ── Category ──────────────────────────────────────────────────
+
+export interface ExpenseCategorySavePayload {
+  site: string;
+  categoryCode: string;
+  categoryName: string;
+  description?: string;
+  dailyLimit?: number;
+  perTripLimit?: number;
+  requiresAttachment?: boolean;
+  mileageCategory?: boolean;
+  mileageRatePerKm?: number;
+  createdBy: string;
+}
+
+export interface ExpenseCategoryDeleteRequest {
+  site: string;
+  categoryId: string;
+  deletedBy: string;
+}
+
+// ── Export ──────────────────────────────────────────────────
+
+export interface ExpenseExportRequest {
+  site: string;
+  startDate: string;
+  endDate: string;
+  status?: string;
+}
+
+// ── Receipt Upload ──────────────────────────────────────────────────
+
+export interface ReceiptUploadResponse {
+  expenseItemHandle: string;
+  receiptUrl: string;
+  fileName: string;
+  fileSize: number;
 }

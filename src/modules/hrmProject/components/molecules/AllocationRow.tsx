@@ -1,14 +1,21 @@
 'use client';
 import React from 'react';
-import { Space, Button, Typography } from 'antd';
-import type { AllocationRowProps } from '../../types/ui.types';
+import { Space, Button, Popconfirm, Typography } from 'antd';
+import type { ResourceAllocation } from '../../types/domain.types';
 import AllocationStatusBadge from '../atoms/AllocationStatusBadge';
 import HoursDisplay from '../atoms/HoursDisplay';
 import { formatDate } from '../../utils/projectHelpers';
 
 const { Text } = Typography;
 
-const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onCancel }) => (
+interface AllocationRowProps {
+  allocation: ResourceAllocation;
+  onEdit?: (a: ResourceAllocation) => void;
+  onSubmit?: (a: ResourceAllocation) => void;
+  onCancel?: (a: ResourceAllocation) => void;
+}
+
+const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel }) => (
   <div style={{ padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
     <Space size={12} wrap>
       <Text strong style={{ minWidth: 140 }}>{allocation.employeeName}</Text>
@@ -20,11 +27,40 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onCan
         <Text type="secondary" style={{ fontSize: 12 }}>{allocation.recurrencePattern}</Text>
       )}
       <AllocationStatusBadge status={allocation.status} />
-      {onEdit && allocation.status === 'DRAFT' && (
-        <Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button>
+
+      {/* DRAFT: Edit, Submit, Cancel */}
+      {allocation.status === 'DRAFT' && (
+        <>
+          {onEdit && <Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button>}
+          {onSubmit && <Button size="small" type="link" onClick={() => onSubmit(allocation)}>Submit</Button>}
+          {onCancel && (
+            <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
+              <Button size="small" type="link" danger>Cancel</Button>
+            </Popconfirm>
+          )}
+        </>
       )}
-      {onCancel && allocation.status !== 'CANCELLED' && (
-        <Button size="small" type="link" danger onClick={() => onCancel(allocation)}>Cancel</Button>
+
+      {/* SUBMITTED: Cancel only */}
+      {allocation.status === 'SUBMITTED' && onCancel && (
+        <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
+          <Button size="small" type="link" danger>Cancel</Button>
+        </Popconfirm>
+      )}
+
+      {/* APPROVED: Cancel (reverses hours) */}
+      {allocation.status === 'APPROVED' && onCancel && (
+        <Popconfirm title="Cancel this approved allocation?" onConfirm={() => onCancel(allocation)}>
+          <Button size="small" type="link" danger>Cancel</Button>
+        </Popconfirm>
+      )}
+
+      {/* REJECTED: Edit + Resubmit */}
+      {allocation.status === 'REJECTED' && (
+        <>
+          {onEdit && <Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button>}
+          {onSubmit && <Button size="small" type="link" onClick={() => onSubmit(allocation)}>Resubmit</Button>}
+        </>
       )}
     </Space>
   </div>

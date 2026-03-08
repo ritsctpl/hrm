@@ -32,7 +32,7 @@ export function formatDateRange(request: TravelRequest): string {
 export function formatDestination(request: TravelRequest): string {
   const parts: string[] = [request.destinationCity];
   if (request.destinationState) parts.push(request.destinationState);
-  if (request.destinationCountry && request.travelType === "OVERSEAS") {
+  if (request.destinationCountry && request.travelType === "INTERNATIONAL") {
     parts.push(request.destinationCountry);
   }
   return parts.join(", ");

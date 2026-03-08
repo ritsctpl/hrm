@@ -36,6 +36,7 @@ export interface AttributeSchema {
 }
 
 export interface AssetCategory {
+  handle: string;
   categoryCode: string;
   categoryName: string;
   description?: string;

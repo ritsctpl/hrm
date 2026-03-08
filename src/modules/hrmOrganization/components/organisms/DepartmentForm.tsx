@@ -2,8 +2,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Input, Select, Button, Switch, message } from 'antd';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -66,7 +65,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
         <span className={mainStyles.formPanelTitle}>{title}</span>
         <Button
           type="text"
-          icon={<CloseIcon fontSize="small" />}
+          icon={<CloseOutlined />}
           onClick={onClose}
         />
       </div>
@@ -128,7 +127,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
         {!isNew && selected && (
           <Button
             danger
-            icon={<DeleteIcon fontSize="small" />}
+            icon={<DeleteOutlined />}
             onClick={handleDelete}
           >
             Delete

@@ -10,7 +10,7 @@ export interface TimesheetRequest {
 }
 
 export interface TimesheetLineRequest {
-  lineType: 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
+  lineType: 'PROJECT' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
   projectHandle?: string;
   allocationHandle?: string;
   hours: number;
@@ -34,8 +34,8 @@ export interface TimesheetResponse {
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'REOPENED';
   notes?: string;
   version: number;
-  isHoliday: boolean;
-  isLeaveDay: boolean;
+  holiday: boolean;
+  leaveDay: boolean;
   leaveType?: string;
   active: number;
   createdDateTime: string;
@@ -57,7 +57,7 @@ export interface TimesheetLineResponse {
   reason?: string;
   notes?: string;
   allocatedHoursForDay?: number;
-  isOverrun: boolean;
+  overrun: boolean;
 }
 
 export interface WeeklyTimesheetResponse {
@@ -89,8 +89,9 @@ export interface WeeklyBulkSubmitRequest {
 }
 
 export interface BulkSubmitResponse {
-  submitted: number;
-  failed: number;
+  totalDays: number;
+  submittedDays: number;
+  skippedDays: number;
   errors: string[];
 }
 
@@ -100,6 +101,7 @@ export interface TimesheetApprovalRequest {
   action: 'APPROVED' | 'REJECTED';
   remarks?: string;
   approverEmployeeId: string;
+  approverName?: string;
 }
 
 export interface BulkTimesheetApprovalRequest {
@@ -108,12 +110,14 @@ export interface BulkTimesheetApprovalRequest {
   action: 'APPROVED' | 'REJECTED';
   remarks?: string;
   approverEmployeeId: string;
+  approverName?: string;
 }
 
 export interface BulkApprovalResponse {
-  approved: number;
-  rejected: number;
+  total: number;
+  successful: number;
   failed: number;
+  errors: string[];
 }
 
 export interface TimesheetReopenRequest {
@@ -143,6 +147,8 @@ export interface UnplannedCategoryResponse {
   description?: string;
   displayOrder: number;
   active: number;
+  createdDateTime?: string;
+  createdBy?: string;
 }
 
 export interface PayrollExportRow {

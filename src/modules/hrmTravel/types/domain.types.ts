@@ -4,11 +4,12 @@ export type TravelStatus =
   | "ESCALATED"
   | "APPROVED"
   | "REJECTED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "RECALLED";
 
-export type TravelType = "LOCAL" | "DOMESTIC" | "OVERSEAS";
+export type TravelType = "LOCAL" | "DOMESTIC" | "INTERNATIONAL";
 
-export type TravelMode = "CAB" | "AUTO" | "BUS" | "TRAIN" | "FLIGHT";
+export type TravelMode = "CAB" | "AUTO" | "BUS" | "TRAIN" | "FLIGHT" | "AIR";
 
 export interface TravelRequest {
   handle: string;
@@ -78,14 +79,21 @@ export interface TravelAction {
 export interface TravelModeCatalog {
   LOCAL: TravelMode[];
   DOMESTIC: TravelMode[];
-  OVERSEAS: TravelMode[];
+  INTERNATIONAL: TravelMode[];
 }
 
 export interface TravelPolicy {
+  handle?: string;
+  site?: string;
   travelType: TravelType;
   allowedModes: TravelMode[];
   escalationWindowDays: number;
   allowedFileTypes: string[];
   maxFileSizeMb: number;
   maxFileCount: number;
+  active?: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }

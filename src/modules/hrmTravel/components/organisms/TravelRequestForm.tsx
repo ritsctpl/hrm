@@ -14,7 +14,7 @@ interface Props {
   readonly?: boolean;
 }
 
-const TRAVEL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "OVERSEAS"];
+const TRAVEL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
 
 const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) => {
   const allowedModes = formState.travelType
@@ -63,7 +63,7 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
               disabled={readonly}
             />
           </Form.Item>
-          {(formState.travelType === "DOMESTIC" || formState.travelType === "OVERSEAS") && (
+          {(formState.travelType === "DOMESTIC" || formState.travelType === "INTERNATIONAL") && (
             <Form.Item label="State">
               <Input
                 placeholder="State"
@@ -73,7 +73,7 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
               />
             </Form.Item>
           )}
-          {formState.travelType === "OVERSEAS" && (
+          {formState.travelType === "INTERNATIONAL" && (
             <Form.Item label="Country">
               <Input
                 placeholder="Country"

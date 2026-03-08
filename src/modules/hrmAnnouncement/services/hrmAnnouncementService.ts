@@ -2,11 +2,14 @@ import api from "@/services/api";
 import {
   GetAnnouncementsPayload,
   GetAnnouncementDetailPayload,
+  ListAnnouncementsPayload,
   MarkReadPayload,
   CreateAnnouncementPayload,
   UpdateAnnouncementPayload,
   PublishAnnouncementPayload,
   WithdrawAnnouncementPayload,
+  DeleteAnnouncementPayload,
+  GetEngagementPayload,
 } from "../types/api.types";
 import { Announcement, EngagementStats } from "../types/domain.types";
 
@@ -18,8 +21,8 @@ export class HrmAnnouncementService {
     return res.data;
   }
 
-  static async getPinned(site: string, employeeId: string): Promise<Announcement[]> {
-    const res = await api.post(`${BASE}/getPinnedAnnouncements`, { site, employeeId });
+  static async getPinned(site: string): Promise<Announcement[]> {
+    const res = await api.post(`${BASE}/getPinnedAnnouncements`, { site });
     return res.data;
   }
 
@@ -32,8 +35,8 @@ export class HrmAnnouncementService {
     await api.post(`${BASE}/markAsRead`, payload);
   }
 
-  static async getAllForAdmin(site: string): Promise<Announcement[]> {
-    const res = await api.post(`${BASE}/listAnnouncements`, { site });
+  static async listAnnouncements(payload: ListAnnouncementsPayload): Promise<Announcement[]> {
+    const res = await api.post(`${BASE}/listAnnouncements`, payload);
     return res.data;
   }
 
@@ -55,36 +58,20 @@ export class HrmAnnouncementService {
     await api.post(`${BASE}/withdrawAnnouncement`, payload);
   }
 
-  static async getEngagementStats(site: string, announcementId: string): Promise<EngagementStats> {
-    const res = await api.post(`${BASE}/getAnnouncementEngagement`, { site, announcementId });
+  static async getEngagementStats(payload: GetEngagementPayload): Promise<EngagementStats> {
+    const res = await api.post(`${BASE}/getAnnouncementEngagement`, payload);
     return res.data;
   }
 
-  static async deleteAnnouncement(
-    site: string,
-    handle: string,
-    deletedBy: string
-  ): Promise<void> {
-    await api.post(`${BASE}/deleteAnnouncement`, { site, handle, deletedBy });
+  static async deleteAnnouncement(payload: DeleteAnnouncementPayload): Promise<void> {
+    await api.post(`${BASE}/deleteAnnouncement`, payload);
   }
 
-  static async downloadAttachment(
-    site: string,
-    handle: string,
-    attachmentId: string
-  ): Promise<Blob> {
-    const res = await api.post(`${BASE}/downloadAttachment`, { site, handle, attachmentId }, {
-      responseType: "blob",
-    });
-    return res.data as Blob;
+  static async processScheduledPublishing(site: string): Promise<void> {
+    await api.post(`${BASE}/processScheduledPublishing`, { site });
   }
 
-  static async sendReadReminder(
-    site: string,
-    handle: string,
-    employeeIds: string[],
-    sentBy: string
-  ): Promise<void> {
-    await api.post(`${BASE}/sendReadReminder`, { site, handle, employeeIds, sentBy });
+  static async processExpiredAnnouncements(site: string): Promise<void> {
+    await api.post(`${BASE}/processExpiredAnnouncements`, { site });
   }
 }

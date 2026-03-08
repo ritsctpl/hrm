@@ -77,9 +77,7 @@ export const EMPTY_BANK_ACCOUNT = {
 export const MAIN_TAB_LABELS = {
   company: 'Company Profile',
   businessUnit: 'Business Units',
-  department: 'Departments',
-  location: 'Locations',
-  hierarchy: 'Hierarchy',
+  structure: 'Departments, Locations & Hierarchy',
 } as const;
 
 export const LOCATION_TYPE_OPTIONS = [

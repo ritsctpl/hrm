@@ -138,7 +138,7 @@ const BulkImportPanel: React.FC<BulkImportPanelProps> = ({ open, onClose }) => {
           <Alert
             type={result.failureCount === 0 ? 'success' : 'warning'}
             showIcon
-            message={`Processed ${result.totalProcessed} rows: ${result.successCount} succeeded, ${result.failureCount} failed`}
+            message={`Processed ${result.totalRows} rows: ${result.successCount} succeeded, ${result.failureCount} failed`}
             style={{ marginBottom: 16 }}
           />
 

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Table, Button, InputNumber, DatePicker, Input, Typography, Popconfirm } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
-import type { MileageLineItem } from "../../types/domain.types";
+import type { ExpenseItem } from "../../types/domain.types";
 import { useMileageCalculator } from "../../hooks/useMileageCalculator";
 import dayjs from "dayjs";
 
@@ -12,11 +12,11 @@ const { Text } = Typography;
 const dateFormat = "DD/MM/YYYY";
 
 interface Props {
-  mileageItems: MileageLineItem[];
+  mileageItems: ExpenseItem[];
   ratePerKm?: number;
   readonly?: boolean;
-  onAddItem?: (item: Omit<MileageLineItem, "lineItemId">) => void;
-  onRemoveItem?: (lineItemId: string) => void;
+  onAddItem?: (item: Partial<ExpenseItem>) => void;
+  onRemoveItem?: (handle: string) => void;
 }
 
 interface NewMileageRow {
@@ -44,12 +44,12 @@ const MileageLineItemsTable: React.FC<Props> = ({
   const [adding, setAdding] = useState(false);
   const { calculateAmount, calculating } = useMileageCalculator();
 
-  const totalAmount = mileageItems.reduce((sum, item) => sum + item.amount, 0);
+  const totalAmount = mileageItems.reduce((sum, item) => sum + (item.mileageAmount ?? item.amount ?? 0), 0);
 
-  const columns: ColumnsType<MileageLineItem> = [
+  const columns: ColumnsType<ExpenseItem> = [
     {
       title: "Date",
-      dataIndex: "tripDate",
+      dataIndex: "expenseDate",
       width: 90,
       render: (d) => dayjs(d).format("DD MMM"),
     },
@@ -67,39 +67,39 @@ const MileageLineItemsTable: React.FC<Props> = ({
       title: "KM",
       dataIndex: "distanceKm",
       width: 70,
-      render: (v) => v.toFixed(1),
+      render: (v) => v?.toFixed(1) ?? "—",
     },
     {
       title: "Rate/KM",
       dataIndex: "ratePerKm",
       width: 80,
-      render: (v) => v.toFixed(2),
+      render: (v) => v?.toFixed(2) ?? "—",
     },
     {
       title: "Amount",
-      dataIndex: "amount",
+      key: "amount",
       width: 90,
-      render: (v) => v.toFixed(2),
+      render: (_, r) => (r.mileageAmount ?? r.amount)?.toFixed(2) ?? "—",
     },
     !readonly && {
       title: "",
       key: "action",
       width: 40,
       render: (_, r) => (
-        <Popconfirm title="Remove entry?" onConfirm={() => onRemoveItem?.(r.lineItemId)}>
+        <Popconfirm title="Remove entry?" onConfirm={() => onRemoveItem?.(r.handle)}>
           <Button type="text" danger size="small" icon={<DeleteOutlined />} />
         </Popconfirm>
       ),
     },
-  ].filter(Boolean) as ColumnsType<MileageLineItem>;
+  ].filter(Boolean) as ColumnsType<ExpenseItem>;
 
   const handleAddRow = async () => {
     if (!newRow.tripDate || !newRow.fromLocation || !newRow.toLocation || !newRow.distanceKm) return;
     const result = await calculateAmount(newRow.distanceKm);
     const rate = result?.ratePerKm ?? ratePerKm;
-    const amount = result?.amount ?? newRow.distanceKm * rate;
+    const amount = result?.calculatedAmount ?? newRow.distanceKm * rate;
     onAddItem?.({
-      tripDate: newRow.tripDate,
+      expenseDate: newRow.tripDate,
       fromLocation: newRow.fromLocation,
       toLocation: newRow.toLocation,
       distanceKm: newRow.distanceKm,
@@ -116,7 +116,7 @@ const MileageLineItemsTable: React.FC<Props> = ({
         Rate per KM: {ratePerKm.toFixed(2)} (configured by admin — auto-applied)
       </Text>
       <Table
-        rowKey="lineItemId"
+        rowKey="handle"
         columns={columns}
         dataSource={mileageItems}
         size="small"

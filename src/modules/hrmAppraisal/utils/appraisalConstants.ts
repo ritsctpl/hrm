@@ -27,6 +27,7 @@ export const PHASE_ORDER: PhaseType[] = [
   "GOAL_SETTING",
   "SELF_ASSESSMENT",
   "MANAGER_ASSESSMENT",
+  "MANAGER_REVIEW",
   "PEER_FEEDBACK",
   "CALIBRATION",
   "SIGN_OFF",
@@ -35,7 +36,8 @@ export const PHASE_ORDER: PhaseType[] = [
 export const PHASE_LABELS: Record<PhaseType, string> = {
   GOAL_SETTING: "Goal Setting",
   SELF_ASSESSMENT: "Self Assessment",
-  MANAGER_ASSESSMENT: "Manager Review",
+  MANAGER_ASSESSMENT: "Manager Assessment",
+  MANAGER_REVIEW: "Manager Review",
   PEER_FEEDBACK: "Peer Feedback",
   CALIBRATION: "Calibration",
   SIGN_OFF: "Sign Off",

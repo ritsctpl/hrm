@@ -30,8 +30,8 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
     },
     {
       title: "Type",
-      dataIndex: "docType",
-      key: "docType",
+      dataIndex: "documentType",
+      key: "documentType",
       width: 110,
       render: (docType) => <PolicyTypeBadge docType={docType} />,
     },
@@ -57,8 +57,8 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
     },
     {
       title: "Effective",
-      dataIndex: "effectiveDate",
-      key: "effectiveDate",
+      dataIndex: "effectiveFrom",
+      key: "effectiveFrom",
       width: 110,
       render: (date) =>
         date
@@ -76,7 +76,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           {record.status === "DRAFT" && (
             <Popconfirm
               title="Publish this policy?"
-              onConfirm={() => onPublish(record.id)}
+              onConfirm={() => onPublish(record.handle)}
               okText="Publish"
             >
               <Button size="small" icon={<CheckCircleOutlined />} type="primary" />
@@ -85,7 +85,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           {record.status === "PUBLISHED" && (
             <Popconfirm
               title="Archive this policy?"
-              onConfirm={() => onArchive(record.id)}
+              onConfirm={() => onArchive(record.handle)}
               okText="Archive"
               okButtonProps={{ danger: true }}
             >
@@ -101,7 +101,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
     <Table
       columns={columns}
       dataSource={policies}
-      rowKey="id"
+      rowKey="handle"
       loading={loading}
       size="small"
       pagination={{ pageSize: 20, showSizeChanger: false, showTotal: (total) => `${total} policies` }}

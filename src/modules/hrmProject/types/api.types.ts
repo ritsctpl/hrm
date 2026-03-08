@@ -12,6 +12,7 @@ export interface ProjectRequest {
   startDate: string;
   endDate: string;
   projectManagerId: string;
+  projectManagerName?: string;
   milestones?: MilestoneRequest[];
   createdBy: string;
 }
@@ -54,6 +55,10 @@ export interface ProjectResponse {
   status: string;
   projectManagerId: string;
   projectManagerName: string;
+  clientId?: string;
+  billingType?: string;
+  hourlyRate?: number;
+  currency?: string;
   milestones: MilestoneResponse[];
   attachments: ProjectAttachmentResponse[];
   totalAllocatedHours: number;
@@ -105,6 +110,7 @@ export interface AllocationRequest {
   site: string;
   projectHandle: string;
   employeeId: string;
+  employeeName?: string;
   hoursPerDay: number;
   startDate: string;
   endDate: string;
@@ -143,8 +149,8 @@ export interface AllocationResponse {
 export interface AllocationDayResponse {
   date: string;
   hours: number;
-  isHoliday: boolean;
-  isLeave: boolean;
+  holiday: boolean;
+  leave: boolean;
   availableCapacity: number;
 }
 
@@ -172,8 +178,8 @@ export interface CapacityCheckResponse {
 export interface DailyCapacityResponse {
   date: string;
   baseCapacity: number;
-  isHoliday: boolean;
-  isLeave: boolean;
+  holiday: boolean;
+  leave: boolean;
   allocatedHours: number;
   availableHours: number;
   capacityStatus: 'GREEN' | 'YELLOW' | 'RED';
@@ -245,8 +251,8 @@ export interface ResourceCalendarResponse {
   days: {
     date: string;
     allocatedHours: number;
-    isHoliday: boolean;
-    isLeave: boolean;
+    holiday: boolean;
+    leave: boolean;
     capacityStatus: 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
   }[];
 }

@@ -28,7 +28,7 @@ export default function HolidayCalendarCell({ day, onHolidayClick }: HolidayCale
             <span
               className={`${styles.holidayDot} ${h.optional ? styles.holidayDotOptional : ''}`}
               style={{
-                backgroundColor: h.isPast ? undefined : h.categoryColorHex,
+                backgroundColor: day.isPast ? undefined : h.categoryColorHex,
                 opacity: day.isPast ? 0.5 : 1,
               }}
               onClick={() => onHolidayClick?.(h.handle)}

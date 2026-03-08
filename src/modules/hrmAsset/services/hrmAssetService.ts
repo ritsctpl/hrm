@@ -199,7 +199,7 @@ export class HrmAssetService {
   }
 
   static async approveOrRejectRequest(payload: ApproveRejectAssetRequestPayload): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/approveOrReject`, payload);
+    const res = await api.post(`${this.BASE}/asset/request/approve`, payload);
     return res.data;
   }
 
@@ -209,7 +209,7 @@ export class HrmAssetService {
   }
 
   static async markProcurement(site: string, requestId: string, markedBy: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/markProcurement`, { site, requestId, markedBy });
+    const res = await api.post(`${this.BASE}/asset/request/procurement`, { site, requestId, markedBy });
     return res.data;
   }
 
@@ -219,7 +219,7 @@ export class HrmAssetService {
   }
 
   static async getRequestsByEmployee(site: string, employeeId: string): Promise<AssetRequestResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/listByEmployee`, { site, employeeId });
+    const res = await api.post(`${this.BASE}/asset/request/retrieveAll`, { site, employeeId });
     return res.data;
   }
 

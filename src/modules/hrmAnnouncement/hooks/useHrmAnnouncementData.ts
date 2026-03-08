@@ -34,7 +34,7 @@ export const useHrmAnnouncementData = () => {
           priority: filterPriority as never || undefined,
           status: "PUBLISHED",
         }),
-        HrmAnnouncementService.getPinned(site, employeeId),
+        HrmAnnouncementService.getPinned(site),
       ]);
       setFeed(feed);
       setPinnedAnnouncements(pinned);
@@ -48,7 +48,7 @@ export const useHrmAnnouncementData = () => {
   const loadAdminAnnouncements = useCallback(async () => {
     setAdminLoading(true);
     try {
-      const data = await HrmAnnouncementService.getAllForAdmin(site);
+      const data = await HrmAnnouncementService.listAnnouncements({ site });
       setAdminAnnouncements(data);
     } catch {
       message.error("Failed to load admin announcements");
@@ -57,10 +57,10 @@ export const useHrmAnnouncementData = () => {
     }
   }, [site]);
 
-  const loadEngagementStats = useCallback(async (announcementId: string) => {
+  const loadEngagementStats = useCallback(async (announcementHandle: string) => {
     setEngagementLoading(true);
     try {
-      const stats = await HrmAnnouncementService.getEngagementStats(site, announcementId);
+      const stats = await HrmAnnouncementService.getEngagementStats({ site, announcementHandle });
       setEngagementStats(stats);
     } catch {
       // silent

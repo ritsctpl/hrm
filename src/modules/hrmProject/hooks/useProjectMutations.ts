@@ -10,7 +10,7 @@ import type { ProjectFormValues, AllocationFormValues } from '../types/ui.types'
 
 export function useProjectMutations() {
   const store = useHrmProjectStore();
-  const { loadProjects, loadAllocations, loadPendingAllocations } = useProjectData();
+  const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
   const { site } = parseCookies();
 
   const createProject = useCallback(async (values: ProjectFormValues, createdBy: string) => {
@@ -49,15 +49,32 @@ export function useProjectMutations() {
   const updateProject = useCallback(async (handle: string, values: Partial<ProjectFormValues>, modifiedBy: string) => {
     store.setSavingProject(true);
     try {
-      await HrmProjectService.updateProject(handle, { ...values, site, createdBy: modifiedBy });
+      await HrmProjectService.updateProject(handle, { ...values, site, modifiedBy });
       message.success('Project updated successfully');
       store.closeProjectForm();
       await loadProjects();
+      // Refresh detail if viewing same project
+      if (store.selectedProject?.handle === handle) {
+        await loadProjectDetail(handle);
+      }
     } catch (error) {
       message.error('Failed to update project');
       console.error(error);
     } finally {
       store.setSavingProject(false);
+    }
+  }, [site, loadProjects]);
+
+  const deleteProject = useCallback(async (handle: string) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.deleteProject(site, handle, userId);
+      message.success('Project deleted');
+      store.removeProjectFromList(handle);
+      await loadProjects();
+    } catch (error) {
+      message.error('Cannot delete project (may have approved allocations)');
+      console.error(error);
     }
   }, [site, loadProjects]);
 
@@ -96,7 +113,7 @@ export function useProjectMutations() {
         recurrenceDays: values.recurrenceDays,
         createdBy,
       });
-      message.success('Allocation submitted for approval');
+      message.success('Allocation created');
       store.closeAllocationForm();
       await loadAllocations(projectHandle);
     } catch (error) {
@@ -104,6 +121,30 @@ export function useProjectMutations() {
       console.error(error);
     } finally {
       store.setSavingAllocation(false);
+    }
+  }, [site, loadAllocations]);
+
+  const submitAllocation = useCallback(async (handle: string, projectHandle: string) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.submitAllocation(site, handle, userId);
+      message.success('Allocation submitted for approval');
+      await loadAllocations(projectHandle);
+    } catch (error) {
+      message.error('Failed to submit allocation');
+      console.error(error);
+    }
+  }, [site, loadAllocations]);
+
+  const cancelAllocation = useCallback(async (handle: string, projectHandle: string) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.cancelAllocation(site, handle, userId);
+      message.success('Allocation cancelled');
+      await loadAllocations(projectHandle);
+    } catch (error) {
+      message.error('Failed to cancel allocation');
+      console.error(error);
     }
   }, [site, loadAllocations]);
 
@@ -132,6 +173,33 @@ export function useProjectMutations() {
     }
   }, [site, loadPendingAllocations]);
 
+  const addMilestone = useCallback(async (
+    projectHandle: string,
+    milestone: { milestoneName: string; targetDate: string; description?: string }
+  ) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.addMilestone(projectHandle, milestone, userId);
+      message.success('Milestone added');
+      await loadProjectDetail(projectHandle);
+    } catch (error) {
+      message.error('Failed to add milestone');
+      console.error(error);
+    }
+  }, [loadProjectDetail]);
+
+  const removeMilestone = useCallback(async (projectHandle: string, milestoneId: string) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.removeMilestone(projectHandle, milestoneId, userId);
+      message.success('Milestone removed');
+      await loadProjectDetail(projectHandle);
+    } catch (error) {
+      message.error('Failed to remove milestone');
+      console.error(error);
+    }
+  }, [loadProjectDetail]);
+
   const updateMilestoneStatus = useCallback(async (
     projectHandle: string,
     milestoneId: string,
@@ -141,18 +209,24 @@ export function useProjectMutations() {
     try {
       await HrmProjectService.updateMilestoneStatus({ site, projectHandle, milestoneId, status, modifiedBy });
       message.success('Milestone status updated');
+      await loadProjectDetail(projectHandle);
     } catch (error) {
       message.error('Failed to update milestone status');
       console.error(error);
     }
-  }, [site]);
+  }, [site, loadProjectDetail]);
 
   return {
     createProject,
     updateProject,
+    deleteProject,
     updateProjectStatus,
     createAllocation,
+    submitAllocation,
+    cancelAllocation,
     approveAllocation,
+    addMilestone,
+    removeMilestone,
     updateMilestoneStatus,
   };
 }

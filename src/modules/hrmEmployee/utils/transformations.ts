@@ -3,7 +3,7 @@
  * Utility functions for formatting, mapping, and validating employee data
  */
 
-import type { EmployeeSummary, Address, EmployeeProfile } from '../types/domain.types';
+import type { EmployeeSummary, EmployeeProfile } from '../types/domain.types';
 import type { EmployeeDirectoryRow, CreateEmployeeRequest } from '../types/api.types';
 
 /**
@@ -15,7 +15,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     employeeCode: row.employeeCode,
     fullName: row.fullName,
     department: row.department,
-    designation: row.designation,
+    designation: row.role || '', // Backend returns 'role', map to 'designation' for UI
     status: row.status,
     photoUrl: row.photoUrl,
     workEmail: row.workEmail,
@@ -25,7 +25,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
 /**
  * Format an Address into a single-line display string
  */
-export function formatAddress(address: Address | undefined | null): string {
+export function formatAddress(address: Record<string, unknown> | undefined | null): string {
   if (!address) return '--';
   const parts = [
     address.line1,
@@ -122,17 +122,15 @@ export function buildCreateRequest(
     site,
     firstName: draft.firstName || '',
     lastName: draft.lastName || '',
+    fullName: `${draft.firstName || ''} ${draft.lastName || ''}`.trim() || undefined,
     workEmail: draft.workEmail || '',
     phone: draft.phone || '',
     title: draft.title || '',
     department: draft.department || '',
-    designation: draft.designation || '',
+    role: (draft as Record<string, unknown>).designation as string || draft.role || '',
+    location: draft.location,
     businessUnits: draft.businessUnits || [],
-    joiningDate: draft.joiningDate || new Date().toISOString().split('T')[0],
     reportingManager: draft.reportingManager,
-    presentAddress: draft.presentAddress,
-    permanentAddress: draft.permanentAddress,
-    emergencyContacts: draft.emergencyContacts,
     createdBy,
   };
 }
@@ -179,16 +177,95 @@ export function validateOnboardingStep(
  */
 export function getProfileStats(profile: EmployeeProfile) {
   return {
-    totalSkills: profile.skills.length,
-    totalExperience: profile.previousExperience.length,
-    totalEducation: profile.education.length,
-    totalDocuments: profile.documents.length,
-    totalAssets: profile.assets.length,
-    expiringCerts: profile.trainingCerts.filter(
-      (cert) => isExpiringSoon(cert.expiryDate)
+    totalSkills: (profile.skills || []).length,
+    totalExperience: (profile.previousExperiences || []).length,
+    totalEducation: (profile.educationEntries || []).length,
+    totalDocuments: (profile.documents || []).length,
+    totalAssets: (profile.assetDetails || []).length,
+    expiringCerts: (profile.trainingCertifications || []).filter(
+      (cert) => isExpiringSoon(cert.validityTo)
     ).length,
-    expiredDocs: profile.documents.filter(
+    expiredDocs: (profile.documents || []).filter(
       (doc) => isExpired(doc.expiryDate)
     ).length,
+  };
+}
+
+/**
+ * Map backend profile response to our EmployeeProfile type.
+ * Backend uses different field names and arrays can be null.
+ */
+export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): EmployeeProfile {
+  const basic = (raw.basicDetails || {}) as Record<string, unknown>;
+  const official = (raw.officialDetails || {}) as Record<string, unknown>;
+  const personal = (raw.personalDetails || {}) as Record<string, unknown>;
+  const contact = (raw.contactDetails || {}) as Record<string, unknown>;
+
+  return {
+    handle: (raw.handle as string) || '',
+    site: (raw.site as string) || '',
+    employeeCode: (basic.employeeCode as string) || (official.employeeCode as string) || '',
+    basicDetails: {
+      fullName: (basic.fullName as string) || '',
+      workEmail: (basic.workEmail as string) || '',
+      phone: (basic.phone as string) || '',
+      photoUrl: (basic.photoUrl as string) || undefined,
+      status: (basic.status as string) || 'ACTIVE',
+      employeeCode: (basic.employeeCode as string) || undefined,
+    },
+    officialDetails: {
+      firstName: (official.firstName as string) || '',
+      lastName: (official.lastName as string) || '',
+      nickName: (official.nickName as string) || undefined,
+      title: (official.title as string) || '',
+      department: (official.department as string) || '',
+      departmentName: (official.departmentName as string) || undefined,
+      role: (official.role as string) || undefined,
+      roleName: (official.roleName as string) || undefined,
+      designation: (official.role as string) || undefined,
+      reportingManager: (official.reportingManager as string) || undefined,
+      reportingManagerName: (official.reportingManagerName as string) || undefined,
+      employeeCode: (official.employeeCode as string) || undefined,
+      location: (official.location as string) || undefined,
+      locationName: (official.locationName as string) || undefined,
+      businessUnits: (official.businessUnits as string[]) || [],
+      businessUnitNames: (official.businessUnitNames as string[]) || undefined,
+      joiningDate: (official.joiningDate as string) || undefined,
+    },
+    personalDetails: {
+      dateOfBirth: (personal.dateOfBirth as string) || undefined,
+      gender: personal.gender as EmployeeProfile['personalDetails']['gender'],
+      maritalStatus: personal.maritalStatus as EmployeeProfile['personalDetails']['maritalStatus'],
+      bloodGroup: personal.bloodGroup as EmployeeProfile['personalDetails']['bloodGroup'],
+      nationality: (personal.nationality as string) || undefined,
+      govtIds: (personal.govtIds as Record<string, string>) || undefined,
+    },
+    contactDetails: {
+      presentAddress: (contact.presentAddress as string) || undefined,
+      permanentAddress: (contact.permanentAddress as string) || undefined,
+      city: (contact.city as string) || undefined,
+      state: (contact.state as string) || undefined,
+      country: (contact.country as string) || undefined,
+      pinZip: (contact.pinZip as string) || undefined,
+      emergencyContacts: contact.emergencyContacts as EmployeeProfile['contactDetails']['emergencyContacts'] || undefined,
+    },
+    skills: (raw.skills as EmployeeProfile['skills']) || [],
+    jobHistory: (raw.jobHistory as EmployeeProfile['jobHistory']) || [],
+    previousExperiences: (raw.previousExperiences as EmployeeProfile['previousExperiences']) || [],
+    educationEntries: (raw.educationEntries as EmployeeProfile['educationEntries']) || [],
+    trainingCertifications: (raw.trainingCertifications as EmployeeProfile['trainingCertifications']) || [],
+    documents: (raw.documents as EmployeeProfile['documents']) || [],
+    assetDetails: (raw.assetDetails as EmployeeProfile['assetDetails']) || [],
+    remuneration: raw.remuneration as EmployeeProfile['remuneration'] || undefined,
+    leaveSummary: raw.leaveSummary as EmployeeProfile['leaveSummary'] || undefined,
+    dependents: raw.dependents as EmployeeProfile['dependents'] || undefined,
+    visaImmigration: raw.visaImmigration as EmployeeProfile['visaImmigration'] || undefined,
+    createdDateTime: (raw.createdDateTime as string) || undefined,
+    modifiedDateTime: (raw.modifiedDateTime as string) || undefined,
+    // Backward compat aliases for UI components using old property names
+    previousExperience: (raw.previousExperiences as EmployeeProfile['previousExperiences']) || [],
+    education: (raw.educationEntries as EmployeeProfile['educationEntries']) || [],
+    trainingCerts: (raw.trainingCertifications as EmployeeProfile['trainingCertifications']) || [],
+    assets: (raw.assetDetails as EmployeeProfile['assetDetails']) || [],
   };
 }

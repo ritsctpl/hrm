@@ -84,7 +84,21 @@ export default function PayrollExportPanel() {
           <Button
             size="small"
             icon={<DownloadOutlined />}
-            onClick={() => message.info('Export functionality to be wired to backend download endpoint')}
+            onClick={async () => {
+              try {
+                const csv = await HrmTimesheetService.exportCsv(site, reportPeriodStart, reportPeriodEnd, reportDept || undefined);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `payroll-export-${reportPeriodStart}-to-${reportPeriodEnd}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+                message.success('CSV downloaded');
+              } catch {
+                message.error('Failed to export CSV');
+              }
+            }}
           >
             Export CSV
           </Button>
@@ -95,7 +109,7 @@ export default function PayrollExportPanel() {
         <Table
           size="small"
           dataSource={rows}
-          rowKey="employeeId"
+          rowKey={(r) => `${r.employeeId}-${r.date}`}
           columns={columns}
           pagination={{ pageSize: 20 }}
           loading={loadingReport}

@@ -2,7 +2,7 @@
 
 export type TimesheetStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'REOPENED';
 export type DayColorCode = 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
-export type LineType = 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
+export type LineType = 'PROJECT' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
 
 export interface TimesheetLine {
   lineId: string;
@@ -17,7 +17,7 @@ export interface TimesheetLine {
   reason?: string;
   notes?: string;
   allocatedHoursForDay?: number;
-  isOverrun: boolean;
+  overrun: boolean;
 }
 
 export interface TimesheetHeader {
@@ -35,8 +35,8 @@ export interface TimesheetHeader {
   status: TimesheetStatus;
   notes?: string;
   version: number;
-  isHoliday: boolean;
-  isLeaveDay: boolean;
+  holiday: boolean;
+  leaveDay: boolean;
   leaveType?: string;
   active: number;
   createdDateTime: string;

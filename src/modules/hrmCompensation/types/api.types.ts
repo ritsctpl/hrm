@@ -3,7 +3,7 @@
  * Raw request/response shapes for all compensation API endpoints
  */
 
-export type ComponentType = 'EARNING' | 'DEDUCTION';
+export type ComponentType = 'EARNING' | 'DEDUCTION' | 'EMPLOYER_CONTRIBUTION';
 export type SubType = 'FIXED' | 'VARIABLE' | 'REIMBURSEMENT' | 'STATUTORY';
 export type CalcMethod = 'FIXED' | 'PERCENTAGE' | 'FORMULA';
 export type PayFrequency = 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
@@ -100,9 +100,11 @@ export interface CompensationApprovalRequest {
 export interface UpdateEmployeeCompensationRequest {
   site: string;
   handle: string;
+  employeeId?: string;
+  effectiveFrom?: string;
   components: CompensationComponentRequest[];
   remarks: string;
-  modifiedBy: string;
+  createdBy: string;
 }
 
 // ─── Bulk Import ─────────────────────────────────────────────────────────────

@@ -27,16 +27,15 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         form.setFieldsValue({
           title: editAnnouncement.title,
           content: editAnnouncement.content,
-          summary: editAnnouncement.summary,
           priority: editAnnouncement.priority,
           category: editAnnouncement.category,
-          isPinned: editAnnouncement.isPinned,
-          scheduledAt: editAnnouncement.scheduledAt ? dayjs(editAnnouncement.scheduledAt) : undefined,
+          pinToTop: editAnnouncement.pinToTop,
+          scheduledPublishAt: editAnnouncement.scheduledPublishAt ? dayjs(editAnnouncement.scheduledPublishAt) : undefined,
           expiresAt: editAnnouncement.expiresAt ? dayjs(editAnnouncement.expiresAt) : undefined,
         });
       } else {
         form.resetFields();
-        form.setFieldsValue({ priority: "MEDIUM", category: "GENERAL", isPinned: false });
+        form.setFieldsValue({ priority: "NORMAL", category: "GENERAL", pinToTop: false });
       }
     }
   }, [open, editAnnouncement, form]);
@@ -48,13 +47,13 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       const payload = {
         ...values,
         site,
-        scheduledAt: values.scheduledAt?.toISOString(),
+        scheduledPublishAt: values.scheduledPublishAt?.toISOString(),
         expiresAt: values.expiresAt?.toISOString(),
       };
       if (editAnnouncement) {
         await HrmAnnouncementService.updateAnnouncement({
           ...payload,
-          announcementId: editAnnouncement.id,
+          announcementHandle: editAnnouncement.handle,
         });
       } else {
         await HrmAnnouncementService.createAnnouncement(payload);
@@ -89,8 +88,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         </Form.Item>
         <Form.Item name="priority" label="Priority" rules={[{ required: true }]}>
           <Select>
-            <Option value="LOW">Low</Option>
-            <Option value="MEDIUM">Medium</Option>
+            <Option value="NORMAL">Normal</Option>
             <Option value="HIGH">High</Option>
             <Option value="URGENT">Urgent</Option>
           </Select>
@@ -102,16 +100,13 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
             ))}
           </Select>
         </Form.Item>
-        <Form.Item name="summary" label="Summary">
-          <Input placeholder="Brief summary (shown in feed)" />
-        </Form.Item>
         <Form.Item name="content" label="Content" rules={[{ required: true }]}>
           <TextArea rows={8} placeholder="Announcement content (HTML supported)" />
         </Form.Item>
-        <Form.Item name="isPinned" label="Pin Announcement" valuePropName="checked">
+        <Form.Item name="pinToTop" label="Pin Announcement" valuePropName="checked">
           <Switch />
         </Form.Item>
-        <Form.Item name="scheduledAt" label="Schedule Publish At">
+        <Form.Item name="scheduledPublishAt" label="Schedule Publish At">
           <DatePicker showTime style={{ width: "100%" }} format="DD-MMM-YYYY HH:mm" />
         </Form.Item>
         <Form.Item name="expiresAt" label="Expires At">

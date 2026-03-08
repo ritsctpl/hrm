@@ -1,17 +1,18 @@
 export type PayrollRunStatus =
   | 'DRAFT'
-  | 'VALIDATED'
+  | 'PROCESSING'
+  | 'COMPUTED'
   | 'APPROVED'
-  | 'FINALIZED'
-  | 'PUBLISHED';
+  | 'PAID'
+  | 'LOCKED';
 
 export type PayrollEntryStatus = 'COMPUTED' | 'ERROR' | 'ADJUSTED' | 'LOCKED';
 
 export interface PayrollRunSummary {
   handle: string;
   runId: string;
-  site: string;
-  company: string;
+  site?: string;
+  company?: string;
   payrollYear: number;
   payrollMonth: number;
   payrollPeriodLabel: string;
@@ -28,10 +29,10 @@ export interface PayrollRunSummary {
   totalNet?: number;
   missingCompensation?: number;
   pendingApprovals?: number;
-  compensationDataReady: boolean;
-  leaveLedgerReady: boolean;
-  timesheetReady: boolean;
-  holidayCalendarReady: boolean;
+  compensationDataReady?: boolean;
+  leaveLedgerReady?: boolean;
+  timesheetReady?: boolean;
+  holidayCalendarReady?: boolean;
 }
 
 export interface PayrollComponentValue {
@@ -140,5 +141,8 @@ export interface StatutoryConfig {
   ptSlabs?: ProfessionalTaxSlab[];
   state?: string;
   active: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
   createdBy: string;
+  modifiedBy?: string;
 }

@@ -42,7 +42,7 @@ const WizardStepProcess: React.FC = () => {
           <Descriptions column={3} size="small">
             <Descriptions.Item label="Run ID">{run.runId}</Descriptions.Item>
             <Descriptions.Item label="Period">
-              {formatPayrollPeriod(run.payrollMonth, run.payrollYear, PAYROLL_MONTHS)}
+              {formatPayrollPeriod(run.payrollYear, run.payrollMonth)}
             </Descriptions.Item>
             <Descriptions.Item label="Employees">
               {store.includedEmployeeIds.length || run.totalEmployees}

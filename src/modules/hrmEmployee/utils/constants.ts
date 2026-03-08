@@ -74,19 +74,13 @@ export const DOCUMENT_TYPE_OPTIONS = [
   { value: 'OTHER', label: 'Other' },
 ] as const;
 
-/** Profile tabs configuration */
+/** Profile tabs configuration (consolidated from 13 → 5) */
 export const PROFILE_TABS: { key: ProfileTabKey; label: string }[] = [
-  { key: 'basic', label: 'Basic Details' },
-  { key: 'official', label: 'Official Details' },
-  { key: 'personal', label: 'Personal Details' },
-  { key: 'contact', label: 'Contact Details' },
-  { key: 'skills', label: 'Skills' },
-  { key: 'jobHistory', label: 'Job History' },
-  { key: 'experience', label: 'Previous Experience' },
-  { key: 'education', label: 'Education' },
-  { key: 'training', label: 'Training & Certs' },
-  { key: 'documents', label: 'Documents' },
-  { key: 'assets', label: 'Assets' },
+  { key: 'overview', label: 'Overview' },
+  { key: 'contactFamily', label: 'Contact & Family' },
+  { key: 'career', label: 'Career' },
+  { key: 'documentsAssets', label: 'Documents & Assets' },
+  { key: 'compensation', label: 'Compensation' },
 ];
 
 /** Onboarding wizard steps */

@@ -1,13 +1,14 @@
-export type AnnouncementPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type AnnouncementPriority = "NORMAL" | "HIGH" | "URGENT";
 export type AnnouncementCategory =
   | "GENERAL"
-  | "HR"
-  | "IT"
-  | "FINANCE"
-  | "OPERATIONS"
-  | "SAFETY"
-  | "EVENTS";
-export type AnnouncementStatus = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "WITHDRAWN";
+  | "HOLIDAY"
+  | "POLICY_UPDATE"
+  | "TRAINING"
+  | "EVENT"
+  | "EMERGENCY"
+  | "BENEFITS"
+  | "FACILITIES";
+export type AnnouncementStatus = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "WITHDRAWN" | "EXPIRED";
 
 export interface AnnouncementAttachment {
   id: string;
@@ -17,32 +18,35 @@ export interface AnnouncementAttachment {
 }
 
 export interface Announcement {
-  id: string;
-  site: string;
+  handle: string;
+  announcementId: string;
+  site?: string;
   title: string;
   content: string;
-  summary?: string;
   priority: AnnouncementPriority;
   category: AnnouncementCategory;
   status: AnnouncementStatus;
-  isPinned: boolean;
+  pinToTop: boolean;
   isRead?: boolean;
   publishedAt?: string;
-  scheduledAt?: string;
+  scheduledPublishAt?: string;
   expiresAt?: string;
-  publishedBy?: string;
-  targetAudience?: string[];
-  attachments?: AnnouncementAttachment[];
+  totalTargetEmployees?: number;
   readCount?: number;
-  totalRecipients?: number;
-  createdAt: string;
+  readRate?: number;
+  attachments?: AnnouncementAttachment[];
+  createdAt?: string;
   updatedAt?: string;
+  messageDetails?: unknown;
 }
 
 export interface EngagementStats {
+  announcementHandle: string;
   announcementId: string;
-  totalRecipients: number;
+  title: string;
+  status: AnnouncementStatus;
+  totalTargetEmployees: number;
   readCount: number;
-  readPercentage: number;
-  readByDepartment?: Record<string, { read: number; total: number }>;
+  readRate: number;
+  publishedAt?: string;
 }

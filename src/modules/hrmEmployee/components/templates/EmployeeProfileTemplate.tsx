@@ -1,13 +1,21 @@
 /**
  * EmployeeProfileTemplate - Template layout for the full-page employee profile
- * Renders the header with avatar + name and the Ant Design Tabs for each section.
+ * Renders CommonAppBar, a compact header with avatar + name, and consolidated Ant Design Tabs.
+ *
+ * Consolidated tabs (from 13 → 5):
+ *   1. Overview       — Basic + Official + Personal
+ *   2. Contact & Family — Contact details
+ *   3. Career          — Skills + Job History + Experience + Education + Training
+ *   4. Documents & Assets — Documents + Assets
+ *   5. Compensation    — Remuneration + Leave Summary
  */
 
 'use client';
 
 import React from 'react';
-import { Tabs, Button, Spin } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+import { Tabs, Button, Spin, Typography } from 'antd';
+import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import CommonAppBar from '@/components/CommonAppBar';
 import EmpAvatar from '../atoms/EmpAvatar';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
 import BasicDetailsTab from '../organisms/BasicDetailsTab';
@@ -21,11 +29,42 @@ import EducationTab from '../organisms/EducationTab';
 import TrainingCertTab from '../organisms/TrainingCertTab';
 import DocumentsTab from '../organisms/DocumentsTab';
 import AssetsTab from '../organisms/AssetsTab';
+import RemunerationTab from './RemunerationTab';
+import LeaveSummaryTab from './LeaveSummaryTab';
 import { PROFILE_TABS } from '../../utils/constants';
 import type { EmployeeProfile } from '../../types/domain.types';
 import type { EmployeeStatus } from '../../types/domain.types';
 import type { ProfileTabKey } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployee.module.css';
+
+const { Text } = Typography;
+
+/** Shared card-style section wrapper used inside consolidated tabs */
+const ProfileSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div
+    style={{
+      background: '#fff',
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      border: '1px solid #e2e8f0',
+    }}
+  >
+    <h4
+      style={{
+        margin: '0 0 12px 0',
+        paddingBottom: 8,
+        borderBottom: '1px solid #e2e8f0',
+        fontSize: 15,
+        fontWeight: 600,
+        color: '#1e293b',
+      }}
+    >
+      {title}
+    </h4>
+    {children}
+  </div>
+);
 
 interface EmployeeProfileTemplateProps {
   profile: EmployeeProfile;
@@ -67,46 +106,94 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
     );
   }
 
-  const { basicDetails, officialDetails, employeeCode } = profile;
+  const basicDetails = profile.basicDetails || { fullName: '', workEmail: '', phone: '', status: 'ACTIVE' };
+  const officialDetails = profile.officialDetails || { firstName: '', lastName: '', title: '', department: '', designation: '', businessUnits: [], joiningDate: '' };
+  const employeeCode = profile.employeeCode || '';
 
   const tabProps = { profile, isEditing, isSaving, onSave };
 
+  /** Build consolidated tab content */
   const tabItems = PROFILE_TABS.map((tab) => {
     let content: React.ReactNode = null;
 
     switch (tab.key) {
-      case 'basic':
-        content = <BasicDetailsTab {...tabProps} />;
+      /* ---- Overview: Basic + Official + Personal ---- */
+      case 'overview':
+        content = (
+          <div style={{ padding: 16, overflowY: 'auto' }}>
+            <ProfileSection title="Basic Details">
+              <BasicDetailsTab {...tabProps} />
+            </ProfileSection>
+            <ProfileSection title="Official Details">
+              <OfficialDetailsTab {...tabProps} />
+            </ProfileSection>
+            <ProfileSection title="Personal Details">
+              <PersonalDetailsTab {...tabProps} />
+            </ProfileSection>
+          </div>
+        );
         break;
-      case 'official':
-        content = <OfficialDetailsTab {...tabProps} />;
+
+      /* ---- Contact & Family ---- */
+      case 'contactFamily':
+        content = (
+          <div style={{ padding: 16, overflowY: 'auto' }}>
+            <ProfileSection title="Contact Details">
+              <ContactDetailsTab {...tabProps} />
+            </ProfileSection>
+          </div>
+        );
         break;
-      case 'personal':
-        content = <PersonalDetailsTab {...tabProps} />;
+
+      /* ---- Career: Skills + Job History + Experience + Education + Training ---- */
+      case 'career':
+        content = (
+          <div style={{ padding: 16, overflowY: 'auto' }}>
+            <ProfileSection title="Skills">
+              <SkillsTab {...tabProps} onRefresh={onRefresh} />
+            </ProfileSection>
+            <ProfileSection title="Job History">
+              <JobHistoryTab {...tabProps} />
+            </ProfileSection>
+            <ProfileSection title="Previous Experience">
+              <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />
+            </ProfileSection>
+            <ProfileSection title="Education">
+              <EducationTab {...tabProps} onRefresh={onRefresh} />
+            </ProfileSection>
+            <ProfileSection title="Training & Certifications">
+              <TrainingCertTab {...tabProps} />
+            </ProfileSection>
+          </div>
+        );
         break;
-      case 'contact':
-        content = <ContactDetailsTab {...tabProps} />;
+
+      /* ---- Documents & Assets ---- */
+      case 'documentsAssets':
+        content = (
+          <div style={{ padding: 16, overflowY: 'auto' }}>
+            <ProfileSection title="Documents">
+              <DocumentsTab {...tabProps} onRefresh={onRefresh} />
+            </ProfileSection>
+            <ProfileSection title="Assets">
+              <AssetsTab {...tabProps} />
+            </ProfileSection>
+          </div>
+        );
         break;
-      case 'skills':
-        content = <SkillsTab {...tabProps} onRefresh={onRefresh} />;
-        break;
-      case 'jobHistory':
-        content = <JobHistoryTab {...tabProps} />;
-        break;
-      case 'experience':
-        content = <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />;
-        break;
-      case 'education':
-        content = <EducationTab {...tabProps} onRefresh={onRefresh} />;
-        break;
-      case 'training':
-        content = <TrainingCertTab {...tabProps} />;
-        break;
-      case 'documents':
-        content = <DocumentsTab {...tabProps} onRefresh={onRefresh} />;
-        break;
-      case 'assets':
-        content = <AssetsTab {...tabProps} />;
+
+      /* ---- Compensation: Remuneration + Leave Summary ---- */
+      case 'compensation':
+        content = (
+          <div style={{ padding: 16, overflowY: 'auto' }}>
+            <ProfileSection title="Remuneration">
+              <RemunerationTab profile={profile} onRefresh={onRefresh} />
+            </ProfileSection>
+            <ProfileSection title="Leave Summary">
+              <LeaveSummaryTab profile={profile} />
+            </ProfileSection>
+          </div>
+        );
         break;
     }
 
@@ -119,6 +206,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
   return (
     <div className={styles.profileWrapper}>
+      {/* App Bar */}
+      <CommonAppBar appTitle="Employee Profile" />
+
       {/* Profile Header */}
       <div className={styles.profileHeader}>
         <Button
@@ -126,11 +216,13 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
           icon={<ArrowLeftOutlined />}
           onClick={onBack}
           style={{ marginRight: 8 }}
-        />
+        >
+          Back
+        </Button>
         <EmpAvatar
           name={basicDetails.fullName}
           photoUrl={basicDetails.photoUrl}
-          size={52}
+          size={64}
         />
         <div className={styles.profileHeaderInfo}>
           <h2 className={styles.profileName}>{basicDetails.fullName}</h2>
@@ -138,13 +230,41 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             <span>{employeeCode}</span>
             <span>{officialDetails.designation}</span>
             <span>{officialDetails.department}</span>
+            {officialDetails.reportingManager && (
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Reports to: {officialDetails.reportingManager}
+              </Text>
+            )}
             <EmpStatusBadge status={basicDetails.status as EmployeeStatus} size="small" />
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 2, fontSize: 12, color: '#64748b' }}>
+            <span>{basicDetails.workEmail}</span>
+            <span>{basicDetails.phone}</span>
+            {officialDetails.businessUnits?.length > 0 && (
+              <span>{officialDetails.businessUnits.join(', ')}</span>
+            )}
           </div>
         </div>
         <div className={styles.profileActions}>
-          <Button icon={<EditOutlined />} onClick={onEdit}>
-            Edit
-          </Button>
+          {isEditing ? (
+            <>
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                loading={isSaving}
+                onClick={() => onSave(activeTab, {})}
+              >
+                Save
+              </Button>
+              <Button icon={<CloseOutlined />} onClick={onBack}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button icon={<EditOutlined />} onClick={onEdit}>
+              Edit
+            </Button>
+          )}
         </div>
       </div>
 

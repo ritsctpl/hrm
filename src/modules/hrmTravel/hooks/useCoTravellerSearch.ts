@@ -21,7 +21,7 @@ export function useCoTravellerSearch() {
     try {
       const data = await HrmTravelService.searchCoTravellers({
         site,
-        supervisorId: employeeId,
+        empId: employeeId,
         query,
       });
       setEligibleCoTravellers(data);

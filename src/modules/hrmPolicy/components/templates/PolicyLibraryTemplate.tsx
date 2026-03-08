@@ -78,8 +78,9 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         >
           <Option value="POLICY">Policy</Option>
           <Option value="SOP">SOP</Option>
-          <Option value="REFERENCE">Reference</Option>
-          <Option value="HANDBOOK">Handbook</Option>
+          <Option value="REGULATION">Regulation</Option>
+          <Option value="GUIDELINE">Guideline</Option>
+          <Option value="CODE_OF_CONDUCT">Code of Conduct</Option>
         </Select>
         <Select
           placeholder="Status"
@@ -90,7 +91,10 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         >
           <Option value="PUBLISHED">Published</Option>
           <Option value="DRAFT">Draft</Option>
-          <Option value="ARCHIVED">Archived</Option>
+          <Option value="REVIEW">Under Review</Option>
+          <Option value="APPROVED">Approved</Option>
+          <Option value="RETIRED">Retired</Option>
+          <Option value="SUPERSEDED">Superseded</Option>
         </Select>
       </Space>
       <Space>

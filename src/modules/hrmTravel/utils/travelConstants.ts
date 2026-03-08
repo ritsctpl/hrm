@@ -7,6 +7,7 @@ export const TRAVEL_STATUS_COLORS: Record<TravelStatus, string> = {
   APPROVED: "success",
   REJECTED: "error",
   CANCELLED: "default",
+  RECALLED: "default",
 };
 
 export const TRAVEL_STATUS_LABELS: Record<TravelStatus, string> = {
@@ -16,12 +17,13 @@ export const TRAVEL_STATUS_LABELS: Record<TravelStatus, string> = {
   APPROVED: "Approved",
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",
+  RECALLED: "Recalled",
 };
 
 export const TRAVEL_TYPE_COLORS: Record<TravelType, string> = {
   LOCAL: "blue",
   DOMESTIC: "green",
-  OVERSEAS: "purple",
+  INTERNATIONAL: "purple",
 };
 
 export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = {
@@ -30,12 +32,13 @@ export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = {
   BUS: "Bus",
   TRAIN: "Train",
   FLIGHT: "Flight",
+  AIR: "Air",
 };
 
 export const ALLOWED_MODES_BY_TYPE: Record<TravelType, TravelMode[]> = {
   LOCAL: ["CAB", "AUTO", "BUS"],
   DOMESTIC: ["CAB", "BUS", "TRAIN", "FLIGHT"],
-  OVERSEAS: ["FLIGHT"],
+  INTERNATIONAL: ["FLIGHT", "AIR"],
 };
 
 export const CANCELLABLE_STATUSES: TravelStatus[] = ["DRAFT", "PENDING_APPROVAL"];

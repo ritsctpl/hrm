@@ -1,9 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Modal, notification, Button } from 'antd';
-import PlusIcon from '@mui/icons-material/Add';
-import SecurityIcon from '@mui/icons-material/Security';
+import React, { useState } from 'react';
+import { Modal, notification, Button, Input, Form } from 'antd';
+import { PlusOutlined, CopyOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import RbacSearchBar from '../molecules/RbacSearchBar';
 import RbacEmptyState from '../atoms/RbacEmptyState';
 import RoleTable from '../organisms/RoleTable';
@@ -20,6 +19,9 @@ import styles from '../../styles/RoleManagement.module.css';
 const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, user }) => {
   const store = useHrmAccessStore();
   const { role, permission } = store;
+  const [cloneModalOpen, setCloneModalOpen] = useState(false);
+  const [cloneNewName, setCloneNewName] = useState('');
+  const [cloning, setCloning] = useState(false);
 
   const handleSelectRole = async (selectedRole: Role) => {
     store.selectRole(selectedRole);
@@ -110,6 +112,44 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
     });
   };
 
+  const handleToggleStatus = async () => {
+    if (!role.selected) return;
+    store.setRoleSaving(true);
+    try {
+      await HrmAccessService.toggleRoleStatus(
+        site,
+        role.selected.roleCode,
+        !role.selected.isActive,
+        user?.id ?? ''
+      );
+      notification.success({ message: `Role ${role.selected.isActive ? 'deactivated' : 'activated'}.` });
+      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      store.setRoles(refreshed);
+      store.selectRole(null);
+    } catch (err: unknown) {
+      notification.error({ message: (err as Error).message ?? 'Failed to toggle status.' });
+    } finally {
+      store.setRoleSaving(false);
+    }
+  };
+
+  const handleCloneRole = async () => {
+    if (!role.selected || !cloneNewName.trim()) return;
+    setCloning(true);
+    try {
+      await HrmAccessService.cloneRole(site, role.selected.roleCode, cloneNewName.trim(), user?.id ?? '');
+      notification.success({ message: 'Role cloned successfully.' });
+      setCloneModalOpen(false);
+      setCloneNewName('');
+      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      store.setRoles(refreshed);
+    } catch (err: unknown) {
+      notification.error({ message: (err as Error).message ?? 'Failed to clone role.' });
+    } finally {
+      setCloning(false);
+    }
+  };
+
   const filteredRoles = role.list.filter((r) => {
     const q = role.searchText.toLowerCase();
     return r.roleCode.toLowerCase().includes(q) || r.roleName.toLowerCase().includes(q);
@@ -128,13 +168,28 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
           />
           <Button
             type="primary"
-            icon={<PlusIcon fontSize="small" />}
+            icon={<PlusOutlined />}
             onClick={() => store.setRoleCreating(true)}
             className={styles.addButton}
           >
-            Add Role
+            New Role
           </Button>
         </div>
+
+        {role.selected && !role.isCreating && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+            <Button
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                setCloneNewName(`${role.selected!.roleName} (Copy)`);
+                setCloneModalOpen(true);
+              }}
+            >
+              Clone
+            </Button>
+          </div>
+        )}
 
         <RoleTable
           data={filteredRoles}
@@ -161,7 +216,7 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
               onChange={store.updateRoleDraft}
               onSave={handleSaveRole}
               onDelete={handleDeleteRole}
-              onToggleStatus={() => store.updateRoleDraft({ isActive: !role.draft?.isActive })}
+              onToggleStatus={handleToggleStatus}
             />
             {!role.isCreating && (
               <RolePermissionGrid
@@ -180,12 +235,35 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
           </>
         ) : (
           <RbacEmptyState
-            icon={<SecurityIcon style={{ fontSize: 40, color: '#8c8c8c' }} />}
+            icon={<SafetyCertificateOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />}
             title="No Role Selected"
             description="Select a role from the list or create a new one."
           />
         )}
       </div>
+
+      {/* Clone Role Modal */}
+      <Modal
+        title="Clone Role"
+        open={cloneModalOpen}
+        onOk={handleCloneRole}
+        onCancel={() => { setCloneModalOpen(false); setCloneNewName(''); }}
+        okText="Clone"
+        confirmLoading={cloning}
+      >
+        <p>
+          Cloning role <strong>{role.selected?.roleCode}</strong> with all its permissions.
+        </p>
+        <Form layout="vertical">
+          <Form.Item label="New Role Name" required>
+            <Input
+              value={cloneNewName}
+              onChange={(e) => setCloneNewName(e.target.value)}
+              placeholder="Enter name for the cloned role"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

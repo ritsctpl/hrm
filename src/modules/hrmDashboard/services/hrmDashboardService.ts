@@ -4,137 +4,129 @@ import {
   GetManagerDashboardPayload,
   GetHrDashboardPayload,
   GetAdminDashboardPayload,
+  GetWidgetDataPayload,
+  GetLayoutPayload,
   SaveLayoutPayload,
+  ResetLayoutPayload,
+  GetAlertsPayload,
+  DismissAlertPayload,
+  GenerateAlertsPayload,
+  ListWidgetsPayload,
+  WidgetDefinitionRequest,
+  DeleteWidgetPayload,
+  RefreshSnapshotPayload,
+  GetSnapshotPayload,
+  ScheduleSnapshotPayload,
 } from "../types/api.types";
+import type {
+  DashboardResponse,
+  DashboardWidget,
+  DashboardAlert,
+  DashboardLayoutResponse,
+  WidgetDefinition,
+  DashboardSnapshot,
+  SnapshotScheduleResponse,
+} from "../types/domain.types";
 
 const BASE = "/hrm-service/dashboard";
 
 export class HrmDashboardService {
-  static async getEmployeeDashboard(payload: GetEmployeeDashboardPayload) {
+  // --- Role-Specific Dashboards ---
+
+  static async getEmployeeDashboard(payload: GetEmployeeDashboardPayload): Promise<DashboardResponse> {
     const res = await api.post(`${BASE}/getEmployeeDashboard`, payload);
     return res.data;
   }
 
-  static async getManagerDashboard(payload: GetManagerDashboardPayload) {
+  static async getManagerDashboard(payload: GetManagerDashboardPayload): Promise<DashboardResponse> {
     const res = await api.post(`${BASE}/getManagerDashboard`, payload);
     return res.data;
   }
 
-  static async getHrDashboard(payload: GetHrDashboardPayload) {
+  static async getHrDashboard(payload: GetHrDashboardPayload): Promise<DashboardResponse> {
     const res = await api.post(`${BASE}/getHrDashboard`, payload);
     return res.data;
   }
 
-  static async getAdminDashboard(payload: GetAdminDashboardPayload) {
+  static async getAdminDashboard(payload: GetAdminDashboardPayload): Promise<DashboardResponse> {
     const res = await api.post(`${BASE}/getAdminDashboard`, payload);
     return res.data;
   }
 
-  static async getLeaveBalances(site: string, employeeId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, employeeId, widgetType: "LEAVE_BALANCES" });
+  // --- Widget Data ---
+
+  static async getWidgetData(payload: GetWidgetDataPayload): Promise<DashboardWidget> {
+    const res = await api.post(`${BASE}/getWidgetData`, payload);
     return res.data;
   }
 
-  static async getPendingRequests(site: string, employeeId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, employeeId, widgetType: "PENDING_REQUESTS" });
+  // --- Layout Configuration ---
+
+  static async getLayout(payload: GetLayoutPayload): Promise<DashboardLayoutResponse> {
+    const res = await api.post(`${BASE}/getLayout`, payload);
     return res.data;
   }
 
-  static async getRecentPayslips(site: string, employeeId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, employeeId, widgetType: "RECENT_PAYSLIPS" });
+  static async saveLayout(payload: SaveLayoutPayload): Promise<DashboardLayoutResponse> {
+    const res = await api.post(`${BASE}/saveLayout`, payload);
     return res.data;
   }
 
-  static async getMyGoals(site: string, employeeId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, employeeId, widgetType: "MY_GOALS" });
+  static async resetLayout(payload: ResetLayoutPayload): Promise<DashboardLayoutResponse> {
+    const res = await api.post(`${BASE}/resetLayout`, payload);
     return res.data;
   }
 
-  static async getUpcomingHolidays(site: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, widgetType: "UPCOMING_HOLIDAYS" });
+  // --- Alerts ---
+
+  static async getAlerts(payload: GetAlertsPayload): Promise<DashboardAlert[]> {
+    const res = await api.post(`${BASE}/getAlerts`, payload);
     return res.data;
   }
 
-  static async getTeamOverview(site: string, managerId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, managerId, widgetType: "TEAM_OVERVIEW" });
+  static async dismissAlert(payload: DismissAlertPayload): Promise<DashboardAlert> {
+    const res = await api.post(`${BASE}/dismissAlert`, payload);
     return res.data;
   }
 
-  static async getPendingApprovals(site: string, managerId: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, managerId, widgetType: "PENDING_APPROVALS" });
+  static async generateAlerts(payload: GenerateAlertsPayload): Promise<void> {
+    await api.post(`${BASE}/generateAlerts`, payload);
+  }
+
+  // --- Widget Catalog ---
+
+  static async listWidgets(payload: ListWidgetsPayload): Promise<WidgetDefinition[]> {
+    const res = await api.post(`${BASE}/listWidgets`, payload);
     return res.data;
   }
 
-  static async getHrKpis(site: string, fiscalYear?: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, fiscalYear, widgetType: "HR_KPIS" });
+  static async createWidget(payload: WidgetDefinitionRequest): Promise<WidgetDefinition> {
+    const res = await api.post(`${BASE}/createWidget`, payload);
     return res.data;
   }
 
-  static async getHeadcountTrend(site: string, months: number = 12) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, months, widgetType: "HEADCOUNT_TREND" });
+  static async updateWidget(payload: WidgetDefinitionRequest): Promise<WidgetDefinition> {
+    const res = await api.post(`${BASE}/updateWidget`, payload);
     return res.data;
   }
 
-  static async getDeptDistribution(site: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, widgetType: "DEPT_DISTRIBUTION" });
+  static async deleteWidget(payload: DeleteWidgetPayload): Promise<void> {
+    await api.post(`${BASE}/deleteWidget`, payload);
+  }
+
+  // --- Snapshot ---
+
+  static async refreshSnapshot(payload: RefreshSnapshotPayload): Promise<void> {
+    await api.post(`${BASE}/refreshSnapshot`, payload);
+  }
+
+  static async getSnapshot(payload: GetSnapshotPayload): Promise<DashboardSnapshot> {
+    const res = await api.post(`${BASE}/getSnapshot`, payload);
     return res.data;
   }
 
-  static async getAttritionData(site: string, fiscalYear?: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, fiscalYear, widgetType: "ATTRITION" });
-    return res.data;
-  }
-
-  static async getLeaveUtilization(site: string, fiscalYear?: string) {
-    const res = await api.post(`${BASE}/getWidgetData`, { site, fiscalYear, widgetType: "LEAVE_UTILIZATION" });
-    return res.data;
-  }
-
-  static async getHrAlerts(site: string) {
-    const res = await api.post(`${BASE}/getAlerts`, { site });
-    return res.data;
-  }
-
-  static async getSystemHealth(site: string) {
-    const res = await api.post(`${BASE}/getSnapshot`, { site, snapshotType: "SYSTEM_HEALTH" });
-    return res.data;
-  }
-
-  static async getModuleUsage(site: string) {
-    const res = await api.post(`${BASE}/getSnapshot`, { site, snapshotType: "MODULE_USAGE" });
-    return res.data;
-  }
-
-  static async getAuditActivity(site: string, limit: number = 10) {
-    const res = await api.post(`${BASE}/getSnapshot`, { site, snapshotType: "AUDIT_ACTIVITY", limit });
-    return res.data;
-  }
-
-  static async getAdminAlerts(site: string) {
-    const res = await api.post(`${BASE}/getAlerts`, { site, alertType: "ADMIN" });
-    return res.data;
-  }
-
-  static async saveLayout(payload: SaveLayoutPayload): Promise<void> {
-    await api.post(`${BASE}/saveLayout`, payload);
-  }
-
-  static async getLayout(site: string, employeeId: string, role: string) {
-    const res = await api.post(`${BASE}/getLayout`, { site, employeeId, role });
-    return res.data;
-  }
-
-  static async resetLayout(site: string, employeeId: string, role: string): Promise<void> {
-    await api.post(`${BASE}/resetLayout`, { site, employeeId, role });
-  }
-
-  static async getComplianceDashboard(site: string) {
-    const res = await api.post(`${BASE}/getComplianceDashboard`, { site });
-    return res.data;
-  }
-
-  static async getAuditDashboard(site: string) {
-    const res = await api.post(`${BASE}/getAuditDashboard`, { site });
+  static async scheduleSnapshot(payload: ScheduleSnapshotPayload): Promise<SnapshotScheduleResponse> {
+    const res = await api.post(`${BASE}/scheduleSnapshot`, payload);
     return res.data;
   }
 }

@@ -6,7 +6,7 @@ import { parseCookies } from "nookies";
 import { HrmTravelService } from "../../services/hrmTravelService";
 import type { TravelPolicy, TravelType, TravelMode } from "../../types/domain.types";
 
-const ALL_MODES: TravelMode[] = ["CAB", "AUTO", "BUS", "TRAIN", "FLIGHT"];
+const ALL_MODES: TravelMode[] = ["CAB", "AUTO", "BUS", "TRAIN", "FLIGHT", "AIR"];
 
 interface Props {
   policies: TravelPolicy[];
@@ -53,7 +53,7 @@ const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
     const values = await form.validateFields();
     setSaving(true);
     try {
-      const types: TravelType[] = ["LOCAL", "DOMESTIC", "OVERSEAS"];
+      const types: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
       for (const t of types) {
         await HrmTravelService.updatePolicy({
           site,

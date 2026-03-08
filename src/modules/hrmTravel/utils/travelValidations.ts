@@ -25,7 +25,7 @@ export function validateTravelForm(form: TravelFormState): TravelFormErrors {
     if (!form.travelDate) errors.travelDate = "Travel date is required.";
     if (!form.startHour) errors.startHour = "Start hour is required.";
     if (!form.endHour) errors.endHour = "End hour is required.";
-  } else if (form.travelType === "DOMESTIC" || form.travelType === "OVERSEAS") {
+  } else if (form.travelType === "DOMESTIC" || form.travelType === "INTERNATIONAL") {
     if (!form.startDate) errors.startDate = "Start date is required.";
     if (!form.endDate) errors.endDate = "End date is required.";
   }

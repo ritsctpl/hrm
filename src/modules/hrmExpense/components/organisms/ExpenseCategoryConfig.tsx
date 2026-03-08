@@ -16,6 +16,7 @@ interface Props {
 const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
+  const userId = cookies.userId ?? "";
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [saving, setSaving] = useState(false);
@@ -26,7 +27,7 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
     form.setFieldsValue(
       category
         ? { ...category }
-        : { requiresReceipt: true, active: true, sortOrder: categories.length + 1 }
+        : { requiresAttachment: true, mileageCategory: false }
     );
     setModalOpen(true);
   };
@@ -37,8 +38,15 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
     try {
       await HrmExpenseService.saveCategory({
         site,
-        ...(editingCategory ? { handle: editingCategory.handle } : {}),
-        ...values,
+        categoryCode: values.categoryCode,
+        categoryName: values.categoryName,
+        description: values.description,
+        dailyLimit: values.dailyLimit,
+        perTripLimit: values.perTripLimit,
+        requiresAttachment: values.requiresAttachment,
+        mileageCategory: values.mileageCategory,
+        mileageRatePerKm: values.mileageRatePerKm,
+        createdBy: userId,
       });
       message.success(`Category ${editingCategory ? "updated" : "created"}.`);
       setModalOpen(false);
@@ -50,9 +58,9 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
     }
   };
 
-  const handleDelete = async (handle: string) => {
+  const handleDelete = async (categoryId: string) => {
     try {
-      await HrmExpenseService.deleteCategory({ site, handle });
+      await HrmExpenseService.deleteCategory({ site, categoryId, deletedBy: userId });
       message.success("Category deleted.");
       onRefresh();
     } catch {
@@ -61,15 +69,16 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
   };
 
   const columns: ColumnsType<ExpenseCategory> = [
-    { title: "Code", dataIndex: "code", width: 100 },
-    { title: "Name", dataIndex: "name" },
-    { title: "Daily Limit (INR)", dataIndex: "dailyLimitInr", width: 140, render: (v) => v ? v.toLocaleString() : "—" },
-    { title: "Requires Receipt", dataIndex: "requiresReceipt", width: 140, render: (v) => v ? "Yes" : "No" },
+    { title: "Code", dataIndex: "categoryCode", width: 100 },
+    { title: "Name", dataIndex: "categoryName" },
+    { title: "Daily Limit", dataIndex: "dailyLimit", width: 140, render: (v) => v ? v.toLocaleString() : "\u2014" },
+    { title: "Requires Attachment", dataIndex: "requiresAttachment", width: 160, render: (v) => v ? "Yes" : "No" },
+    { title: "Mileage", dataIndex: "mileageCategory", width: 90, render: (v) => v ? "Yes" : "No" },
     {
       title: "Active",
       dataIndex: "active",
       width: 80,
-      render: (v) => <Switch size="small" checked={v} disabled />,
+      render: (v) => <Switch size="small" checked={!!v} disabled />,
     },
     {
       title: "",
@@ -105,23 +114,29 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
         okText="Save"
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Code" name="code" rules={[{ required: true }]}>
+          <Form.Item label="Category Code" name="categoryCode" rules={[{ required: true }]}>
             <Input disabled={!!editingCategory} />
           </Form.Item>
-          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+          <Form.Item label="Category Name" name="categoryName" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Daily Limit (INR)" name="dailyLimitInr">
+          <Form.Item label="Description" name="description">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Daily Limit" name="dailyLimit">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="requiresReceipt" valuePropName="checked">
-            <Checkbox>Requires Receipt</Checkbox>
+          <Form.Item label="Per Trip Limit" name="perTripLimit">
+            <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="active" valuePropName="checked">
-            <Checkbox>Active</Checkbox>
+          <Form.Item name="requiresAttachment" valuePropName="checked">
+            <Checkbox>Requires Attachment</Checkbox>
           </Form.Item>
-          <Form.Item label="Sort Order" name="sortOrder">
-            <InputNumber min={1} style={{ width: 100 }} />
+          <Form.Item name="mileageCategory" valuePropName="checked">
+            <Checkbox>Mileage Category</Checkbox>
+          </Form.Item>
+          <Form.Item label="Mileage Rate Per KM" name="mileageRatePerKm">
+            <InputNumber min={0} step={0.5} style={{ width: "100%" }} />
           </Form.Item>
         </Form>
       </Modal>

@@ -61,13 +61,15 @@ export function buildMatrixFromResponse(
     const rowKey = `${row.moduleCode}::${row.objectName ?? '__module__'}`;
     result[rowKey] = {};
 
-    for (const [roleCode, actions] of Object.entries(row.rolePermissions)) {
-      result[rowKey][roleCode] = {
-        VIEW: actions.includes('VIEW'),
-        ADD: actions.includes('ADD'),
-        EDIT: actions.includes('EDIT'),
-        DELETE: actions.includes('DELETE'),
-      };
+    // API returns flat { action, roleAccess: { roleCode: true/false }, rolesWithAccess: [...] }
+    // Build per-role action booleans
+    if (row.roleAccess) {
+      for (const [roleCode, hasAccess] of Object.entries(row.roleAccess)) {
+        if (!result[rowKey][roleCode]) {
+          result[rowKey][roleCode] = { VIEW: false, ADD: false, EDIT: false, DELETE: false };
+        }
+        result[rowKey][roleCode][row.action] = hasAccess;
+      }
     }
   }
 

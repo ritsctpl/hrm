@@ -34,7 +34,7 @@ const HrmPayrollLanding: React.FC = () => {
 
   return (
     <div className={styles.payrollRoot}>
-      <CommonAppBar appTitle="Payroll Processing" showBack={false} />
+      <CommonAppBar appTitle="Payroll Processing" />
       <div className={styles.payrollContent}>
         <PayrollTabLayout
           activeTab={store.activeTab}

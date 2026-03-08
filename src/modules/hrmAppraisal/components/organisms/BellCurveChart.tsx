@@ -10,7 +10,7 @@ const BellCurveChart: React.FC<BellCurveChartProps> = ({
   highlightEmployeeRating,
   height = 300,
 }) => {
-  const buckets = distribution?.buckets ?? [];
+  const buckets = distribution?.distribution ?? [];
 
   const option = {
     tooltip: { trigger: "axis" },
@@ -20,7 +20,7 @@ const BellCurveChart: React.FC<BellCurveChartProps> = ({
     },
     xAxis: {
       type: "category",
-      data: buckets.map((b) => RATING_LABELS[b.rating] ?? String(b.rating)),
+      data: buckets.map((b) => RATING_LABELS[b.ratingValue] ?? String(b.ratingValue)),
     },
     yAxis: [
       { type: "value", name: "Count", position: "left" },
@@ -34,7 +34,7 @@ const BellCurveChart: React.FC<BellCurveChartProps> = ({
           value: b.count,
           itemStyle: {
             color:
-              highlightEmployeeRating !== undefined && b.rating === highlightEmployeeRating
+              highlightEmployeeRating !== undefined && b.ratingValue === highlightEmployeeRating
                 ? "#1565c0"
                 : "#91caff",
           },
@@ -52,7 +52,7 @@ const BellCurveChart: React.FC<BellCurveChartProps> = ({
         name: "Target %",
         type: "line",
         yAxisIndex: 1,
-        data: buckets.map((b) => b.targetPercentage),
+        data: buckets.map((b) => ((b.targetMinPercentage + b.targetMaxPercentage) / 2)),
         lineStyle: { color: "#f5222d", type: "dashed" },
         itemStyle: { color: "#f5222d" },
       },

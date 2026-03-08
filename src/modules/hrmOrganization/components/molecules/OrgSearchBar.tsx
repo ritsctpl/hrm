@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { Input } from 'antd';
-import SearchIcon from '@mui/icons-material/Search';
+import { SearchOutlined } from '@ant-design/icons';
 import type { OrgSearchBarProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -24,7 +24,7 @@ const OrgSearchBar: React.FC<OrgSearchBarProps> = ({
       placeholder={placeholder}
       value={value}
       onChange={handleChange}
-      prefix={<SearchIcon fontSize="small" style={{ color: '#bfbfbf' }} />}
+      prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
       allowClear
     />
   );

@@ -35,7 +35,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
     currentDayTimesheet?.status === 'APPROVED';
 
   const isHolidayOrLeave =
-    currentDayTimesheet?.isHoliday || currentDayTimesheet?.isLeaveDay;
+    currentDayTimesheet?.holiday || currentDayTimesheet?.leaveDay;
 
   const lines = currentDayTimesheet?.lines ?? [];
 
@@ -57,8 +57,8 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
           {currentDayTimesheet?.status && (
             <TimesheetStatusBadge status={currentDayTimesheet.status} />
           )}
-          {currentDayTimesheet?.isHoliday && <Tag color="blue">Holiday</Tag>}
-          {currentDayTimesheet?.isLeaveDay && <Tag color="orange">Leave{currentDayTimesheet.leaveType ? `: ${currentDayTimesheet.leaveType}` : ''}</Tag>}
+          {currentDayTimesheet?.holiday && <Tag color="blue">Holiday</Tag>}
+          {currentDayTimesheet?.leaveDay && <Tag color="orange">Leave{currentDayTimesheet.leaveType ? `: ${currentDayTimesheet.leaveType}` : ''}</Tag>}
         </Space>
 
         {!isReadOnly && !isHolidayOrLeave && (
@@ -99,7 +99,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
       {isHolidayOrLeave ? (
         <div className={styles.emptyState}>
           <Text type="secondary">
-            {currentDayTimesheet?.isHoliday ? 'Holiday — no timesheet required' : 'Leave day — no timesheet required'}
+            {currentDayTimesheet?.holiday ? 'Holiday — no timesheet required' : 'Leave day — no timesheet required'}
           </Text>
         </div>
       ) : (

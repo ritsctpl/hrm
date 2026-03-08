@@ -16,10 +16,11 @@ interface ProjectUIState {
   selectedProject: Project | null;
   editingProject: Project | null;
   selectedAllocation: ResourceAllocation | null;
-  activeTab: 'projects' | 'allocations' | 'approvals' | 'calendar' | 'reports';
+  activeTab: 'projects' | 'approvals' | 'calendar' | 'reports';
   activeDetailTab: 'overview' | 'allocations' | 'milestones' | 'attachments' | 'audit';
   isProjectFormOpen: boolean;
   isAllocationFormOpen: boolean;
+  isClientDrawerOpen: boolean;
   searchQuery: string;
   filterBU: string;
   filterDept: string;
@@ -65,6 +66,8 @@ interface ProjectActions {
   closeProjectForm: () => void;
   openAllocationForm: () => void;
   closeAllocationForm: () => void;
+  openClientDrawer: () => void;
+  closeClientDrawer: () => void;
   setSearchQuery: (q: string) => void;
   setFilterBU: (v: string) => void;
   setFilterDept: (v: string) => void;
@@ -110,6 +113,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       activeDetailTab: 'overview',
       isProjectFormOpen: false,
       isAllocationFormOpen: false,
+      isClientDrawerOpen: false,
       searchQuery: '',
       filterBU: '',
       filterDept: '',
@@ -149,6 +153,8 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       closeProjectForm: () => set({ isProjectFormOpen: false, editingProject: null }),
       openAllocationForm: () => set({ isAllocationFormOpen: true }),
       closeAllocationForm: () => set({ isAllocationFormOpen: false }),
+      openClientDrawer: () => set({ isClientDrawerOpen: true }),
+      closeClientDrawer: () => set({ isClientDrawerOpen: false }),
       setSearchQuery: (q) => set({ searchQuery: q }),
       setFilterBU: (v) => set({ filterBU: v }),
       setFilterDept: (v) => set({ filterDept: v }),

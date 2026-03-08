@@ -53,7 +53,7 @@ export function useTravelData() {
     try {
       const data = await HrmTravelService.getApproverInbox({
         site,
-        approverId: employeeId,
+        empId: employeeId,
         inboxType: activeInboxTab === "pending" ? "PENDING" : activeInboxTab === "escalated" ? "ESCALATED" : "DECIDED",
       });
       setApproverInbox(data);
@@ -76,5 +76,37 @@ export function useTravelData() {
     }
   }, [site]);
 
-  return { loadMyRequests, loadApproverInbox, loadRequestDetail };
+  const loadPolicies = useCallback(async () => {
+    try {
+      const data = await HrmTravelService.getPolicies({ site });
+      useHrmTravelStore.getState().setPolicies(data);
+    } catch {
+      // non-critical, silently fail
+    }
+  }, [site]);
+
+  const exportRequests = useCallback(async () => {
+    try {
+      const blob = await HrmTravelService.exportRequests({
+        site,
+        employeeId,
+        status: statusFilter as never,
+        travelType: typeFilter as never,
+        searchTerm: searchTerm || undefined,
+        fromDate: dateRange?.[0],
+        toDate: dateRange?.[1],
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `travel-requests-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      message.success("Export downloaded.");
+    } catch {
+      message.error("Failed to export travel requests.");
+    }
+  }, [site, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+
+  return { loadMyRequests, loadApproverInbox, loadRequestDetail, loadPolicies, exportRequests };
 }

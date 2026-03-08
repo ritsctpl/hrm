@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { message } from "antd";
+import { Button, message } from "antd";
 import { parseCookies } from "nookies";
 import LeaveRequestDetail from "./components/organisms/LeaveRequestDetail";
 import LeaveRequestApprovalPanel from "./components/organisms/LeaveRequestApprovalPanel";
@@ -173,19 +173,14 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         request.status === "PENDING_SUPERVISOR" &&
         request.createdBy === actorId && (
           <div style={{ padding: "12px 0" }}>
-            <button
+            <Button
+              danger
+              size="small"
               onClick={handleCancel}
-              style={{
-                background: "none",
-                border: "1px solid #ff4d4f",
-                color: "#ff4d4f",
-                padding: "4px 12px",
-                borderRadius: 4,
-                cursor: "pointer",
-              }}
+              loading={loading}
             >
               Cancel Request
-            </button>
+            </Button>
           </div>
         )}
     </div>

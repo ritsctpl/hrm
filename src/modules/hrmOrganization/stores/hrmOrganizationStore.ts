@@ -1,6 +1,6 @@
 /**
  * HRM Organization Module - Zustand Store
- * Centralized state management for Company Profile, Business Units, and Departments
+ * Centralized state management with list-first drill-down pattern
  */
 
 import { create } from 'zustand';
@@ -12,11 +12,15 @@ import type {
   Department,
   Location,
   OrgHierarchy,
+  OrgAuditLogEntry,
+  DataCompletenessRow,
 } from '../types/domain.types';
 import type {
-  MainTabKey,
+  MainView,
+  DetailTabKey,
   CompanyTabKey,
   CompanyProfileState,
+  CompanyListState,
   BusinessUnitState,
   DepartmentState,
   LocationState,
@@ -28,19 +32,39 @@ import type { CompanyProfileRequest, BusinessUnitRequest, DepartmentRequest, Loc
 // Store Interface
 // ============================================
 export interface HrmOrganizationState {
-  activeMainTab: MainTabKey;
+  // View navigation
+  view: MainView;
+  activeDetailTab: DetailTabKey;
+  selectedCompanyHandle: string | null;
+
+  // Company list (for list view)
+  companyList: CompanyListState;
+
+  // Existing sub-states
   companyProfile: CompanyProfileState;
   businessUnit: BusinessUnitState;
   department: DepartmentState;
   location: LocationState;
   hierarchy: HierarchyState;
 
-  // Main Tab Actions
-  setActiveMainTab: (tab: MainTabKey) => void;
+  // Audit & Reports
+  auditLog: { entries: OrgAuditLogEntry[]; isLoading: boolean; entityTypeFilter: string; entityHandleFilter: string };
+  dataCompleteness: { rows: DataCompletenessRow[]; isLoading: boolean };
+
+  // Navigation Actions
+  navigateToList: () => void;
+  navigateToDetail: (companyHandle: string) => void;
+  setActiveDetailTab: (tab: DetailTabKey) => void;
+
+  // Company List Actions
+  fetchCompanyList: () => Promise<void>;
+  setCompanyListSearch: (text: string) => void;
+  setCompanyListStatusFilter: (status: 'all' | 'active' | 'inactive') => void;
+  deleteCompany: (handle: string) => Promise<void>;
 
   // Company Profile Actions
   setCompanyActiveTab: (tab: CompanyTabKey) => void;
-  fetchCompanyProfile: () => Promise<void>;
+  fetchCompanyProfile: (handle?: string) => Promise<void>;
   setCompanyDraft: (draft: Partial<CompanyProfile>) => void;
   setCompanyEditing: (isEditing: boolean) => void;
   saveCompanyProfile: () => Promise<void>;
@@ -85,6 +109,14 @@ export interface HrmOrganizationState {
   // Hierarchy Actions
   fetchHierarchy: () => Promise<void>;
 
+  // Audit Log Actions
+  fetchAuditLog: (entityType?: string, entityHandle?: string) => Promise<void>;
+  setAuditEntityTypeFilter: (t: string) => void;
+  setAuditEntityHandleFilter: (h: string) => void;
+
+  // Data Completeness Actions
+  fetchDataCompleteness: (entityType?: string) => Promise<void>;
+
   // Global
   reset: () => void;
 }
@@ -92,6 +124,13 @@ export interface HrmOrganizationState {
 // ============================================
 // Initial State
 // ============================================
+const initialCompanyListState: CompanyListState = {
+  items: [],
+  isLoading: false,
+  searchText: '',
+  statusFilter: 'all',
+};
+
 const initialCompanyProfileState: CompanyProfileState = {
   data: null,
   isEditing: false,
@@ -160,17 +199,101 @@ function getUserId(): string {
 // Store
 // ============================================
 export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) => ({
-  activeMainTab: 'company',
+  // View navigation
+  view: 'list' as MainView,
+  activeDetailTab: 'profile' as DetailTabKey,
+  selectedCompanyHandle: null,
+
+  // Company list
+  companyList: { ...initialCompanyListState },
+
+  // Sub-states
   companyProfile: { ...initialCompanyProfileState },
   businessUnit: { ...initialBusinessUnitState },
   department: { ...initialDepartmentState },
   location: { ...initialLocationState },
   hierarchy: { ...initialHierarchyState },
 
+  // Audit & Reports
+  auditLog: { entries: [], isLoading: false, entityTypeFilter: '', entityHandleFilter: '' },
+  dataCompleteness: { rows: [], isLoading: false },
+
   // ------------------------------------------
-  // Main Tab
+  // Navigation
   // ------------------------------------------
-  setActiveMainTab: (tab) => set({ activeMainTab: tab }),
+  navigateToList: () =>
+    set({
+      view: 'list',
+      selectedCompanyHandle: null,
+      activeDetailTab: 'profile',
+      companyProfile: { ...initialCompanyProfileState },
+      businessUnit: { ...initialBusinessUnitState },
+      department: { ...initialDepartmentState },
+      location: { ...initialLocationState },
+      hierarchy: { ...initialHierarchyState },
+    }),
+
+  navigateToDetail: (companyHandle) =>
+    set({
+      view: 'detail',
+      selectedCompanyHandle: companyHandle,
+      activeDetailTab: 'profile',
+    }),
+
+  setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
+
+  // ------------------------------------------
+  // Company List
+  // ------------------------------------------
+  fetchCompanyList: async () => {
+    const site = getSite();
+    if (!site) return;
+
+    set((state) => ({
+      companyList: { ...state.companyList, isLoading: true },
+    }));
+
+    try {
+      const data = await HrmOrganizationService.fetchBySite(site);
+      // Backend may return single object or array
+      const items = Array.isArray(data) ? data : data ? [data] : [];
+      set((state) => ({
+        companyList: { ...state.companyList, items, isLoading: false },
+      }));
+    } catch {
+      set((state) => ({
+        companyList: { ...state.companyList, items: [], isLoading: false },
+      }));
+    }
+  },
+
+  setCompanyListSearch: (text) =>
+    set((state) => ({
+      companyList: { ...state.companyList, searchText: text },
+    })),
+
+  setCompanyListStatusFilter: (status) =>
+    set((state) => ({
+      companyList: { ...state.companyList, statusFilter: status },
+    })),
+
+  deleteCompany: async (handle) => {
+    const site = getSite();
+    const userId = getUserId();
+    if (!site) return;
+
+    try {
+      await HrmOrganizationService.deleteCompany(site, handle, userId);
+      set((state) => ({
+        companyList: {
+          ...state.companyList,
+          items: state.companyList.items.filter((c) => c.handle !== handle),
+        },
+      }));
+    } catch (error: unknown) {
+      console.error('deleteCompany error:', error instanceof Error ? error.message : error);
+    }
+  },
 
   // ------------------------------------------
   // Company Profile
@@ -180,16 +303,17 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       companyProfile: { ...state.companyProfile, activeTab: tab },
     })),
 
-  fetchCompanyProfile: async () => {
+  fetchCompanyProfile: async (handle?: string) => {
     const site = getSite();
-    if (!site) return;
+    const targetHandle = handle || get().selectedCompanyHandle;
+    if (!site || !targetHandle) return;
 
     set((state) => ({
       companyProfile: { ...state.companyProfile, isLoading: true, errors: {} },
     }));
 
     try {
-      const data = await HrmOrganizationService.fetchBySite(site);
+      const data = await HrmOrganizationService.fetchCompanyByHandle(site, targetHandle);
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
@@ -235,7 +359,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   saveCompanyProfile: async () => {
-    const { companyProfile } = get();
+    const { companyProfile, selectedCompanyHandle } = get();
     const site = getSite();
     const userId = getUserId();
 
@@ -249,37 +373,34 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const payload: CompanyProfileRequest = {
         site,
         legalName: companyProfile.draft.legalName || '',
-        tradeName: companyProfile.draft.tradeName,
-        industry: companyProfile.draft.industry || '',
-        incorporationDate: companyProfile.draft.incorporationDate || '',
-        logoUrl: companyProfile.draft.logoUrl,
+        companyName: companyProfile.draft.companyName || companyProfile.draft.tradeName,
+        registrationNumber: companyProfile.draft.registrationNumber,
+        industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
+        foundedDate: companyProfile.draft.foundedDate || companyProfile.draft.incorporationDate || '',
+        website: companyProfile.draft.website,
         pan: companyProfile.draft.pan,
-        tan: companyProfile.draft.tan,
         cin: companyProfile.draft.cin,
-        pfRegistrationNo: companyProfile.draft.pfRegistrationNo,
-        esiRegistrationNo: companyProfile.draft.esiRegistrationNo,
-        msmeRegistrationNo: companyProfile.draft.msmeRegistrationNo,
-        ptRegistrationNo: companyProfile.draft.ptRegistrationNo,
-        lwfRegistrationNo: companyProfile.draft.lwfRegistrationNo,
+        gstin: companyProfile.draft.gstin,
+        pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo,
+        financialYearStartMonth: companyProfile.draft.financialYearStartMonth,
         bankAccounts: companyProfile.draft.bankAccounts || [],
-        registeredAddress: companyProfile.draft.registeredAddress || {
+        registeredOfficeAddress: companyProfile.draft.registeredOfficeAddress || companyProfile.draft.registeredAddress || {
           line1: '',
           city: '',
           state: '',
-          pinCode: '',
+          pincode: '',
           country: 'India',
         },
-        corporateAddress: companyProfile.draft.corporateAddress,
+        corporateOfficeAddress: companyProfile.draft.corporateOfficeAddress || companyProfile.draft.corporateAddress,
         officialEmail: companyProfile.draft.officialEmail || '',
         officialPhone: companyProfile.draft.officialPhone || '',
-        active: companyProfile.draft.active ?? 1,
         modifiedBy: userId,
       };
 
       let data: CompanyProfile;
-      if (companyProfile.data?.handle) {
+      if (companyProfile.data?.handle || selectedCompanyHandle) {
         data = await HrmOrganizationService.updateCompany(
-          companyProfile.data.handle,
+          companyProfile.data?.handle || selectedCompanyHandle!,
           payload
         );
       } else {
@@ -328,8 +449,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // ------------------------------------------
   fetchBusinessUnits: async () => {
     const site = getSite();
-    const { companyProfile } = get();
-    const companyHandle = companyProfile.data?.handle;
+    const { companyProfile, selectedCompanyHandle } = get();
+    const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
     if (!site || !companyHandle) return;
 
@@ -338,7 +459,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      const list = await HrmOrganizationService.fetchBusinessUnits(site, companyHandle);
+      const list = await HrmOrganizationService.fetchBusinessUnits(site);
       set((state) => ({
         businessUnit: { ...state.businessUnit, list, isLoading: false },
       }));
@@ -392,10 +513,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   saveBusinessUnit: async () => {
-    const { businessUnit, companyProfile } = get();
+    const { businessUnit, companyProfile, selectedCompanyHandle } = get();
     const site = getSite();
     const userId = getUserId();
-    const companyHandle = companyProfile.data?.handle;
+    const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
     if (!businessUnit.draft || !site || !companyHandle) return;
 
@@ -415,7 +536,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         address: businessUnit.draft.address,
         contactEmail: businessUnit.draft.contactEmail,
         contactPhone: businessUnit.draft.contactPhone,
-        statutoryDetails: businessUnit.draft.statutoryDetails,
+        statutoryRegistrationLinks: businessUnit.draft.statutoryRegistrationLinks,
         active: businessUnit.draft.active ?? 1,
         modifiedBy: userId,
       };
@@ -938,8 +1059,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // ------------------------------------------
   fetchHierarchy: async () => {
     const site = getSite();
-    const { companyProfile } = get();
-    const companyHandle = companyProfile.data?.handle;
+    const { companyProfile, selectedCompanyHandle } = get();
+    const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
     if (!site || !companyHandle) return;
 
@@ -966,15 +1087,80 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   // ------------------------------------------
+  // Audit Log
+  // ------------------------------------------
+  fetchAuditLog: async (entityType?: string, entityHandle?: string) => {
+    const site = getSite();
+    if (!site) return;
+
+    set((state) => ({
+      auditLog: { ...state.auditLog, isLoading: true },
+    }));
+
+    try {
+      const entries = await HrmOrganizationService.fetchAuditLog(
+        site,
+        entityType || '',
+        entityHandle || ''
+      );
+      set((state) => ({
+        auditLog: { ...state.auditLog, entries: Array.isArray(entries) ? entries : [], isLoading: false },
+      }));
+    } catch {
+      set((state) => ({
+        auditLog: { ...state.auditLog, entries: [], isLoading: false },
+      }));
+    }
+  },
+
+  setAuditEntityTypeFilter: (t) =>
+    set((state) => ({
+      auditLog: { ...state.auditLog, entityTypeFilter: t },
+    })),
+
+  setAuditEntityHandleFilter: (h) =>
+    set((state) => ({
+      auditLog: { ...state.auditLog, entityHandleFilter: h },
+    })),
+
+  // ------------------------------------------
+  // Data Completeness
+  // ------------------------------------------
+  fetchDataCompleteness: async (entityType?: string) => {
+    const site = getSite();
+    if (!site) return;
+
+    set((state) => ({
+      dataCompleteness: { ...state.dataCompleteness, isLoading: true },
+    }));
+
+    try {
+      const rows = await HrmOrganizationService.generateDataCompletenessReport(site, entityType);
+      set((state) => ({
+        dataCompleteness: { ...state.dataCompleteness, rows: Array.isArray(rows) ? rows : [], isLoading: false },
+      }));
+    } catch {
+      set((state) => ({
+        dataCompleteness: { ...state.dataCompleteness, rows: [], isLoading: false },
+      }));
+    }
+  },
+
+  // ------------------------------------------
   // Global
   // ------------------------------------------
   reset: () =>
     set({
-      activeMainTab: 'company',
+      view: 'list',
+      activeDetailTab: 'profile',
+      selectedCompanyHandle: null,
+      companyList: { ...initialCompanyListState },
       companyProfile: { ...initialCompanyProfileState },
       businessUnit: { ...initialBusinessUnitState },
       department: { ...initialDepartmentState },
       location: { ...initialLocationState },
       hierarchy: { ...initialHierarchyState },
+      auditLog: { entries: [], isLoading: false, entityTypeFilter: '', entityHandleFilter: '' },
+      dataCompleteness: { rows: [], isLoading: false },
     }),
 }));

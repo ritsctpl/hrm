@@ -15,6 +15,8 @@ export const TYPE_COLOR_MAP: Record<string, string> = {
   ANNOUNCEMENT: '#fa8c16',
   APPRAISAL_DUE: '#eb2f96',
   POLICY_PUBLISHED: '#13c2c2',
+  LEAVE_SUBMITTED: '#faad14',
+  TIMESHEET_REMINDER: '#fa8c16',
   SYSTEM: '#8c8c8c',
 };
 
@@ -29,6 +31,8 @@ export const TYPE_LABEL_MAP: Record<string, string> = {
   ANNOUNCEMENT: 'Announcement',
   APPRAISAL_DUE: 'Appraisal Due',
   POLICY_PUBLISHED: 'Policy Published',
+  LEAVE_SUBMITTED: 'Leave Submitted',
+  TIMESHEET_REMINDER: 'Timesheet Reminder',
   SYSTEM: 'System',
 };
 

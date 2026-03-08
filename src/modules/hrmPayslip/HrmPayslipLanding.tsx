@@ -72,7 +72,7 @@ const HrmPayslipLanding: React.FC = () => {
 
   return (
     <div className={styles.payslipPage}>
-      <CommonAppBar appTitle="Payslip Management" showBack={false} />
+      <CommonAppBar appTitle="Payslip Management" />
       <div className={styles.tabsWrapper}>
         <Tabs
           activeKey={activeTab}
@@ -80,6 +80,8 @@ const HrmPayslipLanding: React.FC = () => {
           onChange={(key) => setActiveTab(key as typeof activeTab)}
           items={tabItems}
           className={styles.mainTabs}
+          size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
         />
       </div>
     </div>

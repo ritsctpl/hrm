@@ -85,7 +85,8 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
                 {visibleRoles.flatMap((role) =>
                   PERMISSION_ACTIONS.map((action) => {
                     const granted =
-                      row.rolePermissions[role.roleCode]?.includes(action) ?? false;
+                      (row.action === action && row.roleAccess?.[role.roleCode]) ||
+                      (row.rolesWithAccess?.includes(role.roleCode) ?? false);
                     return (
                       <td key={`${role.roleCode}-${action}`} className={styles.matrixCell}>
                         {granted ? (

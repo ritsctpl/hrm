@@ -32,12 +32,12 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
   }
 
   const grouped = categories.reduce<Record<string, PolicyDocument[]>>((acc, cat) => {
-    acc[cat.name] = policies.filter((p) => p.categoryId === cat.id);
+    acc[cat.categoryName] = policies.filter((p) => p.categoryHandle === cat.handle);
     return acc;
   }, {});
 
   const uncategorized = policies.filter(
-    (p) => !categories.some((c) => c.id === p.categoryId)
+    (p) => !categories.some((c) => c.handle === p.categoryHandle)
   );
 
   return (
@@ -50,7 +50,7 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
             </Typography.Title>
             <Row gutter={[12, 12]}>
               {categoryPolicies.map((policy) => (
-                <Col key={policy.id} xs={24} sm={12} md={8} lg={6} xl={4}>
+                <Col key={policy.handle} xs={24} sm={12} md={8} lg={6} xl={4}>
                   <PolicyCard policy={policy} onClick={onPolicyClick} />
                 </Col>
               ))}
@@ -65,7 +65,7 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
           </Typography.Title>
           <Row gutter={[12, 12]}>
             {uncategorized.map((policy) => (
-              <Col key={policy.id} xs={24} sm={12} md={8} lg={6} xl={4}>
+              <Col key={policy.handle} xs={24} sm={12} md={8} lg={6} xl={4}>
                 <PolicyCard policy={policy} onClick={onPolicyClick} />
               </Col>
             ))}

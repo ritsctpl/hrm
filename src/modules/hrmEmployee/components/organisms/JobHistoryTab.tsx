@@ -31,13 +31,13 @@ const JobHistoryTab: React.FC<ProfileTabProps> = ({ profile }) => {
           children: (
             <div className={styles.timelineItem}>
               <div className={styles.timelineTitle}>
-                {entry.fromRole} &rarr; {entry.toRole}
+                {entry.designation} ({entry.department})
               </div>
               <div className={styles.timelineSub}>
-                {entry.fromDept} &rarr; {entry.toDept}
+                {entry.grade ? `Grade: ${entry.grade}` : ''}
               </div>
               <div className={styles.timelineSub}>
-                {formatDate(entry.date)} &middot; {entry.reason}
+                {formatDate(entry.effectiveFrom)}{entry.effectiveTo ? ` - ${formatDate(entry.effectiveTo)}` : ' - Present'} &middot; {entry.changeReason || ''}
               </div>
             </div>
           ),

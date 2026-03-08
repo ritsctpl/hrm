@@ -12,6 +12,7 @@ export type PhaseType =
   | "GOAL_SETTING"
   | "SELF_ASSESSMENT"
   | "MANAGER_ASSESSMENT"
+  | "MANAGER_REVIEW"
   | "PEER_FEEDBACK"
   | "CALIBRATION"
   | "SIGN_OFF";
@@ -81,6 +82,7 @@ export interface AppraisalPhase {
 }
 
 export interface AppraisalCycle {
+  handle?: string;
   cycleId: string;
   cycleName: string;
   cycleType: CycleType;
@@ -98,10 +100,11 @@ export interface AppraisalCycle {
   applicableBusinessUnits: string[];
   totalEmployees: number;
   completedReviews: number;
+  messageDetails?: unknown;
 }
 
 export interface KeyResult {
-  krId: string;
+  keyResultId: string;
   description: string;
   targetValue: number;
   currentValue: number;
@@ -122,6 +125,7 @@ export interface GoalEvidence {
 }
 
 export interface AppraisalGoal {
+  handle?: string;
   goalId: string;
   cycleId: string;
   employeeId: string;
@@ -148,6 +152,7 @@ export interface CompetencyRating {
   competencyName: string;
   rating: number;
   comments: string;
+  behavioralObservations?: string;
 }
 
 export interface SelfAssessmentData {
@@ -155,6 +160,9 @@ export interface SelfAssessmentData {
   overallComments: string;
   submittedDate: string;
   competencyRatings: CompetencyRating[];
+  keyAccomplishments?: string;
+  developmentGoals?: string;
+  supportNeeded?: string;
 }
 
 export interface ManagerAssessmentData {
@@ -166,7 +174,9 @@ export interface ManagerAssessmentData {
   competencyRatings: CompetencyRating[];
   recommendedRating: number;
   promotionRecommendation: boolean;
+  promotionRecommendationReason?: string;
   compensationRecommendation: string;
+  developmentPlan?: string;
 }
 
 export interface PeerFeedbackEntry {
@@ -174,6 +184,7 @@ export interface PeerFeedbackEntry {
   peerName: string;
   relationship: string;
   ratings: CompetencyRating[];
+  overallRating?: number;
   overallComments: string;
   submittedDate: string;
   anonymous: boolean;
@@ -184,20 +195,24 @@ export interface CalibrationData {
   calibratedBy: string;
   calibrationDate: string;
   calibrationNotes: string;
-  ratingBefore: number;
-  ratingAfter: number;
+  ratingBeforeCalibration: number;
+  calibrationJustification?: string;
 }
 
 export interface SignOffStatus {
   employeeAcknowledged: boolean;
   employeeAcknowledgedDate: string;
+  employeeDisagrees?: boolean;
+  employeeDisagreeComments?: string;
   managerSignedOff: boolean;
   managerSignOffDate: string;
   hrSignedOff: boolean;
+  hrSignedOffBy?: string;
   hrSignOffDate: string;
 }
 
 export interface AppraisalReview {
+  handle?: string;
   reviewId: string;
   cycleId: string;
   employeeId: string;
@@ -207,6 +222,9 @@ export interface AppraisalReview {
   reportingManagerName: string;
   reportingManagerId: string;
   status: ReviewStatus;
+  goalWeightedScore?: number;
+  competencyWeightedScore?: number;
+  calculatedRating?: number;
   selfAssessment: SelfAssessmentData;
   managerAssessment: ManagerAssessmentData;
   peerFeedback: PeerFeedbackEntry[];
@@ -215,6 +233,27 @@ export interface AppraisalReview {
   finalRatingLabel: string;
   signOff: SignOffStatus;
   goals: AppraisalGoal[];
+  pipHandle?: string;
+  messageDetails?: unknown;
+}
+
+export interface AppraisalHistoryEntry {
+  reviewId: string;
+  cycleId: string;
+  cycleName: string;
+  cycleType: string;
+  finalRating: number;
+  ratingLabel: string;
+  status: string;
+  completedDate: string;
+}
+
+export interface AppraisalHistory {
+  employeeId: string;
+  employeeName: string;
+  reviews: AppraisalHistoryEntry[];
+  averageRating: number;
+  performanceTrend: string;
 }
 
 export interface FeedbackEntry {
@@ -254,17 +293,19 @@ export interface PipRecord {
 }
 
 export interface RatingDistributionBucket {
-  rating: number;
+  ratingValue: number;
   label: string;
   count: number;
   percentage: number;
-  targetPercentage: number;
+  targetMinPercentage: number;
+  targetMaxPercentage: number;
+  withinTarget?: boolean;
 }
 
 export interface RatingDistribution {
   cycleId: string;
   department: string;
   totalEmployees: number;
-  buckets: RatingDistributionBucket[];
-  averageRating: number;
+  distribution: RatingDistributionBucket[];
+  averageRating?: number;
 }

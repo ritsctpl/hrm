@@ -64,7 +64,7 @@ interface HrmPolicyState {
   setPublishing: (v: boolean) => void;
   setArchiving: (v: boolean) => void;
   setSaving: (v: boolean) => void;
-  updatePolicyAckStatus: (policyId: string, ackDate: string) => void;
+  updatePolicyAckStatus: (policyHandle: string, ackDate: string) => void;
 }
 
 export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
@@ -120,14 +120,14 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   setPublishing: (publishing) => set({ publishing }),
   setArchiving: (archiving) => set({ archiving }),
   setSaving: (saving) => set({ saving }),
-  updatePolicyAckStatus: (policyId, ackDate) =>
+  updatePolicyAckStatus: (policyHandle, ackDate) =>
     set((s) => ({
       policies: s.policies.map((p) =>
-        p.id === policyId ? { ...p, ackStatus: "ACKNOWLEDGED" as const, acknowledgedAt: ackDate } : p
+        p.handle === policyHandle ? { ...p, ackStatus: "ACKNOWLEDGED" as const } : p
       ),
       selectedPolicy:
-        s.selectedPolicy?.id === policyId
-          ? { ...s.selectedPolicy, ackStatus: "ACKNOWLEDGED" as const, acknowledgedAt: ackDate }
+        s.selectedPolicy?.handle === policyHandle
+          ? { ...s.selectedPolicy, ackStatus: "ACKNOWLEDGED" as const }
           : s.selectedPolicy,
     })),
 }));

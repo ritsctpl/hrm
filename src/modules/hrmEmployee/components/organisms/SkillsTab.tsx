@@ -38,9 +38,8 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       const modifiedBy = cookies.username || 'system';
 
       const newSkill: Skill = {
-        skillId: `SKILL_${Date.now()}`,
         skillName: skillName.trim(),
-        proficiency,
+        proficiencyLevel: proficiency,
       };
 
       await HrmEmployeeService.addSkill(site, profile.handle, newSkill, modifiedBy);

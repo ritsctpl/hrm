@@ -126,34 +126,48 @@ export interface LeaveType {
   alias?: string;
   unit: string;
   halfDayAllowed: boolean;
-  active: boolean;
-  category: "STANDARD" | "SPECIAL";
+  active: number;
+  category: string;
   sortOrder: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface LeavePolicy {
   handle: string;
   site: string;
-  leaveTypeCode: string;
+  leaveTypeId?: string;
+  leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
   effectiveFrom: string;
   effectiveTo?: string;
-  accrualFrequency: string;
+  accrualFrequency?: string;
   accrualQuantity: number;
   prorateEnabled: boolean;
   carryForwardAllowed: boolean;
   carryForwardCap: number;
-  lapseRule: string;
+  lapseRule?: string;
+  lapseDate?: string;
   encashmentAllowed: boolean;
   encashWhen?: string;
   encashRateFormula?: string;
+  minEncashableDays?: number;
+  maxEncashableDays?: number;
+  encashRounding?: string;
   negativeBalanceAllowed: boolean;
   negativeFloor?: number;
   coExpiryDays?: number;
   supervisorSlaDays: number;
   escalationSlaDays: number;
   version: number;
+  active?: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 export interface ValidationSummary {

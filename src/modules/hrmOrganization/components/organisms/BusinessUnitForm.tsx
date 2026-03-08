@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { Input, Select, Tabs, Button, Switch, message } from 'antd';
-import CloseIcon from '@mui/icons-material/Close';
+import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgAddressFields from '../molecules/OrgAddressFields';
 import OrgSaveButton from '../atoms/OrgSaveButton';
@@ -45,12 +45,12 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
   const handleStatutoryChange = useCallback(
     (field: string, value: string) => {
-      const current = draft?.statutoryDetails || {};
+      const current = draft?.statutoryRegistrationLinks || {};
       setBusinessUnitDraft({
-        statutoryDetails: { ...current, [field]: value },
+        statutoryRegistrationLinks: { ...current, [field]: value },
       });
     },
-    [draft?.statutoryDetails, setBusinessUnitDraft]
+    [draft?.statutoryRegistrationLinks, setBusinessUnitDraft]
   );
 
   const handleSave = useCallback(async () => {
@@ -158,7 +158,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
     <div className={formStyles.statutoryGrid}>
       <OrgFormField label="GST Number">
         <Input
-          value={draft?.statutoryDetails?.gstNumber || ''}
+          value={draft?.statutoryRegistrationLinks?.gstNumber || ''}
           onChange={(e) => handleStatutoryChange('gstNumber', e.target.value)}
           placeholder="Enter GST number"
         />
@@ -166,7 +166,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
       <OrgFormField label="Professional Tax No.">
         <Input
-          value={draft?.statutoryDetails?.ptNumber || ''}
+          value={draft?.statutoryRegistrationLinks?.ptNumber || ''}
           onChange={(e) => handleStatutoryChange('ptNumber', e.target.value)}
           placeholder="Enter PT number"
         />
@@ -174,7 +174,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
       <OrgFormField label="Shop & Establishment No.">
         <Input
-          value={draft?.statutoryDetails?.shopEstNumber || ''}
+          value={draft?.statutoryRegistrationLinks?.shopEstNumber || ''}
           onChange={(e) => handleStatutoryChange('shopEstNumber', e.target.value)}
           placeholder="Enter S&E number"
         />
@@ -182,7 +182,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
       <OrgFormField label="PF Sub-Code">
         <Input
-          value={draft?.statutoryDetails?.pfSubCode || ''}
+          value={draft?.statutoryRegistrationLinks?.pfSubCode || ''}
           onChange={(e) => handleStatutoryChange('pfSubCode', e.target.value)}
           placeholder="Enter PF sub-code"
         />
@@ -203,7 +203,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         <span className={mainStyles.formPanelTitle}>{title}</span>
         <Button
           type="text"
-          icon={<CloseIcon fontSize="small" />}
+          icon={<CloseOutlined />}
           onClick={onClose}
         />
       </div>

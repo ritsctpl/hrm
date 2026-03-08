@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Button, Typography } from 'antd';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import EmployeeCompensationForm from './components/organisms/EmployeeCompensationForm';
 import { useHrmCompensationStore } from './stores/compensationStore';
 import styles from './styles/Compensation.module.css';
@@ -45,7 +45,7 @@ const HrmCompensationScreen: React.FC<HrmCompensationScreenProps> = ({
       >
         <Button
           type="text"
-          icon={<ArrowBackIcon style={{ fontSize: 18 }} />}
+          icon={<ArrowLeftOutlined />}
           onClick={onBack}
           size="small"
         />

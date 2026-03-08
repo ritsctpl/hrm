@@ -1,112 +1,166 @@
-import { PolicyDocType, PolicyStatus } from "./domain.types";
+import { PolicyDocType, PolicyStatus, ContentType, AcknowledgmentFrequency } from "./domain.types";
 
 export interface GetPoliciesPayload {
   site: string;
-  categoryId?: string;
-  docType?: PolicyDocType;
   status?: PolicyStatus;
-  searchText?: string;
-  page?: number;
-  size?: number;
+  documentType?: PolicyDocType;
+  categoryHandle?: string;
 }
 
 export interface GetPolicyDetailPayload {
   site: string;
-  policyId: string;
-  employeeId?: string;
+  policyHandle: string;
+}
+
+export interface GetPolicyByCodePayload {
+  site: string;
+  policyCode: string;
 }
 
 export interface AcknowledgePolicyPayload {
   site: string;
-  policyId: string;
+  policyHandle: string;
   employeeId: string;
-  version: string;
+  acknowledgedVia: "WEB" | "MOBILE" | "EMAIL";
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface WaiveAcknowledgmentPayload {
+  site: string;
+  policyHandle: string;
+  employeeId: string;
+  waivedBy: string;
+  waivedReason: string;
 }
 
 export interface CreatePolicyPayload {
   site: string;
   title: string;
-  docType: PolicyDocType;
-  categoryId: string;
-  content?: string;
-  summary?: string;
-  effectiveDate: string;
-  nextReviewDate?: string;
+  description?: string;
+  documentType: PolicyDocType;
+  categoryHandle: string;
+  contentType?: ContentType;
+  textContent?: string;
+  versionNumber?: string;
+  changeDescription?: string;
+  reviewerId?: string;
+  approverId?: string;
+  reviewDate?: string;
+  expiryDate?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  applicableDepartments?: string[];
+  applicableBusinessUnits?: string[];
+  applicableRoles?: string[];
+  allEmployees?: boolean;
+  acknowledgmentRequired?: boolean;
+  acknowledgmentDeadlineDays?: string;
+  acknowledgmentFrequency?: AcknowledgmentFrequency;
   tags?: string[];
-  relatedDocumentIds?: string[];
+  relatedPolicies?: { handle: string }[];
+  createdBy?: string;
 }
 
 export interface UpdatePolicyPayload extends Partial<CreatePolicyPayload> {
-  policyId: string;
+  policyHandle: string;
 }
 
-export interface PolicyActionPayload {
+export interface PublishPolicyPayload {
   site: string;
-  policyId: string;
-  comment?: string;
-}
-
-export interface GetVersionHistoryPayload {
-  site: string;
-  policyId: string;
-}
-
-export interface GetAcknowledgmentReportPayload {
-  site: string;
-  policyId: string;
-}
-
-export interface SendReminderPayload {
-  site: string;
-  policyId: string;
-  targetStatus: "PENDING" | "OVERDUE";
+  policyHandle: string;
+  publishedBy: string;
+  scheduledPublishDate?: string;
 }
 
 export interface SubmitForReviewPayload {
   site: string;
-  handle: string;
+  policyHandle: string;
   submittedBy: string;
 }
 
 export interface ApprovePolicyPayload {
   site: string;
-  handle: string;
+  policyHandle: string;
   approvedBy: string;
-  comments?: string;
+  approverComments?: string;
 }
 
 export interface RetirePolicyPayload {
   site: string;
-  handle: string;
+  policyHandle: string;
   retiredBy: string;
   reason: string;
 }
 
 export interface SupersedePolicyPayload {
   site: string;
-  handle: string;
-  newHandle: string;
-  supersededBy: string;
+  oldPolicyHandle: string;
+  newPolicyHandle: string;
+  updatedBy: string;
 }
 
 export interface DeletePolicyPayload {
   site: string;
-  handle: string;
+  policyHandle: string;
   deletedBy: string;
+}
+
+export interface GetVersionHistoryPayload {
+  site: string;
+  policyHandle: string;
+}
+
+export interface GetAcknowledgmentReportPayload {
+  site: string;
+  policyHandle: string;
+}
+
+export interface GetEmployeeAcknowledgmentsPayload {
+  site: string;
+  employeeId: string;
 }
 
 export interface GetMyPoliciesPayload {
   site: string;
   employeeId: string;
+  department?: string;
+  role?: string;
 }
 
-export interface GetEmployeeAcknowledgmentsPayload {
+export interface GetEmployeePolicyPortalPayload {
   site: string;
-  policyHandle: string;
+  employeeId: string;
+  department?: string;
 }
 
 export interface CreateCategoryPayload {
   site: string;
-  name: string;
+  categoryCode: string;
+  categoryName: string;
   description?: string;
+  iconName?: string;
+  color?: string;
+  displayOrder?: number;
+  createdBy?: string;
+}
+
+export interface UpdateCategoryPayload {
+  site: string;
+  categoryId: string;
+  name?: string;
+  description?: string;
+  modifiedBy?: string;
+}
+
+export interface DeleteCategoryPayload {
+  site: string;
+  categoryId: string;
+  deletedBy: string;
+}
+
+export interface DownloadPolicyFilePayload {
+  site: string;
+  policyId: string;
+  version?: string;
 }

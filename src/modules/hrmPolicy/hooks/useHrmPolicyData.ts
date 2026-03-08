@@ -45,10 +45,9 @@ export const useHrmPolicyData = () => {
     try {
       const data = await HrmPolicyService.getPolicies({
         site,
-        categoryId: filterCategoryId || undefined,
-        docType: filterDocType as never || undefined,
+        categoryHandle: filterCategoryId || undefined,
+        documentType: filterDocType as never || undefined,
         status: filterStatus as never || undefined,
-        searchText: searchText || undefined,
       });
       setPolicies(data);
     } catch {
@@ -70,10 +69,10 @@ export const useHrmPolicyData = () => {
     }
   }, [site]);
 
-  const loadVersionHistory = useCallback(async (policyId: string) => {
+  const loadVersionHistory = useCallback(async (policyHandle: string) => {
     setVersionHistoryLoading(true);
     try {
-      const data = await HrmPolicyService.getVersionHistory({ site, policyId });
+      const data = await HrmPolicyService.getVersionHistory({ site, policyHandle });
       setVersionHistory(data);
     } catch {
       message.error("Failed to load version history");
@@ -82,10 +81,10 @@ export const useHrmPolicyData = () => {
     }
   }, [site]);
 
-  const loadAckReport = useCallback(async (policyId: string) => {
+  const loadAckReport = useCallback(async (policyHandle: string) => {
     setAckReportLoading(true);
     try {
-      const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyId });
+      const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyHandle });
       setAckReport(data);
     } catch {
       message.error("Failed to load acknowledgment report");

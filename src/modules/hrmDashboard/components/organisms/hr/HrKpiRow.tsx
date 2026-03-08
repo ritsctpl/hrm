@@ -40,13 +40,15 @@ export default function HrKpiRow() {
     <div className={styles.hrKpiRow}>
       {hrKpis.map((kpi, i) => (
         <KpiCard
-          key={kpi.title}
-          title={kpi.title}
+          key={kpi.label}
+          title={kpi.label}
           value={kpi.value}
           unit={kpi.unit}
           trend={kpi.trend}
-          trendLabel={kpi.trendLabel}
-          color={kpi.color ?? COLOR_MAP[i] ?? '#1890ff'}
+          trendPercentage={kpi.trendPercentage}
+          trendLabel={kpi.trendPeriod}
+          colorIndicator={kpi.colorIndicator}
+          color={COLOR_MAP[i] ?? '#1890ff'}
           icon={ICON_MAP[i]}
         />
       ))}

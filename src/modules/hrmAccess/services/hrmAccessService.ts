@@ -17,7 +17,6 @@ import type {
   ImportResultResponse,
   ImportPreviewResponse,
   UserAccessReportResponse,
-  OrphanedExpiredAssignment,
   RbacAuditLogDto,
 } from '../types/api.types';
 
@@ -107,8 +106,8 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async fetchRole(roleCode: string): Promise<RoleResponse> {
-    const res = await api.post(`${BASE}/role/retrieve`, { roleCode });
+  static async fetchRole(site: string, roleCode: string): Promise<RoleResponse> {
+    const res = await api.post(`${BASE}/role/retrieve`, { site, roleCode });
     return res.data;
   }
 
@@ -127,7 +126,7 @@ export class HrmAccessService {
     roleRequest: RoleRequest,
     performedBy: string
   ): Promise<RoleResponse> {
-    const res = await api.post(`${BASE}/role/update`, { handle, roleRequest, performedBy });
+    const res = await api.post(`${BASE}/role/update`, { handle, performedBy, roleRequest });
     return res.data;
   }
 
@@ -158,7 +157,7 @@ export class HrmAccessService {
     site: string,
     roleCode: string
   ): Promise<RolePermissionResponse[]> {
-    const res = await api.post(`${BASE}/rolePermission/retrieveByRole`, { site, roleCode });
+    const res = await api.post(`${BASE}/rolePermission/retrieveAll`, { site, roleCode });
     return res.data;
   }
 
@@ -187,7 +186,7 @@ export class HrmAccessService {
   static async assignRoleToUser(
     payload: UserRoleAssignmentRequest
   ): Promise<UserRoleAssignmentResponse> {
-    const res = await api.post(`${BASE}/userRole/assign`, payload);
+    const res = await api.post(`${BASE}/assignment/create`, payload);
     return res.data;
   }
 
@@ -195,7 +194,7 @@ export class HrmAccessService {
     site: string,
     userId: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/userRole/retrieveByUser`, { site, userId });
+    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId });
     return res.data;
   }
 
@@ -203,7 +202,7 @@ export class HrmAccessService {
     site: string,
     roleCode: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/userRole/retrieveByRole`, { site, roleCode });
+    const res = await api.post(`${BASE}/assignment/retrieveUsersWithRole`, { site, roleCode });
     return res.data;
   }
 
@@ -212,14 +211,14 @@ export class HrmAccessService {
     assignmentHandle: string,
     revokedBy: string
   ): Promise<void> {
-    await api.post(`${BASE}/userRole/revoke`, { site, assignmentHandle, revokedBy });
+    await api.post(`${BASE}/assignment/revoke`, { site, assignmentHandle, revokedBy });
   }
 
   static async updateAssignment(
     handle: string,
-    payload: UserRoleAssignmentRequest
+    assignmentRequest: UserRoleAssignmentRequest
   ): Promise<UserRoleAssignmentResponse> {
-    const res = await api.post(`${BASE}/userRole/update`, { handle, userRoleAssignmentRequest: payload });
+    const res = await api.post(`${BASE}/assignment/update`, { handle, assignmentRequest });
     return res.data;
   }
 
@@ -229,12 +228,12 @@ export class HrmAccessService {
     site: string,
     userId: string
   ): Promise<EffectivePermissionsResponse> {
-    const res = await api.post(`${BASE}/permissions/effective`, { site, userId });
+    const res = await api.post(`${BASE}/effectivePermissions`, { site, userId });
     return res.data;
   }
 
   static async checkAccess(payload: AccessCheckRequest): Promise<AccessCheckResponse> {
-    const res = await api.post(`${BASE}/permissions/check`, payload);
+    const res = await api.post(`${BASE}/checkAccess`, payload);
     return res.data;
   }
 
@@ -251,7 +250,7 @@ export class HrmAccessService {
 
   // ---- Import / Export ----
 
-  static async exportRoles(site: string, format: 'csv' | 'xlsx'): Promise<Blob> {
+  static async exportRoles(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
     const res = await api.post(`${BASE}/export/roles`, { site, format }, { responseType: 'blob' });
     return res.data;
   }
@@ -313,9 +312,20 @@ export class HrmAccessService {
 
   // ---- Export Role Permissions ----
 
-  static async exportRolePermissions(site: string, format: 'csv' | 'xlsx'): Promise<Blob> {
+  static async exportRolePermissions(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
     const res = await api.post(
       `${BASE}/export/rolePermissions`,
+      { site, format },
+      { responseType: 'blob' }
+    );
+    return res.data;
+  }
+
+  // ---- Export User Assignments ----
+
+  static async exportUserAssignments(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
+    const res = await api.post(
+      `${BASE}/export/userAssignments`,
       { site, format },
       { responseType: 'blob' }
     );
@@ -326,15 +336,20 @@ export class HrmAccessService {
 
   static async getUserAccessReport(
     site: string,
-    userId?: string | null
+    userId?: string | null,
+    moduleCode?: string | null
   ): Promise<UserAccessReportResponse[]> {
-    const res = await api.post(`${BASE}/report/userAccess`, { site, ...(userId ? { userId } : {}) });
+    const res = await api.post(`${BASE}/report/userAccess`, {
+      site,
+      ...(userId ? { userId } : {}),
+      ...(moduleCode ? { moduleCode } : {}),
+    });
     return res.data;
   }
 
   static async getOrphanedExpiredAssignments(
     site: string
-  ): Promise<OrphanedExpiredAssignment[]> {
+  ): Promise<UserRoleAssignmentResponse[]> {
     const res = await api.post(`${BASE}/report/orphanedExpired`, { site });
     return res.data;
   }
@@ -354,7 +369,7 @@ export class HrmAccessService {
   static async fetchAuditLog(
     site: string,
     entityType: string,
-    entityHandle: string,
+    entityHandle: string | null,
     page: number,
     size: number
   ): Promise<{ content: RbacAuditLogDto[]; totalElements: number }> {

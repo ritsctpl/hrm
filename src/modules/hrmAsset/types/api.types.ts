@@ -37,6 +37,7 @@ export interface AssetCategoryPayload {
 }
 
 export interface AssetCategoryResponse {
+  handle: string;
   categoryCode: string;
   categoryName: string;
   description?: string;
@@ -52,14 +53,15 @@ export interface CreateAssetPayload {
   site: string;
   categoryCode: string;
   assetName: string;
+  assetId?: string;
   purchaseValueINR: number;
   purchaseDate: string;
-  vendor: string;
-  invoiceNo: string;
-  invoiceDate: string;
+  vendor?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
   location?: string;
   attributes?: { attrName: string; attrValue: string }[];
-  assetId?: string;
+  createdBy: string;
 }
 
 export interface AssetAttachmentDto {
@@ -327,4 +329,5 @@ export interface AllocateAssetPayload {
   allocatedBy: string;
   allocationDate: string;
   expectedReturnDate?: string;
+  remarks?: string;
 }

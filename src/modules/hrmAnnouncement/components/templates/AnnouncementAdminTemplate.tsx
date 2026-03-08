@@ -85,12 +85,12 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
           <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
-            <Popconfirm title="Publish?" onConfirm={() => onPublish(record.id)} okText="Publish">
+            <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
               <Button size="small" icon={<SendOutlined />} type="primary" />
             </Popconfirm>
           )}
           {record.status === "PUBLISHED" && (
-            <Popconfirm title="Withdraw?" onConfirm={() => onWithdraw(record.id)} okText="Withdraw" okButtonProps={{ danger: true }}>
+            <Popconfirm title="Withdraw?" onConfirm={() => onWithdraw(record.handle)} okText="Withdraw" okButtonProps={{ danger: true }}>
               <Button size="small" icon={<StopOutlined />} danger />
             </Popconfirm>
           )}
@@ -109,7 +109,7 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       <Table
         columns={columns}
         dataSource={announcements}
-        rowKey="id"
+        rowKey="handle"
         loading={loading}
         size="small"
         pagination={{ pageSize: 20 }}

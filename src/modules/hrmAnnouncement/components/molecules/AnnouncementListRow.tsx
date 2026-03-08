@@ -26,7 +26,7 @@ const AnnouncementListRow: React.FC<AnnouncementListRowProps> = ({ announcement,
       <ReadStatusDot isRead={announcement.isRead} />
     </Col>
     <Col flex="none">
-      {announcement.isPinned && <PushpinOutlined style={{ color: "#faad14" }} />}
+      {announcement.pinToTop && <PushpinOutlined style={{ color: "#faad14" }} />}
     </Col>
     <Col flex="auto">
       <Space direction="vertical" size={2}>
@@ -35,9 +35,9 @@ const AnnouncementListRow: React.FC<AnnouncementListRowProps> = ({ announcement,
           <AnnouncementCategoryBadge category={announcement.category} />
           <Text strong>{announcement.title}</Text>
         </Space>
-        {announcement.summary && (
+        {announcement.content && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {announcement.summary}
+            {announcement.content}
           </Text>
         )}
       </Space>

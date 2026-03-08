@@ -30,14 +30,7 @@ export default function HrmTimesheetScreen({ date, onBack }: Props) {
 
   return (
     <div className={styles.timesheetLayout} style={{ height: '100vh' }}>
-      <CommonAppBar
-        appTitle={title}
-        showBack
-        onBack={onBack}
-        hasChanges={false}
-        isEditing={false}
-        onCancel={onBack}
-      />
+      <CommonAppBar appTitle={title} />
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
         <DailyTimesheetEditor
           onSave={saveTimesheet}

@@ -2,10 +2,7 @@
 
 import React from 'react';
 import { Button, Tag, Tooltip } from 'antd';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import StarIcon from '@mui/icons-material/Star';
-import StarBorderIcon from '@mui/icons-material/StarBorder';
+import { EditOutlined, DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
 import type { OrgBankAccountCardProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
 
@@ -43,14 +40,14 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
               <Button
                 type="text"
                 size="small"
-                icon={<StarBorderIcon fontSize="small" />}
+                icon={<StarOutlined />}
                 onClick={onSetPrimary}
               />
             </Tooltip>
           )}
           {isPrimary && (
             <Tooltip title="Primary account">
-              <StarIcon fontSize="small" style={{ color: '#1890ff' }} />
+              <StarFilled style={{ color: '#1890ff' }} />
             </Tooltip>
           )}
           {!disabled && (
@@ -59,7 +56,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
                 <Button
                   type="text"
                   size="small"
-                  icon={<EditIcon fontSize="small" />}
+                  icon={<EditOutlined />}
                   onClick={onEdit}
                 />
               </Tooltip>
@@ -68,7 +65,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
                   type="text"
                   size="small"
                   danger
-                  icon={<DeleteIcon fontSize="small" />}
+                  icon={<DeleteOutlined />}
                   onClick={onDelete}
                 />
               </Tooltip>

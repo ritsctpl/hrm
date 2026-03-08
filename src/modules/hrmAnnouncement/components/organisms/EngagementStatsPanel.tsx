@@ -18,8 +18,8 @@ const EngagementStatsPanel: React.FC<EngagementStatsPanelProps> = ({ stats, load
     <div className={styles.engagementPanel}>
       <Typography.Text strong>Engagement Stats</Typography.Text>
       <Progress
-        percent={Math.round(stats.readPercentage)}
-        status={stats.readPercentage === 100 ? "success" : "active"}
+        percent={Math.round(stats.readRate)}
+        status={stats.readRate === 100 ? "success" : "active"}
       />
       <Row gutter={16}>
         <Col span={12}>
@@ -28,7 +28,7 @@ const EngagementStatsPanel: React.FC<EngagementStatsPanelProps> = ({ stats, load
         <Col span={12}>
           <Statistic
             title="Total Recipients"
-            value={stats.totalRecipients}
+            value={stats.totalTargetEmployees}
             valueStyle={{ fontSize: 16 }}
           />
         </Col>

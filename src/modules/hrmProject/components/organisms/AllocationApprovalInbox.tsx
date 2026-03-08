@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { Spin, Tabs, Empty } from 'antd';
+import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
@@ -27,13 +28,15 @@ export default function AllocationApprovalInbox() {
 
   const handleApprove = (remarks: string) => {
     if (selectedAllocation) {
-      approveAllocation(selectedAllocation.handle, 'APPROVED', remarks, 'current-user');
+      const userId = parseCookies().userId ?? parseCookies().user ?? '';
+      approveAllocation(selectedAllocation.handle, 'APPROVED', remarks, userId);
     }
   };
 
   const handleReject = (remarks: string) => {
     if (selectedAllocation) {
-      approveAllocation(selectedAllocation.handle, 'REJECTED', remarks, 'current-user');
+      const userId = parseCookies().userId ?? parseCookies().user ?? '';
+      approveAllocation(selectedAllocation.handle, 'REJECTED', remarks, userId);
     }
   };
 

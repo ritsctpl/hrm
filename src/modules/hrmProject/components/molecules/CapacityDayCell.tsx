@@ -6,9 +6,9 @@ import CapacityColorDot from '../atoms/CapacityColorDot';
 import { CAPACITY_COLORS } from '../../utils/projectConstants';
 
 const CapacityDayCell: React.FC<CapacityDayCellProps> = ({ capacity }) => {
-  if (capacity.isHoliday || capacity.isLeave) {
+  if (capacity.holiday || capacity.leave) {
     return (
-      <Tooltip title={capacity.isLeave ? 'On Leave' : 'Holiday'}>
+      <Tooltip title={capacity.leave ? 'On Leave' : 'Holiday'}>
         <span style={{ color: '#bfbfbf', fontSize: 11 }}>—</span>
       </Tooltip>
     );

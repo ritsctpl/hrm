@@ -21,7 +21,7 @@ const SupervisorInboxTable: React.FC<Props> = ({ expenses, loading, selectedHand
   const columns: ColumnsType<ExpenseReport> = [
     {
       title: "Report ID",
-      dataIndex: "reportId",
+      dataIndex: "requestId",
       width: 110,
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },

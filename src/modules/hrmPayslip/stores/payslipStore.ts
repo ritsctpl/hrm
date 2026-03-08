@@ -121,6 +121,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
           site: getSite(),
           payrollYear: year,
           payrollMonth: month,
+          requestedBy: getUser(),
         }),
       ]);
       set({
@@ -178,7 +179,9 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
 
   downloadOne: async (employeeId, payrollYear, payrollMonth) => {
     try {
-      const blob = await HrmPayslipService.downloadPayslipByHr({
+      // Note: downloadPayslipByHr uses handle-based lookup per API.
+      // If only employeeId is available, use downloadMyPayslip instead.
+      const blob = await HrmPayslipService.downloadMyPayslip({
         site: getSite(),
         employeeId,
         payrollYear,
@@ -203,9 +206,6 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       const blob = await HrmPayslipService.downloadAllPayslipsZip({
         site: getSite(),
         payrollRunId: generationRunId ?? "",
-        payrollYear: generationYear,
-        payrollMonth: generationMonth,
-        requestedBy: getUser(),
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -236,21 +236,10 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     }
   },
 
-  loadMyPayslipData: async (year, month) => {
-    set({ myPayslipLoading: true, myPayslipRenderData: null });
-    try {
-      const data = await HrmPayslipService.getMyPayslipRenderData(
-        getSite(),
-        getEmployeeId(),
-        year,
-        month
-      );
-      set({ myPayslipRenderData: data });
-    } catch {
-      // payslip not generated for this period
-    } finally {
-      set({ myPayslipLoading: false });
-    }
+  loadMyPayslipData: async (_year, _month) => {
+    // Note: getMyPayslipRenderData endpoint is not available in the backend API.
+    // Payslip data is obtained via downloadMyPayslip (PDF) instead.
+    set({ myPayslipLoading: false, myPayslipRenderData: null });
   },
 
   downloadMyPayslip: async (year, month) => {
@@ -301,8 +290,8 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
         site: getSite(),
         payrollYear: repositoryYear ?? undefined,
         payrollMonth: repositoryMonth ?? undefined,
-        employeeSearch: repositoryEmployeeSearch || undefined,
-        status: repositoryStatus !== "ALL" ? repositoryStatus : undefined,
+        employeeName: repositoryEmployeeSearch || undefined,
+        requestedBy: getUser(),
       });
       set({ repositoryList: data });
     } catch {
@@ -335,10 +324,16 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     try {
       if (template.handle) {
         await HrmPayslipService.updateTemplate({
-          ...template,
+          handle: template.handle,
           site: getSite(),
-          modifiedBy: getUser(),
-          createdBy: getUser(),
+          templateName: template.templateName,
+          companyName: template.companyName,
+          companyAddress: template.companyAddress,
+          footerNote: template.footerNote,
+          signatureLabel: template.signatureLabel,
+          earningsSectionLabel: template.earningsSectionLabel,
+          deductionsSectionLabel: template.deductionsSectionLabel,
+          updatedBy: getUser(),
         });
       } else {
         await HrmPayslipService.createTemplate({

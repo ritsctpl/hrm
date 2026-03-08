@@ -1,9 +1,11 @@
 'use client';
 import { Button, Input, Space, Spin, Tag, Typography } from 'antd';
 import { useState } from 'react';
+import { UndoOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
+import HoursDisplay from '../atoms/HoursDisplay';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import styles from '../../styles/HrmTimesheet.module.css';
 
@@ -12,12 +14,15 @@ const { TextArea } = Input;
 
 interface Props {
   onApprove: (handle: string, action: 'APPROVED' | 'REJECTED', remarks: string) => Promise<void>;
+  onReopen: (handle: string, reason: string) => Promise<void>;
 }
 
-export default function TimesheetApprovalDetail({ onApprove }: Props) {
+export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) {
   const { selectedTimesheetHandle, pendingApprovals, unplannedCategories, approvingTimesheet } =
     useHrmTimesheetStore();
   const [remarks, setRemarks] = useState('');
+  const [reopenReason, setReopenReason] = useState('');
+  const [showReopenForm, setShowReopenForm] = useState(false);
 
   const ts = pendingApprovals.find((t) => t.handle === selectedTimesheetHandle);
 
@@ -37,6 +42,9 @@ export default function TimesheetApprovalDetail({ onApprove }: Props) {
     );
   }
 
+  const canReopen = ts.status === 'APPROVED' || ts.status === 'REJECTED';
+  const canApproveReject = ts.status === 'SUBMITTED';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -44,14 +52,17 @@ export default function TimesheetApprovalDetail({ onApprove }: Props) {
           <Title level={5} style={{ margin: 0 }}>{ts.employeeName}</Title>
           <Text type="secondary">{ts.department}</Text>
         </Space>
-        <Space>
-          <Text strong>{dayjs(ts.date).format('dddd, DD MMM YYYY')}</Text>
-          <TimesheetStatusBadge status={ts.status} />
+        <Space direction="vertical" align="end" size={2}>
+          <Space>
+            <Text strong>{dayjs(ts.date).format('dddd, DD MMM YYYY')}</Text>
+            <TimesheetStatusBadge status={ts.status} />
+          </Space>
+          <HoursDisplay hours={ts.totalHours} colorCode={ts.colorCode} bold />
         </Space>
       </div>
 
-      {ts.isHoliday && <Tag color="blue">Holiday</Tag>}
-      {ts.isLeaveDay && <Tag color="orange">Leave{ts.leaveType ? `: ${ts.leaveType}` : ''}</Tag>}
+      {ts.holiday && <Tag color="blue">Holiday</Tag>}
+      {ts.leaveDay && <Tag color="orange">Leave{ts.leaveType ? `: ${ts.leaveType}` : ''}</Tag>}
 
       <TimesheetLinesTable
         lines={ts.lines}
@@ -69,34 +80,88 @@ export default function TimesheetApprovalDetail({ onApprove }: Props) {
         </div>
       )}
 
-      <div className={styles.approvalActions}>
-        <TextArea
-          rows={2}
-          placeholder="Remarks (required for rejection)"
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <Space direction="vertical">
-          <Button
-            type="primary"
-            size="small"
-            loading={approvingTimesheet}
-            onClick={() => onApprove(ts.handle, 'APPROVED', remarks)}
-          >
-            Approve
-          </Button>
-          <Button
-            danger
-            size="small"
-            loading={approvingTimesheet}
-            disabled={!remarks.trim()}
-            onClick={() => onApprove(ts.handle, 'REJECTED', remarks)}
-          >
-            Reject
-          </Button>
-        </Space>
-      </div>
+      {/* Approve / Reject actions */}
+      {canApproveReject && (
+        <div className={styles.approvalActions}>
+          <TextArea
+            rows={2}
+            placeholder="Remarks (required for rejection)"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <Space direction="vertical">
+            <Button
+              type="primary"
+              size="small"
+              loading={approvingTimesheet}
+              onClick={() => onApprove(ts.handle, 'APPROVED', remarks)}
+            >
+              Approve
+            </Button>
+            <Button
+              danger
+              size="small"
+              loading={approvingTimesheet}
+              disabled={!remarks.trim()}
+              onClick={() => onApprove(ts.handle, 'REJECTED', remarks)}
+            >
+              Reject
+            </Button>
+          </Space>
+        </div>
+      )}
+
+      {/* Reopen action for approved/rejected timesheets */}
+      {canReopen && (
+        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, marginTop: 4 }}>
+          {!showReopenForm ? (
+            <Button
+              icon={<UndoOutlined />}
+              size="small"
+              onClick={() => setShowReopenForm(true)}
+            >
+              Reopen Timesheet
+            </Button>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Reopening will set the timesheet status to REOPENED and allow the employee to edit and resubmit.
+              </Text>
+              <TextArea
+                rows={2}
+                placeholder="Reason for reopening (required)"
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+              />
+              <Space>
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={approvingTimesheet}
+                  disabled={!reopenReason.trim()}
+                  onClick={async () => {
+                    await onReopen(ts.handle, reopenReason);
+                    setShowReopenForm(false);
+                    setReopenReason('');
+                  }}
+                >
+                  Confirm Reopen
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setShowReopenForm(false);
+                    setReopenReason('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Space>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

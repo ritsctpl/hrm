@@ -7,12 +7,11 @@ import LockIcon from '@mui/icons-material/Lock';
 import PublishIcon from '@mui/icons-material/Publish';
 import { useHrmPayrollStore } from '../../stores/payrollStore';
 import { formatINR, formatPayrollPeriod } from '../../utils/payrollFormatters';
-import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const { Text } = Typography;
 
-const STATUS_ORDER = ['DRAFT', 'VALIDATED', 'APPROVED', 'FINALIZED', 'PUBLISHED'];
+const STATUS_ORDER = ['DRAFT', 'PROCESSING', 'COMPUTED', 'APPROVED', 'PAID', 'LOCKED'];
 
 const WizardStepApprove: React.FC = () => {
   const store = useHrmPayrollStore();
@@ -40,7 +39,7 @@ const WizardStepApprove: React.FC = () => {
       <Card title="Final Summary" className={styles.stepCard} style={{ marginBottom: 12 }}>
         <Descriptions bordered column={3} size="small">
           <Descriptions.Item label="Period">
-            {formatPayrollPeriod(run.payrollMonth, run.payrollYear, PAYROLL_MONTHS)}
+            {formatPayrollPeriod(run.payrollYear, run.payrollMonth)}
           </Descriptions.Item>
           <Descriptions.Item label="Total Employees">{run.totalEmployees}</Descriptions.Item>
           <Descriptions.Item label="Pay Date">{run.payDate}</Descriptions.Item>

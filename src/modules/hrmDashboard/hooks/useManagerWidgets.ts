@@ -16,9 +16,15 @@ export function useManagerWidgets() {
     store.setLoadingApprovals(true);
     try {
       const res = await HrmDashboardService.getManagerDashboard({ site, managerId });
-      if (res?.teamOverviewStats) store.setTeamOverviewStats(res.teamOverviewStats);
-      if (res?.teamMembers) store.setTeamMembers(res.teamMembers);
-      if (res?.pendingApprovals) store.setPendingApprovals(res.pendingApprovals);
+      if (res?.widgets) {
+        store.setDashboardWidgets(res.widgets);
+      }
+      if (res?.layout) {
+        store.setDashboardLayout(res.layout);
+      }
+      if (res?.alerts) {
+        store.setDashboardAlerts(res.alerts);
+      }
     } catch {
       // silently handle
     } finally {

@@ -12,7 +12,7 @@ const { Text } = Typography;
 
 interface Props {
   reportId: string;
-  totalClaimedInr: number;
+  totalClaimedAmountInr: number;
   panel: FinancePanelState;
   bankDetails?: EmployeeBankDetails | null;
   loading?: boolean;
@@ -24,7 +24,7 @@ interface Props {
 
 const FinanceApprovalPanel: React.FC<Props> = ({
   reportId,
-  totalClaimedInr,
+  totalClaimedAmountInr,
   panel,
   bankDetails,
   loading,
@@ -46,7 +46,7 @@ const FinanceApprovalPanel: React.FC<Props> = ({
         <Form layout="vertical" component="div">
           <div style={{ marginBottom: 8 }}>
             <Text type="secondary">Total Claimed (INR): </Text>
-            <Text strong>{totalClaimedInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
+            <Text strong>{totalClaimedAmountInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</Text>
           </div>
 
           <div style={{ display: "flex", gap: 16 }}>
@@ -60,10 +60,10 @@ const FinanceApprovalPanel: React.FC<Props> = ({
             </Form.Item>
             <Form.Item label="Per Diem (optional, INR)" style={{ flex: 1 }}>
               <InputNumber
-                value={panel.perDiem ?? undefined}
+                value={panel.perDiemAmount ?? undefined}
                 min={0}
                 style={{ width: "100%" }}
-                onChange={(v) => onChange({ perDiem: v })}
+                onChange={(v) => onChange({ perDiemAmount: v })}
               />
             </Form.Item>
             <Form.Item label="Exchange Rate" style={{ flex: 1 }}>

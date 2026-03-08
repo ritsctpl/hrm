@@ -42,6 +42,7 @@ export default function ProjectDetailPanel() {
         onChange={(k) => setActiveDetailTab(k as typeof activeDetailTab)}
         items={items}
         size="small"
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
       />
     </div>
   );

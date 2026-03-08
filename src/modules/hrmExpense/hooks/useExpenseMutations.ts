@@ -12,6 +12,7 @@ export function useExpenseMutations() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
   const employeeId = cookies.userId ?? "";
+  const employeeName = cookies.userName ?? employeeId;
 
   const {
     setSaving,
@@ -29,29 +30,32 @@ export function useExpenseMutations() {
   const saveDraft = useCallback(async (form: ExpenseFormState, existingHandle?: string) => {
     setSaving(true);
     try {
-      const payload = {
+      const basePayload = {
         site,
-        employeeId,
         expenseType: form.expenseType as ExpenseType,
         purpose: form.purpose,
-        travelRefHandle: form.travelRefHandle || undefined,
+        travelRequestHandle: form.travelRequestHandle || undefined,
         fromDate: form.fromDate!,
         toDate: form.toDate!,
-        costCenter: form.costCenter,
+        costCenter: form.costCenter || undefined,
         projectCode: form.projectCode || undefined,
         wbsCode: form.wbsCode || undefined,
         currency: form.currency,
-        exchangeRate: form.exchangeRate,
         outOfPolicyJustification: form.outOfPolicyJustification || undefined,
+        items: [],
+        createdBy: employeeId,
       };
       if (existingHandle) {
-        const updated = await HrmExpenseService.updateDraft({ ...payload, handle: existingHandle });
+        const updated = await HrmExpenseService.updateDraft({
+          handle: existingHandle,
+          data: { ...basePayload },
+        });
         updateMyExpense(existingHandle, updated);
         setSelectedExpense(updated);
         message.success("Draft saved.");
         return updated;
       } else {
-        const created = await HrmExpenseService.createDraft(payload);
+        const created = await HrmExpenseService.createDraft(basePayload);
         addMyExpense(created);
         setSelectedExpense(created);
         setScreenMode("view");
@@ -69,7 +73,7 @@ export function useExpenseMutations() {
   const submitExpense = useCallback(async (handle: string) => {
     setSubmitting(true);
     try {
-      const updated = await HrmExpenseService.submitExpense({ site, handle });
+      const updated = await HrmExpenseService.submitExpense({ site, handle, submittedBy: employeeId });
       updateMyExpense(handle, updated);
       setSelectedExpense(updated);
       message.success("Expense report submitted.");
@@ -80,13 +84,13 @@ export function useExpenseMutations() {
     } finally {
       setSubmitting(false);
     }
-  }, [site]);
+  }, [site, employeeId]);
 
   const supervisorApprove = useCallback(async (handle: string, remarks?: string) => {
     setApproving(true);
     try {
       const updated = await HrmExpenseService.supervisorApprove({
-        site, handle, approverId: employeeId, remarks,
+        site, expenseRequestHandle: handle, action: "APPROVE", actorEmpId: employeeId, actorName: employeeName, remarks,
       });
       updateInboxExpense(handle, updated);
       removeFromInbox(handle);
@@ -99,13 +103,13 @@ export function useExpenseMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, employeeName]);
 
   const supervisorReject = useCallback(async (handle: string, remarks: string) => {
     setApproving(true);
     try {
       const updated = await HrmExpenseService.supervisorReject({
-        site, handle, approverId: employeeId, remarks,
+        site, expenseRequestHandle: handle, action: "REJECT", actorEmpId: employeeId, actorName: employeeName, remarks,
       });
       updateInboxExpense(handle, updated);
       removeFromInbox(handle);
@@ -118,20 +122,22 @@ export function useExpenseMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, employeeName]);
 
   const financeSanction = useCallback(async (handle: string, panel: FinancePanelState) => {
     setApproving(true);
     try {
       const updated = await HrmExpenseService.financeSanction({
         site,
-        handle,
-        financeId: employeeId,
-        sanctionedAmount: panel.sanctionedAmount!,
-        perDiem: panel.perDiem ?? undefined,
+        expenseRequestHandle: handle,
+        action: "APPROVE",
+        sanctionedAmount: panel.sanctionedAmount ?? undefined,
+        perDiemAmount: panel.perDiemAmount ?? undefined,
         exchangeRate: panel.exchangeRate,
         originalsReceived: panel.originalsReceived,
         remarks: panel.remarks || undefined,
+        actorEmpId: employeeId,
+        actorName: employeeName,
       });
       updateInboxExpense(handle, updated);
       setSelectedExpense(updated);
@@ -143,13 +149,13 @@ export function useExpenseMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, employeeName]);
 
   const financeReject = useCallback(async (handle: string, remarks: string) => {
     setApproving(true);
     try {
       const updated = await HrmExpenseService.financeReject({
-        site, handle, approverId: employeeId, remarks,
+        site, expenseRequestHandle: handle, action: "REJECT", actorEmpId: employeeId, actorName: employeeName, remarks,
       });
       updateInboxExpense(handle, updated);
       removeFromInbox(handle);
@@ -162,19 +168,22 @@ export function useExpenseMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, employeeName]);
 
   const markAsPaid = useCallback(async (handle: string, panel: FinancePanelState) => {
     setApproving(true);
     try {
       const updated = await HrmExpenseService.markAsPaid({
         site,
-        handle,
-        financeId: employeeId,
+        expenseRequestHandle: handle,
+        action: "PAY",
         paymentMode: panel.paymentMode as PaymentMode,
         paymentReference: panel.paymentReference,
         paymentDate: panel.paymentDate!,
+        sanctionedAmount: panel.sanctionedAmount ?? undefined,
         remarks: panel.remarks || undefined,
+        actorEmpId: employeeId,
+        actorName: employeeName,
       });
       updateInboxExpense(handle, updated);
       setSelectedExpense(updated);
@@ -186,7 +195,7 @@ export function useExpenseMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, employeeName]);
 
   const cancelExpense = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
@@ -204,10 +213,26 @@ export function useExpenseMutations() {
     }
   }, [site]);
 
+  const recallExpense = useCallback(async (handle: string, reason: string) => {
+    setSaving(true);
+    try {
+      const updated = await HrmExpenseService.recallExpense({ site, expenseId: handle, recalledBy: employeeId, reason });
+      updateMyExpense(handle, updated);
+      setSelectedExpense(updated);
+      message.success("Expense report recalled to draft.");
+      return updated;
+    } catch {
+      message.error("Failed to recall expense.");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }, [site, employeeId]);
+
   const deleteExpense = useCallback(async (handle: string) => {
     setSaving(true);
     try {
-      await HrmExpenseService.deleteExpense({ site, handle });
+      await HrmExpenseService.deleteExpense({ site, expenseId: handle, deletedBy: employeeId });
       removeMyExpense(handle);
       setSelectedExpense(null);
       setScreenMode("list");
@@ -217,7 +242,7 @@ export function useExpenseMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site]);
+  }, [site, employeeId]);
 
   return {
     saveDraft,
@@ -228,6 +253,7 @@ export function useExpenseMutations() {
     financeReject,
     markAsPaid,
     cancelExpense,
+    recallExpense,
     deleteExpense,
   };
 }

@@ -7,9 +7,12 @@ import type { DashboardRole } from '../types/domain.types';
 const ROLE_MAP: Record<string, DashboardRole> = {
   ROLE_ADMIN: 'ADMIN',
   ROLE_SUPERADMIN: 'SUPERADMIN',
+  ROLE_SUPER_ADMIN: 'SUPERADMIN',
   ROLE_HR_MANAGER: 'HR_MANAGER',
+  ROLE_HR_ADMIN: 'HR',
   ROLE_HR: 'HR',
   ROLE_MANAGER: 'MANAGER',
+  ROLE_SUPERVISOR: 'MANAGER',
   ROLE_EMPLOYEE: 'EMPLOYEE',
 };
 
@@ -20,10 +23,11 @@ export function useDashboardRole(): DashboardRole {
   return useMemo<DashboardRole>(() => {
     if (ROLE_MAP[rawRole]) return ROLE_MAP[rawRole];
     const upper = rawRole.toUpperCase();
+    if (upper.includes('SUPER_ADMIN') || upper.includes('SUPERADMIN')) return 'SUPERADMIN';
     if (upper.includes('ADMIN')) return 'ADMIN';
     if (upper.includes('HR_MANAGER')) return 'HR_MANAGER';
-    if (upper.includes('HR')) return 'HR';
-    if (upper.includes('MANAGER')) return 'MANAGER';
+    if (upper.includes('HR_ADMIN') || upper.includes('HR')) return 'HR';
+    if (upper.includes('SUPERVISOR') || upper.includes('MANAGER')) return 'MANAGER';
     return 'EMPLOYEE';
   }, [rawRole]);
 }

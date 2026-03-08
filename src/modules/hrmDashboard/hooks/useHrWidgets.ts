@@ -7,25 +7,29 @@ export function useHrWidgets() {
   const store = useHrmDashboardStore();
   const cookies = parseCookies();
   const site = cookies.site ?? '';
+  const userId = cookies.userId ?? '';
 
   const loadHrData = useCallback(async () => {
     if (!site) return;
 
     store.setLoadingHrData(true);
     try {
-      const res = await HrmDashboardService.getHrDashboard({ site });
-      if (res?.hrKpis) store.setHrKpis(res.hrKpis);
-      if (res?.headcountTrend) store.setHeadcountTrend(res.headcountTrend);
-      if (res?.deptDistribution) store.setDeptDistribution(res.deptDistribution);
-      if (res?.attritionData) store.setAttritionData(res.attritionData);
-      if (res?.leaveUtilization) store.setLeaveUtilization(res.leaveUtilization);
-      if (res?.hrAlerts) store.setHrAlerts(res.hrAlerts);
+      const res = await HrmDashboardService.getHrDashboard({ site, requestedBy: userId });
+      if (res?.widgets) {
+        store.setDashboardWidgets(res.widgets);
+      }
+      if (res?.layout) {
+        store.setDashboardLayout(res.layout);
+      }
+      if (res?.alerts) {
+        store.setDashboardAlerts(res.alerts);
+      }
     } catch {
       // silently handle
     } finally {
       store.setLoadingHrData(false);
     }
-  }, [site]);
+  }, [site, userId]);
 
   return { loadHrData };
 }

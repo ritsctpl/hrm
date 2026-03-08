@@ -1,10 +1,3 @@
-/**
- * HrmEmployeeLanding
- * Entry point for the Employee Directory view.
- * Connects to the Zustand store via hooks and delegates rendering
- * to EmployeeDirectoryTemplate.
- */
-
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -13,6 +6,12 @@ import { useEmployeeDirectory } from './hooks/useHrmEmployeeData';
 import EmployeeDirectoryTemplate from './components/templates/EmployeeDirectoryTemplate';
 import OnboardingWizard from './components/organisms/OnboardingWizard';
 import BulkImportPanel from './components/organisms/BulkImportPanel';
+import OffboardingPanel from './components/organisms/OffboardingPanel';
+import BulkOperationsPanel from './components/organisms/BulkOperationsPanel';
+import AlertsDashboard from './components/organisms/AlertsDashboard';
+import EmployeeAuditLogPanel from './components/organisms/EmployeeAuditLogPanel';
+import FieldSchemaConfigPanel from './components/organisms/FieldSchemaConfigPanel';
+import EmployeeExportPanel from './components/organisms/EmployeeExportPanel';
 import type { DirectoryFilters } from './types/ui.types';
 
 interface HrmEmployeeLandingProps {
@@ -40,16 +39,20 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   } = useEmployeeDirectory();
 
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [offboardingOpen, setOffboardingOpen] = useState(false);
+  const [bulkOpsOpen, setBulkOpsOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [schemaConfigOpen, setSchemaConfigOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
-  // Derive unique departments / BUs from data for filter dropdowns
+  // Derive unique departments from data for filter dropdowns
   const departments = useMemo(
     () => Array.from(new Set(employees.map((e) => e.department).filter(Boolean))).sort(),
     [employees]
   );
 
   const businessUnits = useMemo(() => {
-    // BU data would ideally come from a lookup endpoint;
-    // for now derive from what we have if the directory response included it
     return [] as string[];
   }, []);
 
@@ -89,6 +92,12 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
         onAddEmployee={openOnboarding}
         onBulkImport={() => setBulkImportOpen(true)}
         onRefresh={refresh}
+        onOffboarding={() => setOffboardingOpen(true)}
+        onBulkOps={() => setBulkOpsOpen(true)}
+        onAlerts={() => setAlertsOpen(true)}
+        onExport={() => setExportOpen(true)}
+        onAuditLog={() => setAuditOpen(true)}
+        onFieldConfig={() => setSchemaConfigOpen(true)}
       />
 
       {/* Onboarding Wizard */}
@@ -98,6 +107,42 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
       <BulkImportPanel
         open={bulkImportOpen}
         onClose={() => setBulkImportOpen(false)}
+      />
+
+      {/* Offboarding */}
+      <OffboardingPanel
+        open={offboardingOpen}
+        onClose={() => setOffboardingOpen(false)}
+      />
+
+      {/* Bulk Operations */}
+      <BulkOperationsPanel
+        open={bulkOpsOpen}
+        onClose={() => setBulkOpsOpen(false)}
+      />
+
+      {/* Alerts Dashboard */}
+      <AlertsDashboard
+        open={alertsOpen}
+        onClose={() => setAlertsOpen(false)}
+      />
+
+      {/* Audit Log */}
+      <EmployeeAuditLogPanel
+        open={auditOpen}
+        onClose={() => setAuditOpen(false)}
+      />
+
+      {/* Field Schema Config */}
+      <FieldSchemaConfigPanel
+        open={schemaConfigOpen}
+        onClose={() => setSchemaConfigOpen(false)}
+      />
+
+      {/* Export */}
+      <EmployeeExportPanel
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
       />
       </div>
     </div>

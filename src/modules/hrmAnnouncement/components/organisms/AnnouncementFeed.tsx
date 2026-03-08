@@ -45,7 +45,7 @@ const AnnouncementFeed: React.FC<AnnouncementFeedProps> = ({
           </div>
           {pinnedAnnouncements.map((a) => (
             <AnnouncementListRow
-              key={a.id}
+              key={a.handle}
               announcement={a}
               onClick={onAnnouncementClick}
             />
@@ -60,7 +60,7 @@ const AnnouncementFeed: React.FC<AnnouncementFeedProps> = ({
           </div>
           {feed.map((a) => (
             <AnnouncementListRow
-              key={a.id}
+              key={a.handle}
               announcement={a}
               onClick={onAnnouncementClick}
             />

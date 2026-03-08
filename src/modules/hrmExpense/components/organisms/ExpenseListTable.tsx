@@ -29,8 +29,8 @@ const ExpenseListTable: React.FC<Props> = ({
   const columns: ColumnsType<ExpenseReport> = [
     {
       title: "Report ID",
-      dataIndex: "reportId",
-      key: "reportId",
+      dataIndex: "requestId",
+      key: "requestId",
       width: 120,
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },
@@ -57,7 +57,7 @@ const ExpenseListTable: React.FC<Props> = ({
       key: "amount",
       width: 110,
       render: (_, r) => (
-        <Tooltip title={r.currency !== "INR" ? `INR ${r.totalClaimedInr?.toLocaleString()}` : undefined}>
+        <Tooltip title={r.currency !== "INR" ? `INR ${r.totalClaimedAmountInr?.toLocaleString()}` : undefined}>
           <span style={{ fontSize: 13 }}>
             {r.currency} {r.totalClaimedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </span>

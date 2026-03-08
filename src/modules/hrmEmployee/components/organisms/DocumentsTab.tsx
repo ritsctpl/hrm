@@ -37,11 +37,14 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       const uploadedBy = cookies.username || 'system';
 
       await HrmEmployeeService.uploadDocument(
-        site,
-        profile.handle,
-        selectedFile,
-        docType,
-        uploadedBy
+        {
+          site,
+          employeeHandle: profile.handle,
+          documentType: docType,
+          documentName: selectedFile.name,
+          uploadedBy,
+        },
+        selectedFile
       );
       message.success('Document uploaded');
       setUploadOpen(false);

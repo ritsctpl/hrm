@@ -9,7 +9,7 @@ export type ExpenseInboxTab = "pending" | "escalated" | "decided";
 export interface ExpenseFormState {
   expenseType: ExpenseType | null;
   purpose: string;
-  travelRefHandle: string | null;
+  travelRequestHandle: string | null;
   fromDate: string | null;
   toDate: string | null;
   costCenter: string;
@@ -21,16 +21,16 @@ export interface ExpenseFormState {
 }
 
 export interface ExpenseLineItemFormState {
-  lineItemId?: string;
+  handle?: string;
   expenseDate: string | null;
-  categoryCode: string | null;
+  categoryId: string | null;
   description: string;
   amount: number | null;
   currency: string;
 }
 
 export interface MileageLineItemFormState {
-  lineItemId?: string;
+  handle?: string;
   tripDate: string | null;
   fromLocation: string;
   toLocation: string;
@@ -39,7 +39,7 @@ export interface MileageLineItemFormState {
 
 export interface FinancePanelState {
   sanctionedAmount: number | null;
-  perDiem: number | null;
+  perDiemAmount: number | null;
   exchangeRate: number;
   originalsReceived: boolean;
   paymentMode: string | null;

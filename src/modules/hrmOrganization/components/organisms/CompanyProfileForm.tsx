@@ -1,36 +1,26 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Tabs, Button, Spin, message } from 'antd';
-import EditIcon from '@mui/icons-material/Edit';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { Button, Spin, message, Divider } from 'antd';
+import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 import CompanyIdentitySection from './CompanyIdentitySection';
 import CompanyStatutorySection from './CompanyStatutorySection';
 import CompanyBankSection from './CompanyBankSection';
 import CompanyAddressSection from './CompanyAddressSection';
 import CompanyContactSection from './CompanyContactSection';
+import CompanyFinancialYearSection from './CompanyFinancialYearSection';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { COMPANY_TAB_LABELS } from '../../utils/constants';
-import type { CompanyTabKey } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
 const CompanyProfileForm: React.FC = () => {
   const {
     companyProfile,
-    setCompanyActiveTab,
     setCompanyEditing,
     saveCompanyProfile,
   } = useHrmOrganizationStore();
 
-  const { isLoading, isSaving, isEditing, activeTab, data, errors } = companyProfile;
-
-  const handleTabChange = useCallback(
-    (key: string) => {
-      setCompanyActiveTab(key as CompanyTabKey);
-    },
-    [setCompanyActiveTab]
-  );
+  const { isLoading, isSaving, isEditing, data, errors } = companyProfile;
 
   const handleEdit = useCallback(() => {
     setCompanyEditing(true);
@@ -59,61 +49,26 @@ const CompanyProfileForm: React.FC = () => {
 
   const isDisabled = !isEditing;
 
-  const tabItems = [
-    {
-      key: 'identity',
-      label: COMPANY_TAB_LABELS.identity,
-      children: <CompanyIdentitySection disabled={isDisabled} />,
-    },
-    {
-      key: 'statutory',
-      label: COMPANY_TAB_LABELS.statutory,
-      children: <CompanyStatutorySection disabled={isDisabled} />,
-    },
-    {
-      key: 'bank',
-      label: COMPANY_TAB_LABELS.bank,
-      children: <CompanyBankSection disabled={isDisabled} />,
-    },
-    {
-      key: 'address',
-      label: COMPANY_TAB_LABELS.address,
-      children: <CompanyAddressSection disabled={isDisabled} />,
-    },
-    {
-      key: 'contact',
-      label: COMPANY_TAB_LABELS.contact,
-      children: <CompanyContactSection disabled={isDisabled} />,
-    },
-  ];
-
   return (
     <div className={mainStyles.companyProfileContainer}>
-      <div className={mainStyles.companyTabs}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-          size="small"
-        />
-
-        {errors._general && (
-          <div style={{ color: '#ff4d4f', marginTop: 8 }}>{errors._general}</div>
-        )}
-
-        <div className={mainStyles.companyActions}>
+      {/* Header with actions */}
+      <div className={mainStyles.companyFormHeader}>
+        <h2 className={mainStyles.companyFormTitle}>Company Profile</h2>
+        <div className={mainStyles.companyFormActions}>
           {!isEditing && data && (
             <Button
-              icon={<EditIcon fontSize="small" />}
+              icon={<EditOutlined />}
               onClick={handleEdit}
+              size="small"
             >
               Edit
             </Button>
           )}
           {isEditing && data && (
             <Button
-              icon={<CancelIcon fontSize="small" />}
+              icon={<CloseOutlined />}
               onClick={handleCancel}
+              size="small"
             >
               Cancel
             </Button>
@@ -127,6 +82,68 @@ const CompanyProfileForm: React.FC = () => {
           )}
         </div>
       </div>
+
+      {errors._general && (
+        <div style={{ color: '#ff4d4f', marginBottom: 12 }}>{errors._general}</div>
+      )}
+
+      {/* Section 1: Identity & Logo */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Identity</div>
+        <CompanyIdentitySection disabled={isDisabled} />
+      </div>
+
+      {/* Section 2: Contact Info */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Contact Information</div>
+        <CompanyContactSection disabled={isDisabled} />
+      </div>
+
+      {/* Section 3: Statutory IDs */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Statutory Details</div>
+        <CompanyStatutorySection disabled={isDisabled} />
+      </div>
+
+      {/* Section 4: Addresses */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Addresses</div>
+        <CompanyAddressSection disabled={isDisabled} />
+      </div>
+
+      {/* Section 5: Bank Accounts */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Bank Accounts</div>
+        <CompanyBankSection disabled={isDisabled} />
+      </div>
+
+      {/* Section 6: Financial Year (only if company exists) */}
+      {data?.handle && (
+        <div className={mainStyles.profileSection}>
+          <div className={mainStyles.profileSectionTitle}>Financial Year</div>
+          <CompanyFinancialYearSection />
+        </div>
+      )}
+
+      {/* Bottom actions for long form */}
+      {isEditing && (
+        <div className={mainStyles.companyActions}>
+          {data && (
+            <Button
+              icon={<CloseOutlined />}
+              onClick={handleCancel}
+              size="small"
+            >
+              Cancel
+            </Button>
+          )}
+          <OrgSaveButton
+            loading={isSaving}
+            onClick={handleSave}
+            label={data ? 'Update' : 'Create'}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
-import { Tabs, Button, Descriptions, Modal, Input, Space, Typography } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Card, InputNumber, Select, Tag, message } from "antd";
 import {
   SaveOutlined,
   SendOutlined,
   RollbackOutlined,
   DeleteOutlined,
   StopOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import TravelScreenHeader from "./components/organisms/TravelScreenHeader";
@@ -21,12 +22,20 @@ import ApprovalActionBar from "./components/molecules/ApprovalActionBar";
 import TravelStatusChip from "./components/atoms/TravelStatusChip";
 import type { TravelRequest } from "./types/domain.types";
 import type { CoTravellerDto } from "./types/domain.types";
+import type { TravelAdvance } from "./types/api.types";
 import { CANCELLABLE_STATUSES, RECALLABLE_STATUSES } from "./utils/travelConstants";
 import { isTravelFormValid } from "./utils/travelValidations";
 import { HrmTravelService } from "./services/hrmTravelService";
 import styles from "./styles/Travel.module.css";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
+
+const ADVANCE_STATUS_COLORS: Record<string, string> = {
+  REQUESTED: "processing",
+  APPROVED: "success",
+  SETTLED: "cyan",
+  REJECTED: "error",
+};
 
 interface Props {
   request: TravelRequest | null;
@@ -45,6 +54,7 @@ const HrmTravelScreen: React.FC<Props> = ({
 }) => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
+  const employeeId = cookies.userId ?? "";
 
   const { formState, updateFormState, activeDetailTab, setActiveDetailTab, approving, saving } =
     useHrmTravelStore();
@@ -58,12 +68,29 @@ const HrmTravelScreen: React.FC<Props> = ({
   const [recallReason, setRecallReason] = useState("");
   const [deleteModal, setDeleteModal] = useState(false);
 
+  // Travel Advance state
+  const [advance, setAdvance] = useState<TravelAdvance | null>(null);
+  const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
+  const [advanceAmount, setAdvanceAmount] = useState<number | null>(null);
+  const [advanceCurrency, setAdvanceCurrency] = useState("INR");
+  const [advanceLoading, setAdvanceLoading] = useState(false);
+
   const isReadonly = mode === "view";
   const isNew = mode === "create";
   const canCancel = request && CANCELLABLE_STATUSES.includes(request.status);
   const canRecall = request && RECALLABLE_STATUSES.includes(request.status);
   const canDelete = request && request.status === "DRAFT";
   const formValid = isTravelFormValid(formState);
+  const canRequestAdvance = request && request.status === "APPROVED" && !advance;
+
+  // Load advance on mount for approved requests
+  useEffect(() => {
+    if (request?.handle && request.status === "APPROVED") {
+      HrmTravelService.retrieveAdvance({ site, handle: request.handle })
+        .then(setAdvance)
+        .catch(() => setAdvance(null));
+    }
+  }, [request?.handle, request?.status, site]);
 
   const handleSaveDraft = useCallback(async () => {
     await saveDraft(formState, request?.handle);
@@ -102,6 +129,31 @@ const HrmTravelScreen: React.FC<Props> = ({
     if (!request?.handle) return;
     await HrmTravelService.deleteAttachment({ site, handle: request.handle, attachmentId });
     onActionComplete();
+  };
+
+  // Travel Advance handlers
+  const handleRequestAdvance = async () => {
+    if (!request?.handle || !advanceAmount) return;
+    setAdvanceLoading(true);
+    try {
+      const result = await HrmTravelService.requestAdvance({
+        site,
+        travelHandle: request.handle,
+        employeeId,
+        amount: advanceAmount,
+        currency: advanceCurrency,
+        purpose: request.purpose,
+        requestedBy: employeeId,
+      });
+      setAdvance(result);
+      setAdvanceModalOpen(false);
+      setAdvanceAmount(null);
+      message.success("Travel advance requested.");
+    } catch {
+      message.error("Failed to request advance.");
+    } finally {
+      setAdvanceLoading(false);
+    }
   };
 
   const barTitle = isNew
@@ -150,6 +202,48 @@ const HrmTravelScreen: React.FC<Props> = ({
     : (request?.coTravellers?.filter((t) =>
         formState.coTravellerIds.includes(t.employeeId)
       ) ?? []);
+
+  // Travel Advance section (visible only for APPROVED requests)
+  const advanceSection = request?.status === "APPROVED" ? (
+    <Card
+      size="small"
+      title="Travel Advance"
+      style={{ margin: "12px 16px 0" }}
+      extra={
+        canRequestAdvance ? (
+          <Button
+            type="primary"
+            size="small"
+            icon={<DollarOutlined />}
+            onClick={() => setAdvanceModalOpen(true)}
+          >
+            Request Advance
+          </Button>
+        ) : null
+      }
+    >
+      {advance ? (
+        <Descriptions size="small" column={2} bordered>
+          <Descriptions.Item label="Amount">
+            {advance.currency} {advance.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+          </Descriptions.Item>
+          <Descriptions.Item label="Status">
+            <Tag color={ADVANCE_STATUS_COLORS[advance.status] ?? "default"}>
+              {advance.status}
+            </Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Requested">
+            {advance.createdDateTime}
+          </Descriptions.Item>
+          {advance.approvalRemarks && (
+            <Descriptions.Item label="Remarks">{advance.approvalRemarks}</Descriptions.Item>
+          )}
+        </Descriptions>
+      ) : (
+        <Text type="secondary">No advance requested yet.</Text>
+      )}
+    </Card>
+  ) : null;
 
   const tabItems = [
     {
@@ -261,6 +355,8 @@ const HrmTravelScreen: React.FC<Props> = ({
         />
       )}
 
+      {advanceSection}
+
       <Tabs
         activeKey={activeDetailTab}
         onChange={(k) => setActiveDetailTab(k as typeof activeDetailTab)}
@@ -269,6 +365,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         items={tabItems}
       />
 
+      {/* Cancel Modal */}
       <Modal
         title="Cancel Request"
         open={cancelModal}
@@ -291,6 +388,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         />
       </Modal>
 
+      {/* Recall Modal */}
       <Modal
         title="Recall to Draft"
         open={recallModal}
@@ -313,6 +411,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         />
       </Modal>
 
+      {/* Delete Modal */}
       <Modal
         title="Delete Request"
         open={deleteModal}
@@ -327,6 +426,44 @@ const HrmTravelScreen: React.FC<Props> = ({
         okButtonProps={{ danger: true }}
       >
         <Text>Are you sure you want to delete this draft request? This cannot be undone.</Text>
+      </Modal>
+
+      {/* Travel Advance Request Modal */}
+      <Modal
+        title="Request Travel Advance"
+        open={advanceModalOpen}
+        onCancel={() => setAdvanceModalOpen(false)}
+        onOk={handleRequestAdvance}
+        confirmLoading={advanceLoading}
+        okText="Request"
+        okButtonProps={{ disabled: !advanceAmount || advanceAmount <= 0 }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <Text strong>Amount *</Text>
+            <InputNumber
+              style={{ width: "100%", marginTop: 4 }}
+              min={1}
+              placeholder="Enter advance amount"
+              value={advanceAmount}
+              onChange={(v) => setAdvanceAmount(v)}
+            />
+          </div>
+          <div>
+            <Text strong>Currency</Text>
+            <Select
+              style={{ width: "100%", marginTop: 4 }}
+              value={advanceCurrency}
+              onChange={setAdvanceCurrency}
+              options={[
+                { value: "INR", label: "INR" },
+                { value: "USD", label: "USD" },
+                { value: "EUR", label: "EUR" },
+                { value: "GBP", label: "GBP" },
+              ]}
+            />
+          </div>
+        </div>
       </Modal>
     </div>
   );

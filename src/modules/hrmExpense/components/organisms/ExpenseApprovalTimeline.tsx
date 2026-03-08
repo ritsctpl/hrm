@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Timeline, Tag, Typography } from "antd";
-import type { ExpenseAction } from "../../types/domain.types";
+import type { ExpenseApprovalAction } from "../../types/domain.types";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -19,7 +19,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 interface Props {
-  actions: ExpenseAction[];
+  actions: ExpenseApprovalAction[];
 }
 
 const ExpenseApprovalTimeline: React.FC<Props> = ({ actions }) => {
@@ -38,7 +38,7 @@ const ExpenseApprovalTimeline: React.FC<Props> = ({ actions }) => {
         children: (
           <div>
             <div style={{ fontSize: 12, color: "#8c8c8c", marginBottom: 4 }}>
-              {dayjs(a.actionDateTime).format("DD MMM YYYY, hh:mm A")}
+              {dayjs(a.actionAt).format("DD MMM YYYY, hh:mm A")}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <Tag color={ACTION_COLORS[a.action] ?? "blue"} style={{ margin: 0 }}>

@@ -18,7 +18,7 @@ export default function CapacityCheckPanel() {
     {
       title: 'Available',
       key: 'available',
-      render: (_, d) => d.isHoliday ? 'HOLIDAY' : d.isLeave ? 'LEAVE' : `${d.availableHours.toFixed(1)}h`,
+      render: (_, d) => d.holiday ? 'HOLIDAY' : d.leave ? 'LEAVE' : `${d.availableHours.toFixed(1)}h`,
     },
     {
       title: 'Allocated',
@@ -29,7 +29,7 @@ export default function CapacityCheckPanel() {
       title: 'Status',
       key: 'status',
       render: (_, d) => {
-        const status: CapacityStatus = d.isHoliday || d.isLeave ? 'GREY' : d.capacityStatus;
+        const status: CapacityStatus = d.holiday || d.leave ? 'GREY' : d.capacityStatus;
         return <CapacityColorDot status={status} />;
       },
     },

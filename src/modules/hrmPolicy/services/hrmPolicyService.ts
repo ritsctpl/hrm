@@ -2,23 +2,44 @@ import api from "@/services/api";
 import {
   GetPoliciesPayload,
   GetPolicyDetailPayload,
+  GetPolicyByCodePayload,
   AcknowledgePolicyPayload,
+  WaiveAcknowledgmentPayload,
   CreatePolicyPayload,
   UpdatePolicyPayload,
-  PolicyActionPayload,
+  PublishPolicyPayload,
+  SubmitForReviewPayload,
+  ApprovePolicyPayload,
+  RetirePolicyPayload,
+  SupersedePolicyPayload,
+  DeletePolicyPayload,
   GetVersionHistoryPayload,
   GetAcknowledgmentReportPayload,
-  SendReminderPayload,
+  GetEmployeeAcknowledgmentsPayload,
+  GetMyPoliciesPayload,
+  GetEmployeePolicyPortalPayload,
   CreateCategoryPayload,
+  UpdateCategoryPayload,
+  DeleteCategoryPayload,
+  DownloadPolicyFilePayload,
 } from "../types/api.types";
-import { PolicyDocument, PolicyCategory, PolicyVersion, AcknowledgmentReport, AcknowledgmentRecord } from "../types/domain.types";
+import {
+  PolicyDocument,
+  PolicyCategory,
+  PolicyVersion,
+  AcknowledgmentReport,
+  AcknowledgmentRecord,
+  EmployeePolicyPortal,
+} from "../types/domain.types";
 
 const BASE = "/hrm-service/policy";
 
 export class HrmPolicyService {
+  // ── Policy CRUD ──
+
   static async getPolicies(payload: GetPoliciesPayload): Promise<PolicyDocument[]> {
     const res = await api.post(`${BASE}/listPolicies`, payload);
-    return res.data;
+    return res.data ?? [];
   }
 
   static async getPolicyDetail(payload: GetPolicyDetailPayload): Promise<PolicyDocument> {
@@ -26,18 +47,9 @@ export class HrmPolicyService {
     return res.data;
   }
 
-  static async getCategories(site: string): Promise<PolicyCategory[]> {
-    const res = await api.post(`${BASE}/listCategories`, { site });
+  static async getPolicyByCode(payload: GetPolicyByCodePayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/getPolicyByCode`, payload);
     return res.data;
-  }
-
-  static async getVersionHistory(payload: GetVersionHistoryPayload): Promise<PolicyVersion[]> {
-    const res = await api.post(`${BASE}/getVersionHistory`, payload);
-    return res.data;
-  }
-
-  static async acknowledgePolicy(payload: AcknowledgePolicyPayload): Promise<void> {
-    await api.post(`${BASE}/acknowledgePolicy`, payload);
   }
 
   static async createPolicy(payload: CreatePolicyPayload): Promise<PolicyDocument> {
@@ -50,12 +62,93 @@ export class HrmPolicyService {
     return res.data;
   }
 
-  static async publishPolicy(payload: PolicyActionPayload): Promise<void> {
-    await api.post(`${BASE}/publishPolicy`, payload);
+  static async deletePolicy(payload: DeletePolicyPayload): Promise<void> {
+    await api.post(`${BASE}/deletePolicy`, payload);
   }
 
-  static async archivePolicy(payload: PolicyActionPayload): Promise<void> {
-    await api.post(`${BASE}/supersedePolicy`, payload);
+  // ── Workflow ──
+
+  static async submitForReview(payload: SubmitForReviewPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/submitForReview`, payload);
+    return res.data;
+  }
+
+  static async approvePolicy(payload: ApprovePolicyPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/approvePolicy`, payload);
+    return res.data;
+  }
+
+  static async publishPolicy(payload: PublishPolicyPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/publishPolicy`, payload);
+    return res.data;
+  }
+
+  static async retirePolicy(payload: RetirePolicyPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/retirePolicy`, payload);
+    return res.data;
+  }
+
+  static async supersedePolicy(payload: SupersedePolicyPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/supersedePolicy`, payload);
+    return res.data;
+  }
+
+  // ── Version Management ──
+
+  static async getVersionHistory(payload: GetVersionHistoryPayload): Promise<PolicyVersion[]> {
+    const res = await api.post(`${BASE}/getVersionHistory`, payload);
+    return res.data ?? [];
+  }
+
+  static async uploadPolicyFile(
+    site: string,
+    policyHandle: string,
+    uploadedBy: string,
+    file: File
+  ): Promise<PolicyDocument> {
+    const formData = new FormData();
+    formData.append("site", site);
+    formData.append("policyHandle", policyHandle);
+    formData.append("uploadedBy", uploadedBy);
+    formData.append("file", file);
+    const res = await api.post(`${BASE}/uploadPolicyFile`, formData);
+    return res.data;
+  }
+
+  static async uploadNewVersion(
+    site: string,
+    policyHandle: string,
+    newVersionNumber: string,
+    changeDescription: string,
+    uploadedBy: string,
+    file?: File
+  ): Promise<PolicyDocument> {
+    const formData = new FormData();
+    formData.append("site", site);
+    formData.append("policyHandle", policyHandle);
+    formData.append("newVersionNumber", newVersionNumber);
+    formData.append("changeDescription", changeDescription);
+    formData.append("uploadedBy", uploadedBy);
+    if (file) formData.append("file", file);
+    const res = await api.post(`${BASE}/uploadNewVersion`, formData);
+    return res.data;
+  }
+
+  static async downloadPolicyFile(payload: DownloadPolicyFilePayload): Promise<Blob> {
+    const res = await api.post(`${BASE}/downloadPolicyFile`, payload, { responseType: "blob" });
+    return res.data as Blob;
+  }
+
+  // ── Acknowledgment ──
+
+  static async acknowledgePolicy(payload: AcknowledgePolicyPayload): Promise<AcknowledgmentRecord> {
+    const res = await api.post(`${BASE}/acknowledgePolicy`, payload);
+    return res.data;
+  }
+
+  static async waiveAcknowledgment(payload: WaiveAcknowledgmentPayload): Promise<AcknowledgmentRecord> {
+    const res = await api.post(`${BASE}/waiveAcknowledgment`, payload);
+    return res.data;
   }
 
   static async getAcknowledgmentReport(payload: GetAcknowledgmentReportPayload): Promise<AcknowledgmentReport> {
@@ -63,71 +156,41 @@ export class HrmPolicyService {
     return res.data;
   }
 
-  static async sendReminder(payload: SendReminderPayload): Promise<void> {
-    await api.post(`${BASE}/waiveAcknowledgment`, payload);
+  static async getEmployeeAcknowledgments(payload: GetEmployeeAcknowledgmentsPayload): Promise<AcknowledgmentRecord[]> {
+    const res = await api.post(`${BASE}/getEmployeeAcknowledgments`, payload);
+    return res.data ?? [];
   }
 
-  static async submitForReview(
-    site: string,
-    handle: string,
-    submittedBy: string
-  ): Promise<void> {
-    await api.post(`${BASE}/submitForReview`, { site, handle, submittedBy });
+  // ── Employee Self-Service ──
+
+  static async getMyPolicies(payload: GetMyPoliciesPayload): Promise<PolicyDocument[]> {
+    const res = await api.post(`${BASE}/getMyPolicies`, payload);
+    return res.data ?? [];
   }
 
-  static async approvePolicy(
-    site: string,
-    handle: string,
-    approvedBy: string,
-    comments?: string
-  ): Promise<void> {
-    await api.post(`${BASE}/approvePolicy`, { site, handle, approvedBy, comments });
-  }
-
-  static async retirePolicy(
-    site: string,
-    handle: string,
-    retiredBy: string,
-    reason: string
-  ): Promise<void> {
-    await api.post(`${BASE}/retirePolicy`, { site, handle, retiredBy, reason });
-  }
-
-  static async supersedePolicy(
-    site: string,
-    handle: string,
-    newHandle: string,
-    supersededBy: string
-  ): Promise<void> {
-    await api.post(`${BASE}/supersedePolicy`, { site, handle, newHandle, supersededBy });
-  }
-
-  static async deletePolicy(
-    site: string,
-    handle: string,
-    deletedBy: string
-  ): Promise<void> {
-    await api.post(`${BASE}/deletePolicy`, { site, handle, deletedBy });
-  }
-
-  static async getMyPolicies(
-    site: string,
-    employeeId: string
-  ): Promise<PolicyDocument[]> {
-    const res = await api.post(`${BASE}/getMyPolicies`, { site, employeeId });
+  static async getEmployeePolicyPortal(payload: GetEmployeePolicyPortalPayload): Promise<EmployeePolicyPortal> {
+    const res = await api.post(`${BASE}/getEmployeePolicyPortal`, payload);
     return res.data;
   }
 
-  static async getEmployeeAcknowledgments(
-    site: string,
-    policyHandle: string
-  ): Promise<AcknowledgmentRecord[]> {
-    const res = await api.post(`${BASE}/getEmployeeAcknowledgments`, { site, policyHandle });
-    return res.data;
+  // ── Categories ──
+
+  static async getCategories(site: string): Promise<PolicyCategory[]> {
+    const res = await api.post(`${BASE}/listCategories`, { site });
+    return res.data ?? [];
   }
 
   static async createCategory(payload: CreateCategoryPayload): Promise<PolicyCategory> {
     const res = await api.post(`${BASE}/createCategory`, payload);
     return res.data;
+  }
+
+  static async updateCategory(payload: UpdateCategoryPayload): Promise<PolicyCategory> {
+    const res = await api.post(`${BASE}/updateCategory`, payload);
+    return res.data;
+  }
+
+  static async deleteCategory(payload: DeleteCategoryPayload): Promise<void> {
+    await api.post(`${BASE}/deleteCategory`, payload);
   }
 }

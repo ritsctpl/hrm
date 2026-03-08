@@ -3,12 +3,7 @@
 import { useEffect } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
-import AddIcon from '@mui/icons-material/Add';
-import PublishIcon from '@mui/icons-material/Publish';
-import LockIcon from '@mui/icons-material/Lock';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import UploadIcon from '@mui/icons-material/Upload';
+import { PlusOutlined, SendOutlined, LockOutlined, UnlockOutlined, ApartmentOutlined, UploadOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
 import HolidayCalendarView from './components/organisms/HolidayCalendarView';
@@ -160,7 +155,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           {permissions.canEdit && (
             <Button
               size="small"
-              icon={<AddIcon style={{ fontSize: 15 }} />}
+              icon={<PlusOutlined />}
               onClick={() => openHolidayForm()}
               disabled={group.status === 'LOCKED'}
             >
@@ -171,7 +166,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
             <Button
               size="small"
               type="primary"
-              icon={<PublishIcon style={{ fontSize: 15 }} />}
+              icon={<SendOutlined />}
               onClick={openPublishModal}
             >
               Publish
@@ -180,7 +175,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           {permissions.canLock && group.status === 'PUBLISHED' && (
             <Button
               size="small"
-              icon={<LockIcon style={{ fontSize: 15 }} />}
+              icon={<LockOutlined />}
               onClick={openLockModal}
             >
               Lock
@@ -189,7 +184,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           {permissions.canUnlock && group.status === 'LOCKED' && (
             <Button
               size="small"
-              icon={<LockOpenIcon style={{ fontSize: 15 }} />}
+              icon={<UnlockOutlined />}
               onClick={openUnlockModal}
             >
               Unlock
@@ -198,7 +193,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           {permissions.canMapBu && (
             <Button
               size="small"
-              icon={<AccountTreeIcon style={{ fontSize: 15 }} />}
+              icon={<ApartmentOutlined />}
               onClick={openBuMapping}
             >
               Map BU
@@ -207,7 +202,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           {permissions.canImport && (
             <Button
               size="small"
-              icon={<UploadIcon style={{ fontSize: 15 }} />}
+              icon={<UploadOutlined />}
               onClick={openImport}
               disabled={group.status === 'LOCKED'}
             >
@@ -222,6 +217,8 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
         onChange={(key) => setActiveTab(key as 'list' | 'calendar' | 'audit')}
         items={tabItems}
         className={styles.detailTabs}
+        size="small"
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
       />
 
       <HolidayFormPanel

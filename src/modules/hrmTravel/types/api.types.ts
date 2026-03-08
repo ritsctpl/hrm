@@ -6,7 +6,7 @@ export interface SiteRequest {
 
 export interface TravelListRequest {
   site: string;
-  employeeId: string;
+  employeeId?: string;
   status?: TravelStatus;
   travelType?: TravelType;
   searchTerm?: string;
@@ -16,8 +16,8 @@ export interface TravelListRequest {
 
 export interface TravelApproverInboxRequest {
   site: string;
-  approverId: string;
-  inboxType: "PENDING" | "ESCALATED" | "DECIDED";
+  empId: string;
+  inboxType?: "PENDING" | "ESCALATED" | "DECIDED";
   travelType?: TravelType;
   fromDate?: string;
   toDate?: string;
@@ -25,54 +25,77 @@ export interface TravelApproverInboxRequest {
 }
 
 export interface GetTravelByHandleRequest {
-  site: string;
+  site?: string;
   handle: string;
 }
 
 export interface TravelRequestCreatePayload {
   site: string;
-  employeeId: string;
   travelType: TravelType;
   purpose: string;
   destinationCity: string;
   destinationState?: string;
   destinationCountry?: string;
   travelMode: TravelMode;
-  travelDate?: string;
+  startDate: string;
+  endDate?: string;
   startHour?: string;
   endHour?: string;
-  startDate?: string;
-  endDate?: string;
+  coTravellerEmpIds?: string[];
+  attachmentRefs?: string[];
   remarks?: string;
-  coTravellerIds: string[];
+  createdBy: string;
 }
 
-export interface TravelRequestUpdatePayload extends TravelRequestCreatePayload {
+export interface TravelRequestUpdatePayload {
   handle: string;
+  site: string;
+  travelType: TravelType;
+  purpose: string;
+  destinationCity: string;
+  destinationState?: string;
+  destinationCountry?: string;
+  travelMode: TravelMode;
+  startDate: string;
+  endDate?: string;
+  startHour?: string;
+  endHour?: string;
+  coTravellerEmpIds?: string[];
+  attachmentRefs?: string[];
+  remarks?: string;
+  createdBy: string;
 }
 
 export interface TravelSubmitRequest {
   site: string;
   handle: string;
+  submittedBy: string;
 }
 
 export interface TravelApprovalPayload {
   site: string;
-  handle: string;
-  approverId: string;
+  travelRequestHandle: string;
+  action: "APPROVE";
   remarks?: string;
+  actorEmpId: string;
+  actorName: string;
+  actorRole: string;
 }
 
 export interface TravelRejectPayload {
   site: string;
-  handle: string;
-  approverId: string;
+  travelRequestHandle: string;
+  action: "REJECT";
   remarks: string;
+  actorEmpId: string;
+  actorName: string;
+  actorRole: string;
 }
 
 export interface TravelCancelRequest {
-  site: string;
+  site?: string;
   handle: string;
+  cancelledBy: string;
   reason: string;
 }
 
@@ -84,8 +107,8 @@ export interface TravelRecallRequest {
 
 export interface CoTravellerSearchRequest {
   site: string;
-  supervisorId: string;
-  query: string;
+  empId: string;
+  query?: string;
 }
 
 export interface TravelPolicyUpdatePayload {
@@ -96,6 +119,43 @@ export interface TravelPolicyUpdatePayload {
   allowedFileTypes: string[];
   maxFileSizeMb: number;
   maxFileCount: number;
+}
+
+// ── Catalog ─────────────────────────────────────────────────────────
+
+export interface TravelCatalogSaveRequest {
+  site: string;
+  travelType: TravelType;
+  allowedModes: TravelMode[];
+  escalationWindowDays: number;
+  allowedFileTypes?: string[];
+  maxFileSizeMb?: number;
+  maxFileCount?: number;
+  createdBy: string;
+}
+
+export interface TravelCatalogGetRequest {
+  site: string;
+  travelType: TravelType;
+}
+
+export interface TravelCatalogModesRequest {
+  site: string;
+  travelType: TravelType;
+}
+
+// ── Reports ─────────────────────────────────────────────────────────
+
+export interface TravelReportByTypeDateRequest {
+  site: string;
+  fromDate: string;
+  toDate: string;
+  travelType?: TravelType;
+}
+
+export interface TravelReportPendingAgingRequest {
+  site: string;
+  empId: string;
 }
 
 // ── Travel Advance ──────────────────────────────────────────────────

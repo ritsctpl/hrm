@@ -42,7 +42,7 @@ interface HrmAnnouncementState {
   closeComposeDrawer: () => void;
   setFilterCategory: (category: string) => void;
   setFilterPriority: (priority: string) => void;
-  markAsRead: (announcementId: string) => void;
+  markAsRead: (handle: string) => void;
 }
 
 export const useHrmAnnouncementStore = create<HrmAnnouncementState>((set) => ({
@@ -83,11 +83,11 @@ export const useHrmAnnouncementStore = create<HrmAnnouncementState>((set) => ({
   closeComposeDrawer: () => set({ showComposeDrawer: false, editAnnouncement: null }),
   setFilterCategory: (filterCategory) => set({ filterCategory }),
   setFilterPriority: (filterPriority) => set({ filterPriority }),
-  markAsRead: (announcementId) =>
+  markAsRead: (handle) =>
     set((s) => ({
-      feed: s.feed.map((a) => (a.id === announcementId ? { ...a, isRead: true } : a)),
+      feed: s.feed.map((a) => (a.handle === handle ? { ...a, isRead: true } : a)),
       pinnedAnnouncements: s.pinnedAnnouncements.map((a) =>
-        a.id === announcementId ? { ...a, isRead: true } : a
+        a.handle === handle ? { ...a, isRead: true } : a
       ),
     })),
 }));

@@ -36,10 +36,11 @@ export const ADJUSTMENT_TYPES: { value: AdjustmentType; label: string }[] = [
 
 export const PAYROLL_STATUS_COLORS: Record<PayrollRunStatus, string> = {
   DRAFT: 'default',
-  VALIDATED: 'processing',
+  PROCESSING: 'processing',
+  COMPUTED: 'cyan',
   APPROVED: 'warning',
-  FINALIZED: 'success',
-  PUBLISHED: 'blue',
+  PAID: 'success',
+  LOCKED: 'blue',
 };
 
 export const ENTRY_STATUS_COLORS: Record<PayrollEntryStatus, string> = {
@@ -51,10 +52,11 @@ export const ENTRY_STATUS_COLORS: Record<PayrollEntryStatus, string> = {
 
 export const PIPELINE_STEPS: PayrollRunStatus[] = [
   'DRAFT',
-  'VALIDATED',
+  'PROCESSING',
+  'COMPUTED',
   'APPROVED',
-  'FINALIZED',
-  'PUBLISHED',
+  'PAID',
+  'LOCKED',
 ];
 
 export const INDIAN_STATES = [

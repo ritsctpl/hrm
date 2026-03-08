@@ -12,27 +12,21 @@ import type { BusinessUnit, Department, DepartmentNode } from '../types/domain.t
 export function useHrmOrganizationData() {
   const store = useHrmOrganizationStore();
 
-  // Initial data fetch
+  // Fetch business units when company profile loads and on BU tab
   useEffect(() => {
-    store.fetchCompanyProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Fetch business units when company profile loads
-  useEffect(() => {
-    if (store.companyProfile.data?.handle && store.activeMainTab === 'businessUnit') {
+    if (store.companyProfile.data?.handle && store.activeDetailTab === 'businessUnits') {
       store.fetchBusinessUnits();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.companyProfile.data?.handle, store.activeMainTab]);
+  }, [store.companyProfile.data?.handle, store.activeDetailTab]);
 
-  // Fetch departments when BU is selected
+  // Fetch departments when BU is selected and on departments tab
   useEffect(() => {
-    if (store.department.selectedBuHandle && store.activeMainTab === 'department') {
+    if (store.department.selectedBuHandle && store.activeDetailTab === 'departments') {
       store.fetchDepartments(store.department.selectedBuHandle);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.department.selectedBuHandle, store.activeMainTab]);
+  }, [store.department.selectedBuHandle, store.activeDetailTab]);
 
   // Filtered business units based on search
   const filteredBusinessUnits: BusinessUnit[] = useMemo(() => {

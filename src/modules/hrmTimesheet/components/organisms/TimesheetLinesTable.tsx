@@ -20,7 +20,7 @@ interface Props {
 }
 
 const ADD_TYPE_OPTIONS = [
-  { value: 'ALLOCATED', label: 'Allocated (Project)' },
+  { value: 'PROJECT', label: 'Project Work' },
   { value: 'UNPLANNED', label: 'Unplanned Work' },
   { value: 'HOLIDAY_WORKING', label: 'Holiday Working' },
 ];
@@ -41,9 +41,9 @@ export default function TimesheetLinesTable({
       lineId: uuidv4(),
       lineType,
       hours: HOURS_STEP,
-      isOverrun: false,
+      overrun: false,
     };
-    if (lineType === 'ALLOCATED' && allocations.length > 0) {
+    if (lineType === 'PROJECT' && allocations.length > 0) {
       const first = allocations[0];
       newLine.projectHandle = first.projectHandle;
       newLine.projectCode = first.projectCode;

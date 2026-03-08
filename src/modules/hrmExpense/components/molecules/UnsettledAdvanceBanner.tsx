@@ -17,12 +17,12 @@ const UnsettledAdvanceBanner: React.FC<Props> = ({ advance, onView }) => {
       type="warning"
       showIcon
       style={{ marginBottom: 12 }}
-      message={`You have an unsettled advance (${advance.reportId} — ${advance.currency} ${advance.totalClaimedAmount.toLocaleString()}).`}
+      message={`You have an unsettled advance (${advance.requestId} — ${advance.currency} ${advance.totalClaimedAmount.toLocaleString()}).`}
       description="You cannot raise a new advance until the existing one is settled."
       action={
         onView && (
           <Button size="small" onClick={() => onView(advance.handle)}>
-            View Advance {advance.reportId}
+            View Advance {advance.requestId}
           </Button>
         )
       }

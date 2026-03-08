@@ -1,43 +1,69 @@
 /**
  * HRM Organization Module - Domain Types
  * Core business entity interfaces for Company, Business Unit, and Department
+ * Aligned with backend API response shapes from docs/HRM/design-ui-v2/01-organization-setup-ui-api.md
  */
 
 export interface CompanyProfile {
   handle: string;
   site: string;
   legalName: string;
-  tradeName?: string;
-  industry: string;
-  incorporationDate: string;
+  companyName?: string;
+  registrationNumber?: string;
   logoUrl?: string;
+  logoFileName?: string;
+  logoContentType?: string;
+  logoFileSizeBytes?: number;
+  industryType?: string;
+  cin?: string;
   pan?: string;
   tan?: string;
-  cin?: string;
-  pfRegistrationNo?: string;
-  esiRegistrationNo?: string;
-  msmeRegistrationNo?: string;
-  ptRegistrationNo?: string;
-  lwfRegistrationNo?: string;
-  bankAccounts: BankAccount[];
-  registeredAddress: Address;
-  corporateAddress?: Address;
+  gstin?: string;
+  msmeUdyam?: string;
+  pfEstablishmentCode?: string;
+  esicCode?: string;
+  website?: string;
+  foundedDate?: string;
+  registeredOfficeAddress?: Address;
+  corporateOfficeAddress?: Address;
   officialEmail: string;
   officialPhone: string;
+  bankAccounts: BankAccount[];
+  financialYearStartMonth?: string;
+  financialYearEndMonth?: string;
   active: number;
   createdBy?: string;
   modifiedBy?: string;
   createdDateTime?: string;
   modifiedDateTime?: string;
+  /** @deprecated UI backward compat aliases */
+  tradeName?: string;
+  industry?: string;
+  incorporationDate?: string;
+  pfRegistrationNo?: string;
+  esiRegistrationNo?: string;
+  msmeRegistrationNo?: string;
+  ptRegistrationNo?: string;
+  lwfRegistrationNo?: string;
+  registeredAddress?: Address;
+  corporateAddress?: Address;
 }
 
 export interface BankAccount {
+  bankAccountHandle?: string;
   bankName: string;
-  branchName: string;
+  /** Backend field name */
+  branch: string;
+  /** UI alias for backward compat */
+  branchName?: string;
+  /** Backend field name */
+  ifsc: string;
+  /** UI alias for backward compat */
+  ifscCode?: string;
   accountNumber: string;
-  ifscCode: string;
   accountType: string;
   isPrimary: boolean;
+  primary?: boolean;
 }
 
 export interface Address {
@@ -45,7 +71,11 @@ export interface Address {
   line2?: string;
   city: string;
   state: string;
-  pinCode: string;
+  /** Backend field name */
+  pincode: string;
+  /** UI alias for backward compat */
+  pinCode?: string;
+  postalCode?: string;
   country: string;
 }
 
@@ -55,14 +85,18 @@ export interface BusinessUnit {
   companyHandle: string;
   buCode: string;
   buName: string;
-  buType: string;
+  description?: string;
+  headOfBu?: string;
+  status?: string;
   state: string;
-  city: string;
   address?: Address;
-  contactEmail?: string;
-  contactPhone?: string;
-  statutoryDetails?: Record<string, string>;
+  placeOfSupply?: string;
+  gstin?: string;
+  linkedBankAccountHandles?: string[];
+  primaryContact?: string;
+  statutoryRegistrationLinks?: Record<string, string>;
   active: number;
+  departmentCount?: number;
   createdBy?: string;
   modifiedBy?: string;
   createdDateTime?: string;
@@ -73,12 +107,16 @@ export interface Department {
   handle: string;
   site: string;
   buHandle: string;
+  buName?: string;
+  companyHandle?: string;
   deptCode: string;
   deptName: string;
   parentDeptHandle?: string;
-  headEmployeeHandle?: string;
-  headEmployeeName?: string;
+  parentDeptName?: string;
+  managerRoleCode?: string;
+  headOfDepartmentEmployeeId?: string;
   active: number;
+  children?: DepartmentNode[];
   createdBy?: string;
   modifiedBy?: string;
   createdDateTime?: string;
@@ -94,42 +132,54 @@ export interface Location {
   site: string;
   code: string;
   name: string;
+  type?: string;
   addressLine1: string;
   addressLine2: string | null;
   city: string;
   state: string;
   country: string;
-  pinZip: string;
+  /** Backend field name */
+  pincode: string;
+  /** UI alias for backward compat */
+  pinZip?: string;
   active: number;
   createdBy?: string;
   modifiedBy?: string;
+  createdAt?: string;
+  modifiedAt?: string;
+  /** Backward compat alias */
   createdDateTime?: string;
+  /** Backward compat alias */
   modifiedDateTime?: string;
 }
 
 export interface OrgHierarchy {
   company: CompanyProfile;
-  businessUnits: (BusinessUnit & { departments: DepartmentNode[] })[];
+  businessUnits: OrgHierarchyBuEntry[];
+}
+
+export interface OrgHierarchyBuEntry {
+  businessUnit: BusinessUnit;
+  departments: DepartmentNode[];
 }
 
 export interface OrgAuditLogEntry {
   handle: string;
+  site: string;
   entityType: string;
   entityHandle: string;
   action: string;
-  fieldKey: string | null;
-  oldValue: unknown;
-  newValue: unknown;
+  beforeValue: unknown;
+  afterValue: unknown;
   performedBy: string;
   performedAt: string;
+  remarks: string | null;
 }
 
 export interface DataCompletenessRow {
-  entityHandle: string;
-  entityCode: string;
   entityType: string;
-  requiredFields: number;
-  filledFields: number;
-  missingFields: number;
-  completenessPercent: number;
+  entityHandle: string;
+  entityName: string;
+  missingFields: string[];
+  completenessPercentage: number;
 }

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from 'antd';
-import SaveIcon from '@mui/icons-material/Save';
+import { SaveOutlined } from '@ant-design/icons';
 import type { OrgSaveButtonProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -15,7 +15,7 @@ const OrgSaveButton: React.FC<OrgSaveButtonProps> = ({
   return (
     <Button
       type="primary"
-      icon={<SaveIcon fontSize="small" />}
+      icon={<SaveOutlined />}
       loading={loading}
       disabled={disabled}
       onClick={onClick}

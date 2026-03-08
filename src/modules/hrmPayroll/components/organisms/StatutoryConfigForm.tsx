@@ -40,8 +40,11 @@ const StatutoryConfigForm: React.FC = () => {
   const handleSavePF = async () => {
     const vals = await pfForm.validateFields();
     await store.saveStatutoryConfig({
+      handle: store.pfConfig?.handle ?? '',
       site: '',
       configType: 'PF',
+      active: 1,
+      createdBy: '',
       ...vals,
     });
   };
@@ -49,8 +52,11 @@ const StatutoryConfigForm: React.FC = () => {
   const handleSaveESI = async () => {
     const vals = await esiForm.validateFields();
     await store.saveStatutoryConfig({
+      handle: store.esiConfig?.handle ?? '',
       site: '',
       configType: 'ESI',
+      active: 1,
+      createdBy: '',
       ...vals,
     });
   };

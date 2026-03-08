@@ -9,11 +9,13 @@ import styles from './styles/Compensation.module.css';
 const HrmCompensationLanding: React.FC = () => {
   const fetchPayComponents = useHrmCompensationStore((s) => s.fetchPayComponents);
   const fetchSalaryStructures = useHrmCompensationStore((s) => s.fetchSalaryStructures);
+  const fetchPendingApprovals = useHrmCompensationStore((s) => s.fetchPendingApprovals);
   const reset = useHrmCompensationStore((s) => s.reset);
 
   useEffect(() => {
     fetchPayComponents();
     fetchSalaryStructures();
+    fetchPendingApprovals();
     return () => {
       reset();
     };

@@ -2,6 +2,7 @@
  * HRM Employee Service
  * Static class handling all API communication for the Employee Master module.
  * All endpoints use POST. Site is obtained from cookies at the call-site (store).
+ * Aligned with backend API from docs/HRM/design-ui-v2/03-employee-master-ui-api.md
  */
 
 import api from '@services/api';
@@ -18,13 +19,12 @@ import type {
   BulkAssignManagerRequest,
   BulkChangeDepartmentRequest,
   BulkAssignBuRequest,
-  BulkOperationResponse,
   ExpiringAlertResponse,
   DirectReportResponse,
   AuditLogResponse,
   InitiateOnboardingRequest,
   UpdateOnboardingItemRequest,
-  DocumentSignedUrlResponse,
+  DocumentUploadMetadata,
 } from '../types/api.types';
 import type {
   EmployeeProfile,
@@ -39,6 +39,8 @@ import type {
   Dependent,
   VisaEntry,
   BankAccount,
+  Remuneration,
+  LeaveSummary,
 } from '../types/domain.types';
 
 export class HrmEmployeeService {
@@ -64,9 +66,10 @@ export class HrmEmployeeService {
   /** Fetch full employee profile */
   static async fetchProfile(
     site: string,
-    handle: string
+    handle: string,
+    requestingUserRole: string = 'HR'
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/profile`, { site, handle });
+    const response = await api.post(`${this.BASE}/profile`, { site, handle, requestingUserRole });
     return response.data;
   }
 
@@ -114,14 +117,18 @@ export class HrmEmployeeService {
   static async changeStatus(
     site: string,
     handle: string,
-    status: string,
-    modifiedBy: string
+    newStatus: string,
+    reason: string,
+    modifiedBy: string,
+    effectiveDate?: string
   ): Promise<void> {
     await api.post(`${this.BASE}/change-status`, {
       site,
       handle,
-      status,
+      newStatus,
+      reason,
       modifiedBy,
+      ...(effectiveDate ? { effectiveDate } : {}),
     });
   }
 
@@ -136,6 +143,7 @@ export class HrmEmployeeService {
       site,
       handle,
       skill,
+      addedBy: modifiedBy,
       modifiedBy,
     });
   }
@@ -186,31 +194,25 @@ export class HrmEmployeeService {
   static async addEducation(
     site: string,
     handle: string,
-    education: EducationEntry,
+    entry: EducationEntry,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/add`, {
       site,
       handle,
-      education,
+      entry,
       modifiedBy,
     });
   }
 
-  /** Upload employee document */
+  /** Upload employee document (multipart with metadata JSON part) */
   static async uploadDocument(
-    site: string,
-    handle: string,
-    file: File,
-    docType: string,
-    uploadedBy: string
+    metadata: DocumentUploadMetadata,
+    file: File
   ): Promise<EmployeeDocument> {
     const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     formData.append('file', file);
-    formData.append('site', site);
-    formData.append('handle', handle);
-    formData.append('docType', docType);
-    formData.append('uploadedBy', uploadedBy);
     const response = await api.post(`${this.BASE}/document/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -246,13 +248,17 @@ export class HrmEmployeeService {
     site: string,
     handle: string,
     newManagerHandle: string,
-    changedBy: string
+    modifiedBy: string,
+    effectiveDate?: string,
+    reason?: string
   ): Promise<void> {
     await api.post(`${this.BASE}/change-manager`, {
       site,
       handle,
       newManagerHandle,
-      changedBy,
+      modifiedBy,
+      ...(effectiveDate ? { effectiveDate } : {}),
+      ...(reason ? { reason } : {}),
     });
   }
 
@@ -260,21 +266,29 @@ export class HrmEmployeeService {
   static async deleteEmployee(
     site: string,
     handle: string,
-    deletedBy: string
+    deletedBy: string,
+    reason?: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/delete`, { site, handle, deletedBy });
+    await api.post(`${this.BASE}/delete`, {
+      site,
+      handle,
+      deletedBy,
+      ...(reason ? { reason } : {}),
+    });
   }
 
   /** Update a skill */
   static async updateSkill(
     site: string,
     handle: string,
+    skillId: string,
     skill: Skill,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/skill/update`, {
       site,
       handle,
+      skillId,
       skill,
       modifiedBy,
     });
@@ -285,14 +299,14 @@ export class HrmEmployeeService {
     site: string,
     handle: string,
     experience: PreviousExperience,
-    experienceId: string,
+    expId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/experience/update`, {
       site,
       handle,
       experience,
-      experienceId,
+      expId,
       modifiedBy,
     });
   }
@@ -301,13 +315,13 @@ export class HrmEmployeeService {
   static async removeExperience(
     site: string,
     handle: string,
-    experienceId: string,
+    expId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/experience/remove`, {
       site,
       handle,
-      experienceId,
+      expId,
       modifiedBy,
     });
   }
@@ -316,15 +330,15 @@ export class HrmEmployeeService {
   static async updateEducation(
     site: string,
     handle: string,
-    education: EducationEntry,
-    educationId: string,
+    entry: EducationEntry,
+    eduId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/update`, {
       site,
       handle,
-      education,
-      educationId,
+      entry,
+      eduId,
       modifiedBy,
     });
   }
@@ -333,13 +347,13 @@ export class HrmEmployeeService {
   static async removeEducation(
     site: string,
     handle: string,
-    educationId: string,
+    eduId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/remove`, {
       site,
       handle,
-      educationId,
+      eduId,
       modifiedBy,
     });
   }
@@ -348,13 +362,13 @@ export class HrmEmployeeService {
   static async addTraining(
     site: string,
     handle: string,
-    training: TrainingCert,
+    certification: TrainingCert,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/add`, {
       site,
       handle,
-      training,
+      certification,
       modifiedBy,
     });
   }
@@ -363,15 +377,15 @@ export class HrmEmployeeService {
   static async updateTraining(
     site: string,
     handle: string,
-    training: TrainingCert,
-    trainingId: string,
+    certification: TrainingCert,
+    trainId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/update`, {
       site,
       handle,
-      training,
-      trainingId,
+      certification,
+      trainId,
       modifiedBy,
     });
   }
@@ -380,13 +394,13 @@ export class HrmEmployeeService {
   static async removeTraining(
     site: string,
     handle: string,
-    trainingId: string,
+    trainId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/remove`, {
       site,
       handle,
-      trainingId,
+      trainId,
       modifiedBy,
     });
   }
@@ -395,20 +409,23 @@ export class HrmEmployeeService {
   static async getDocumentSignedUrl(
     site: string,
     handle: string,
-    docId: string
-  ): Promise<DocumentSignedUrlResponse> {
+    docId: string,
+    requestingUser?: string
+  ): Promise<string> {
     const response = await api.post(`${this.BASE}/document/signed-url`, {
       site,
       handle,
       docId,
+      ...(requestingUser ? { requestingUser } : {}),
     });
+    // Backend returns the signed URL string directly as data
     return response.data;
   }
 
   /** Bulk assign manager */
   static async bulkAssignManager(
     payload: BulkAssignManagerRequest
-  ): Promise<BulkOperationResponse> {
+  ): Promise<unknown> {
     const response = await api.post(`${this.BASE}/bulk-assign-manager`, payload);
     return response.data;
   }
@@ -416,7 +433,7 @@ export class HrmEmployeeService {
   /** Bulk change department */
   static async bulkChangeDepartment(
     payload: BulkChangeDepartmentRequest
-  ): Promise<BulkOperationResponse> {
+  ): Promise<unknown> {
     const response = await api.post(`${this.BASE}/bulk-change-department`, payload);
     return response.data;
   }
@@ -424,41 +441,53 @@ export class HrmEmployeeService {
   /** Bulk assign business unit */
   static async bulkAssignBu(
     payload: BulkAssignBuRequest
-  ): Promise<BulkOperationResponse> {
+  ): Promise<unknown> {
     const response = await api.post(`${this.BASE}/bulk-assign-bu`, payload);
     return response.data;
   }
 
   /** Get expiring documents alert */
   static async getExpiringDocuments(
-    site: string
+    site: string,
+    daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
-    const response = await api.post(`${this.BASE}/alerts/expiring-documents`, { site });
+    const response = await api.post(`${this.BASE}/alerts/expiring-documents`, {
+      site,
+      ...(daysAhead != null ? { daysAhead } : {}),
+    });
     return response.data;
   }
 
   /** Get expiring visas alert */
   static async getExpiringVisas(
-    site: string
+    site: string,
+    daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
-    const response = await api.post(`${this.BASE}/alerts/expiring-visas`, { site });
+    const response = await api.post(`${this.BASE}/alerts/expiring-visas`, {
+      site,
+      ...(daysAhead != null ? { daysAhead } : {}),
+    });
     return response.data;
   }
 
   /** Get expiring certifications alert */
   static async getExpiringCertifications(
-    site: string
+    site: string,
+    daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
-    const response = await api.post(`${this.BASE}/alerts/expiring-certifications`, { site });
+    const response = await api.post(`${this.BASE}/alerts/expiring-certifications`, {
+      site,
+      ...(daysAhead != null ? { daysAhead } : {}),
+    });
     return response.data;
   }
 
   /** Get direct reports for a manager */
   static async getDirectReports(
     site: string,
-    managerId: string
+    employeeId: string
   ): Promise<DirectReportResponse[]> {
-    const response = await api.post(`${this.BASE}/direct-reports`, { site, managerId });
+    const response = await api.post(`${this.BASE}/direct-reports`, { site, employeeId });
     return response.data;
   }
 
@@ -507,7 +536,7 @@ export class HrmEmployeeService {
     site: string,
     handle: string
   ): Promise<OnboardingChecklist> {
-    const response = await api.post(`${this.BASE}/onboarding/checklist`, { site, handle });
+    const response = await api.post(`${this.BASE}/onboarding/retrieve`, { site, handle });
     return response.data;
   }
 
@@ -515,8 +544,21 @@ export class HrmEmployeeService {
   static async updateOnboardingItem(
     payload: UpdateOnboardingItemRequest
   ): Promise<OnboardingChecklist> {
-    const response = await api.post(`${this.BASE}/onboarding/update-item`, payload);
+    const response = await api.post(`${this.BASE}/onboarding/updateItem`, payload);
     return response.data;
+  }
+
+  /** Complete onboarding */
+  static async completeOnboarding(
+    site: string,
+    handle: string,
+    completedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/onboarding/complete`, {
+      site,
+      handle,
+      completedBy,
+    });
   }
 
   /** Add dependent */
@@ -651,5 +693,142 @@ export class HrmEmployeeService {
   ): Promise<BulkImportResponse> {
     const response = await api.post(`${this.BASE}/bulk-import`, payload);
     return response.data;
+  }
+
+  /** Fetch remuneration details */
+  static async fetchRemuneration(
+    site: string,
+    handle: string,
+    requestingUserRole: string = 'HR'
+  ): Promise<Remuneration> {
+    const response = await api.post(`${this.BASE}/remuneration/retrieve`, {
+      site,
+      handle,
+      requestingUserRole,
+    });
+    return response.data;
+  }
+
+  /** Update remuneration */
+  static async updateRemuneration(
+    site: string,
+    handle: string,
+    remuneration: Remuneration,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/remuneration/update`, {
+      site,
+      handle,
+      remuneration,
+      modifiedBy,
+    });
+  }
+
+  /** Fetch leave summary */
+  static async fetchLeaveSummary(
+    site: string,
+    handle: string
+  ): Promise<LeaveSummary[]> {
+    const response = await api.post(`${this.BASE}/leave-summary`, { site, handle });
+    return response.data;
+  }
+
+  /** Export employees as CSV */
+  static async exportEmployees(
+    site: string,
+    filters?: { department?: string; status?: string }
+  ): Promise<Blob> {
+    const response = await api.post(
+      `${this.BASE}/export`,
+      { site, ...filters },
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  /** Initiate offboarding */
+  static async initiateOffboarding(
+    site: string,
+    handle: string,
+    exitDate: string,
+    reason: string,
+    initiatedBy: string
+  ): Promise<unknown> {
+    const response = await api.post(`${this.BASE}/offboarding/initiate`, {
+      site,
+      handle,
+      exitDate,
+      reason,
+      initiatedBy,
+    });
+    return response.data;
+  }
+
+  /** Retrieve offboarding status */
+  static async getOffboarding(
+    site: string,
+    handle: string
+  ): Promise<unknown> {
+    const response = await api.post(`${this.BASE}/offboarding/retrieve`, { site, handle });
+    return response.data;
+  }
+
+  /** Update offboarding clearance item */
+  static async updateClearance(
+    site: string,
+    handle: string,
+    itemId: string,
+    status: string,
+    updatedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/offboarding/updateClearance`, {
+      site,
+      handle,
+      itemId,
+      status,
+      updatedBy,
+    });
+  }
+
+  /** Complete offboarding */
+  static async completeOffboarding(
+    site: string,
+    handle: string,
+    completedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/offboarding/complete`, {
+      site,
+      handle,
+      completedBy,
+    });
+  }
+
+  /** Add job history entry */
+  static async addJobHistory(
+    site: string,
+    handle: string,
+    entry: JobHistoryEntry,
+    modifiedBy: string
+  ): Promise<void> {
+    await api.post(`${this.BASE}/job-history/add`, {
+      site,
+      handle,
+      entry,
+      modifiedBy,
+    });
+  }
+
+  /** Fetch field schemas */
+  static async fetchFieldSchemas(site: string): Promise<unknown[]> {
+    const response = await api.post('/hrm-service/schema/retrieve-all', { site });
+    return response.data;
+  }
+
+  /** Save field schema */
+  static async saveFieldSchema(
+    site: string,
+    schema: unknown
+  ): Promise<void> {
+    await api.post('/hrm-service/schema/save', { site, schema });
   }
 }

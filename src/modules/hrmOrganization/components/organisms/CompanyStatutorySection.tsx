@@ -7,16 +7,21 @@ import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { CompanyStatutorySectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const STATUTORY_FIELDS = [
+const STATUTORY_FIELDS: ReadonlyArray<{
+  key: string;
+  label: string;
+  placeholder: string;
+  maxLength?: number;
+}> = [
   { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10 },
   { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10 },
   { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21 },
-  { key: 'pfRegistrationNo', label: 'PF Registration No.', placeholder: 'Enter PF registration number' },
-  { key: 'esiRegistrationNo', label: 'ESI Registration No.', placeholder: 'Enter ESI registration number' },
-  { key: 'msmeRegistrationNo', label: 'MSME Registration No.', placeholder: 'Enter MSME registration number' },
-  { key: 'ptRegistrationNo', label: 'PT Registration No.', placeholder: 'Enter PT registration number' },
-  { key: 'lwfRegistrationNo', label: 'LWF Registration No.', placeholder: 'Enter LWF registration number' },
-] as const;
+  { key: 'gstin', label: 'GSTIN', placeholder: 'Enter GSTIN' },
+  { key: 'pfEstablishmentCode', label: 'PF Establishment Code', placeholder: 'Enter PF establishment code' },
+  { key: 'esicCode', label: 'ESIC Code', placeholder: 'Enter ESIC code' },
+  { key: 'msmeUdyam', label: 'MSME / Udyam No.', placeholder: 'Enter MSME / Udyam registration number' },
+  { key: 'registrationNumber', label: 'Registration No.', placeholder: 'Enter company registration number' },
+];
 
 const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
   disabled = false,

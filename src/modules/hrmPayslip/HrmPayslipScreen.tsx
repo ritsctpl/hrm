@@ -31,7 +31,7 @@ const HrmPayslipScreen: React.FC<HrmPayslipScreenProps> = ({
 
   return (
     <div className={styles.payslipScreen}>
-      <CommonAppBar appTitle="Payslip" showBack onBack={onBack} />
+      <CommonAppBar appTitle="Payslip" />
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 24px" }}>
         <Button
           icon={<DownloadOutlined />}

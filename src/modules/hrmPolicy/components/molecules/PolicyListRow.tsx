@@ -27,7 +27,7 @@ const PolicyListRow: React.FC<PolicyListRowProps> = ({
   >
     <Col flex="auto">
       <Space>
-        <PolicyTypeBadge docType={policy.docType} />
+        <PolicyTypeBadge docType={policy.documentType} />
         <Text strong>{policy.title}</Text>
         <Text type="secondary">v{policy.currentVersion}</Text>
         <PolicyStatusTag status={policy.status} />

@@ -13,6 +13,12 @@ import {
   PlusOutlined,
   UploadOutlined,
   ReloadOutlined,
+  TeamOutlined,
+  AlertOutlined,
+  DownloadOutlined,
+  AuditOutlined,
+  SettingOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons';
 import EmpSearchBar from '../molecules/EmpSearchBar';
 import EmpFilterBar from '../molecules/EmpFilterBar';
@@ -41,6 +47,12 @@ interface EmployeeDirectoryTemplateProps {
   onAddEmployee: () => void;
   onBulkImport: () => void;
   onRefresh: () => void;
+  onOffboarding?: () => void;
+  onBulkOps?: () => void;
+  onAlerts?: () => void;
+  onExport?: () => void;
+  onAuditLog?: () => void;
+  onFieldConfig?: () => void;
 }
 
 const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
@@ -62,6 +74,12 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
   onAddEmployee,
   onBulkImport,
   onRefresh,
+  onOffboarding,
+  onBulkOps,
+  onAlerts,
+  onExport,
+  onAuditLog,
+  onFieldConfig,
 }) => {
   const activeCount = useMemo(
     () => employees.filter((e) => e.status === 'ACTIVE').length,
@@ -88,6 +106,37 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
               Import
             </Button>
           </Tooltip>
+          {onBulkOps && (
+            <Tooltip title="Bulk Operations">
+              <Button icon={<TeamOutlined />} onClick={onBulkOps}>
+                Bulk Ops
+              </Button>
+            </Tooltip>
+          )}
+          {onAlerts && (
+            <Tooltip title="Alerts Dashboard">
+              <Button icon={<AlertOutlined />} onClick={onAlerts}>
+                Alerts
+              </Button>
+            </Tooltip>
+          )}
+          {onExport && (
+            <Tooltip title="Export Employees">
+              <Button icon={<DownloadOutlined />} onClick={onExport}>
+                Export
+              </Button>
+            </Tooltip>
+          )}
+          {onAuditLog && (
+            <Tooltip title="Audit Log">
+              <Button icon={<AuditOutlined />} onClick={onAuditLog} />
+            </Tooltip>
+          )}
+          {onFieldConfig && (
+            <Tooltip title="Field Schema Config">
+              <Button icon={<SettingOutlined />} onClick={onFieldConfig} />
+            </Tooltip>
+          )}
           <Button type="primary" icon={<PlusOutlined />} onClick={onAddEmployee}>
             Add Employee
           </Button>

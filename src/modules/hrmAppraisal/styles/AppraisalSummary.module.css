@@ -1,14 +1,12 @@
 .summaryRoot {
   padding: 16px;
-  max-width: 900px;
-  margin: 0 auto;
 }
 
 .scoreCard {
   background: linear-gradient(135deg, #f0f5ff 0%, #e6f4ff 100%);
   border: 1px solid #91caff;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   margin-bottom: 16px;
 }
 

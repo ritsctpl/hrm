@@ -73,10 +73,10 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         />
       </OrgFormField>
 
-      <OrgFormField label="PIN Code" required error={errors[`${prefix}.pinCode`]}>
+      <OrgFormField label="PIN Code" required error={errors[`${prefix}.pincode`] || errors[`${prefix}.pinCode`]}>
         <Input
-          value={address.pinCode || ''}
-          onChange={(e) => handleChange('pinCode', e.target.value)}
+          value={address.pincode || address.pinCode || ''}
+          onChange={(e) => handleChange('pincode', e.target.value)}
           placeholder="Enter PIN code"
           maxLength={6}
           disabled={disabled}

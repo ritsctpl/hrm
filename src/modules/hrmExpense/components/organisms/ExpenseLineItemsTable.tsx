@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
-import type { ExpenseLineItem, ExpenseCategory } from "../../types/domain.types";
+import type { ExpenseItem, ExpenseCategory } from "../../types/domain.types";
 import ReceiptThumbnail from "../molecules/ReceiptThumbnail";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
@@ -14,21 +14,21 @@ import dayjs from "dayjs";
 const { Text } = Typography;
 
 interface Props {
-  lineItems: ExpenseLineItem[];
+  lineItems: ExpenseItem[];
   categories: ExpenseCategory[];
   readonly?: boolean;
   outOfPolicy?: boolean;
   justification?: string;
   onJustificationChange?: (val: string) => void;
-  onAddItem?: (item: Omit<ExpenseLineItem, "lineItemId" | "amountInr">) => void;
-  onRemoveItem?: (lineItemId: string) => void;
+  onAddItem?: (item: Partial<ExpenseItem>) => void;
+  onRemoveItem?: (handle: string) => void;
 }
 
 const dateFormat = "DD/MM/YYYY";
 
 interface NewItemRow {
   expenseDate: string | null;
-  categoryCode: string | null;
+  categoryId: string | null;
   description: string;
   amount: number | null;
   currency: string;
@@ -36,7 +36,7 @@ interface NewItemRow {
 
 const defaultNewRow: NewItemRow = {
   expenseDate: null,
-  categoryCode: null,
+  categoryId: null,
   description: "",
   amount: null,
   currency: "INR",
@@ -57,7 +57,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
 
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
 
-  const columns: ColumnsType<ExpenseLineItem> = [
+  const columns: ColumnsType<ExpenseItem> = [
     {
       title: "Date",
       dataIndex: "expenseDate",
@@ -68,6 +68,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       title: "Category",
       dataIndex: "categoryName",
       width: 120,
+      render: (v, r) => v ?? r.categoryId,
     },
     {
       title: "Description",
@@ -89,32 +90,31 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       title: "Receipt",
       key: "receipt",
       width: 80,
-      render: (_, r) => <ReceiptThumbnail attachmentId={r.receiptAttachmentId} fileName={r.categoryName} />,
+      render: (_, r) => <ReceiptThumbnail attachmentId={r.attachmentRef} fileName={r.categoryName} />,
     },
     !readonly && {
       title: "",
       key: "action",
       width: 40,
       render: (_, r) => (
-        <Popconfirm title="Remove item?" onConfirm={() => onRemoveItem?.(r.lineItemId)}>
+        <Popconfirm title="Remove item?" onConfirm={() => onRemoveItem?.(r.handle)}>
           <Button type="text" danger size="small" icon={<DeleteOutlined />} />
         </Popconfirm>
       ),
     },
-  ].filter(Boolean) as ColumnsType<ExpenseLineItem>;
+  ].filter(Boolean) as ColumnsType<ExpenseItem>;
 
   const handleAddRow = () => {
-    if (!newRow.expenseDate || !newRow.categoryCode || !newRow.amount) return;
-    const category = categories.find((c) => c.code === newRow.categoryCode);
+    if (!newRow.expenseDate || !newRow.categoryId || !newRow.amount) return;
+    const category = categories.find((c) => c.categoryCode === newRow.categoryId);
     onAddItem?.({
       expenseDate: newRow.expenseDate,
-      categoryCode: newRow.categoryCode,
-      categoryName: category?.name ?? newRow.categoryCode,
+      categoryId: newRow.categoryId,
+      categoryName: category?.categoryName ?? newRow.categoryId,
       description: newRow.description,
       amount: newRow.amount,
       currency: newRow.currency,
-      outOfPolicy: category?.dailyLimitInr != null && newRow.amount > category.dailyLimitInr,
-      policyLimit: category?.dailyLimitInr,
+      outOfPolicy: category?.dailyLimit != null && newRow.amount > category.dailyLimit,
     });
     setNewRow({ ...defaultNewRow });
     setAdding(false);
@@ -130,7 +130,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       />
 
       <Table
-        rowKey="lineItemId"
+        rowKey="handle"
         columns={columns}
         dataSource={lineItems}
         size="small"
@@ -157,8 +157,8 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
                 <Select
                   placeholder="Category"
                   style={{ width: 140 }}
-                  options={categories.map((c) => ({ value: c.code, label: c.name }))}
-                  onChange={(v) => setNewRow((p) => ({ ...p, categoryCode: v }))}
+                  options={categories.map((c) => ({ value: c.categoryCode, label: c.categoryName }))}
+                  onChange={(v) => setNewRow((p) => ({ ...p, categoryId: v }))}
                 />
                 <Input
                   placeholder="Description"

@@ -83,7 +83,7 @@ export function useHrmTimesheetUI() {
         weekStartDate: store.selectedWeekStart,
         submittedBy: employeeId,
       });
-      message.success(`Week submitted: ${result.submitted} days`);
+      message.success(`Week submitted: ${result.submittedDays} of ${result.totalDays} days`);
       await loadWeeklyTimesheets();
     } catch (err) {
       message.error('Failed to submit week');
@@ -108,6 +108,51 @@ export function useHrmTimesheetUI() {
       store.setSelectedTimesheetHandle(null);
     } catch (err) {
       message.error('Failed to process approval');
+      console.error(err);
+    } finally {
+      store.setApprovingTimesheet(false);
+    }
+  }, [site, employeeId, loadPendingApprovals]);
+
+  const bulkApproveTimesheets = useCallback(async (handles: string[], action: 'APPROVED' | 'REJECTED', remarks: string) => {
+    if (handles.length === 0) {
+      message.warning('No timesheets selected');
+      return;
+    }
+    store.setApprovingTimesheet(true);
+    try {
+      const result = await HrmTimesheetService.bulkApproveOrReject({
+        site,
+        timesheetHandles: handles,
+        action,
+        remarks,
+        approverEmployeeId: employeeId,
+      });
+      message.success(`Bulk ${action.toLowerCase()}: ${result.successful ?? 0} processed, ${result.failed ?? 0} failed`);
+      await loadPendingApprovals();
+      store.setSelectedTimesheetHandle(null);
+    } catch (err) {
+      message.error('Failed to process bulk approval');
+      console.error(err);
+    } finally {
+      store.setApprovingTimesheet(false);
+    }
+  }, [site, employeeId, loadPendingApprovals]);
+
+  const reopenTimesheet = useCallback(async (handle: string, reason: string) => {
+    store.setApprovingTimesheet(true);
+    try {
+      await HrmTimesheetService.reopenTimesheet({
+        site,
+        timesheetHandle: handle,
+        reopenedBy: employeeId,
+        reason,
+      });
+      message.success('Timesheet reopened');
+      await loadPendingApprovals();
+      store.setSelectedTimesheetHandle(null);
+    } catch (err) {
+      message.error('Failed to reopen timesheet');
       console.error(err);
     } finally {
       store.setApprovingTimesheet(false);
@@ -140,15 +185,15 @@ export function useHrmTimesheetUI() {
           reason: l.reason,
           notes: l.notes,
           allocatedHoursForDay: l.allocatedHoursForDay,
-          isOverrun: l.isOverrun,
+          overrun: l.overrun,
         })),
         totalHours: data.totalHours,
         colorCode: data.colorCode,
         status: data.status,
         notes: data.notes,
         version: data.version,
-        isHoliday: data.isHoliday,
-        isLeaveDay: data.isLeaveDay,
+        holiday: data.holiday,
+        leaveDay: data.leaveDay,
         leaveType: data.leaveType,
         active: data.active,
         createdDateTime: data.createdDateTime,
@@ -167,6 +212,8 @@ export function useHrmTimesheetUI() {
     submitTimesheet,
     submitWeek,
     approveTimesheet,
+    bulkApproveTimesheets,
+    reopenTimesheet,
     copyFromPreviousDay,
   };
 }

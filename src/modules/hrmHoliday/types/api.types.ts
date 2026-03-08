@@ -17,6 +17,7 @@ export interface HolidayApiResponse<T> {
 
 export interface CreateHolidayGroupRequest {
   site: string;
+  groupCode?: string;
   groupName: string;
   year: number;
   description?: string;
@@ -188,6 +189,7 @@ export interface DuplicateGroupRequest {
 
 export interface MyCalendarRequest {
   site: string;
+  employeeId?: string;
   buHandle: string;
   deptHandle?: string;
   year: number;

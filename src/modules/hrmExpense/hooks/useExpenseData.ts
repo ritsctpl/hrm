@@ -26,7 +26,6 @@ export function useExpenseData() {
     typeFilter,
     searchTerm,
     dateRange,
-    activeInboxTab,
   } = useHrmExpenseStore();
 
   const loadMyExpenses = useCallback(async () => {
@@ -56,9 +55,7 @@ export function useExpenseData() {
     try {
       const data = await HrmExpenseService.getSupervisorInbox({
         site,
-        approverId: employeeId,
-        role: "SUPERVISOR",
-        inboxType: activeInboxTab === "pending" ? "PENDING" : activeInboxTab === "escalated" ? "ESCALATED" : "DECIDED",
+        empId: employeeId,
       });
       setSupervisorInbox(data);
     } catch {
@@ -66,29 +63,24 @@ export function useExpenseData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [site, employeeId, activeInboxTab]);
+  }, [site, employeeId]);
 
   const loadFinanceInbox = useCallback(async () => {
     setInboxLoading(true);
     try {
-      const data = await HrmExpenseService.getFinanceInbox({
-        site,
-        approverId: employeeId,
-        role: "FINANCE",
-        inboxType: activeInboxTab === "pending" ? "PENDING" : activeInboxTab === "escalated" ? "ESCALATED" : "DECIDED",
-      });
+      const data = await HrmExpenseService.getFinanceInbox({ site });
       setFinanceInbox(data);
     } catch {
       message.error("Failed to load finance inbox.");
     } finally {
       setInboxLoading(false);
     }
-  }, [site, employeeId, activeInboxTab]);
+  }, [site]);
 
   const loadExpenseDetail = useCallback(async (handle: string) => {
     setDetailLoading(true);
     try {
-      const data = await HrmExpenseService.getExpenseByHandle({ site, handle });
+      const data = await HrmExpenseService.getExpenseByHandle({ handle });
       setSelectedExpense(data);
     } catch {
       message.error("Failed to load expense details.");
@@ -115,6 +107,35 @@ export function useExpenseData() {
     }
   }, [site]);
 
+  const exportExpenses = useCallback(async () => {
+    try {
+      const blob = await HrmExpenseService.exportExpenses({
+        site,
+        startDate: dateRange?.[0] ?? "",
+        endDate: dateRange?.[1] ?? "",
+        status: statusFilter || undefined,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expense-reports-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      message.success("Export downloaded.");
+    } catch {
+      message.error("Failed to export expense reports.");
+    }
+  }, [site, statusFilter, dateRange]);
+
+  const loadUnsettledAdvances = useCallback(async () => {
+    try {
+      const data = await HrmExpenseService.getUnsettledAdvances({ site, empId: employeeId });
+      return data;
+    } catch {
+      return [];
+    }
+  }, [site, employeeId]);
+
   return {
     loadMyExpenses,
     loadSupervisorInbox,
@@ -122,5 +143,7 @@ export function useExpenseData() {
     loadExpenseDetail,
     loadCategories,
     loadMileageConfig,
+    exportExpenses,
+    loadUnsettledAdvances,
   };
 }

@@ -1,6 +1,6 @@
 /* ===== Root / Layout ===== */
 .dashboardRoot {
-  min-height: 100vh;
+  height: 100vh;
   background: #f0f2f5;
   display: flex;
   flex-direction: column;
@@ -8,10 +8,8 @@
 
 .dashboardContent {
   flex: 1;
-  padding: 16px 20px 32px;
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
+  padding: 16px;
+  overflow: auto;
 }
 
 .widgetGrid {

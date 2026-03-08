@@ -1,6 +1,9 @@
 import { create } from "zustand";
-import {
+import type {
   DashboardRole,
+  DashboardWidget,
+  DashboardAlert,
+  DashboardLayoutResponse,
   EmployeeProfile,
   LeaveBalance,
   PendingRequest,
@@ -29,7 +32,12 @@ interface HrmDashboardState {
   widgetLayout: WidgetLayout[];
   showCustomizeDrawer: boolean;
 
-  // Employee data
+  // Backend response data (new — matching actual API response)
+  dashboardWidgets: DashboardWidget[];
+  dashboardAlerts: DashboardAlert[];
+  dashboardLayoutResponse: DashboardLayoutResponse | null;
+
+  // Legacy widget-specific data (kept for backward compat with existing components)
   employeeProfile: EmployeeProfile | null;
   leaveBalances: LeaveBalance[];
   pendingRequests: PendingRequest[];
@@ -38,21 +46,15 @@ interface HrmDashboardState {
   goalsOverall: number;
   upcomingHolidays: HolidayItem[];
   announcementAlerts: AnnouncementAlert[];
-
-  // Manager data
   teamOverviewStats: TeamOverviewStats | null;
   teamMembers: TeamMember[];
   pendingApprovals: ApprovalCount[];
-
-  // HR data
   hrKpis: KpiData[];
   headcountTrend: HeadcountTrendData[];
   deptDistribution: DeptDistributionItem[];
   attritionData: AttritionData | null;
   leaveUtilization: LeaveUtilizationItem[];
   hrAlerts: HrAlert[];
-
-  // Admin data
   systemHealth: SystemHealthData | null;
   moduleUsage: ModuleUsageItem[];
   auditActivity: AuditActivityItem[];
@@ -71,7 +73,12 @@ interface HrmDashboardState {
   loadingHrData: boolean;
   loadingAdminData: boolean;
 
-  // Actions
+  // Actions — new
+  setDashboardWidgets: (widgets: DashboardWidget[]) => void;
+  setDashboardAlerts: (alerts: DashboardAlert[]) => void;
+  setDashboardLayout: (layout: DashboardLayoutResponse) => void;
+
+  // Actions — existing
   setDashboardRole: (role: DashboardRole) => void;
   setActiveWidgets: (widgets: string[]) => void;
   setWidgetLayout: (layout: WidgetLayout[]) => void;
@@ -114,6 +121,11 @@ export const useHrmDashboardStore = create<HrmDashboardState>((set) => ({
   activeWidgets: [],
   widgetLayout: [],
   showCustomizeDrawer: false,
+
+  dashboardWidgets: [],
+  dashboardAlerts: [],
+  dashboardLayoutResponse: null,
+
   employeeProfile: null,
   leaveBalances: [],
   pendingRequests: [],
@@ -147,6 +159,12 @@ export const useHrmDashboardStore = create<HrmDashboardState>((set) => ({
   loadingHrData: false,
   loadingAdminData: false,
 
+  // New setters
+  setDashboardWidgets: (dashboardWidgets) => set({ dashboardWidgets }),
+  setDashboardAlerts: (dashboardAlerts) => set({ dashboardAlerts }),
+  setDashboardLayout: (dashboardLayoutResponse) => set({ dashboardLayoutResponse }),
+
+  // Existing setters
   setDashboardRole: (dashboardRole) => set({ dashboardRole }),
   setActiveWidgets: (activeWidgets) => set({ activeWidgets }),
   setWidgetLayout: (widgetLayout) => set({ widgetLayout }),

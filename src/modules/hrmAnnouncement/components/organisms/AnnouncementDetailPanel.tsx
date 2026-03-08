@@ -26,7 +26,7 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
     width={520}
     extra={
       !announcement.isRead && onMarkRead ? (
-        <Button size="small" onClick={() => onMarkRead(announcement.id)}>
+        <Button size="small" onClick={() => onMarkRead(announcement.handle)}>
           Mark as Read
         </Button>
       ) : null
@@ -36,7 +36,7 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
       <Space wrap>
         <AnnouncementPriorityTag priority={announcement.priority} />
         <AnnouncementCategoryBadge category={announcement.category} />
-        {announcement.isPinned && <Tag color="gold">Pinned</Tag>}
+        {announcement.pinToTop && <Tag color="gold">Pinned</Tag>}
       </Space>
       <Title level={4} style={{ margin: 0 }}>
         {announcement.title}
@@ -45,8 +45,8 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
         <Text type="secondary">
           {announcement.publishedAt ? dayjs(announcement.publishedAt).fromNow() : ""}
         </Text>
-        {announcement.publishedBy && (
-          <Text type="secondary">By: {announcement.publishedBy}</Text>
+        {announcement.announcementId && (
+          <Text type="secondary">{announcement.announcementId}</Text>
         )}
       </Space>
       <Divider style={{ margin: "8px 0" }} />

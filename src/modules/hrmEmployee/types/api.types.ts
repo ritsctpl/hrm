@@ -1,6 +1,7 @@
 /**
  * HRM Employee API Types
  * Request/Response types for the Employee Master module API layer
+ * Aligned with backend API from docs/HRM/design-ui-v2/03-employee-master-ui-api.md
  */
 
 import type {
@@ -8,7 +9,6 @@ import type {
   Skill,
   PreviousExperience,
   EducationEntry,
-  Address,
   EmergencyContact,
   Gender,
   MaritalStatus,
@@ -20,61 +20,73 @@ export interface EmployeeSearchRequest {
   site: string;
   keyword?: string;
   department?: string;
+  role?: string;
+  location?: string;
   status?: EmployeeStatus | null;
   businessUnit?: string;
   page?: number;
-  pageSize?: number;
+  size?: number;
+  sortBy?: string;
+  sortDirection?: 'ASC' | 'DESC';
 }
 
-/** Directory search response */
+/** Directory search response (backend returns totalCount/totalPages/page/size) */
 export interface EmployeeDirectoryResponse {
   employees: EmployeeDirectoryRow[];
   totalCount: number;
+  totalPages: number;
   page: number;
-  pageSize: number;
+  size: number;
 }
 
 export interface EmployeeDirectoryRow {
   handle: string;
   employeeCode: string;
   fullName: string;
-  department: string;
-  designation: string;
-  status: EmployeeStatus;
-  photoUrl?: string;
   workEmail: string;
-  joiningDate?: string;
   phone?: string;
+  photoUrl?: string;
+  status: EmployeeStatus;
+  department: string;
+  role: string;
+  location?: string;
+  businessUnits?: string[];
+  reportingManager?: string;
+  reportingManagerName?: string;
 }
 
 /** Create employee (onboarding) */
 export interface CreateEmployeeRequest {
   site: string;
+  employeeCode?: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   workEmail: string;
   phone: string;
   title: string;
   department: string;
-  designation: string;
+  role?: string;
+  location?: string;
   businessUnits: string[];
-  joiningDate: string;
   reportingManager?: string;
-  presentAddress?: Address;
-  permanentAddress?: Address;
-  emergencyContacts?: EmergencyContact[];
+  nickName?: string;
   createdBy: string;
+  /** @deprecated UI backward compat - mapped to 'role' by buildCreateRequest */
+  designation?: string;
+  /** @deprecated UI backward compat - not sent to API */
+  joiningDate?: string;
+  presentAddress?: string;
+  permanentAddress?: string;
+  emergencyContacts?: import('./domain.types').EmergencyContact[];
 }
 
 /** Update basic details */
 export interface UpdateBasicRequest {
   site: string;
   handle: string;
-  fullName: string;
-  workEmail: string;
-  phone: string;
-  photoUrl?: string;
-  status: string;
+  fullName?: string;
+  phone?: string;
   modifiedBy: string;
 }
 
@@ -84,12 +96,13 @@ export interface UpdateOfficialRequest {
   handle: string;
   firstName: string;
   lastName: string;
+  nickName?: string;
   title: string;
   department: string;
-  designation: string;
+  role?: string;
   reportingManager?: string;
+  location?: string;
   businessUnits: string[];
-  joiningDate: string;
   modifiedBy: string;
 }
 
@@ -101,7 +114,7 @@ export interface UpdatePersonalRequest {
   gender?: Gender;
   maritalStatus?: MaritalStatus;
   bloodGroup?: BloodGroup;
-  governmentIds?: Record<string, string>;
+  nationality?: string;
   modifiedBy: string;
 }
 
@@ -109,8 +122,12 @@ export interface UpdatePersonalRequest {
 export interface UpdateContactRequest {
   site: string;
   handle: string;
-  presentAddress?: Address;
-  permanentAddress?: Address;
+  presentAddress?: string;
+  permanentAddress?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pinZip?: string;
   emergencyContacts?: EmergencyContact[];
   modifiedBy: string;
 }
@@ -121,6 +138,7 @@ export interface SkillOperationRequest {
   handle: string;
   skill?: Skill;
   skillId?: string;
+  addedBy?: string;
   modifiedBy: string;
 }
 
@@ -129,6 +147,7 @@ export interface ExperienceOperationRequest {
   site: string;
   handle: string;
   experience: PreviousExperience;
+  expId?: string;
   modifiedBy: string;
 }
 
@@ -136,8 +155,29 @@ export interface ExperienceOperationRequest {
 export interface EducationOperationRequest {
   site: string;
   handle: string;
-  education: EducationEntry;
+  entry: EducationEntry;
+  eduId?: string;
   modifiedBy: string;
+}
+
+/** Training operation request */
+export interface TrainingOperationRequest {
+  site: string;
+  handle: string;
+  certification: import('./domain.types').TrainingCert;
+  trainId?: string;
+  modifiedBy: string;
+}
+
+/** Document upload metadata */
+export interface DocumentUploadMetadata {
+  site: string;
+  employeeHandle: string;
+  documentType: string;
+  documentName: string;
+  expiryDate?: string;
+  tags?: string[];
+  uploadedBy: string;
 }
 
 /** Document delete request */
@@ -148,32 +188,13 @@ export interface DocumentDeleteRequest {
   deletedBy: string;
 }
 
-/** Bulk import */
-export interface BulkImportRequest {
-  site: string;
-  employees: CreateEmployeeRequest[];
-  importedBy: string;
-}
-
-export interface BulkImportResponse {
-  totalProcessed: number;
-  successCount: number;
-  failureCount: number;
-  errors: BulkImportError[];
-}
-
-export interface BulkImportError {
-  rowIndex: number;
-  employeeName: string;
-  errorMessage: string;
-}
-
-/** Training operation request */
-export interface TrainingOperationRequest {
+/** Change status request */
+export interface ChangeStatusRequest {
   site: string;
   handle: string;
-  training: import('./domain.types').TrainingCert;
-  trainingId?: string;
+  newStatus: EmployeeStatus;
+  reason: string;
+  effectiveDate?: string;
   modifiedBy: string;
 }
 
@@ -182,7 +203,9 @@ export interface ChangeManagerRequest {
   site: string;
   handle: string;
   newManagerHandle: string;
-  changedBy: string;
+  effectiveDate?: string;
+  reason?: string;
+  modifiedBy: string;
 }
 
 /** Delete employee request */
@@ -190,12 +213,38 @@ export interface DeleteEmployeeRequest {
   site: string;
   handle: string;
   deletedBy: string;
+  reason?: string;
+}
+
+/** Bulk import */
+export interface BulkImportRequest {
+  site: string;
+  employees: CreateEmployeeRequest[];
+  dryRun?: boolean;
+  importedBy: string;
+}
+
+export interface BulkImportResponse {
+  totalRows: number;
+  successCount: number;
+  failureCount: number;
+  committed?: boolean;
+  errors: BulkImportError[];
+  importJobId?: string;
+}
+
+export interface BulkImportError {
+  rowIndex: number;
+  field?: string;
+  message?: string;
+  employeeName?: string;
+  errorMessage?: string;
 }
 
 /** Bulk assign manager request */
 export interface BulkAssignManagerRequest {
   site: string;
-  employeeHandles: string[];
+  handles: string[];
   managerHandle: string;
   modifiedBy: string;
 }
@@ -203,7 +252,7 @@ export interface BulkAssignManagerRequest {
 /** Bulk change department request */
 export interface BulkChangeDepartmentRequest {
   site: string;
-  employeeHandles: string[];
+  handles: string[];
   department: string;
   modifiedBy: string;
 }
@@ -211,17 +260,19 @@ export interface BulkChangeDepartmentRequest {
 /** Bulk assign BU request */
 export interface BulkAssignBuRequest {
   site: string;
-  employeeHandles: string[];
-  businessUnit: string;
+  handles: string[];
+  buHandle: string;
   modifiedBy: string;
 }
 
 /** Bulk operation response */
 export interface BulkOperationResponse {
-  totalProcessed: number;
-  successCount: number;
-  failureCount: number;
-  errors: BulkImportError[];
+  totalProcessed?: number;
+  successCount?: number;
+  failureCount?: number;
+  errors?: BulkImportError[];
+  // The API actually returns an array of updated employee summaries directly
+  [key: string]: unknown;
 }
 
 /** Alert response for expiring items */
@@ -239,11 +290,16 @@ export interface DirectReportResponse {
   handle: string;
   employeeCode: string;
   fullName: string;
-  department: string;
-  designation: string;
-  status: EmployeeStatus;
-  photoUrl?: string;
   workEmail: string;
+  phone?: string;
+  photoUrl?: string;
+  status: EmployeeStatus;
+  department: string;
+  role?: string;
+  location?: string;
+  businessUnits?: string[];
+  reportingManager?: string;
+  reportingManagerName?: string;
 }
 
 /** Audit log paginated response */
@@ -300,7 +356,7 @@ export interface BankAccountOperationRequest {
 /** Document signed URL response */
 export interface DocumentSignedUrlResponse {
   url: string;
-  expiresAt: string;
+  expiresAt?: string;
 }
 
 /** Department / BU lookup */

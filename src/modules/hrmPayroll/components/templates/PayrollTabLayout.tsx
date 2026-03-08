@@ -40,8 +40,8 @@ const PayrollTabLayout: React.FC<PayrollTabLayoutProps> = ({
       activeKey={activeTab}
       onChange={(k) => onTabChange(k as PayrollTabKey)}
       items={items}
-      type="card"
-      size="middle"
+      size="small"
+      tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
       destroyOnHidden={false}
     />
   );

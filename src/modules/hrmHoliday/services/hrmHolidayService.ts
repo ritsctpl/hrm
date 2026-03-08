@@ -249,12 +249,35 @@ export class HrmHolidayService {
     return data;
   }
 
+  static async deleteCategory(
+    payload: CategoryDeactivateRequest
+  ): Promise<HolidayApiResponse<string>> {
+    const { data } = await api.post(`${this.BASE}/holiday-category/delete`, payload);
+    return data;
+  }
+
+  // ── Integration (used by Leave module) ────────────────────────────────
+
+  static async getPublishedHolidaysForBu(
+    payload: { site: string; buHandle: string; year: number }
+  ): Promise<HolidayApiResponse<HolidayResponse[]>> {
+    const { data } = await api.post(`${this.BASE}/holiday/integration/published-for-bu`, payload);
+    return data;
+  }
+
+  static async getCompensatoryHolidaysForBu(
+    payload: { site: string; buHandle: string; year: number }
+  ): Promise<HolidayApiResponse<HolidayResponse[]>> {
+    const { data } = await api.post(`${this.BASE}/holiday/integration/compensatory-for-bu`, payload);
+    return data;
+  }
+
   // ── Statistics ───────────────────────────────────────────────────────
 
   static async getStatistics(
     payload: HolidayGroupStatsRequest
   ): Promise<HolidayApiResponse<HolidayStatsResponse>> {
-    const { data } = await api.post(`${this.BASE}/holiday-group/statistics`, payload);
+    const { data } = await api.post(`${this.BASE}/holiday/statistics`, payload);
     return data;
   }
 
@@ -263,7 +286,7 @@ export class HrmHolidayService {
   static async getGroupAuditLog(
     payload: HolidayAuditLogRequest
   ): Promise<HolidayApiResponse<HolidayAuditLogResponse[]>> {
-    const { data } = await api.post(`${this.BASE}/holiday-group/audit-log`, payload);
+    const { data } = await api.post(`${this.BASE}/holiday/audit-log`, payload);
     return data;
   }
 }

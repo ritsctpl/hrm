@@ -1,14 +1,6 @@
-/**
- * HRM Employee App Route
- * /rits/hrm_employee_app
- *
- * Manages navigation between Landing (directory) and Screen (profile) views.
- */
-
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import CommonAppBar from '@components/CommonAppBar';
 import HrmEmployeeLanding from '@modules/hrmEmployee/HrmEmployeeLanding';
 import HrmEmployeeScreen from '@modules/hrmEmployee/HrmEmployeeScreen';
 
@@ -23,24 +15,11 @@ const HrmEmployeePage: React.FC = () => {
     setSelectedHandle(null);
   }, []);
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <CommonAppBar
-        allActivities={[]}
-        username={null}
-        site={null}
-        appTitle="Employee Master"
-        onSiteChange={null}
-        onSearchChange={() => {}}
-      />
+  if (selectedHandle) {
+    return <HrmEmployeeScreen handle={selectedHandle} onBack={handleBack} />;
+  }
 
-      {selectedHandle ? (
-        <HrmEmployeeScreen handle={selectedHandle} onBack={handleBack} />
-      ) : (
-        <HrmEmployeeLanding onSelectEmployee={handleSelectEmployee} />
-      )}
-    </div>
-  );
+  return <HrmEmployeeLanding onSelectEmployee={handleSelectEmployee} />;
 };
 
 export default HrmEmployeePage;

@@ -7,23 +7,29 @@ export function useAdminWidgets() {
   const store = useHrmDashboardStore();
   const cookies = parseCookies();
   const site = cookies.site ?? '';
+  const userId = cookies.userId ?? '';
 
   const loadAdminData = useCallback(async () => {
     if (!site) return;
 
     store.setLoadingAdminData(true);
     try {
-      const res = await HrmDashboardService.getAdminDashboard({ site });
-      if (res?.systemHealth) store.setSystemHealth(res.systemHealth);
-      if (res?.moduleUsage) store.setModuleUsage(res.moduleUsage);
-      if (res?.auditActivity) store.setAuditActivity(res.auditActivity);
-      if (res?.adminAlerts) store.setAdminAlerts(res.adminAlerts);
+      const res = await HrmDashboardService.getAdminDashboard({ site, requestedBy: userId });
+      if (res?.widgets) {
+        store.setDashboardWidgets(res.widgets);
+      }
+      if (res?.layout) {
+        store.setDashboardLayout(res.layout);
+      }
+      if (res?.alerts) {
+        store.setDashboardAlerts(res.alerts);
+      }
     } catch {
       // silently handle
     } finally {
       store.setLoadingAdminData(false);
     }
-  }, [site]);
+  }, [site, userId]);
 
   return { loadAdminData };
 }

@@ -19,13 +19,13 @@ const { Text, Title } = Typography;
 const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, onClick }) => (
   <Card
     hoverable
-    className={`${styles.announcementCard} ${announcement.isPinned ? styles.pinned : ""} ${!announcement.isRead ? styles.unread : ""}`}
+    className={`${styles.announcementCard} ${announcement.pinToTop ? styles.pinned : ""} ${!announcement.isRead ? styles.unread : ""}`}
     onClick={() => onClick(announcement)}
     size="small"
   >
     <div className={styles.cardHeader}>
       <Space>
-        {announcement.isPinned && <PushpinOutlined style={{ color: "#faad14" }} />}
+        {announcement.pinToTop && <PushpinOutlined style={{ color: "#faad14" }} />}
         <ReadStatusDot isRead={announcement.isRead} />
         <AnnouncementPriorityTag priority={announcement.priority} />
         <AnnouncementCategoryBadge category={announcement.category} />
@@ -37,9 +37,9 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, onCli
     <Title level={5} className={styles.cardTitle} ellipsis={{ rows: 2 }}>
       {announcement.title}
     </Title>
-    {announcement.summary && (
+    {announcement.content && (
       <Text type="secondary" className={styles.cardSummary} ellipsis>
-        {announcement.summary}
+        {announcement.content}
       </Text>
     )}
   </Card>

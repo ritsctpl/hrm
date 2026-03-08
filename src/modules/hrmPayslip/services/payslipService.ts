@@ -9,14 +9,17 @@ import type {
   GeneratePayslipsRequest,
   RegeneratePayslipRequest,
   DownloadPayslipRequest,
+  DownloadPayslipByHrRequest,
   DownloadAllZipRequest,
   PayslipSearchRequest,
   PayslipTemplateRequest,
+  UpdatePayslipTemplateRequest,
   SetActiveTemplateRequest,
   EmailPayslipsRequest,
   SavePasswordConfigRequest,
   PasswordConfig,
   RevokePayslipRequest,
+  UploadTemplateLogoRequest,
 } from "../types/api.types";
 
 const BASE = "/hrm-service/payslip";
@@ -37,9 +40,7 @@ export class HrmPayslipService {
     return res.data;
   }
 
-  static async updateTemplate(
-    payload: PayslipTemplateRequest & { handle: string }
-  ): Promise<PayslipTemplate> {
+  static async updateTemplate(payload: UpdatePayslipTemplateRequest): Promise<PayslipTemplate> {
     const res = await api.post<PayslipTemplate>(`${BASE}/updatePayslipTemplate`, payload);
     return res.data;
   }
@@ -72,35 +73,18 @@ export class HrmPayslipService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getMyPayslipRenderData(
-    site: string,
-    employeeId: string,
-    payrollYear: number,
-    payrollMonth: number
-  ): Promise<PayslipRenderData> {
-    const res = await api.post<PayslipRenderData>(`${BASE}/getMyPayslipData`, {
-      site,
-      employeeId,
-      payrollYear,
-      payrollMonth,
-    });
-    return res.data;
-  }
-
   static async downloadMyPayslip(payload: DownloadPayslipRequest): Promise<Blob> {
     const res = await api.post(`${BASE}/downloadMyPayslip`, payload, { responseType: "blob" });
     return res.data as Blob;
   }
 
-  static async downloadPayslipByHr(
-    payload: Omit<DownloadPayslipRequest, "ipAddress"> & { ipAddress?: string }
-  ): Promise<Blob> {
+  static async downloadPayslipByHr(payload: DownloadPayslipByHrRequest): Promise<Blob> {
     const res = await api.post(`${BASE}/downloadPayslipByHr`, payload, { responseType: "blob" });
     return res.data as Blob;
   }
 
   static async downloadAllPayslipsZip(payload: DownloadAllZipRequest): Promise<Blob> {
-    const res = await api.post(`${BASE}/downloadAllPayslipsZip`, payload, { responseType: "blob" });
+    const res = await api.post(`${BASE}/bulkDownload`, payload, { responseType: "blob" });
     return res.data as Blob;
   }
 
@@ -108,16 +92,22 @@ export class HrmPayslipService {
     await api.post(`${BASE}/emailPayslips`, payload);
   }
 
-  static async uploadTemplateLogo(site: string, file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("site", site);
-    formData.append("file", file);
-    const res = await api.post<string>(`${BASE}/uploadTemplateLogo`, formData);
+  static async uploadTemplateLogo(payload: UploadTemplateLogoRequest): Promise<PayslipTemplate> {
+    const params = new URLSearchParams();
+    params.append("templateId", payload.templateId);
+    params.append("site", payload.site);
+    params.append("logoUrl", payload.logoUrl);
+    if (payload.updatedBy) params.append("updatedBy", payload.updatedBy);
+    const res = await api.post<PayslipTemplate>(
+      `${BASE}/uploadTemplateLogo`,
+      params,
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
     return res.data;
   }
 
   static async savePasswordConfig(payload: SavePasswordConfigRequest): Promise<void> {
-    await api.post(`${BASE}/savePasswordConfig`, payload);
+    await api.post(`${BASE}/passwordConfig`, payload);
   }
 
   static async getPasswordConfig(site: string): Promise<PasswordConfig> {
@@ -127,11 +117,11 @@ export class HrmPayslipService {
 
   static async revokePayslip(
     site: string,
-    handle: string,
+    payslipId: string,
     revokedBy: string,
     reason: string
   ): Promise<void> {
-    await api.post(`${BASE}/revokePayslip`, { site, handle, revokedBy, reason });
+    await api.post(`${BASE}/revokePayslip`, { site, payslipId, revokedBy, reason });
   }
 }
 

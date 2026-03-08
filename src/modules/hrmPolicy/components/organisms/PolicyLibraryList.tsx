@@ -33,7 +33,7 @@ const PolicyLibraryList: React.FC<PolicyLibraryListProps> = ({
     <div className={styles.libraryList}>
       {policies.map((policy) => (
         <PolicyListRow
-          key={policy.id}
+          key={policy.handle}
           policy={policy}
           onClick={onPolicyClick}
           onEdit={onEdit}

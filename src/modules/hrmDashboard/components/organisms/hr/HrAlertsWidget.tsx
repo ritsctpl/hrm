@@ -14,12 +14,9 @@ export default function HrAlertsWidget() {
         <div className={styles.emptyState}>No active alerts</div>
       ) : (
         hrAlerts.map((alert) => (
-          <div key={alert.id} className={styles.alertRow}>
+          <div key={alert.handle} className={styles.alertRow}>
             <AlertSeverityDot severity={alert.severity} size={8} />
             <span className={styles.alertMessage}>{alert.message}</span>
-            {alert.count !== undefined && (
-              <span className={styles.alertCount}>({alert.count})</span>
-            )}
           </div>
         ))
       )}

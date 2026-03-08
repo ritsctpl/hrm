@@ -47,13 +47,28 @@ export default function ProjectLandingTemplate() {
         </div>
       ),
     },
-    { key: 'approvals', label: 'Approvals', children: <AllocationApprovalInbox /> },
-    { key: 'calendar', label: 'Calendar', children: <ResourceCalendarView /> },
-    { key: 'reports', label: 'Reports', children: <ProjectReportPanel /> },
+    {
+      key: 'resources',
+      label: 'Resources',
+      children: (
+        <Tabs
+          size="small"
+          items={[
+            { key: 'approvals', label: 'Approvals', children: <AllocationApprovalInbox /> },
+            { key: 'calendar', label: 'Calendar', children: <ResourceCalendarView /> },
+          ]}
+        />
+      ),
+    },
+    {
+      key: 'reportsClients',
+      label: 'Reports & Clients',
+      children: <ProjectReportPanel />,
+    },
   ];
 
   return (
-    <div className={styles.container}>
+    <div>
       <Tabs
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k as typeof activeTab)}

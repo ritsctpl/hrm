@@ -31,20 +31,19 @@ export function useTravelMutations() {
     try {
       const payload = {
         site,
-        employeeId,
         travelType: form.travelType as TravelType,
         purpose: form.purpose,
         destinationCity: form.destinationCity,
         destinationState: form.destinationState || undefined,
         destinationCountry: form.destinationCountry || undefined,
         travelMode: form.travelMode as TravelMode,
-        travelDate: form.travelDate || undefined,
+        startDate: form.startDate || form.travelDate || "",
+        endDate: form.endDate || undefined,
         startHour: form.startHour || undefined,
         endHour: form.endHour || undefined,
-        startDate: form.startDate || undefined,
-        endDate: form.endDate || undefined,
         remarks: form.remarks || undefined,
-        coTravellerIds: form.coTravellerIds,
+        coTravellerEmpIds: form.coTravellerIds,
+        createdBy: employeeId,
       };
       if (existingHandle) {
         const updated = await HrmTravelService.updateDraft({ ...payload, handle: existingHandle });
@@ -71,7 +70,7 @@ export function useTravelMutations() {
   const submitRequest = useCallback(async (handle: string) => {
     setSubmitting(true);
     try {
-      const updated = await HrmTravelService.submitRequest({ site, handle });
+      const updated = await HrmTravelService.submitRequest({ site, handle, submittedBy: employeeId });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Travel request submitted successfully.");
@@ -82,15 +81,18 @@ export function useTravelMutations() {
     } finally {
       setSubmitting(false);
     }
-  }, [site]);
+  }, [site, employeeId]);
 
   const approveRequest = useCallback(async (handle: string, remarks?: string) => {
     setApproving(true);
     try {
       const updated = await HrmTravelService.approveRequest({
         site,
-        handle,
-        approverId: employeeId,
+        travelRequestHandle: handle,
+        action: "APPROVE",
+        actorEmpId: employeeId,
+        actorName: employeeId,
+        actorRole: "SUPERVISOR",
         remarks,
       });
       updateInboxRequest(handle, updated);
@@ -111,8 +113,11 @@ export function useTravelMutations() {
     try {
       const updated = await HrmTravelService.rejectRequest({
         site,
-        handle,
-        approverId: employeeId,
+        travelRequestHandle: handle,
+        action: "REJECT",
+        actorEmpId: employeeId,
+        actorName: employeeId,
+        actorRole: "SUPERVISOR",
         remarks,
       });
       updateInboxRequest(handle, updated);
@@ -131,7 +136,7 @@ export function useTravelMutations() {
   const cancelRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
     try {
-      const updated = await HrmTravelService.cancelRequest({ site, handle, reason });
+      const updated = await HrmTravelService.cancelRequest({ handle, cancelledBy: employeeId, reason });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Request cancelled.");
@@ -163,7 +168,7 @@ export function useTravelMutations() {
   const deleteRequest = useCallback(async (handle: string) => {
     setSaving(true);
     try {
-      await HrmTravelService.deleteRequest({ site, handle });
+      await HrmTravelService.deleteRequest({ site, requestId: handle, deletedBy: employeeId });
       removeMyRequest(handle);
       setSelectedRequest(null);
       setScreenMode("list");

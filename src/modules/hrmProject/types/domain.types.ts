@@ -41,6 +41,10 @@ export interface Project {
   status: ProjectStatus;
   projectManagerId: string;
   projectManagerName: string;
+  clientId?: string;
+  billingType?: string;
+  hourlyRate?: number;
+  currency?: string;
   milestones: Milestone[];
   attachments: ProjectAttachment[];
   totalAllocatedHours: number;
@@ -55,8 +59,8 @@ export interface Project {
 export interface AllocationDay {
   date: string;
   hours: number;
-  isHoliday: boolean;
-  isLeave: boolean;
+  holiday: boolean;
+  leave: boolean;
   availableCapacity: number;
 }
 
@@ -99,8 +103,8 @@ export interface AllocationApproval {
 export interface DailyCapacity {
   date: string;
   baseCapacity: number;
-  isHoliday: boolean;
-  isLeave: boolean;
+  holiday: boolean;
+  leave: boolean;
   allocatedHours: number;
   availableHours: number;
   capacityStatus: CapacityStatus;
@@ -153,8 +157,8 @@ export interface ResourceCalendarEmployee {
   days: {
     date: string;
     allocatedHours: number;
-    isHoliday: boolean;
-    isLeave: boolean;
+    holiday: boolean;
+    leave: boolean;
     capacityStatus: CapacityStatus;
   }[];
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Divider, Radio } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import type { ProjectFormValues } from '../../types/ui.types';
@@ -33,10 +34,11 @@ export default function ProjectForm() {
         description: m.description ?? '',
       })),
     };
+    const userId = parseCookies().userId ?? parseCookies().user ?? '';
     if (editingProject) {
-      await updateProject(editingProject.handle, formValues, 'current-user');
+      await updateProject(editingProject.handle, formValues, userId);
     } else {
-      await createProject(formValues, 'current-user');
+      await createProject(formValues, userId);
     }
   };
 

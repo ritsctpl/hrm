@@ -33,7 +33,7 @@ const NotificationRow: React.FC<NotificationItemProps> = ({
           <ReadIndicator isRead={notification.read} />
         </Col>
         <Col flex="none">
-          <NotificationTypeBadge type={notification.type} size={compact ? 28 : 36} />
+          <NotificationTypeBadge type={notification.type} />
         </Col>
         <Col flex="auto" style={{ minWidth: 0 }}>
           <Text strong style={{ display: "block", fontSize: compact ? 13 : 14 }}>

@@ -85,6 +85,7 @@ export interface ProjectListRowProps {
 export interface AllocationRowProps {
   allocation: ResourceAllocation;
   onEdit?: (a: ResourceAllocation) => void;
+  onSubmit?: (a: ResourceAllocation) => void;
   onCancel?: (a: ResourceAllocation) => void;
 }
 

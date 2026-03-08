@@ -200,7 +200,7 @@ export function useProjectData() {
         store.calendarWeekStart,
         store.calendarBU || undefined,
         store.calendarDept || undefined
-      ) as Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; isHoliday: boolean; isLeave: boolean; capacityStatus: string }> }>;
+      ) as Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; holiday: boolean; leave: boolean; capacityStatus: string }> }>;
       store.setCalendarData(
         data.map((r) => ({
           employeeId: r.employee.employeeId,
@@ -209,8 +209,8 @@ export function useProjectData() {
           days: r.days.map((d) => ({
             date: d.date,
             allocatedHours: d.allocatedHours,
-            isHoliday: d.isHoliday,
-            isLeave: d.isLeave,
+            holiday: d.holiday,
+            leave: d.leave,
             capacityStatus: d.capacityStatus as 'GREEN' | 'YELLOW' | 'RED' | 'GREY',
           })),
         }))
