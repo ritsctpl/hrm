@@ -21,6 +21,7 @@ import type {
   CompanyTabKey,
   CompanyProfileState,
   CompanyListState,
+  CompanyListItem,
   BusinessUnitState,
   DepartmentState,
   LocationState,
@@ -256,7 +257,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     try {
       const data = await HrmOrganizationService.fetchBySite(site);
       // Backend may return single object or array
-      const items = Array.isArray(data) ? data : data ? [data] : [];
+      const rawItems = Array.isArray(data) ? data : data ? [data] : [];
+      const items = rawItems as unknown as CompanyListItem[];
       set((state) => ({
         companyList: { ...state.companyList, items, isLoading: false },
       }));

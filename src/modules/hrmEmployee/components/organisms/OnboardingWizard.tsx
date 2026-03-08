@@ -171,7 +171,8 @@ const ContactStep: React.FC<{
   draft: Partial<CreateEmployeeRequest>;
   onChange: (data: Partial<CreateEmployeeRequest>) => void;
 }> = ({ draft, onChange }) => {
-  const addr = draft.presentAddress || { line1: '', city: '', state: '', pinCode: '', country: 'India' };
+  const defaultAddr = { line1: '', line2: '', city: '', state: '', pinCode: '', country: 'India' };
+  const addr = (typeof draft.presentAddress === 'object' && draft.presentAddress) ? draft.presentAddress : defaultAddr;
 
   return (
     <div className={formStyles.wizardStepBody}>
@@ -329,18 +330,18 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
       </div>
     </div>
 
-    {draft.presentAddress?.line1 && (
+    {typeof draft.presentAddress === 'object' && draft.presentAddress?.line1 && (
       <div className={formStyles.reviewSection}>
         <div className={formStyles.reviewSectionTitle}>Contact</div>
         <div className={formStyles.reviewRow}>
           <span className={formStyles.reviewLabel}>Address</span>
           <span className={formStyles.reviewValue}>
             {[
-              draft.presentAddress.line1,
-              draft.presentAddress.line2,
-              draft.presentAddress.city,
-              draft.presentAddress.state,
-              draft.presentAddress.pinCode,
+              (draft.presentAddress as { line1?: string; line2?: string; city?: string; state?: string; pinCode?: string }).line1,
+              (draft.presentAddress as { line2?: string }).line2,
+              (draft.presentAddress as { city?: string }).city,
+              (draft.presentAddress as { state?: string }).state,
+              (draft.presentAddress as { pinCode?: string }).pinCode,
             ]
               .filter(Boolean)
               .join(', ')}

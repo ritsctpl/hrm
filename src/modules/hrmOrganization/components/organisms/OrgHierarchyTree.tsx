@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tree, Spin, Empty, Button } from 'antd';
 import { ApartmentOutlined, NodeExpandOutlined, NodeCollapseOutlined } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import type { OrgHierarchy } from '../../types/domain.types';
+import type { OrgHierarchy, BusinessUnit } from '../../types/domain.types';
 import type { DepartmentNode } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
@@ -37,7 +37,7 @@ function buildTreeData(hierarchy: OrgHierarchy): AntTreeNode[] {
     ),
     children: (hierarchy.businessUnits ?? []).map((entry) => {
       // API returns { businessUnit: {...}, departments: [...] }
-      const bu = entry.businessUnit || entry;
+      const bu = entry.businessUnit || (entry as unknown as BusinessUnit);
       const depts = entry.departments || (entry as unknown as Record<string, unknown>).departments;
       return {
         key: `bu-${bu.handle}`,

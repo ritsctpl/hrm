@@ -101,6 +101,14 @@ export interface BusinessUnit {
   modifiedBy?: string;
   createdDateTime?: string;
   modifiedDateTime?: string;
+  /** @deprecated UI backward compat */
+  buType?: string;
+  /** @deprecated UI backward compat */
+  city?: string;
+  /** @deprecated UI backward compat */
+  contactEmail?: string;
+  /** @deprecated UI backward compat */
+  contactPhone?: string;
 }
 
 export interface Department {
@@ -115,6 +123,10 @@ export interface Department {
   parentDeptName?: string;
   managerRoleCode?: string;
   headOfDepartmentEmployeeId?: string;
+  /** @deprecated UI backward compat */
+  headEmployeeHandle?: string;
+  /** @deprecated UI backward compat */
+  headEmployeeName?: string;
   active: number;
   children?: DepartmentNode[];
   createdBy?: string;

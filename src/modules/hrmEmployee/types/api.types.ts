@@ -76,8 +76,8 @@ export interface CreateEmployeeRequest {
   designation?: string;
   /** @deprecated UI backward compat - not sent to API */
   joiningDate?: string;
-  presentAddress?: string;
-  permanentAddress?: string;
+  presentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
+  permanentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
   emergencyContacts?: import('./domain.types').EmergencyContact[];
 }
 

@@ -65,14 +65,25 @@ export const EMPTY_ADDRESS = {
   country: 'India',
 } as const;
 
-export const EMPTY_BANK_ACCOUNT = {
+export const EMPTY_BANK_ACCOUNT: {
+  bankName: string;
+  branch: string;
+  branchName: string;
+  accountNumber: string;
+  ifsc: string;
+  ifscCode: string;
+  accountType: string;
+  isPrimary: boolean;
+} = {
   bankName: '',
+  branch: '',
   branchName: '',
   accountNumber: '',
+  ifsc: '',
   ifscCode: '',
   accountType: 'Current',
   isPrimary: false,
-} as const;
+};
 
 export const MAIN_TAB_LABELS = {
   company: 'Company Profile',

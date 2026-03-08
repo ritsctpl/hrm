@@ -35,7 +35,9 @@ export interface CompanyListItem {
   handle: string;
   legalName: string;
   tradeName?: string;
-  industry: string;
+  companyName?: string;
+  industry?: string;
+  industryType?: string;
   officialEmail: string;
   officialPhone: string;
   active: number;
@@ -145,9 +147,11 @@ export interface OrgBankAccountCardProps {
 export interface OrgBankAccountListProps {
   accounts: Array<{
     bankName: string;
-    branchName: string;
+    branch: string;
+    branchName?: string;
     accountNumber: string;
-    ifscCode: string;
+    ifsc: string;
+    ifscCode?: string;
     accountType: string;
     isPrimary: boolean;
   }>;

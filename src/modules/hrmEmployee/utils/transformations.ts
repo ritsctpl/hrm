@@ -25,8 +25,9 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
 /**
  * Format an Address into a single-line display string
  */
-export function formatAddress(address: Record<string, unknown> | undefined | null): string {
+export function formatAddress(address: string | Record<string, unknown> | undefined | null): string {
   if (!address) return '--';
+  if (typeof address === 'string') return address || '--';
   const parts = [
     address.line1,
     address.line2,

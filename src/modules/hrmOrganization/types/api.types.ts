@@ -79,8 +79,18 @@ export interface BusinessUnitRequest {
   gstin?: string;
   address?: Address;
   primaryContact?: string;
+  statutoryRegistrationLinks?: Record<string, string>;
+  active?: number;
   createdBy?: string;
   modifiedBy?: string;
+  /** @deprecated UI backward compat */
+  buType?: string;
+  /** @deprecated UI backward compat */
+  city?: string;
+  /** @deprecated UI backward compat */
+  contactEmail?: string;
+  /** @deprecated UI backward compat */
+  contactPhone?: string;
 }
 
 export type BusinessUnitResponse = BusinessUnit;
@@ -107,6 +117,11 @@ export interface DepartmentRequest {
   deptName: string;
   parentDeptHandle?: string;
   headOfDepartmentEmployeeId?: string;
+  /** @deprecated UI backward compat */
+  headEmployeeHandle?: string;
+  /** @deprecated UI backward compat */
+  headEmployeeName?: string;
+  active?: number;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -136,9 +151,10 @@ export interface LocationRequest {
   city: string;
   state: string;
   country: string;
-  pincode: string;
+  pincode?: string;
   /** UI alias for backward compat */
   pinZip?: string;
+  active?: number;
   createdBy?: string;
   modifiedBy?: string;
 }
