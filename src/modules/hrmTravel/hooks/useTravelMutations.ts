@@ -11,7 +11,14 @@ import type { TravelMode, TravelType } from "../types/domain.types";
 export function useTravelMutations() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    "";
 
   const {
     setSaving,

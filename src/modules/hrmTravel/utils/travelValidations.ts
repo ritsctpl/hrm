@@ -4,6 +4,8 @@ export interface TravelFormErrors {
   travelType?: string;
   purpose?: string;
   destinationCity?: string;
+  destinationState?: string;
+  destinationCountry?: string;
   travelMode?: string;
   travelDate?: string;
   startHour?: string;
@@ -26,8 +28,12 @@ export function validateTravelForm(form: TravelFormState): TravelFormErrors {
     if (!form.startHour) errors.startHour = "Start hour is required.";
     if (!form.endHour) errors.endHour = "End hour is required.";
   } else if (form.travelType === "DOMESTIC" || form.travelType === "INTERNATIONAL") {
+    if (!form.destinationState.trim()) errors.destinationState = "Destination state is required.";
     if (!form.startDate) errors.startDate = "Start date is required.";
     if (!form.endDate) errors.endDate = "End date is required.";
+    if (form.travelType === "INTERNATIONAL" && !form.destinationCountry.trim()) {
+      errors.destinationCountry = "Destination country is required.";
+    }
   }
 
   return errors;

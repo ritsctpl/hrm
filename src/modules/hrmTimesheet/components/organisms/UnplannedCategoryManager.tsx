@@ -19,8 +19,16 @@ interface CategoryFormValues {
 
 export default function UnplannedCategoryManager() {
   const { unplannedCategories, setUnplannedCategories } = useHrmTimesheetStore();
-  const { site } = parseCookies();
-  const employeeId = parseCookies().employeeId ?? '';
+  const cookies = parseCookies();
+  const site = cookies.site ?? '';
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    '';
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UnplannedCategory | null>(null);
   const [saving, setSaving] = useState(false);

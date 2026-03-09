@@ -21,6 +21,7 @@ export function validateExpenseForm(form: ExpenseFormState): ExpenseFormErrors {
   return errors;
 }
 
-export function isExpenseFormValid(form: ExpenseFormState): boolean {
+export function isExpenseFormValid(form: ExpenseFormState, itemsCount = 0): boolean {
+  if (itemsCount <= 0) return false;
   return Object.keys(validateExpenseForm(form)).length === 0;
 }

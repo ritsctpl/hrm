@@ -12,7 +12,15 @@ export function useHrmTimesheetUI() {
   const store = useHrmTimesheetStore();
   const { loadWeeklyTimesheets, loadDayTimesheet, loadPendingApprovals } = useHrmTimesheetData();
   const { site } = parseCookies();
-  const employeeId = parseCookies().employeeId ?? '';
+  const cookies = parseCookies();
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    '';
 
   const saveTimesheet = useCallback(async (notes?: string) => {
     if (!store.currentDayTimesheet && (!store.currentDayTimesheet || (store.currentDayTimesheet as unknown as { lines: TimesheetLine[] }).lines?.length === 0)) {

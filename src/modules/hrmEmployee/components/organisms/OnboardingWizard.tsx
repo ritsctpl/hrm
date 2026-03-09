@@ -115,18 +115,28 @@ const OfficialStep: React.FC<{
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
-          Designation
+          Role
         </label>
+        <Input
+          value={draft.role || ''}
+          onChange={(e) => onChange({ role: e.target.value })}
+          status={errors.role ? 'error' : undefined}
+          placeholder="EMPLOYEE / MANAGER"
+        />
+        {errors.role && (
+          <div className={formStyles.formFieldError}>{errors.role}</div>
+        )}
+      </div>
+      <div className={formStyles.formField}>
+        <label className={formStyles.formFieldLabel}>Designation</label>
         <Input
           value={draft.designation || ''}
           onChange={(e) => onChange({ designation: e.target.value })}
-          status={errors.designation ? 'error' : undefined}
           placeholder="Software Engineer"
         />
-        {errors.designation && (
-          <div className={formStyles.formFieldError}>{errors.designation}</div>
-        )}
       </div>
+    </div>
+    <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Reporting Manager</label>
         <Input
@@ -135,10 +145,26 @@ const OfficialStep: React.FC<{
           placeholder="Employee code or name"
         />
       </div>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Location
+        </label>
+        <Input
+          value={draft.location || ''}
+          onChange={(e) => onChange({ location: e.target.value })}
+          status={errors.location ? 'error' : undefined}
+          placeholder="Location code"
+        />
+        {errors.location && (
+          <div className={formStyles.formFieldError}>{errors.location}</div>
+        )}
+      </div>
     </div>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
-        <label className={formStyles.formFieldLabel}>Business Units</label>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Business Units
+        </label>
         <Select
           mode="tags"
           value={draft.businessUnits || []}
@@ -146,6 +172,9 @@ const OfficialStep: React.FC<{
           placeholder="Type and press enter"
           style={{ width: '100%' }}
         />
+        {errors.businessUnits && (
+          <div className={formStyles.formFieldError}>{errors.businessUnits}</div>
+        )}
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
@@ -311,8 +340,16 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
         <span className={formStyles.reviewValue}>{draft.department || '--'}</span>
       </div>
       <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Role</span>
+        <span className={formStyles.reviewValue}>{draft.role || '--'}</span>
+      </div>
+      <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Designation</span>
         <span className={formStyles.reviewValue}>{draft.designation || '--'}</span>
+      </div>
+      <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Location</span>
+        <span className={formStyles.reviewValue}>{draft.location || '--'}</span>
       </div>
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Joining Date</span>

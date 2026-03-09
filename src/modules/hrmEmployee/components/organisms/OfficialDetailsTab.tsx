@@ -32,8 +32,10 @@ const OfficialDetailsTab: React.FC<ProfileTabProps> = ({
         lastName: values.lastName,
         title: values.title,
         department: values.department,
+        role: values.role,
         designation: values.designation,
         reportingManager: values.reportingManager,
+        location: values.location,
         businessUnits: values.businessUnits || [],
         joiningDate: values.joiningDate
           ? values.joiningDate.format('YYYY-MM-DD')
@@ -58,8 +60,10 @@ const OfficialDetailsTab: React.FC<ProfileTabProps> = ({
             lastName: officialDetails.lastName,
             title: officialDetails.title,
             department: officialDetails.department,
+            role: officialDetails.role,
             designation: officialDetails.designation,
             reportingManager: officialDetails.reportingManager,
+            location: officialDetails.location,
             businessUnits: officialDetails.businessUnits,
             joiningDate: officialDetails.joiningDate
               ? dayjs(officialDetails.joiningDate)
@@ -92,6 +96,13 @@ const OfficialDetailsTab: React.FC<ProfileTabProps> = ({
               <Input />
             </Form.Item>
             <Form.Item
+              name="role"
+              label="Role"
+              rules={[{ required: true, message: 'Required' }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
               name="designation"
               label="Designation"
               rules={[{ required: true, message: 'Required' }]}
@@ -99,6 +110,13 @@ const OfficialDetailsTab: React.FC<ProfileTabProps> = ({
               <Input />
             </Form.Item>
             <Form.Item name="reportingManager" label="Reporting Manager">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="location"
+              label="Location"
+              rules={[{ required: true, message: 'Required' }]}
+            >
               <Input />
             </Form.Item>
             <Form.Item name="businessUnits" label="Business Units">
@@ -138,8 +156,10 @@ const OfficialDetailsTab: React.FC<ProfileTabProps> = ({
         <EmpFieldLabel label="Last Name" value={officialDetails.lastName} />
         <EmpFieldLabel label="Title" value={officialDetails.title} />
         <EmpFieldLabel label="Department" value={officialDetails.department} />
+        <EmpFieldLabel label="Role" value={officialDetails.role} />
         <EmpFieldLabel label="Designation" value={officialDetails.designation} />
         <EmpFieldLabel label="Reporting Manager" value={officialDetails.reportingManager} />
+        <EmpFieldLabel label="Location" value={officialDetails.location} />
         <EmpFieldLabel
           label="Business Units"
           value={officialDetails.businessUnits?.join(', ') || '--'}

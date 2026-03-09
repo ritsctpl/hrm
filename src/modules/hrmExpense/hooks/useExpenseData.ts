@@ -9,7 +9,14 @@ import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
 export function useExpenseData() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    "";
 
   const {
     setMyExpenses,

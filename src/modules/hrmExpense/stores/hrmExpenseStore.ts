@@ -35,6 +35,7 @@ interface ExpenseState {
   activeInboxTab: ExpenseInboxTab;
   formState: ExpenseFormState;
   financePanel: FinancePanelState;
+  draftItems: ExpenseReport["items"];
 
   // ── Filters ───────────────────────────────────────────────────────────
   searchTerm: string;
@@ -74,6 +75,10 @@ interface ExpenseState {
   resetFormState: () => void;
   updateFinancePanel: (changes: Partial<FinancePanelState>) => void;
   resetFinancePanel: () => void;
+  setDraftItems: (items: ExpenseReport["items"]) => void;
+  addDraftItem: (item: ExpenseReport["items"][number]) => void;
+  removeDraftItem: (handle: string) => void;
+  resetDraftItems: () => void;
 
   // ── Actions: Filters ──────────────────────────────────────────────────
   setSearchTerm: (term: string) => void;
@@ -103,6 +108,7 @@ const defaultState = {
   activeInboxTab: "pending" as ExpenseInboxTab,
   formState: { ...DEFAULT_EXPENSE_FORM },
   financePanel: { ...DEFAULT_FINANCE_PANEL },
+  draftItems: [],
   searchTerm: "",
   statusFilter: null,
   typeFilter: null,
@@ -152,6 +158,10 @@ export const useHrmExpenseStore = create<ExpenseState>((set) => ({
   resetFormState: () => set({ formState: { ...DEFAULT_EXPENSE_FORM } }),
   updateFinancePanel: (changes) => set((s) => ({ financePanel: { ...s.financePanel, ...changes } })),
   resetFinancePanel: () => set({ financePanel: { ...DEFAULT_FINANCE_PANEL } }),
+  setDraftItems: (draftItems) => set({ draftItems }),
+  addDraftItem: (item) => set((s) => ({ draftItems: [...s.draftItems, item] })),
+  removeDraftItem: (handle) => set((s) => ({ draftItems: s.draftItems.filter((i) => i.handle !== handle) })),
+  resetDraftItems: () => set({ draftItems: [] }),
 
   setSearchTerm: (searchTerm) => set({ searchTerm }),
   setStatusFilter: (statusFilter) => set({ statusFilter }),

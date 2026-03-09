@@ -14,6 +14,10 @@ import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
 const stateOptions = INDIAN_STATES.map((s) => ({ label: s, value: s }));
+const statusOptions = [
+  { label: "Active", value: "ACTIVE" },
+  { label: "Inactive", value: "INACTIVE" },
+];
 
 const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   const {
@@ -82,6 +86,23 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         />
       </OrgFormField>
 
+      <OrgFormField label="Description">
+        <Input.TextArea
+          value={draft?.description || ''}
+          onChange={(e) => handleFieldChange('description', e.target.value)}
+          placeholder="Short description"
+          rows={2}
+        />
+      </OrgFormField>
+
+      <OrgFormField label="Head of BU">
+        <Input
+          value={draft?.headOfBu || ''}
+          onChange={(e) => handleFieldChange('headOfBu', e.target.value)}
+          placeholder="Employee ID"
+        />
+      </OrgFormField>
+
       <OrgFormField label="BU Type" required error={errors.buType}>
         <Select
           value={draft?.buType || undefined}
@@ -104,6 +125,18 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         />
       </OrgFormField>
 
+      <OrgFormField label="Place of Supply">
+        <Select
+          value={draft?.placeOfSupply || undefined}
+          onChange={(val) => handleFieldChange('placeOfSupply', val)}
+          options={stateOptions}
+          placeholder="Select place of supply"
+          showSearch
+          optionFilterProp="label"
+          style={{ width: '100%' }}
+        />
+      </OrgFormField>
+
       <OrgFormField label="City" required error={errors.city}>
         <Input
           value={draft?.city || ''}
@@ -112,10 +145,30 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         />
       </OrgFormField>
 
+      <OrgFormField label="Status">
+        <Select
+          value={draft?.status || undefined}
+          onChange={(val) =>
+            setBusinessUnitDraft({
+              status: val,
+              active: val === "ACTIVE" ? 1 : 0,
+            })
+          }
+          options={statusOptions}
+          placeholder="Select status"
+          style={{ width: '100%' }}
+        />
+      </OrgFormField>
+
       <OrgFormField label="Active">
         <Switch
           checked={draft?.active === 1}
-          onChange={(checked) => handleFieldChange('active', checked ? 1 : 0)}
+          onChange={(checked) =>
+            setBusinessUnitDraft({
+              active: checked ? 1 : 0,
+              status: checked ? "ACTIVE" : "INACTIVE",
+            })
+          }
         />
       </OrgFormField>
     </div>
@@ -140,6 +193,14 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
           placeholder="e.g., +91-9876543210"
         />
       </OrgFormField>
+
+      <OrgFormField label="Primary Contact">
+        <Input
+          value={draft?.primaryContact || ''}
+          onChange={(e) => handleFieldChange('primaryContact', e.target.value)}
+          placeholder="Primary contact (email or phone)"
+        />
+      </OrgFormField>
     </div>
   );
 
@@ -156,11 +217,14 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   // Statutory Tab
   const statutoryContent = (
     <div className={formStyles.statutoryGrid}>
-      <OrgFormField label="GST Number">
+      <OrgFormField label="GSTIN">
         <Input
-          value={draft?.statutoryRegistrationLinks?.gstNumber || ''}
-          onChange={(e) => handleStatutoryChange('gstNumber', e.target.value)}
-          placeholder="Enter GST number"
+          value={draft?.gstin || draft?.statutoryRegistrationLinks?.gstNumber || ''}
+          onChange={(e) => {
+            handleFieldChange('gstin', e.target.value);
+            handleStatutoryChange('gstNumber', e.target.value);
+          }}
+          placeholder="Enter GSTIN"
         />
       </OrgFormField>
 

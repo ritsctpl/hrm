@@ -54,7 +54,7 @@ const HrmTravelScreen: React.FC<Props> = ({
 }) => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
+  const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
 
   const { formState, updateFormState, activeDetailTab, setActiveDetailTab, approving, saving } =
     useHrmTravelStore();

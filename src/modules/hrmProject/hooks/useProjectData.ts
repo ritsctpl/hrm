@@ -86,7 +86,7 @@ export function useProjectData() {
   const loadProjects = useCallback(async () => {
     store.setLoadingProjects(true);
     try {
-      const [projects, kpis] = await Promise.all([
+      const [projectsResult, kpisResult] = await Promise.allSettled([
         HrmProjectService.listProjects(
           site,
           store.filterBU || undefined,
@@ -96,8 +96,11 @@ export function useProjectData() {
         ),
         HrmProjectService.getProjectKpis(site),
       ]);
-      store.setProjects(
-        projects.map((p) => ({
+
+      if (projectsResult.status === "fulfilled") {
+        const projects = projectsResult.value;
+        store.setProjects(
+          projects.map((p) => ({
           handle: p.handle,
           site,
           projectCode: p.projectCode,
@@ -120,14 +123,31 @@ export function useProjectData() {
           createdDateTime: '',
           modifiedDateTime: '',
         }))
-      );
-      store.setProjectKpis({
-        total: kpis.total,
-        active: kpis.active,
-        draft: kpis.draft,
-        onHold: kpis.onHold,
-        completed: kpis.completed,
-      });
+        );
+      } else {
+        console.error("Failed to load projects:", projectsResult.reason);
+        store.setProjects([]);
+      }
+
+      if (kpisResult.status === "fulfilled") {
+        const kpis = kpisResult.value;
+        store.setProjectKpis({
+          total: kpis.total,
+          active: kpis.active,
+          draft: kpis.draft,
+          onHold: kpis.onHold,
+          completed: kpis.completed,
+        });
+      } else {
+        console.error("Failed to load project KPIs:", kpisResult.reason);
+        store.setProjectKpis({
+          total: 0,
+          active: 0,
+          draft: 0,
+          onHold: 0,
+          completed: 0,
+        });
+      }
     } catch (error) {
       console.error('Failed to load projects:', error);
     } finally {

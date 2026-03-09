@@ -44,6 +44,7 @@ const HrmExpenseLanding: React.FC = () => {
     setSelectedExpense,
     setScreenMode,
     resetFormState,
+    resetDraftItems,
   } = useHrmExpenseStore();
 
   const {
@@ -90,6 +91,7 @@ const HrmExpenseLanding: React.FC = () => {
   const handleNewExpense = () => {
     setSelectedExpense(null);
     resetFormState();
+    resetDraftItems();
     setScreenMode("create");
   };
 
@@ -101,6 +103,7 @@ const HrmExpenseLanding: React.FC = () => {
   const handleBack = () => {
     setScreenMode("list");
     setSelectedExpense(null);
+    resetDraftItems();
   };
 
   const handleActionComplete = () => {
@@ -110,6 +113,7 @@ const HrmExpenseLanding: React.FC = () => {
     if (isFinance || isAdmin) loadFinanceInbox();
     setSelectedExpense(null);
     setScreenMode("list");
+    resetDraftItems();
   };
 
   // Build detail panel with role awareness

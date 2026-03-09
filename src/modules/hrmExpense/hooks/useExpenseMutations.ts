@@ -5,13 +5,21 @@ import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
 import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
+import { HrmTravelService } from "../../hrmTravel/services/hrmTravelService";
 import type { ExpenseFormState, FinancePanelState } from "../types/ui.types";
 import type { ExpenseType, PaymentMode } from "../types/domain.types";
 
 export function useExpenseMutations() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    "";
   const employeeName = cookies.userName ?? employeeId;
 
   const {
@@ -25,16 +33,35 @@ export function useExpenseMutations() {
     removeFromInbox,
     setSelectedExpense,
     setScreenMode,
+    draftItems,
   } = useHrmExpenseStore();
+
+  const resolveTravelHandle = useCallback(async (value?: string) => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+    if (isUuid) return trimmed;
+    if (trimmed.startsWith("TR-")) {
+      try {
+        const requests = await HrmTravelService.getMyRequests({ site, employeeId });
+        const match = requests.find((req) => req.requestId === trimmed);
+        return match?.handle;
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [site, employeeId]);
 
   const saveDraft = useCallback(async (form: ExpenseFormState, existingHandle?: string) => {
     setSaving(true);
     try {
+      const travelHandle = await resolveTravelHandle(form.travelRequestHandle || undefined);
       const basePayload = {
         site,
         expenseType: form.expenseType as ExpenseType,
         purpose: form.purpose,
-        travelRequestHandle: form.travelRequestHandle || undefined,
+        travelRequestHandle: travelHandle,
         fromDate: form.fromDate!,
         toDate: form.toDate!,
         costCenter: form.costCenter || undefined,
@@ -42,7 +69,17 @@ export function useExpenseMutations() {
         wbsCode: form.wbsCode || undefined,
         currency: form.currency,
         outOfPolicyJustification: form.outOfPolicyJustification || undefined,
-        items: [],
+        items: draftItems.map((item) => ({
+          categoryId: item.categoryId,
+          expenseDate: item.expenseDate,
+          description: item.description,
+          amount: item.amount,
+          currency: item.currency,
+          fromLocation: item.fromLocation || undefined,
+          toLocation: item.toLocation || undefined,
+          distanceKm: item.distanceKm ?? undefined,
+          attachmentRef: item.attachmentRef || undefined,
+        })),
         createdBy: employeeId,
       };
       if (existingHandle) {
@@ -68,7 +105,7 @@ export function useExpenseMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, draftItems, resolveTravelHandle]);
 
   const submitExpense = useCallback(async (handle: string) => {
     setSubmitting(true);

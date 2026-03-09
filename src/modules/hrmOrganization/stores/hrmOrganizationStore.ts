@@ -255,7 +255,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      const data = await HrmOrganizationService.fetchBySite(site);
+      let data;
+      try {
+        data = await HrmOrganizationService.fetchAllCompanies(site);
+      } catch {
+        data = await HrmOrganizationService.fetchBySite(site);
+      }
       // Backend may return single object or array
       const rawItems = Array.isArray(data) ? data : data ? [data] : [];
       const items = rawItems as unknown as CompanyListItem[];
@@ -527,20 +532,59 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
+      const address = businessUnit.draft.address
+        ? { ...businessUnit.draft.address }
+        : undefined;
+      if (address && businessUnit.draft.city && !address.city) {
+        address.city = businessUnit.draft.city;
+      }
+      if (address) {
+        const pincode = (address as Record<string, unknown>).pincode || (address as Record<string, unknown>).pinCode;
+        if (pincode && !address.pincode) {
+          address.pincode = String(pincode);
+        }
+        if (address.pincode && !(address as Record<string, unknown>).pinCode) {
+          (address as Record<string, unknown>).pinCode = address.pincode;
+        }
+        if (!address.country) {
+          address.country = 'India';
+        }
+        if (address.pincode && !address.postalCode) {
+          address.postalCode = address.pincode;
+        }
+      }
+
+      const gstin =
+        businessUnit.draft.gstin ||
+        businessUnit.draft.statutoryRegistrationLinks?.gstNumber;
+      const status =
+        businessUnit.draft.status ||
+        (businessUnit.draft.active === 0 ? 'INACTIVE' : 'ACTIVE');
+
       const payload: BusinessUnitRequest = {
         site,
         companyHandle,
         buCode: businessUnit.draft.buCode || '',
         buName: businessUnit.draft.buName || '',
-        buType: businessUnit.draft.buType || '',
+        description: businessUnit.draft.description || undefined,
+        headOfBu: businessUnit.draft.headOfBu || userId,
+        status,
         state: businessUnit.draft.state || '',
-        city: businessUnit.draft.city || '',
-        address: businessUnit.draft.address,
-        contactEmail: businessUnit.draft.contactEmail,
-        contactPhone: businessUnit.draft.contactPhone,
+        placeOfSupply: businessUnit.draft.placeOfSupply || businessUnit.draft.state || '',
+        gstin: gstin || undefined,
+        address,
+        primaryContact:
+          businessUnit.draft.primaryContact ||
+          businessUnit.draft.contactEmail ||
+          businessUnit.draft.contactPhone ||
+          undefined,
         statutoryRegistrationLinks: businessUnit.draft.statutoryRegistrationLinks,
         active: businessUnit.draft.active ?? 1,
         modifiedBy: userId,
+        buType: businessUnit.draft.buType || undefined,
+        city: businessUnit.draft.city || address?.city || undefined,
+        contactEmail: businessUnit.draft.contactEmail || undefined,
+        contactPhone: businessUnit.draft.contactPhone || undefined,
       };
 
       if (businessUnit.selected?.handle && !businessUnit.isCreating) {
@@ -585,6 +629,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           errors: { _general: errMsg },
         },
       }));
+      throw new Error(errMsg);
     }
   },
 

@@ -8,7 +8,7 @@ import { useHrmTravelStore } from "../stores/hrmTravelStore";
 export function useCoTravellerSearch() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
+  const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
 
   const { setEligibleCoTravellers, setCoTravellerSearchLoading } = useHrmTravelStore();
 

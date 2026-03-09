@@ -55,6 +55,9 @@ const HrmExpenseScreen: React.FC<Props> = ({
     mileageConfig,
     financePanel,
     updateFinancePanel,
+    draftItems,
+    addDraftItem,
+    removeDraftItem,
   } = useHrmExpenseStore();
 
   const {
@@ -82,7 +85,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
   const canCancel = expense && CANCELLABLE_STATUSES.includes(expense.status);
   const canRecall = expense && RECALLABLE_STATUSES.includes(expense.status);
   const canDelete = expense && expense.status === "DRAFT";
-  const formValid = isExpenseFormValid(formState);
+  const formValid = isExpenseFormValid(formState, draftItems.length || expense?.items?.length || 0);
 
   useEffect(() => {
     if (isFinance && expense?.employeeId) {
@@ -156,8 +159,42 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   // Items are now a flat array in the response (items), containing both regular and mileage items
   const expenseItems = expense?.items ?? [];
-  const mileageItems = expenseItems.filter((item) => item.distanceKm != null);
-  const regularItems = expenseItems.filter((item) => item.distanceKm == null);
+  const workingItems = isReadonly ? expenseItems : draftItems;
+  const mileageItems = workingItems.filter((item) => item.distanceKm != null);
+  const regularItems = workingItems.filter((item) => item.distanceKm == null);
+  const draftOutOfPolicy = draftItems.some((item) => item.outOfPolicy);
+
+  const handleAddDraftItem = useCallback(
+    (item: Partial<ExpenseReport["items"][number]>) => {
+      const handle = `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const mileageCategory =
+        categories.find((c) => c.mileageCategory)?.categoryCode || "CAT-MILEAGE";
+      addDraftItem({
+        handle,
+        categoryId: item.categoryId || mileageCategory,
+        categoryName: item.categoryName,
+        expenseDate: item.expenseDate || formState.fromDate || "",
+        description: item.description || "",
+        amount: item.amount ?? 0,
+        currency: item.currency || formState.currency || "INR",
+        fromLocation: item.fromLocation,
+        toLocation: item.toLocation,
+        distanceKm: item.distanceKm,
+        ratePerKm: item.ratePerKm,
+        mileageAmount: item.mileageAmount,
+        attachmentRef: item.attachmentRef,
+        outOfPolicy: item.outOfPolicy ?? false,
+      });
+    },
+    [addDraftItem, categories, formState.currency, formState.fromDate]
+  );
+
+  const handleRemoveDraftItem = useCallback(
+    (handle: string) => {
+      removeDraftItem(handle);
+    },
+    [removeDraftItem]
+  );
 
   const lineItemsTab =
     expense?.expenseType === "MILEAGE" ? (
@@ -166,6 +203,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
           mileageItems={mileageItems}
           ratePerKm={mileageConfig?.ratePerKm}
           readonly={isReadonly}
+          onAddItem={handleAddDraftItem}
+          onRemoveItem={handleRemoveDraftItem}
         />
       </div>
     ) : (
@@ -174,9 +213,11 @@ const HrmExpenseScreen: React.FC<Props> = ({
           lineItems={regularItems}
           categories={categories}
           readonly={isReadonly}
-          outOfPolicy={expense?.outOfPolicy}
+          outOfPolicy={isReadonly ? expense?.outOfPolicy : draftOutOfPolicy}
           justification={formState.outOfPolicyJustification}
           onJustificationChange={(v) => updateFormState({ outOfPolicyJustification: v })}
+          onAddItem={handleAddDraftItem}
+          onRemoveItem={handleRemoveDraftItem}
         />
       </div>
     );

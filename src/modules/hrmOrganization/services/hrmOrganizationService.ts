@@ -33,6 +33,11 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  static async fetchAllCompanies(site: string): Promise<CompanyProfileResponse[]> {
+    const res = await api.post(`${this.BASE}/company/retrieveAll`, { site });
+    return res.data;
+  }
+
   static async createCompany(payload: CompanyProfileRequest): Promise<CompanyProfileResponse> {
     const res = await api.post(`${this.BASE}/company/create`, payload);
     return res.data;

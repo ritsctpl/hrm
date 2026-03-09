@@ -128,10 +128,11 @@ export function buildCreateRequest(
     phone: draft.phone || '',
     title: draft.title || '',
     department: draft.department || '',
-    role: (draft as Record<string, unknown>).designation as string || draft.role || '',
+    role: draft.role || draft.designation || 'EMPLOYEE',
     location: draft.location,
     businessUnits: draft.businessUnits || [],
     reportingManager: draft.reportingManager,
+    designation: draft.designation,
     createdBy,
   };
 }
@@ -163,7 +164,11 @@ export function validateOnboardingStep(
 
   if (step === 1) {
     if (!draft.department?.trim()) errors.department = 'Department is required';
-    if (!draft.designation?.trim()) errors.designation = 'Designation is required';
+    if (!draft.role?.trim()) errors.role = 'Role is required';
+    if (!draft.location?.trim()) errors.location = 'Location is required';
+    if (!draft.businessUnits || draft.businessUnits.length === 0) {
+      errors.businessUnits = 'At least one business unit is required';
+    }
     if (!draft.joiningDate) errors.joiningDate = 'Joining date is required';
   }
 

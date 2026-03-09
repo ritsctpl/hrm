@@ -48,7 +48,15 @@ function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse)
 export function useHrmTimesheetData() {
   const store = useHrmTimesheetStore();
   const { site } = parseCookies();
-  const employeeId = parseCookies().employeeId ?? '';
+  const cookies = parseCookies();
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    '';
 
   const loadWeeklyTimesheets = useCallback(async () => {
     store.setLoadingWeek(true);
