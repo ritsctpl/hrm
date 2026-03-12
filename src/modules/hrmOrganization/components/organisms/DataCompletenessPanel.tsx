@@ -10,7 +10,7 @@ import styles from '../../styles/HrmOrganization.module.css';
 
 const ENTITY_TYPES = [
   { value: '', label: 'All Entities' },
-  { value: 'COMPANY', label: 'Company' },
+  { value: 'COMPANY_PROFILE', label: 'Company' },
   { value: 'BUSINESS_UNIT', label: 'Business Unit' },
   { value: 'DEPARTMENT', label: 'Department' },
   { value: 'LOCATION', label: 'Location' },
@@ -47,43 +47,58 @@ const DataCompletenessPanel: React.FC = () => {
 
   const columns = [
     {
-      title: 'Entity Code',
-      dataIndex: 'entityCode',
-      key: 'entityCode',
-      width: 140,
+      title: 'Entity Name',
+      dataIndex: 'entityName',
+      key: 'entityName',
     },
     {
       title: 'Entity Type',
       dataIndex: 'entityType',
       key: 'entityType',
-      width: 140,
     },
-    {
-      title: 'Required',
-      dataIndex: 'requiredFields',
-      key: 'requiredFields',
-      width: 100,
-      align: 'center' as const,
-    },
-    {
-      title: 'Filled',
-      dataIndex: 'filledFields',
-      key: 'filledFields',
-      width: 100,
-      align: 'center' as const,
-    },
+    // {
+    //   title: 'Required',
+    //   dataIndex: 'requiredFields',
+    //   key: 'requiredFields',
+    //   width: 100,
+    //   align: 'center' as const,
+    // },
+    // {
+    //   title: 'Filled',
+    //   dataIndex: 'filledFields',
+    //   key: 'filledFields',
+    //   width: 100,
+    //   align: 'center' as const,
+    // },
     {
       title: 'Missing',
       dataIndex: 'missingFields',
       key: 'missingFields',
-      width: 100,
-      align: 'center' as const,
+      render: (missingFields: string | string[]) => {
+        if (!missingFields) return '-';
+        
+        // Handle both string and array formats
+        const fields = Array.isArray(missingFields) 
+          ? missingFields 
+          : typeof missingFields === 'string' 
+            ? missingFields.split(',').map(f => f.trim())
+            : [];
+        
+        if (fields.length === 0) return '-';
+        
+        return (
+          <div style={{ fontSize: '11px', lineHeight: '1.2' }}>
+            {fields.map((field, idx) => (
+              <div key={idx}>{field}</div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       title: 'Completeness',
-      dataIndex: 'completenessPercent',
-      key: 'completenessPercent',
-      width: 200,
+      dataIndex: 'completenessPercentage',
+      key: 'completenessPercentage',
       render: (v: number) => (
         <Progress
           percent={Math.round(v)}

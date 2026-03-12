@@ -34,6 +34,7 @@ export interface CompanyProfileRequest {
   legalName: string;
   registrationNumber?: string;
   pan?: string;
+  tan?: string;
   cin?: string;
   industryType?: string;
   foundedDate?: string;
@@ -42,6 +43,8 @@ export interface CompanyProfileRequest {
   officialPhone: string;
   gstin?: string;
   pfEstablishmentCode?: string;
+  esicCode?: string;
+  msmeUdyam?: string;
   financialYearStartMonth?: string;
   registeredOfficeAddress?: Address;
   corporateOfficeAddress?: Address;

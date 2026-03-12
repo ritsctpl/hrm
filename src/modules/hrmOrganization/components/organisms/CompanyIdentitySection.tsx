@@ -153,6 +153,26 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
             style={{ width: '100%' }}
           />
         </OrgFormField>
+
+        {/* Contact Information Fields */}
+        <OrgFormField label="Official Email" required error={errors.officialEmail}>
+          <Input
+            value={draft?.officialEmail || ''}
+            onChange={(e) => handleFieldChange('officialEmail', e.target.value)}
+            placeholder="Enter official email"
+            type="email"
+            disabled={disabled}
+          />
+        </OrgFormField>
+
+        <OrgFormField label="Official Phone" required error={errors.officialPhone}>
+          <Input
+            value={draft?.officialPhone || ''}
+            onChange={(e) => handleFieldChange('officialPhone', e.target.value)}
+            placeholder="Enter official phone"
+            disabled={disabled}
+          />
+        </OrgFormField>
       </div>
     </div>
   );

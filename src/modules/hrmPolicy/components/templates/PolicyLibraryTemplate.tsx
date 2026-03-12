@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Space, Select, Input, Button, Segmented } from "antd";
-import { AppstoreOutlined, BarsOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, BarsOutlined, PlusOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyLibraryGrid from "../organisms/PolicyLibraryGrid";
 import PolicyLibraryList from "../organisms/PolicyLibraryList";
@@ -66,7 +66,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
           style={{ width: 160 }}
         >
           {categories.map((cat) => (
-            <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+            <Option key={cat.handle} value={cat.handle}>{cat.categoryName}</Option>
           ))}
         </Select>
         <Select

@@ -25,6 +25,9 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
     setBusinessUnitDraft,
     saveBusinessUnit,
   } = useHrmOrganizationStore();
+  
+  // Get the store's get function to access current state
+  const get = useHrmOrganizationStore.getState;
 
   const { draft, isSaving, isCreating, selected, errors } = businessUnit;
   const isNew = isCreating && !selected;
@@ -60,7 +63,22 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   const handleSave = useCallback(async () => {
     try {
       await saveBusinessUnit();
-      message.success(isNew ? 'Business unit created' : 'Business unit updated');
+      
+      // Get the updated state after save completes
+      const updatedState = get().businessUnit;
+      const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
+      
+      if (errorKeys.length > 0) {
+        // Show validation errors
+        const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
+        message.error(errorMessages);
+      } else if (updatedState.errors._general) {
+        // Show API error as popup
+        message.error(updatedState.errors._general);
+      } else {
+        // Show success only if no errors
+        message.success(isNew ? 'Business unit created' : 'Business unit updated');
+      }
     } catch {
       message.error('Failed to save business unit');
     }
@@ -73,7 +91,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         <Input
           value={draft?.buCode || ''}
           onChange={(e) => handleFieldChange('buCode', e.target.value)}
-          placeholder="Enter BU code"
+          placeholder="e.g., BU-DUP-1772906680633"
           disabled={!isNew}
         />
       </OrgFormField>
@@ -82,34 +100,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         <Input
           value={draft?.buName || ''}
           onChange={(e) => handleFieldChange('buName', e.target.value)}
-          placeholder="Enter BU name"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Description">
-        <Input.TextArea
-          value={draft?.description || ''}
-          onChange={(e) => handleFieldChange('description', e.target.value)}
-          placeholder="Short description"
-          rows={2}
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Head of BU">
-        <Input
-          value={draft?.headOfBu || ''}
-          onChange={(e) => handleFieldChange('headOfBu', e.target.value)}
-          placeholder="Employee ID"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="BU Type" required error={errors.buType}>
-        <Select
-          value={draft?.buType || undefined}
-          onChange={(val) => handleFieldChange('buType', val)}
-          options={[...BU_TYPE_OPTIONS]}
-          placeholder="Select type"
-          style={{ width: '100%' }}
+          placeholder="e.g., Tamil Nadu Operations"
         />
       </OrgFormField>
 
@@ -125,7 +116,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         />
       </OrgFormField>
 
-      <OrgFormField label="Place of Supply">
+      <OrgFormField label="Place of Supply" required error={errors.placeOfSupply}>
         <Select
           value={draft?.placeOfSupply || undefined}
           onChange={(val) => handleFieldChange('placeOfSupply', val)}
@@ -137,70 +128,30 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         />
       </OrgFormField>
 
-      <OrgFormField label="City" required error={errors.city}>
+      <OrgFormField label="GSTIN" required error={errors.gstin}>
         <Input
-          value={draft?.city || ''}
-          onChange={(e) => handleFieldChange('city', e.target.value)}
-          placeholder="Enter city"
+          value={draft?.gstin || ''}
+          onChange={(e) => handleFieldChange('gstin', e.target.value)}
+          placeholder="e.g., 33AABCA1234D1Z5"
         />
       </OrgFormField>
 
-      <OrgFormField label="Status">
-        <Select
-          value={draft?.status || undefined}
-          onChange={(val) =>
-            setBusinessUnitDraft({
-              status: val,
-              active: val === "ACTIVE" ? 1 : 0,
-            })
-          }
-          options={statusOptions}
-          placeholder="Select status"
-          style={{ width: '100%' }}
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Active">
-        <Switch
-          checked={draft?.active === 1}
-          onChange={(checked) =>
-            setBusinessUnitDraft({
-              active: checked ? 1 : 0,
-              status: checked ? "ACTIVE" : "INACTIVE",
-            })
-          }
+      <OrgFormField label="Primary Contact" required error={errors.primaryContact}>
+        <Input
+          value={draft?.primaryContact || ''}
+          onChange={(e) => handleFieldChange('primaryContact', e.target.value)}
+          placeholder="e.g., contact@ritsctpl.com"
         />
       </OrgFormField>
     </div>
   );
 
-  // Contact Tab
+  // Contact Tab - Removed, now in General Tab
   const contactContent = (
     <div className={formStyles.contactGrid}>
-      <OrgFormField label="Contact Email" error={errors.contactEmail}>
-        <Input
-          value={draft?.contactEmail || ''}
-          onChange={(e) => handleFieldChange('contactEmail', e.target.value)}
-          placeholder="e.g., bu@company.com"
-          type="email"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Contact Phone" error={errors.contactPhone}>
-        <Input
-          value={draft?.contactPhone || ''}
-          onChange={(e) => handleFieldChange('contactPhone', e.target.value)}
-          placeholder="e.g., +91-9876543210"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Primary Contact">
-        <Input
-          value={draft?.primaryContact || ''}
-          onChange={(e) => handleFieldChange('primaryContact', e.target.value)}
-          placeholder="Primary contact (email or phone)"
-        />
-      </OrgFormField>
+      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        Contact information is now in the General tab
+      </div>
     </div>
   );
 
@@ -214,51 +165,18 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
     />
   );
 
-  // Statutory Tab
+  // Statutory Tab - Removed, GSTIN now in General Tab
   const statutoryContent = (
     <div className={formStyles.statutoryGrid}>
-      <OrgFormField label="GSTIN">
-        <Input
-          value={draft?.gstin || draft?.statutoryRegistrationLinks?.gstNumber || ''}
-          onChange={(e) => {
-            handleFieldChange('gstin', e.target.value);
-            handleStatutoryChange('gstNumber', e.target.value);
-          }}
-          placeholder="Enter GSTIN"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Professional Tax No.">
-        <Input
-          value={draft?.statutoryRegistrationLinks?.ptNumber || ''}
-          onChange={(e) => handleStatutoryChange('ptNumber', e.target.value)}
-          placeholder="Enter PT number"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Shop & Establishment No.">
-        <Input
-          value={draft?.statutoryRegistrationLinks?.shopEstNumber || ''}
-          onChange={(e) => handleStatutoryChange('shopEstNumber', e.target.value)}
-          placeholder="Enter S&E number"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="PF Sub-Code">
-        <Input
-          value={draft?.statutoryRegistrationLinks?.pfSubCode || ''}
-          onChange={(e) => handleStatutoryChange('pfSubCode', e.target.value)}
-          placeholder="Enter PF sub-code"
-        />
-      </OrgFormField>
+      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        GSTIN is now in the General tab
+      </div>
     </div>
   );
 
   const tabItems = [
-    { key: 'general', label: BU_TAB_LABELS.general, children: generalContent },
-    { key: 'contact', label: BU_TAB_LABELS.contact, children: contactContent },
-    { key: 'address', label: BU_TAB_LABELS.address, children: addressContent },
-    { key: 'statutory', label: BU_TAB_LABELS.statutory, children: statutoryContent },
+    { key: 'general', label: 'General', children: generalContent },
+    { key: 'address', label: 'Address', children: addressContent },
   ];
 
   return (

@@ -11,38 +11,42 @@ const AcknowledgmentTracker: React.FC<AcknowledgmentTrackerProps> = ({
   loading,
   onSendReminder,
   onViewFullReport,
-}) => (
-  <div className={styles.ackTracker}>
-    <Typography.Text strong>Acknowledgment Tracking</Typography.Text>
-    <Progress
-      percent={report.percentage}
-      status={report.percentage === 100 ? "success" : "active"}
-      format={(p) => `${p}%`}
-    />
-    <Row gutter={16}>
-      <Col span={8}>
-        <Statistic title="Acknowledged" value={report.acknowledged} valueStyle={{ color: "#52c41a", fontSize: 16 }} />
-      </Col>
-      <Col span={8}>
-        <Statistic title="Pending" value={report.pending} valueStyle={{ color: "#faad14", fontSize: 16 }} />
-      </Col>
-      <Col span={8}>
-        <Statistic title="Overdue" value={report.overdue} valueStyle={{ color: "#ff4d4f", fontSize: 16 }} />
-      </Col>
-    </Row>
-    <Space>
-      {onViewFullReport && (
-        <Button size="small" icon={<EyeOutlined />} onClick={onViewFullReport}>
-          View Full Report
-        </Button>
-      )}
-      {onSendReminder && (
-        <Button size="small" icon={<BellOutlined />} onClick={onSendReminder} disabled={loading}>
-          Send Reminder to Pending
-        </Button>
-      )}
-    </Space>
-  </div>
-);
+}) => {
+  const percentage = Math.round(report.acknowledgmentRate * 100);
+  
+  return (
+    <div className={styles.ackTracker}>
+      <Typography.Text strong>Acknowledgment Tracking</Typography.Text>
+      <Progress
+        percent={percentage}
+        status={percentage === 100 ? "success" : "active"}
+        format={(p) => `${p}%`}
+      />
+      <Row gutter={16}>
+        <Col span={8}>
+          <Statistic title="Acknowledged" value={report.acknowledged} valueStyle={{ color: "#52c41a", fontSize: 16 }} />
+        </Col>
+        <Col span={8}>
+          <Statistic title="Pending" value={report.pending} valueStyle={{ color: "#faad14", fontSize: 16 }} />
+        </Col>
+        <Col span={8}>
+          <Statistic title="Overdue" value={report.overdue} valueStyle={{ color: "#ff4d4f", fontSize: 16 }} />
+        </Col>
+      </Row>
+      <Space>
+        {onViewFullReport && (
+          <Button size="small" icon={<EyeOutlined />} onClick={onViewFullReport}>
+            View Full Report
+          </Button>
+        )}
+        {onSendReminder && (
+          <Button size="small" icon={<BellOutlined />} onClick={onSendReminder} disabled={loading}>
+            Send Reminder to Pending
+          </Button>
+        )}
+      </Space>
+    </div>
+  );
+};
 
 export default AcknowledgmentTracker;

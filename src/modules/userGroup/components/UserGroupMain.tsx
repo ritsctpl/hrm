@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import styles from '../styles/UserGroup.module.css';
 import { useAuth } from '@/context/AuthContext';
 import { IconButton, Typography } from '@mui/material';
@@ -39,15 +39,6 @@ interface DecodedToken {
   preferred_username: string;
 }
 
-interface CustomDataRow {
-  customData: string;
-  value: any;
-}
-
-interface DocumentRow {
-  document: string;
-}
-
 const UserGroup: React.FC = (): JSX.Element => {
   const [selectedRowData, setSelectedRowData] = useState<UserGroups>(defaultUserGroup);
   const [tableData, setTableData] = useState<ActivityGroup[]>([]);
@@ -65,14 +56,7 @@ const UserGroup: React.FC = (): JSX.Element => {
   const [rowClickCall, setRowClickCall] = useState<number>(0);
   const { t } = useTranslation()
   const [selected, setSelected] = useState<object>({});
-  const [selectedPod, setSelectedPod] = useState<any>('');
-  const [userGroupUser, setUserGroupUser] = useState<any[]>([]);
-  const [activityGroups, setActivityGroups] = useState<any[]>([]);
-  const [customTableDatas, setCustomTableDatas] = useState<any[]>([]);
-
-  const [availableResourceList, setAvailableResourceList] = useState<Document[]>([]);
   const [fullScreen, setFullScreen] = useState<boolean>(false);
-  const [formValue, setFormValue] = useState({});
   const [formDatashow, setFormDatashow] = useState<UserGroups>(defaultUserGroup);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -90,7 +74,6 @@ const UserGroup: React.FC = (): JSX.Element => {
 
       const cookies = parseCookies();
       const site = cookies.site;
-      const userId = cookies.rl_user_id;
 
       try {
         const item = await fetchUserGroupTop50(site);
@@ -126,7 +109,7 @@ const UserGroup: React.FC = (): JSX.Element => {
     try {
       const userGrp = await fetchUserGrpAll(site);
       const lowercasedTerm = searchTerm.toLowerCase();
-      let filtered;
+      let filtered: DataRow[];
 
       if (lowercasedTerm) {
         filtered = userGrp.filter(row =>
@@ -161,7 +144,7 @@ const UserGroup: React.FC = (): JSX.Element => {
     }
   };
 
-  const handleRowSelect = (row) => {
+  const handleRowSelect = (row: DataRow) => {
     const hasUnsavedChanges = JSON.stringify(selectedRowData) !== JSON.stringify(formDatashow);
 
     if (hasUnsavedChanges && isAdding) {
@@ -185,7 +168,7 @@ const UserGroup: React.FC = (): JSX.Element => {
     }
   };
 
-  const SelectRow = async (row) => {
+  const SelectRow = async (row: DataRow) => {
     const cookies = parseCookies();
     const site = cookies.site;
 
@@ -221,11 +204,6 @@ const UserGroup: React.FC = (): JSX.Element => {
     setResetValueCall(resetValueCall + 1);
     setFullScreen(false);
     setDrag(true);
-    setFormValue(null);
-    setSelectedPod('');
-    setUserGroupUser([]);
-    setActivityGroups([]);
-    setCustomTableDatas([]);
     setHasChanges(false);
   };
 

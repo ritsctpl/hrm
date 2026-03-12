@@ -61,6 +61,12 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         key: 'city',
         width: 130,
       },
+        {
+        title: 'Pincode',
+        dataIndex: 'pincode',
+        key: 'pincode',
+        width: 130,
+      },
       {
         title: 'State',
         dataIndex: 'state',
@@ -128,7 +134,7 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
             placeholder="Search by code, name, or city..."
           />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+        <Button type="primary" onClick={onAdd}>
           Add Location
         </Button>
       </div>

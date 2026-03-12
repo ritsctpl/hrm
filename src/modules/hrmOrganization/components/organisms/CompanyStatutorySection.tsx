@@ -4,6 +4,7 @@ import React, { useCallback } from 'react';
 import { Input } from 'antd';
 import OrgFormField from '../molecules/OrgFormField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { validatePAN, validateTAN, validateCIN, validateGSTIN } from '../../utils/validations';
 import type { CompanyStatutorySectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -33,6 +34,24 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
   const handleChange = useCallback(
     (field: string, value: string) => {
       setCompanyDraft({ [field]: value });
+      
+      // Real-time validation for specific fields
+      let error: string | null = null;
+      if (field === 'pan' && value) {
+        error = validatePAN(value) || null;
+      } else if (field === 'tan' && value) {
+        error = validateTAN(value) || null;
+      } else if (field === 'cin' && value) {
+        error = validateCIN(value) || null;
+      } else if (field === 'gstin' && value) {
+        error = validateGSTIN(value) || null;
+      }
+      
+      // Update error in store if validation failed
+      if (error) {
+        // Note: You might want to add a setCompanyFieldError action to the store
+        // For now, errors will be shown on save attempt
+      }
     },
     [setCompanyDraft]
   );

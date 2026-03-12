@@ -1,7 +1,7 @@
 /* HRM Organization Module - Form Styles */
 
 .formField {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .formFieldLabel {
@@ -23,6 +23,33 @@
   margin-top: 2px;
 }
 
+/* Input field styling */
+.formField :global(.ant-input),
+.formField :global(.ant-input-number),
+.formField :global(.ant-select-selector),
+.formField :global(.ant-picker-input) {
+  background-color: #fafafa !important;
+  border: 1px solid #d9d9d9 !important;
+}
+
+/* Focus states */
+.formField :global(.ant-input:focus),
+.formField :global(.ant-input-number-focused),
+.formField :global(.ant-select-focused .ant-select-selector),
+.formField :global(.ant-picker-focused .ant-picker-input) {
+  background-color: #fff !important;
+  border-color: #40a9ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* Hover states */
+.formField :global(.ant-input:hover),
+.formField :global(.ant-input-number:hover),
+.formField :global(.ant-select-selector:hover),
+.formField :global(.ant-picker-input:hover) {
+  border-color: #40a9ff !important;
+}
+
 /* Search bar */
 .searchBar {
   width: 100%;
@@ -31,7 +58,7 @@
 
 /* Save button */
 .saveButton {
-  min-width: 100px;
+  min-width: 80px;
 }
 
 /* Bank account modal form */
@@ -59,10 +86,28 @@
 /* BU form tabs */
 .buFormTabs {
   margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .buFormTabs :global(.ant-tabs-nav) {
   margin-bottom: 12px;
+}
+
+.buFormTabs :global(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.buFormTabs :global(.ant-tabs-content) {
+  height: 100%;
+}
+
+.buFormTabs :global(.ant-tabs-tabpane) {
+  height: 100%;
 }
 
 /* Department form */

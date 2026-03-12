@@ -59,7 +59,7 @@ const CompanyAddressSection: React.FC<CompanyAddressSectionProps> = ({
   );
 
   return (
-    <div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
       {/* Registered Address */}
       <div className={mainStyles.addressBlock}>
         <div className={mainStyles.addressBlockTitle}>Registered Address</div>
@@ -73,7 +73,7 @@ const CompanyAddressSection: React.FC<CompanyAddressSectionProps> = ({
       </div>
 
       {/* Corporate Address */}
-      <div className={mainStyles.addressBlock} style={{ marginTop: 16 }}>
+      <div className={mainStyles.addressBlock}>
         <div className={mainStyles.addressBlockTitle}>
           Corporate Address
           {!disabled && (

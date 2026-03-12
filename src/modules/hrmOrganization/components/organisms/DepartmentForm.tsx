@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import { Input, Select, Button, Switch, message } from 'antd';
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Input, Select, Button, message } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+import { MdDelete } from 'react-icons/md';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -54,8 +55,9 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       await deleteDepartment(selected.handle);
       message.success('Department deleted');
       onClose();
-    } catch {
-      message.error('Failed to delete department');
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete department';
+      message.error(errorMsg);
     }
   }, [selected?.handle, deleteDepartment, onClose]);
 
@@ -63,11 +65,21 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
     <div className={mainStyles.formPanel}>
       <div className={mainStyles.formPanelHeader}>
         <span className={mainStyles.formPanelTitle}>{title}</span>
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={onClose}
-        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!isNew && selected && (
+            <Button
+              type="text"
+              danger
+              icon={<MdDelete />}
+              onClick={handleDelete}
+            />
+          )}
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={onClose}
+          />
+        </div>
       </div>
 
       <div className={formStyles.deptFormGrid}>
@@ -103,18 +115,11 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
           </OrgFormField>
         </div>
 
-        <OrgFormField label="Head Employee" error={errors.headEmployeeName}>
+        <OrgFormField label="Head Employee" error={errors.headOfDepartmentEmployeeId}>
           <Input
-            value={draft?.headEmployeeName || ''}
-            onChange={(e) => handleFieldChange('headEmployeeName', e.target.value)}
-            placeholder="Enter department head name"
-          />
-        </OrgFormField>
-
-        <OrgFormField label="Active">
-          <Switch
-            checked={draft?.active === 1}
-            onChange={(checked) => handleFieldChange('active', checked ? 1 : 0)}
+            value={draft?.headOfDepartmentEmployeeId || ''}
+            onChange={(e) => handleFieldChange('headOfDepartmentEmployeeId', e.target.value)}
+            placeholder="Enter employee ID or name"
           />
         </OrgFormField>
       </div>
@@ -124,15 +129,6 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       )}
 
       <div className={mainStyles.formActions}>
-        {!isNew && selected && (
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleDelete}
-          >
-            Delete
-          </Button>
-        )}
         <div style={{ flex: 1 }} />
         <Button onClick={onClose}>Cancel</Button>
         <OrgSaveButton

@@ -4,14 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, Statistic, Tag, Typography } from "antd";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PrintIcon from "@mui/icons-material/Print";
-import ScoreCircle from "../atoms/ScoreCircle";
 import RatingHistoryChart from "../organisms/RatingHistoryChart";
 import BellCurveChart from "../organisms/BellCurveChart";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import { HrmAppraisalService } from "../../services/hrmAppraisalService";
 import { RATING_LABELS } from "../../utils/appraisalConstants";
 import { parseCookies } from "nookies";
-import type { AppraisalReview } from "../../types/domain.types";
+import type { AppraisalHistory } from "../../types/domain.types";
 import styles from "../../styles/AppraisalSummary.module.css";
 
 const AppraisalSummaryTemplate: React.FC = () => {
@@ -28,8 +27,8 @@ const AppraisalSummaryTemplate: React.FC = () => {
     }
 
     if (employeeId) {
-      HrmAppraisalService.getAppraisalHistory(site, employeeId).then((reviews: AppraisalReview[]) => {
-        const points = reviews
+      HrmAppraisalService.getAppraisalHistory(site, employeeId).then((history: AppraisalHistory) => {
+        const points = history.reviews
           .filter((r) => r.finalRating > 0)
           .map((r) => ({
             cycleLabel: r.cycleId,

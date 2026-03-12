@@ -76,7 +76,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
       <div className={styles.bankCardGrid}>
         <div>
           <div className={styles.bankCardLabel}>Branch</div>
-          <div className={styles.bankCardValue}>{branchName}</div>
+          <div className={styles.bankCardValue}>{branchName || '-'}</div>
         </div>
         <div>
           <div className={styles.bankCardLabel}>Account No.</div>
@@ -84,7 +84,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
         </div>
         <div>
           <div className={styles.bankCardLabel}>IFSC Code</div>
-          <div className={styles.bankCardValue}>{ifscCode}</div>
+          <div className={styles.bankCardValue}>{ifscCode || '-'}</div>
         </div>
         <div>
           <div className={styles.bankCardLabel}>Account Type</div>

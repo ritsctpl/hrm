@@ -50,9 +50,13 @@ const CompanyDetailTemplate: React.FC = () => {
     if (companyProfile.data?.handle) {
       fetchBusinessUnits();
       fetchLocations();
+    } else if (selectedCompanyHandle && selectedCompanyHandle !== 'new') {
+      // If company profile is still loading but we have the handle, try fetching anyway
+      fetchBusinessUnits();
+      fetchLocations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyProfile.data?.handle]);
+  }, [companyProfile.data?.handle, selectedCompanyHandle]);
 
   const companyName = companyProfile.data?.legalName || (isNew ? 'New Company' : 'Loading...');
 
@@ -84,7 +88,7 @@ const CompanyDetailTemplate: React.FC = () => {
         </span>
       ),
       children: <BusinessUnitTemplate />,
-      disabled: isNew,
+      disabled: false,
     },
     {
       key: 'departments',
@@ -95,7 +99,7 @@ const CompanyDetailTemplate: React.FC = () => {
         </span>
       ),
       children: <DepartmentTemplate />,
-      disabled: isNew,
+      disabled: false,
     },
     {
       key: 'locations',
@@ -106,7 +110,7 @@ const CompanyDetailTemplate: React.FC = () => {
         </span>
       ),
       children: <LocationTemplate />,
-      disabled: isNew,
+      disabled: false,
     },
     {
       key: 'hierarchy',
@@ -121,7 +125,7 @@ const CompanyDetailTemplate: React.FC = () => {
           <OrgHierarchyTree />
         </div>
       ),
-      disabled: isNew,
+      disabled: false,
     },
     {
       key: 'audit',
@@ -150,40 +154,33 @@ const CompanyDetailTemplate: React.FC = () => {
   return (
     <div className={styles.detailViewContainer}>
       <div className={styles.detailHeader}>
-        <Breadcrumb
-          items={[
-            {
-              title: (
-                <a onClick={navigateToList}>
-                  <HomeOutlined /> Organizations
-                </a>
-              ),
-            },
-            { title: companyName },
-          ]}
-        />
-        <Card size="small" className={styles.companyHeaderCard}>
-          <div className={styles.companyHeaderContent}>
-            <div>
-              <h3 className={styles.companyHeaderName}>{companyName}</h3>
-              {companyProfile.data?.companyName && (
-                <span className={styles.companyHeaderTrade}>{companyProfile.data.companyName}</span>
-              )}
-            </div>
-            <div className={styles.companyHeaderMeta}>
-              {(companyProfile.data?.industryType || companyProfile.data?.industry) && (
-                <Tag>{companyProfile.data?.industryType || companyProfile.data?.industry}</Tag>
-              )}
-              {companyProfile.data && (
-                <Tag color={companyProfile.data.active === 1 ? 'green' : 'red'}>
-                  {companyProfile.data.active === 1 ? 'Active' : 'Inactive'}
-                </Tag>
-              )}
-            </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Breadcrumb
+            items={[
+              {
+                title: (
+                  <a onClick={navigateToList}>
+                    <HomeOutlined /> Organizations
+                  </a>
+                ),
+              },
+              { title: companyName },
+            ]}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(companyProfile.data?.industryType || companyProfile.data?.industry) && (
+              <Tag>{companyProfile.data?.industryType || companyProfile.data?.industry}</Tag>
+            )}
+            {companyProfile.data && (
+              <Tag color={companyProfile.data.active === 1 ? 'green' : 'red'}>
+                {companyProfile.data.active === 1 ? 'Active' : 'Inactive'}
+              </Tag>
+            )}
           </div>
-        </Card>
+        </div>
       </div>
       <Tabs
+        key={`tabs-${selectedCompanyHandle}`}
         activeKey={activeDetailTab}
         onChange={(k) => setActiveDetailTab(k as DetailTabKey)}
         items={tabItems}

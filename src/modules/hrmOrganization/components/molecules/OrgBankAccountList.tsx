@@ -18,7 +18,6 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
   return (
     <div>
       <div className={styles.listHeader}>
-        <span className={styles.listTitle}>Bank Accounts</span>
         {!disabled && (
           <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
             Add Account
@@ -28,14 +27,14 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
       {accounts.length === 0 ? (
         <Empty description="No bank accounts added" />
       ) : (
-        <div className={styles.bankCardList}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
           {accounts.map((account, index) => (
             <OrgBankAccountCard
               key={`${account.accountNumber}-${index}`}
               bankName={account.bankName}
-              branchName={account.branchName}
+              branchName={account.branchName || account.branch}
               accountNumber={account.accountNumber}
-              ifscCode={account.ifscCode}
+              ifscCode={account.ifscCode || account.ifsc}
               accountType={account.accountType}
               isPrimary={account.isPrimary}
               onEdit={() => onEdit(index)}

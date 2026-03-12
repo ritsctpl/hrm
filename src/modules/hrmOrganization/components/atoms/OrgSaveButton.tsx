@@ -15,10 +15,11 @@ const OrgSaveButton: React.FC<OrgSaveButtonProps> = ({
   return (
     <Button
       type="primary"
-      icon={<SaveOutlined />}
+      // icon={<SaveOutlined />}
       loading={loading}
       disabled={disabled}
       onClick={onClick}
+      size="small"
       className={styles.saveButton}
     >
       {label}

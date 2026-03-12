@@ -58,6 +58,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         invoiceNo: values.invoiceNo,
         invoiceDate: dayjs(values.invoiceDate).format('YYYY-MM-DD'),
         location: values.location,
+        createdBy: userId ?? 'system',
         ...(isEdit ? { assetId: editAsset!.assetId } : {}),
       };
 

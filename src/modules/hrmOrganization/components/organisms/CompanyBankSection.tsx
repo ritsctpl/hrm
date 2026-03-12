@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Modal, Input, Select, Switch, message } from 'antd';
+import { Modal, Input, Select, Switch, message, Button } from 'antd';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgBankAccountList from '../molecules/OrgBankAccountList';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -34,7 +34,18 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
 
   const handleEdit = useCallback(
     (index: number) => {
-      setFormData({ ...bankAccounts[index] });
+      const account = bankAccounts[index];
+      setFormData({
+        bankName: account.bankName || '',
+        branchName: account.branchName || account.branch || '',
+        accountNumber: account.accountNumber || '',
+        ifscCode: account.ifscCode || account.ifsc || '',
+        accountType: account.accountType || '',
+        isPrimary: account.isPrimary || false,
+        // Keep API field names for compatibility
+        branch: account.branch || account.branchName || '',
+        ifsc: account.ifsc || account.ifscCode || '',
+      } as BankAccount);
       setEditingIndex(index);
       setFormErrors({});
       setModalOpen(true);
@@ -81,9 +92,17 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
   const handleSave = useCallback(() => {
     if (!validateForm()) return;
 
-    const normalizedData = {
-      ...formData,
-      ifscCode: formData.ifscCode.toUpperCase(),
+    // Normalize field names to API format
+    const normalizedData: BankAccount = {
+      bankName: formData.bankName,
+      branch: formData.branchName || formData.branch || '',
+      ifsc: formData.ifscCode?.toUpperCase() || formData.ifsc || '',
+      accountNumber: formData.accountNumber,
+      accountType: formData.accountType,
+      isPrimary: formData.isPrimary || false,
+      // Keep backward compat fields
+      branchName: formData.branchName || formData.branch,
+      ifscCode: formData.ifscCode?.toUpperCase() || formData.ifsc,
     };
 
     let updated: BankAccount[];
@@ -131,14 +150,22 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
       <Modal
         title={editingIndex !== null ? 'Edit Bank Account' : 'Add Bank Account'}
         open={modalOpen}
-        onOk={handleSave}
         onCancel={() => {
           setModalOpen(false);
           resetForm();
         }}
-        okText="Save"
         width={600}
-        destroyOnClose
+        footer={[
+          <Button key="cancel" onClick={() => {
+            setModalOpen(false);
+            resetForm();
+          }}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" onClick={handleSave}>
+            {editingIndex !== null ? 'Update' : 'Save'}
+          </Button>,
+        ]}
       >
         <div className={formStyles.bankFormGrid}>
           <OrgFormField label="Bank Name" required error={formErrors.bankName}>

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import { Table, Button, Spin, Popconfirm, Tooltip } from 'antd';
+import { Table, Button, Spin, Popconfirm, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
+import { MdDelete } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -26,15 +27,20 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
     return list.filter(
       (bu) =>
         bu.buCode.toLowerCase().includes(searchLower) ||
-        bu.buName.toLowerCase().includes(searchLower) ||
-        bu.buType.toLowerCase().includes(searchLower)
+        bu.buName.toLowerCase().includes(searchLower)
     );
   }, [list, searchText]);
 
   const handleDelete = useCallback(
     async (handle: string, e?: React.MouseEvent) => {
       e?.stopPropagation();
-      await deleteBusinessUnit(handle);
+      try {
+        await deleteBusinessUnit(handle);
+        message.success('Business unit deleted successfully');
+      } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to delete business unit';
+        message.error(errorMsg);
+      }
     },
     [deleteBusinessUnit]
   );
@@ -45,7 +51,6 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         title: 'BU Code',
         dataIndex: 'buCode',
         key: 'buCode',
-        width: 120,
         sorter: (a, b) => a.buCode.localeCompare(b.buCode),
       },
       {
@@ -56,34 +61,30 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         sorter: (a, b) => a.buName.localeCompare(b.buName),
       },
       {
-        title: 'Type',
-        dataIndex: 'buType',
-        key: 'buType',
-        width: 120,
+        title: 'Department Count',
+        dataIndex: 'departmentCount',
+        key: 'departmentCount',
       },
       {
-        title: 'City',
-        dataIndex: 'city',
-        key: 'city',
-        width: 120,
+        title: 'Primary Contact',
+        dataIndex: 'primaryContact',
+        key: 'primaryContact',
+        ellipsis: true,
       },
       {
         title: 'State',
         dataIndex: 'state',
         key: 'state',
-        width: 140,
       },
       {
         title: 'Status',
         dataIndex: 'active',
         key: 'active',
-        width: 90,
         render: (active: number) => <OrgStatusTag active={active} />,
       },
       {
         title: '',
         key: 'actions',
-        width: 50,
         render: (_: unknown, record: BusinessUnit) => (
           <Popconfirm
             title="Delete Business Unit"
@@ -98,7 +99,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
                 type="text"
                 size="small"
                 danger
-                icon={<DeleteOutlined />}
+                icon={<MdDelete />}
                 onClick={(e) => e.stopPropagation()}
               />
             </Tooltip>
@@ -112,7 +113,9 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
   if (isLoading) {
     return (
       <div className={mainStyles.loadingContainer}>
-        <Spin size="large" tip="Loading business units..." />
+        <Spin size="large">
+          <div style={{ minHeight: 100 }} />
+        </Spin>
       </div>
     );
   }
@@ -128,7 +131,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
             placeholder="Search by code, name, or type..."
           />
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+        <Button type="primary" onClick={onAdd}>
           Add Business Unit
         </Button>
       </div>
@@ -138,7 +141,6 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         dataSource={filteredList}
         rowKey="handle"
         size="small"
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `Total: ${total}` }}
         onRow={(record) => ({
           onClick: () => onSelect(record),
           style: {

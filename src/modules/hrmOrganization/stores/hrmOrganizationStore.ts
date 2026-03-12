@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { parseCookies } from 'nookies';
 import { HrmOrganizationService } from '../services/hrmOrganizationService';
+import { validateCompanyProfile, validateBusinessUnit } from '../utils/validations';
 import type {
   CompanyProfile,
   BusinessUnit,
@@ -216,7 +217,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   hierarchy: { ...initialHierarchyState },
 
   // Audit & Reports
-  auditLog: { entries: [], isLoading: false, entityTypeFilter: '', entityHandleFilter: '' },
+  auditLog: { entries: [], isLoading: false, entityTypeFilter: 'COMPANY_PROFILE', entityHandleFilter: '' },
   dataCompleteness: { rows: [], isLoading: false },
 
   // ------------------------------------------
@@ -256,11 +257,14 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       let data;
-      try {
-        data = await HrmOrganizationService.fetchAllCompanies(site);
-      } catch {
-        data = await HrmOrganizationService.fetchBySite(site);
-      }
+      // TODO: Uncomment fetchAllCompanies when API is ready
+      // try {
+      //   data = await HrmOrganizationService.fetchAllCompanies(site);
+      // } catch {
+      //   data = await HrmOrganizationService.fetchBySite(site);
+      // }
+      data = await HrmOrganizationService.fetchBySite(site);
+      
       // Backend may return single object or array
       const rawItems = Array.isArray(data) ? data : data ? [data] : [];
       const items = rawItems as unknown as CompanyListItem[];
@@ -290,7 +294,14 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     if (!site) return;
 
     try {
-      await HrmOrganizationService.deleteCompany(site, handle, userId);
+      const response = await HrmOrganizationService.deleteCompany(site, handle, userId);
+      
+      // Check if response has error code or error message
+      if (response?.errorCode || response?.message_details?.msg_type === 'E') {
+        const errorMsg = response?.message_details?.msg || 'Failed to delete company';
+        throw new Error(errorMsg);
+      }
+      
       set((state) => ({
         companyList: {
           ...state.companyList,
@@ -298,7 +309,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         },
       }));
     } catch (error: unknown) {
-      console.error('deleteCompany error:', error instanceof Error ? error.message : error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete company';
+      console.error('deleteCompany error:', errorMsg);
+      throw new Error(errorMsg);
     }
   },
 
@@ -372,6 +385,19 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     if (!companyProfile.draft || !site) return;
 
+    // Validate before saving
+    const validationErrors = validateCompanyProfile(companyProfile.draft);
+    if (Object.keys(validationErrors).length > 0) {
+      set((state) => ({
+        companyProfile: {
+          ...state.companyProfile,
+          isSaving: false,
+          errors: validationErrors,
+        },
+      }));
+      return;
+    }
+
     set((state) => ({
       companyProfile: { ...state.companyProfile, isSaving: true, errors: {} },
     }));
@@ -380,16 +406,19 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const payload: CompanyProfileRequest = {
         site,
         legalName: companyProfile.draft.legalName || '',
-        companyName: companyProfile.draft.companyName || companyProfile.draft.tradeName,
-        registrationNumber: companyProfile.draft.registrationNumber,
+        companyName: companyProfile.draft.companyName || companyProfile.draft.tradeName || '',
+        registrationNumber: companyProfile.draft.registrationNumber || '',
         industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
         foundedDate: companyProfile.draft.foundedDate || companyProfile.draft.incorporationDate || '',
-        website: companyProfile.draft.website,
-        pan: companyProfile.draft.pan,
-        cin: companyProfile.draft.cin,
-        gstin: companyProfile.draft.gstin,
-        pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo,
-        financialYearStartMonth: companyProfile.draft.financialYearStartMonth,
+        website: companyProfile.draft.website || '',
+        pan: companyProfile.draft.pan || '',
+        tan: companyProfile.draft.tan || '',
+        cin: companyProfile.draft.cin || '',
+        gstin: companyProfile.draft.gstin || '',
+        pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo || '',
+        esicCode: companyProfile.draft.esicCode || '',
+        msmeUdyam: companyProfile.draft.msmeUdyam || '',
+        financialYearStartMonth: companyProfile.draft.financialYearStartMonth || '',
         bankAccounts: companyProfile.draft.bankAccounts || [],
         registeredOfficeAddress: companyProfile.draft.registeredOfficeAddress || companyProfile.draft.registeredAddress || {
           line1: '',
@@ -459,14 +488,19 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     const { companyProfile, selectedCompanyHandle } = get();
     const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
-    if (!site || !companyHandle) return;
+    console.log('fetchBusinessUnits - site:', site, 'companyHandle:', companyHandle, 'selectedCompanyHandle:', selectedCompanyHandle, 'companyProfile.data?.handle:', companyProfile.data?.handle);
+
+    if (!site || !companyHandle) {
+      console.warn('fetchBusinessUnits - Missing site or companyHandle');
+      return;
+    }
 
     set((state) => ({
       businessUnit: { ...state.businessUnit, isLoading: true, errors: {} },
     }));
 
     try {
-      const list = await HrmOrganizationService.fetchBusinessUnits(site);
+      const list = await HrmOrganizationService.fetchBusinessUnits(site, companyHandle);
       set((state) => ({
         businessUnit: { ...state.businessUnit, list, isLoading: false },
       }));
@@ -527,70 +561,54 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     if (!businessUnit.draft || !site || !companyHandle) return;
 
+    // Validate before saving
+    const validationErrors = validateBusinessUnit(businessUnit.draft);
+    if (Object.keys(validationErrors).length > 0) {
+      set((state) => ({
+        businessUnit: {
+          ...state.businessUnit,
+          isSaving: false,
+          errors: validationErrors,
+        },
+      }));
+      return;
+    }
+
     set((state) => ({
       businessUnit: { ...state.businessUnit, isSaving: true, errors: {} },
     }));
 
     try {
-      const address = businessUnit.draft.address
-        ? { ...businessUnit.draft.address }
-        : undefined;
-      if (address && businessUnit.draft.city && !address.city) {
-        address.city = businessUnit.draft.city;
-      }
-      if (address) {
-        const pincode = (address as Record<string, unknown>).pincode || (address as Record<string, unknown>).pinCode;
-        if (pincode && !address.pincode) {
-          address.pincode = String(pincode);
-        }
-        if (address.pincode && !(address as Record<string, unknown>).pinCode) {
-          (address as Record<string, unknown>).pinCode = address.pincode;
-        }
-        if (!address.country) {
-          address.country = 'India';
-        }
-        if (address.pincode && !address.postalCode) {
-          address.postalCode = address.pincode;
-        }
-      }
-
-      const gstin =
-        businessUnit.draft.gstin ||
-        businessUnit.draft.statutoryRegistrationLinks?.gstNumber;
-      const status =
-        businessUnit.draft.status ||
-        (businessUnit.draft.active === 0 ? 'INACTIVE' : 'ACTIVE');
-
       const payload: BusinessUnitRequest = {
         site,
         companyHandle,
         buCode: businessUnit.draft.buCode || '',
         buName: businessUnit.draft.buName || '',
-        description: businessUnit.draft.description || undefined,
-        headOfBu: businessUnit.draft.headOfBu || userId,
-        status,
         state: businessUnit.draft.state || '',
-        placeOfSupply: businessUnit.draft.placeOfSupply || businessUnit.draft.state || '',
-        gstin: gstin || undefined,
-        address,
-        primaryContact:
-          businessUnit.draft.primaryContact ||
-          businessUnit.draft.contactEmail ||
-          businessUnit.draft.contactPhone ||
-          undefined,
-        statutoryRegistrationLinks: businessUnit.draft.statutoryRegistrationLinks,
-        active: businessUnit.draft.active ?? 1,
-        modifiedBy: userId,
-        buType: businessUnit.draft.buType || undefined,
-        city: businessUnit.draft.city || address?.city || undefined,
-        contactEmail: businessUnit.draft.contactEmail || undefined,
-        contactPhone: businessUnit.draft.contactPhone || undefined,
+        placeOfSupply: businessUnit.draft.placeOfSupply || '',
+        gstin: businessUnit.draft.gstin || undefined,
+        primaryContact: businessUnit.draft.primaryContact || '',
+        address: {
+          line1: businessUnit.draft.address?.line1 || '',
+          city: businessUnit.draft.address?.city || '',
+          state: businessUnit.draft.address?.state || '',
+          pincode: businessUnit.draft.address?.pincode || '',
+          country: businessUnit.draft.address?.country || 'India',
+        },
+        createdBy: userId,
       };
 
       if (businessUnit.selected?.handle && !businessUnit.isCreating) {
+        // For update, replace createdBy with modifiedBy
+        const updatePayload = {
+          ...payload,
+          modifiedBy: userId,
+        };
+        delete (updatePayload as Record<string, unknown>).createdBy;
+        
         const updated = await HrmOrganizationService.updateBusinessUnit(
           businessUnit.selected.handle,
-          payload
+          updatePayload
         );
         set((state) => ({
           businessUnit: {
@@ -605,7 +623,6 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           },
         }));
       } else {
-        payload.createdBy = userId;
         const created = await HrmOrganizationService.createBusinessUnit(payload);
         set((state) => ({
           businessUnit: {
@@ -639,7 +656,14 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     if (!site) return;
 
     try {
-      await HrmOrganizationService.deleteBusinessUnit(site, handle, userId);
+      const response = await HrmOrganizationService.deleteBusinessUnit(site, handle, userId);
+      
+      // Check if response has error code or error message
+      if (response?.errorCode || response?.message_details?.msg_type === 'E') {
+        const errorMsg = response?.message_details?.msg || 'Failed to delete business unit';
+        throw new Error(errorMsg);
+      }
+      
       set((state) => ({
         businessUnit: {
           ...state.businessUnit,
@@ -655,8 +679,13 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         },
       }));
     } catch (error: unknown) {
-      const errMsg =
-        error instanceof Error ? error.message : 'Failed to delete business unit';
+      let errMsg = 'Failed to delete business unit';
+      
+      // If it's an Error object, use its message
+      if (error instanceof Error) {
+        errMsg = error.message;
+      }
+      
       console.error('deleteBusinessUnit error:', errMsg);
       set((state) => ({
         businessUnit: {
@@ -664,6 +693,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           errors: { _general: errMsg },
         },
       }));
+      throw new Error(errMsg);
     }
   },
 
@@ -777,12 +807,16 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   saveDepartment: async () => {
-    const { department } = get();
+    const { department, businessUnit } = get();
     const site = getSite();
     const userId = getUserId();
     const buHandle = department.selectedBuHandle;
 
     if (!department.draft || !site || !buHandle) return;
+
+    // Get the selected business unit to access companyHandle
+    const selectedBu = businessUnit.list.find((bu) => bu.handle === buHandle);
+    if (!selectedBu) return;
 
     set((state) => ({
       department: { ...state.department, isSaving: true, errors: {} },
@@ -792,11 +826,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const payload: DepartmentRequest = {
         site,
         buHandle,
+        companyHandle: selectedBu.companyHandle,
         deptCode: department.draft.deptCode || '',
         deptName: department.draft.deptName || '',
         parentDeptHandle: department.draft.parentDeptHandle,
-        headEmployeeHandle: department.draft.headEmployeeHandle,
-        headEmployeeName: department.draft.headEmployeeName,
+        headOfDepartmentEmployeeId: department.draft.headOfDepartmentEmployeeId,
         active: department.draft.active ?? 1,
         modifiedBy: userId,
       };
@@ -864,7 +898,13 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     if (!site) return;
 
     try {
-      await HrmOrganizationService.deleteDepartment(site, handle, userId);
+      const response = await HrmOrganizationService.deleteDepartment(site, handle, userId);
+      
+      // Check if response has error code or error message
+      if (response?.errorCode || response?.message_details?.msg_type === 'E') {
+        const errorMsg = response?.message_details?.msg || 'Failed to delete department';
+        throw new Error(errorMsg);
+      }
 
       set((state) => ({
         department: {
@@ -893,8 +933,13 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         }));
       }
     } catch (error: unknown) {
-      const errMsg =
-        error instanceof Error ? error.message : 'Failed to delete department';
+      let errMsg = 'Failed to delete department';
+      
+      // If it's an Error object, use its message
+      if (error instanceof Error) {
+        errMsg = error.message;
+      }
+      
       console.error('deleteDepartment error:', errMsg);
       set((state) => ({
         department: {
@@ -902,6 +947,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           errors: { _general: errMsg },
         },
       }));
+      throw new Error(errMsg);
     }
   },
 
@@ -973,7 +1019,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         ...state.location,
         isCreating,
         selected: isCreating ? null : state.location.selected,
-        draft: isCreating ? {} : state.location.draft,
+        draft: isCreating ? { country: 'India', active: 1 } : state.location.draft,
         errors: {},
       },
     })),
@@ -990,6 +1036,21 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     if (!location.draft || !site) return;
 
+    // Validate location data
+    const { validateLocation } = await import('../utils/validations');
+    const validationErrors = validateLocation(location.draft);
+    
+    if (Object.keys(validationErrors).length > 0) {
+      const errorMessages = Object.values(validationErrors).join('\n');
+      set((state) => ({
+        location: {
+          ...state.location,
+          errors: validationErrors,
+        },
+      }));
+      throw new Error(errorMessages);
+    }
+
     set((state) => ({
       location: { ...state.location, isSaving: true, errors: {} },
     }));
@@ -1004,7 +1065,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         city: location.draft.city || '',
         state: location.draft.state || '',
         country: location.draft.country || 'India',
-        pinZip: location.draft.pinZip || '',
+        pincode: location.draft.pinZip || '',
         active: location.draft.active ?? 1,
         modifiedBy: userId,
       };
@@ -1051,6 +1112,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           errors: { _general: errMsg },
         },
       }));
+      throw new Error(errMsg);
     }
   },
 
@@ -1207,7 +1269,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       department: { ...initialDepartmentState },
       location: { ...initialLocationState },
       hierarchy: { ...initialHierarchyState },
-      auditLog: { entries: [], isLoading: false, entityTypeFilter: '', entityHandleFilter: '' },
+      auditLog: { entries: [], isLoading: false, entityTypeFilter: 'COMPANY_PROFILE', entityHandleFilter: '' },
       dataCompleteness: { rows: [], isLoading: false },
     }),
 }));

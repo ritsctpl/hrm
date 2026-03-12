@@ -18,7 +18,7 @@
 /* List view */
 .listViewContainer {
   flex: 1;
-  padding: 16px;
+  padding: 12px;
   overflow: auto;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .detailHeader {
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -69,21 +69,29 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .detailTabs :global(.ant-tabs-nav) {
   margin-bottom: 0;
   padding: 0 16px;
   background: #fff;
+  flex-shrink: 0;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 
 .detailTabs :global(.ant-tabs-content-holder) {
   flex: 1;
   overflow: auto;
+  min-height: 0;
 }
 
 .detailTabs :global(.ant-tabs-content) {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .detailTabs :global(.ant-tabs-tabpane) {
@@ -123,11 +131,14 @@
   transition: flex 0.3s ease;
   border-left: 1px solid #f0f0f0;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .show {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Tab content */
@@ -137,9 +148,10 @@
 
 /* Company Profile */
 .companyProfileContainer {
-  padding: 16px;
+  padding: 12px;
   overflow: auto;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .companyFormHeader {
@@ -166,14 +178,14 @@
 .profileSection {
   background: #fff;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
   border: 1px solid #e2e8f0;
 }
 
 .profileSectionTitle {
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e2e8f0;
   font-size: 14px;
   font-weight: 600;
@@ -184,9 +196,9 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 16px 0 0;
+  padding: 12px 0 0;
   border-top: 1px solid #f0f0f0;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 /* Section styles */
@@ -343,7 +355,10 @@
 
 /* Form panel */
 .formPanel {
-  padding: 16px;
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .formPanelHeader {

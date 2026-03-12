@@ -2,11 +2,23 @@ import type { ExpenseReport } from "../types/domain.types";
 import dayjs from "dayjs";
 
 export function formatExpenseDateRange(report: ExpenseReport): string {
-  if (!report.fromDate) return "—";
-  if (!report.toDate || report.fromDate === report.toDate) {
-    return dayjs(report.fromDate).format("DD MMM YYYY");
+  if (!report.items || report.items.length === 0) return "—";
+  
+  const dates = report.items
+    .map((item) => item.expenseDate)
+    .filter((date): date is string => !!date)
+    .sort();
+  
+  if (dates.length === 0) return "—";
+  
+  const fromDate = dates[0];
+  const toDate = dates[dates.length - 1];
+  
+  if (!fromDate) return "—";
+  if (!toDate || fromDate === toDate) {
+    return dayjs(fromDate).format("DD MMM YYYY");
   }
-  return `${dayjs(report.fromDate).format("DD MMM")} – ${dayjs(report.toDate).format("DD MMM YYYY")}`;
+  return `${dayjs(fromDate).format("DD MMM")} – ${dayjs(toDate).format("DD MMM YYYY")}`;
 }
 
 export function formatCurrency(amount: number, currency: string): string {

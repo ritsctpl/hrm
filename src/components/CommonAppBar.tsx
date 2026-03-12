@@ -24,7 +24,6 @@ import { destroyCookie, parseCookies, setCookie } from "nookies";
 import api from "@services/api";
 import { useTranslation } from "react-i18next";
 import { message, Modal, Select } from "antd";
-import { DecodedToken } from "@modules/changeEquipmentStatus/types/changeEquipmentType";
 import { decryptToken } from "@utils/encryption";
 import jwtDecode from "jwt-decode";
 import { updateUserSite } from "@services/userService";
@@ -38,6 +37,7 @@ import { MdFactory } from "react-icons/md";
 import { CiSearch } from "react-icons/ci";
 import { useTheme as useAppTheme } from "./ThemeContext"; // Rename to avoid conflict with MUI useTheme
 import { CiLogin } from "react-icons/ci";
+import { DecodedToken } from "@modules/userMaintenance/types/userTypes";
 const { Option } = Select;
 interface CommonAppBarProps {
   allActivities?: { description: string; url: string }[];

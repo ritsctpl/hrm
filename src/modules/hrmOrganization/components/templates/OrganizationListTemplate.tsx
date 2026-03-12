@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Table, Button, Input, Tag, Popconfirm, Select } from 'antd';
-import { PlusOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Tag, Popconfirm, Select, message } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { MdDelete } from 'react-icons/md';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import styles from '../../styles/HrmOrganization.module.css';
 
@@ -20,6 +21,16 @@ const OrganizationListTemplate: React.FC = () => {
     fetchCompanyList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleDeleteCompany = async (handle: string) => {
+    try {
+      await deleteCompany(handle);
+      message.success('Company deleted successfully');
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete company';
+      message.error(errorMsg);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     let items = companyList.items;
@@ -49,15 +60,15 @@ const OrganizationListTemplate: React.FC = () => {
         <a onClick={() => navigateToDetail(record.handle)}>{text}</a>
       ),
     },
-    {
-      title: 'Trade Name',
-      dataIndex: 'tradeName',
-      key: 'tradeName',
-    },
+    // {
+    //   title: 'Trade Name',
+    //   dataIndex: 'tradeName',
+    //   key: 'tradeName',
+    // },
     {
       title: 'Industry',
-      dataIndex: 'industry',
-      key: 'industry',
+      dataIndex: 'industryType',
+      key: 'industryType',
     },
     {
       title: 'Email',
@@ -85,9 +96,21 @@ const OrganizationListTemplate: React.FC = () => {
       key: 'actions',
       width: 80,
       render: (_: unknown, record: typeof companyList.items[number]) => (
-        <Popconfirm title="Delete this company?" onConfirm={() => deleteCompany(record.handle)}>
-          <Button size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <div data-actions-column onClick={(e) => e.stopPropagation()}>
+          <Popconfirm 
+            title="Delete this company?" 
+            onConfirm={(e) => {
+              e?.stopPropagation();
+              handleDeleteCompany(record.handle);
+            }}
+          >
+            <Button 
+              size="small" 
+              danger 
+              icon={<MdDelete />}
+            />
+          </Popconfirm>
+        </div>
       ),
     },
   ];
@@ -121,7 +144,7 @@ const OrganizationListTemplate: React.FC = () => {
         <Button
           type="primary"
           size="small"
-          icon={<PlusOutlined />}
+          // icon={<PlusOutlined />}
           onClick={() => navigateToDetail('new')}
         >
           New Company
@@ -135,7 +158,14 @@ const OrganizationListTemplate: React.FC = () => {
         size="small"
         pagination={{ pageSize: 20, showSizeChanger: true }}
         onRow={(record) => ({
-          onClick: () => navigateToDetail(record.handle),
+          onClick: (e: React.MouseEvent) => {
+            // Don't navigate if clicking on actions column
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-actions-column]')) {
+              return;
+            }
+            navigateToDetail(record.handle);
+          },
           style: { cursor: 'pointer' },
         })}
       />

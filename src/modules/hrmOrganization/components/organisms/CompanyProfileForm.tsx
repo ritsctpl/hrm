@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Button, Spin, message, Divider } from 'antd';
+import { Button, Spin, message } from 'antd';
 import { EditOutlined, CloseOutlined } from '@ant-design/icons';
 import CompanyIdentitySection from './CompanyIdentitySection';
 import CompanyStatutorySection from './CompanyStatutorySection';
 import CompanyBankSection from './CompanyBankSection';
 import CompanyAddressSection from './CompanyAddressSection';
-import CompanyContactSection from './CompanyContactSection';
 import CompanyFinancialYearSection from './CompanyFinancialYearSection';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -19,6 +18,9 @@ const CompanyProfileForm: React.FC = () => {
     setCompanyEditing,
     saveCompanyProfile,
   } = useHrmOrganizationStore();
+  
+  // Get the store's get function to access current state
+  const get = useHrmOrganizationStore.getState;
 
   const { isLoading, isSaving, isEditing, data, errors } = companyProfile;
 
@@ -33,7 +35,22 @@ const CompanyProfileForm: React.FC = () => {
   const handleSave = useCallback(async () => {
     try {
       await saveCompanyProfile();
-      message.success('Company profile saved successfully');
+      
+      // Get the updated state after save completes
+      const updatedState = get().companyProfile;
+      const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
+      
+      if (errorKeys.length > 0) {
+        // Show validation errors
+        const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
+        message.error(errorMessages);
+      } else if (updatedState.errors._general) {
+        // Show API error as popup
+        message.error(updatedState.errors._general);
+      } else {
+        // Show success only if no errors
+        message.success('Company profile saved successfully');
+      }
     } catch {
       message.error('Failed to save company profile');
     }
@@ -47,7 +64,8 @@ const CompanyProfileForm: React.FC = () => {
     );
   }
 
-  const isDisabled = !isEditing;
+  const isNew = !data;
+  const isDisabled = !isEditing && !isNew;
 
   return (
     <div className={mainStyles.companyProfileContainer}>
@@ -73,7 +91,7 @@ const CompanyProfileForm: React.FC = () => {
               Cancel
             </Button>
           )}
-          {isEditing && (
+          {(isEditing || isNew) && (
             <OrgSaveButton
               loading={isSaving}
               onClick={handleSave}
@@ -93,13 +111,7 @@ const CompanyProfileForm: React.FC = () => {
         <CompanyIdentitySection disabled={isDisabled} />
       </div>
 
-      {/* Section 2: Contact Info */}
-      <div className={mainStyles.profileSection}>
-        <div className={mainStyles.profileSectionTitle}>Contact Information</div>
-        <CompanyContactSection disabled={isDisabled} />
-      </div>
-
-      {/* Section 3: Statutory IDs */}
+      {/* Section 2: Statutory IDs */}
       <div className={mainStyles.profileSection}>
         <div className={mainStyles.profileSectionTitle}>Statutory Details</div>
         <CompanyStatutorySection disabled={isDisabled} />
@@ -126,7 +138,7 @@ const CompanyProfileForm: React.FC = () => {
       )}
 
       {/* Bottom actions for long form */}
-      {isEditing && (
+      {(isEditing || isNew) && (
         <div className={mainStyles.companyActions}>
           {data && (
             <Button

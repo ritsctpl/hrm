@@ -7,7 +7,7 @@ import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const ENTITY_TYPES = [
-  { value: '', label: 'All Entities' },
+  // { value: '', label: 'All Entities' },
   { value: 'COMPANY_PROFILE', label: 'Company' },
   { value: 'BUSINESS_UNIT', label: 'Business Unit' },
   { value: 'DEPARTMENT', label: 'Department' },
@@ -23,15 +23,20 @@ const ACTION_COLORS: Record<string, string> = {
 const OrgAuditLogPanel: React.FC = () => {
   const {
     auditLog,
+    selectedCompanyHandle,
     fetchAuditLog,
     setAuditEntityTypeFilter,
     setAuditEntityHandleFilter,
   } = useHrmOrganizationStore();
 
   useEffect(() => {
-    fetchAuditLog(auditLog.entityTypeFilter, auditLog.entityHandleFilter);
+    // Use selectedCompanyHandle if available, otherwise use the filter value
+    const entityHandle = selectedCompanyHandle && selectedCompanyHandle !== 'new' 
+      ? selectedCompanyHandle 
+      : auditLog.entityHandleFilter;
+    fetchAuditLog(auditLog.entityTypeFilter, entityHandle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auditLog.entityTypeFilter, auditLog.entityHandleFilter]);
+  }, [auditLog.entityTypeFilter, auditLog.entityHandleFilter, selectedCompanyHandle]);
 
   const columns = [
     {
@@ -45,7 +50,7 @@ const OrgAuditLogPanel: React.FC = () => {
       title: 'Action',
       dataIndex: 'action',
       key: 'action',
-      width: 100,
+      width: 150,
       render: (v: string) => <Tag color={ACTION_COLORS[v] || 'default'}>{v}</Tag>,
     },
     {
@@ -68,13 +73,13 @@ const OrgAuditLogPanel: React.FC = () => {
       ellipsis: true,
       render: (v: unknown) => (v != null ? (typeof v === 'object' ? JSON.stringify(v) : String(v)) : '-'),
     },
-    {
-      title: 'Remarks',
-      dataIndex: 'remarks',
-      key: 'remarks',
-      width: 140,
-      render: (v: string | null) => v || '-',
-    },
+    // {
+    //   title: 'Remarks',
+    //   dataIndex: 'remarks',
+    //   key: 'remarks',
+    //   width: 140,
+    //   render: (v: string | null) => v || '-',
+    // },
     {
       title: 'Performed By',
       dataIndex: 'performedBy',

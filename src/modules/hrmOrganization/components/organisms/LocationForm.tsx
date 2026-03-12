@@ -34,9 +34,12 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
   const handleSave = useCallback(async () => {
     try {
       await saveLocation();
+      // Only show success if no error was thrown
       message.success(isNew ? 'Location created' : 'Location updated');
-    } catch {
-      message.error('Failed to save location');
+    } catch (error: unknown) {
+      // Don't show popup, error will be displayed in form
+      const errorMsg = error instanceof Error ? error.message : 'Failed to save location';
+      console.error('Save error:', errorMsg);
     }
   }, [saveLocation, isNew]);
 
@@ -119,20 +122,15 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
           />
         </OrgFormField>
 
-        <OrgFormField label="PIN / ZIP" required error={errors?.pinZip}>
+        <OrgFormField label="PIN / ZIP" required error={errors?.pincode}>
           <Input
-            value={draft?.pinZip || ''}
-            onChange={(e) => handleFieldChange('pinZip', e.target.value)}
+            value={draft?.pincode || ''}
+            onChange={(e) => handleFieldChange('pincode', e.target.value)}
             placeholder="Enter PIN/ZIP code"
           />
         </OrgFormField>
 
-        <OrgFormField label="Active">
-          <Switch
-            checked={(draft?.active ?? 1) === 1}
-            onChange={(checked) => handleFieldChange('active', checked ? 1 : 0)}
-          />
-        </OrgFormField>
+  
       </div>
 
       {errors?._general && (

@@ -1,6 +1,6 @@
-import { Button, Modal, message, Dropdown } from "antd";
-import React, { useState, ReactNode, useRef } from "react";
-import { InfoCircleOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
+import { Button, message } from "antd";
+import React, { useState, ReactNode } from "react";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import type { MenuProps } from 'antd';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, HeadingLevel, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
@@ -11,15 +11,14 @@ interface InstructionModalProps {
     title?: string;
 }
 
-const InstructionModal: React.FC<InstructionModalProps> = ({ children ,isButton, title }) => {
+const InstructionModal: React.FC<InstructionModalProps> = ({ isButton, title }) => {
     const [open, setOpen] = useState(false);
-    const targetRef = useRef(null);
     const handleClose = () => {
         setOpen(false);
     };
 
     const handleDownloadPDF = async () => {
-        const content = document.querySelector('.manual-content');
+        const content = document.querySelector('.manual-content') as HTMLElement;
         if (!content) {
             message.error('Content not found');
             return;
@@ -29,9 +28,9 @@ const InstructionModal: React.FC<InstructionModalProps> = ({ children ,isButton,
         const opt = {
             margin: 0.5,
             filename: `${title || 'manual'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
+            image: { type: 'jpeg' as const, quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const },
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
         html2pdf().set(opt).from(content).save()
@@ -42,8 +41,8 @@ const InstructionModal: React.FC<InstructionModalProps> = ({ children ,isButton,
             });
     };
 
-    const convertHtmlToDocxContent = (element: Element): any[] => {
-        const children = Array.from(element.children);
+    const convertHtmlToDocxContent = (element: HTMLElement): any[] => {
+        const children = Array.from(element.children) as HTMLElement[];
         const content: any[] = [];
 
         children.forEach(child => {
@@ -116,7 +115,7 @@ const InstructionModal: React.FC<InstructionModalProps> = ({ children ,isButton,
 
     const handleDownloadDOCX = async () => {
         try {
-            const content = document.querySelector('.manual-content');
+            const content = document.querySelector('.manual-content') as HTMLElement;
             if (!content) {
                 message.error('Content not found');
                 return;

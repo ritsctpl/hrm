@@ -40,17 +40,6 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         </OrgFormField>
       </div>
 
-      <div className={formStyles.addressFieldFull}>
-        <OrgFormField label="Address Line 2" error={errors[`${prefix}.line2`]}>
-          <Input
-            value={address.line2 || ''}
-            onChange={(e) => handleChange('line2', e.target.value)}
-            placeholder="Enter address line 2"
-            disabled={disabled}
-          />
-        </OrgFormField>
-      </div>
-
       <OrgFormField label="City" required error={errors[`${prefix}.city`]}>
         <Input
           value={address.city || ''}

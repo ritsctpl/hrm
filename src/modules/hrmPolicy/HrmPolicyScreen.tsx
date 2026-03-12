@@ -32,14 +32,41 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
     versionHistoryLoading,
     ackReport,
     ackReportLoading,
-    acknowledging,
     setVersionHistory,
     setVersionHistoryLoading,
     setAckReport,
     setAckReportLoading,
-    setAcknowledging,
-    updatePolicyAckStatus,
   } = useHrmPolicyStore();
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      setVersionHistoryLoading(true);
+      try {
+        const data = await HrmPolicyService.getVersionHistory({ site, policyHandle: policy.handle });
+        setVersionHistory(data);
+      } catch {
+        // silent
+      } finally {
+        setVersionHistoryLoading(false);
+      }
+    };
+    loadHistory();
+
+    if (canAdmin) {
+      const loadReport = async () => {
+        setAckReportLoading(true);
+        try {
+          const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyHandle: policy.handle });
+          setAckReport(data);
+        } catch {
+          // silent
+        } finally {
+          setAckReportLoading(false);
+        }
+      };
+      loadReport();
+    }
+  }, [policy.handle, site, canAdmin]);
 
   const [ackChecked, setAckChecked] = React.useState(false);
 
@@ -73,36 +100,11 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
     }
   }, [policy.handle, site, canAdmin]);
 
-  const handleAcknowledge = async () => {
-    if (!ackChecked) {
-      message.warning("Please check the acknowledgment checkbox first");
-      return;
-    }
-    setAcknowledging(true);
-    try {
-      await HrmPolicyService.acknowledgePolicy({
-        site,
-        policyHandle: policy.handle,
-        employeeId,
-        acknowledgedVia: "WEB",
-      });
-      const ackDate = new Date().toISOString();
-      updatePolicyAckStatus(policy.handle, ackDate);
-      message.success("Policy acknowledged successfully");
-    } catch {
-      message.error("Failed to acknowledge policy");
-    } finally {
-      setAcknowledging(false);
-    }
-  };
-
   const handleSendReminder = async () => {
     // Note: The backend has waiveAcknowledgment, not a "send reminder" endpoint.
     // This would need a separate backend endpoint or notification service.
     message.info("Reminder functionality requires backend notification service");
   };
-
-  const isAcknowledged = policy.ackStatus === "ACKNOWLEDGED";
 
   return (
     <div className={styles.viewerLayout}>
@@ -164,42 +166,6 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, onBack }) => 
             </Space>
           </>
         )}
-
-        {policy.ackStatus === "PENDING" || policy.ackStatus === "OVERDUE" ? (
-          <div className={styles.ackBanner}>
-            <Alert
-              type={policy.ackStatus === "OVERDUE" ? "error" : "warning"}
-              message="Acknowledgment Required"
-              description="This policy requires your acknowledgment."
-              showIcon
-              style={{ marginBottom: 12 }}
-            />
-            <Checkbox
-              checked={ackChecked}
-              onChange={(e) => setAckChecked(e.target.checked)}
-            >
-              I have read, understood, and agree to comply with this policy.
-            </Checkbox>
-            <div style={{ marginTop: 12 }}>
-              <Button
-                type="primary"
-                onClick={handleAcknowledge}
-                loading={acknowledging}
-                disabled={!ackChecked}
-              >
-                Acknowledge Policy
-              </Button>
-            </div>
-          </div>
-        ) : isAcknowledged ? (
-          <div className={styles.ackBannerSuccess}>
-            <Alert
-              type="success"
-              message={`You acknowledged this policy on ${policy.acknowledgedAt ? new Date(policy.acknowledgedAt).toLocaleDateString("en-IN") : ""} (v${policy.currentVersion}).`}
-              showIcon
-            />
-          </div>
-        ) : null}
 
         {canAdmin && ackReport && (
           <AcknowledgmentTracker

@@ -136,7 +136,6 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
         </div>
         <Button
           type="primary"
-          icon={<PlusOutlined />}
           onClick={onAdd}
           disabled={!selectedBuHandle}
           size="small"

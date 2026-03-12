@@ -33,10 +33,10 @@ export class HrmOrganizationService {
     return res.data;
   }
 
-  static async fetchAllCompanies(site: string): Promise<CompanyProfileResponse[]> {
-    const res = await api.post(`${this.BASE}/company/retrieveAll`, { site });
-    return res.data;
-  }
+  // static async fetchAllCompanies(site: string): Promise<CompanyProfileResponse[]> {
+  //   const res = await api.post(`${this.BASE}/company/retrieveAll`, { site });
+  //   return res.data;
+  // }
 
   static async createCompany(payload: CompanyProfileRequest): Promise<CompanyProfileResponse> {
     const res = await api.post(`${this.BASE}/company/create`, payload);
@@ -57,8 +57,9 @@ export class HrmOrganizationService {
     return res.data;
   }
 
-  static async deleteCompany(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${this.BASE}/company/delete`, { site, handle, deletedBy });
+  static async deleteCompany(site: string, handle: string, deletedBy: string): Promise<any> {
+    const res = await api.post(`${this.BASE}/company/delete`, { site, handle, deletedBy });
+    return res.data;
   }
 
   static async updateFinancialYear(payload: {
@@ -112,11 +113,12 @@ export class HrmOrganizationService {
   }
 
   static async fetchBusinessUnits(
-    site: string
+    site: string,
+    companyHandle: string
   ): Promise<BusinessUnit[]> {
-    const res = await api.post(`${this.BASE}/businessUnit/retrieveAll`, {
-      site,
-    });
+    const payload = { site, companyHandle };
+    console.log('fetchBusinessUnits API call - payload:', payload);
+    const res = await api.post(`${this.BASE}/businessUnit/retrieveAll`, payload);
     return res.data;
   }
 
@@ -138,8 +140,9 @@ export class HrmOrganizationService {
     site: string,
     handle: string,
     deletedBy: string
-  ): Promise<void> {
-    await api.post(`${this.BASE}/businessUnit/delete`, { site, handle, deletedBy });
+  ): Promise<any> {
+    const res = await api.post(`${this.BASE}/businessUnit/delete`, { site, handle, deletedBy });
+    return res.data;
   }
 
   // ============================================
@@ -182,8 +185,9 @@ export class HrmOrganizationService {
     site: string,
     handle: string,
     deletedBy: string
-  ): Promise<void> {
-    await api.post(`${this.BASE}/department/delete`, { site, handle, deletedBy });
+  ): Promise<any> {
+    const res = await api.post(`${this.BASE}/department/delete`, { site, handle, deletedBy });
+    return res.data;
   }
 
   // ============================================

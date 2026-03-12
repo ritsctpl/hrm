@@ -1,7 +1,7 @@
 'use client';
 
 import React from "react";
-import { Button, Card, Progress, Space, Tag, Typography } from "antd";
+import { Button, Card, Progress, Space, Tag } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import GoalStatusTag from "../atoms/GoalStatusTag";
 import type { GoalCardProps } from "../../types/ui.types";
@@ -57,7 +57,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, onEdit, onDelete }) => (
         </thead>
         <tbody>
           {goal.keyResults.map((kr, idx) => (
-            <tr key={kr.krId}>
+            <tr key={kr.keyResultId}>
               <td>{idx + 1}</td>
               <td>{kr.description}</td>
               <td>

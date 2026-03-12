@@ -49,7 +49,7 @@ export function useProjectMutations() {
   const updateProject = useCallback(async (handle: string, values: Partial<ProjectFormValues>, modifiedBy: string) => {
     store.setSavingProject(true);
     try {
-      await HrmProjectService.updateProject(handle, { ...values, site, modifiedBy });
+      await HrmProjectService.updateProject(handle, { ...values, site, modifiedBy } as any);
       message.success('Project updated successfully');
       store.closeProjectForm();
       await loadProjects();
