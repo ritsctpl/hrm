@@ -143,7 +143,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
           />
         </OrgFormField>
 
-        <OrgFormField label="Founded Date" required error={errors.foundedDate || errors.incorporationDate}>
+        <OrgFormField label="Founded Date" error={errors.foundedDate || errors.incorporationDate}>
           <DatePicker
             value={(draft?.foundedDate || draft?.incorporationDate) ? dayjs(draft?.foundedDate || draft?.incorporationDate) : null}
             onChange={handleDateChange}

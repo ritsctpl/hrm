@@ -93,9 +93,8 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     errors.legalName = 'Legal Name is required';
   }
 
-  if (!data.companyName?.trim() && !data.tradeName?.trim()) {
-    errors.companyName = 'Company Name or Trade Name is required';
-  }
+  // Trade Name is NO LONGER required - REMOVED
+  // Do NOT validate companyName or tradeName
 
   // Registration Number is NO LONGER required - REMOVED
   // Do NOT validate registrationNumber
@@ -104,11 +103,10 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     errors.industryType = 'Industry Type is required';
   }
 
-  if (!data.foundedDate?.trim() && !data.incorporationDate?.trim()) {
-    errors.foundedDate = 'Founded Date or Incorporation Date is required';
-  }
+  // Founded Date is NO LONGER required - REMOVED
+  // Do NOT validate foundedDate or incorporationDate
 
-  // Required format validations for PAN, TAN, CIN, GSTIN
+  // Required format validations for PAN, TAN, CIN
   const panError = validatePAN(data.pan || '');
   if (panError) errors.pan = panError;
 
@@ -118,8 +116,8 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
   const cinError = validateCIN(data.cin || '');
   if (cinError) errors.cin = cinError;
 
-  const gstinError = validateGSTIN(data.gstin || '');
-  if (gstinError) errors.gstin = gstinError;
+  // GSTIN is NO LONGER required - REMOVED
+  // Do NOT validate GSTIN
 
   // Email validation
   if (data.officialEmail) {
