@@ -129,13 +129,11 @@ const CompanyProfileForm: React.FC = () => {
         <CompanyBankSection disabled={isDisabled} />
       </div>
 
-      {/* Section 6: Financial Year (only if company exists) */}
-      {data?.handle && (
-        <div className={mainStyles.profileSection}>
-          <div className={mainStyles.profileSectionTitle}>Financial Year</div>
-          <CompanyFinancialYearSection />
-        </div>
-      )}
+      {/* Section 6: Financial Year */}
+      <div className={mainStyles.profileSection}>
+        <div className={mainStyles.profileSectionTitle}>Financial Year</div>
+        <CompanyFinancialYearSection />
+      </div>
 
       {/* Bottom actions for long form */}
       {(isEditing || isNew) && (

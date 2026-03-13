@@ -236,10 +236,30 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }),
 
   navigateToDetail: (companyHandle) =>
-    set({
-      view: 'detail',
-      selectedCompanyHandle: companyHandle,
-      activeDetailTab: 'profile',
+    set((state) => {
+      if (companyHandle === 'new') {
+        return {
+          view: 'detail',
+          selectedCompanyHandle: companyHandle,
+          activeDetailTab: 'profile',
+          companyProfile: {
+            ...state.companyProfile,
+            data: null,
+            draft: {
+              ...(state.companyProfile.draft || {}),
+              financialYearStartMonth: 'April',
+              financialYearEndMonth: 'March',
+            },
+            isEditing: true,
+            errors: {},
+          },
+        };
+      }
+      return {
+        view: 'detail',
+        selectedCompanyHandle: companyHandle,
+        activeDetailTab: 'profile',
+      };
     }),
 
   setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
@@ -403,43 +423,55 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      const payload: CompanyProfileRequest = {
+      // Prepare bank accounts array with proper format
+      const bankAccounts = (companyProfile.draft.bankAccounts || []).map((account: any) => ({
+        bankName: account.bankName || '',
+        branch: account.branch || '',
+        ifsc: account.ifsc || '',
+        accountNumber: account.accountNumber || '',
+        accountType: (account.accountType || 'CURRENT').toUpperCase(),
+        isPrimary: account.isPrimary || false,
+      }));
+
+      // Prepare registered office address
+      const registeredAddress = (companyProfile.draft.registeredOfficeAddress || companyProfile.draft.registeredAddress || {}) as any;
+      const registeredOfficeAddress = {
+        line1: registeredAddress.line1 || '',
+        city: registeredAddress.city || '',
+        state: registeredAddress.state || '',
+        pincode: registeredAddress.pincode || '',
+        country: registeredAddress.country || 'India',
+      };
+
+      // Create payload with only required fields (no companyName, registrationNumber, gstin, website, modifiedBy)
+      const payload: any = {
         site,
         legalName: companyProfile.draft.legalName || '',
-        companyName: companyProfile.draft.companyName || companyProfile.draft.tradeName || '',
-        registrationNumber: companyProfile.draft.registrationNumber || '',
         industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
-        foundedDate: companyProfile.draft.foundedDate || companyProfile.draft.incorporationDate || '',
-        website: companyProfile.draft.website || '',
+        cin: companyProfile.draft.cin || '',
         pan: companyProfile.draft.pan || '',
         tan: companyProfile.draft.tan || '',
-        cin: companyProfile.draft.cin || '',
-        gstin: companyProfile.draft.gstin || '',
+        msmeUdyam: companyProfile.draft.msmeUdyam || '',
         pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo || '',
         esicCode: companyProfile.draft.esicCode || '',
-        msmeUdyam: companyProfile.draft.msmeUdyam || '',
-        financialYearStartMonth: companyProfile.draft.financialYearStartMonth || '',
-        bankAccounts: companyProfile.draft.bankAccounts || [],
-        registeredOfficeAddress: companyProfile.draft.registeredOfficeAddress || companyProfile.draft.registeredAddress || {
-          line1: '',
-          city: '',
-          state: '',
-          pincode: '',
-          country: 'India',
-        },
-        corporateOfficeAddress: companyProfile.draft.corporateOfficeAddress || companyProfile.draft.corporateAddress,
         officialEmail: companyProfile.draft.officialEmail || '',
         officialPhone: companyProfile.draft.officialPhone || '',
-        modifiedBy: userId,
+        financialYearStartMonth: companyProfile.draft.financialYearStartMonth || 'April',
+        registeredOfficeAddress,
+        bankAccounts,
       };
 
       let data: CompanyProfile;
-      if (companyProfile.data?.handle || selectedCompanyHandle) {
+      const isNewCompany = !companyProfile.data?.handle && selectedCompanyHandle !== 'new';
+      
+      if (companyProfile.data?.handle || (selectedCompanyHandle && selectedCompanyHandle !== 'new')) {
+        // UPDATE: Call update endpoint if company already has a handle
         data = await HrmOrganizationService.updateCompany(
           companyProfile.data?.handle || selectedCompanyHandle!,
           payload
         );
       } else {
+        // CREATE: Call create endpoint if no handle exists (new company)
         payload.createdBy = userId;
         data = await HrmOrganizationService.createCompany(payload);
       }

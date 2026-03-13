@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Select, Button, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
@@ -25,20 +25,47 @@ const MONTHS = [
 ];
 
 const CompanyFinancialYearSection: React.FC = () => {
-  const { companyProfile, fetchCompanyProfile } = useHrmOrganizationStore();
+  const { companyProfile, fetchCompanyProfile, setCompanyDraft } = useHrmOrganizationStore();
   const data = companyProfile.data;
+  const draft = companyProfile.draft;
 
+  const draftRecord = draft as unknown as Record<string, unknown> | null;
   const dataRecord = data as unknown as Record<string, unknown> | null;
-  const [startMonth, setStartMonth] = useState<string>(
-    (dataRecord?.financialYearStartMonth as string) || 'April'
-  );
-  const [endMonth, setEndMonth] = useState<string>(
-    (dataRecord?.financialYearEndMonth as string) || 'March'
-  );
+  
+  // Get current values from draft or data
+  const currentStartMonth = (draftRecord?.financialYearStartMonth as string) || (dataRecord?.financialYearStartMonth as string) || 'April';
+  const currentEndMonth = (draftRecord?.financialYearEndMonth as string) || (dataRecord?.financialYearEndMonth as string) || 'March';
+  
+  const [startMonth, setStartMonth] = useState<string>(currentStartMonth);
+  const [endMonth, setEndMonth] = useState<string>(currentEndMonth);
   const [saving, setSaving] = useState(false);
 
+  // Sync initial values to draft on mount
+  useEffect(() => {
+    if (!draftRecord?.financialYearStartMonth) {
+      setCompanyDraft({
+        financialYearStartMonth: currentStartMonth,
+        financialYearEndMonth: currentEndMonth,
+      });
+    }
+  }, []);
+
+  // Sync to draft when values change
+  const handleStartMonthChange = useCallback((value: string) => {
+    setStartMonth(value);
+    setCompanyDraft({ financialYearStartMonth: value });
+  }, [setCompanyDraft]);
+
+  const handleEndMonthChange = useCallback((value: string) => {
+    setEndMonth(value);
+    setCompanyDraft({ financialYearEndMonth: value });
+  }, [setCompanyDraft]);
+
   const handleSave = useCallback(async () => {
-    if (!data?.handle) return;
+    if (!data?.handle) {
+      message.info('Financial year will be saved with the company');
+      return;
+    }
     const cookies = parseCookies();
     const site = cookies.site || '';
     const userId = cookies.rl_user_id || cookies.userId || 'system';
@@ -61,12 +88,14 @@ const CompanyFinancialYearSection: React.FC = () => {
     }
   }, [data?.handle, startMonth, endMonth, fetchCompanyProfile]);
 
+  const isCreating = !data?.handle;
+
   return (
     <div className={formStyles.contactGrid}>
       <OrgFormField label="Start Month" required>
         <Select
           value={startMonth}
-          onChange={setStartMonth}
+          onChange={handleStartMonthChange}
           options={MONTHS}
           style={{ width: '100%' }}
         />
@@ -75,7 +104,7 @@ const CompanyFinancialYearSection: React.FC = () => {
       <OrgFormField label="End Month" required>
         <Select
           value={endMonth}
-          onChange={setEndMonth}
+          onChange={handleEndMonthChange}
           options={MONTHS}
           style={{ width: '100%' }}
         />
@@ -87,8 +116,10 @@ const CompanyFinancialYearSection: React.FC = () => {
           icon={<SaveOutlined />}
           onClick={handleSave}
           loading={saving}
+          disabled={isCreating}
+          title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
         >
-          Update Financial Year
+          {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
         </Button>
       </div>
     </div>

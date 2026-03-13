@@ -28,7 +28,6 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
       <div className={formStyles.addressFieldFull}>
         <OrgFormField
           label="Address Line 1"
-          required
           error={errors[`${prefix}.line1`]}
         >
           <Input
@@ -40,7 +39,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         </OrgFormField>
       </div>
 
-      <OrgFormField label="City" required error={errors[`${prefix}.city`]}>
+      <OrgFormField label="City" error={errors[`${prefix}.city`]}>
         <Input
           value={address.city || ''}
           onChange={(e) => handleChange('city', e.target.value)}
@@ -49,7 +48,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         />
       </OrgFormField>
 
-      <OrgFormField label="State" required error={errors[`${prefix}.state`]}>
+      <OrgFormField label="State" error={errors[`${prefix}.state`]}>
         <Select
           value={address.state || undefined}
           onChange={(val) => handleChange('state', val)}
@@ -62,7 +61,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         />
       </OrgFormField>
 
-      <OrgFormField label="PIN Code" required error={errors[`${prefix}.pincode`] || errors[`${prefix}.pinCode`]}>
+      <OrgFormField label="PIN Code" error={errors[`${prefix}.pincode`] || errors[`${prefix}.pinCode`]}>
         <Input
           value={address.pincode || address.pinCode || ''}
           onChange={(e) => handleChange('pincode', e.target.value)}
@@ -72,7 +71,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         />
       </OrgFormField>
 
-      <OrgFormField label="Country" required error={errors[`${prefix}.country`]}>
+      <OrgFormField label="Country" error={errors[`${prefix}.country`]}>
         <Select
           value={address.country || 'India'}
           onChange={(val) => handleChange('country', val)}
