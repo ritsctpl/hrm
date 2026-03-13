@@ -83,7 +83,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         render: (active: number) => <OrgStatusTag active={active} />,
       },
       {
-        title: '',
+        title: 'Action',
         key: 'actions',
         render: (_: unknown, record: BusinessUnit) => (
           <Popconfirm
@@ -141,6 +141,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         dataSource={filteredList}
         rowKey="handle"
         size="small"
+        pagination={false}
         onRow={(record) => ({
           onClick: () => onSelect(record),
           style: {
@@ -149,7 +150,8 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
               selected?.handle === record.handle ? '#e6f4ff' : undefined,
           },
         })}
-        scroll={{ y: 'calc(100vh - 300px)' }}
+        scroll={{ y: 'calc(100vh - 300px)', x: 'max-content' }}
+        virtual
       />
     </div>
   );

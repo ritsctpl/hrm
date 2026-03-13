@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -45,7 +45,6 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         title: 'Code',
         dataIndex: 'code',
         key: 'code',
-        width: 120,
         sorter: (a, b) => (a.code ?? '').localeCompare(b.code ?? ''),
       },
       {
@@ -59,31 +58,26 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         title: 'City',
         dataIndex: 'city',
         key: 'city',
-        width: 130,
       },
-        {
+      {
         title: 'Pincode',
         dataIndex: 'pincode',
         key: 'pincode',
-        width: 130,
       },
       {
         title: 'State',
         dataIndex: 'state',
         key: 'state',
-        width: 140,
       },
       {
         title: 'Country',
         dataIndex: 'country',
         key: 'country',
-        width: 120,
       },
       {
         title: 'Status',
         dataIndex: 'active',
         key: 'active',
-        width: 90,
         render: (active: number) => <OrgStatusTag active={active} />,
       },
       {
@@ -144,7 +138,7 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         dataSource={filteredList}
         rowKey="id"
         size="small"
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `Total: ${total}` }}
+        pagination={false}
         onRow={(record) => ({
           onClick: () => onSelect(record),
           style: {
@@ -153,7 +147,8 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
               selected?.id === record.id ? '#e6f4ff' : undefined,
           },
         })}
-        scroll={{ y: 'calc(100vh - 300px)' }}
+        scroll={{ y: 'calc(100vh - 300px)', x: 'max-content' }}
+        virtual
       />
     </div>
   );

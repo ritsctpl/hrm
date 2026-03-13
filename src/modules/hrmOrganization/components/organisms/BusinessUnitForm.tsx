@@ -1,23 +1,23 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Input, Select, Tabs, Button, Switch, message } from 'antd';
+import { Input, Select, Tabs, Button, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgAddressFields from '../molecules/OrgAddressFields';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { BU_TYPE_OPTIONS, INDIAN_STATES, EMPTY_ADDRESS, BU_TAB_LABELS } from '../../utils/constants';
+import { COUNTRY_STATES, EMPTY_ADDRESS } from '../../utils/constants';
 import type { BusinessUnitFormProps } from '../../types/ui.types';
 import type { Address } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const stateOptions = INDIAN_STATES.map((s) => ({ label: s, value: s }));
-const statusOptions = [
-  { label: "Active", value: "ACTIVE" },
-  { label: "Inactive", value: "INACTIVE" },
-];
+// Get Indian states for State and Place of Supply dropdowns
+const getIndianStates = () => {
+  const states = COUNTRY_STATES['India'] || [];
+  return states.map((s) => ({ label: s, value: s }));
+};
 
 const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   const {
@@ -48,16 +48,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
       });
     },
     [draft?.address, setBusinessUnitDraft]
-  );
-
-  const handleStatutoryChange = useCallback(
-    (field: string, value: string) => {
-      const current = draft?.statutoryRegistrationLinks || {};
-      setBusinessUnitDraft({
-        statutoryRegistrationLinks: { ...current, [field]: value },
-      });
-    },
-    [draft?.statutoryRegistrationLinks, setBusinessUnitDraft]
   );
 
   const handleSave = useCallback(async () => {
@@ -108,7 +98,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         <Select
           value={draft?.state || undefined}
           onChange={(val) => handleFieldChange('state', val)}
-          options={stateOptions}
+          options={getIndianStates()}
           placeholder="Select state"
           showSearch
           optionFilterProp="label"
@@ -120,7 +110,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
         <Select
           value={draft?.placeOfSupply || undefined}
           onChange={(val) => handleFieldChange('placeOfSupply', val)}
-          options={stateOptions}
+          options={getIndianStates()}
           placeholder="Select place of supply"
           showSearch
           optionFilterProp="label"
@@ -146,15 +136,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
     </div>
   );
 
-  // Contact Tab - Removed, now in General Tab
-  const contactContent = (
-    <div className={formStyles.contactGrid}>
-      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-        Contact information is now in the General tab
-      </div>
-    </div>
-  );
-
   // Address Tab
   const addressContent = (
     <OrgAddressFields
@@ -163,15 +144,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
       onChange={handleAddressChange}
       errors={errors}
     />
-  );
-
-  // Statutory Tab - Removed, GSTIN now in General Tab
-  const statutoryContent = (
-    <div className={formStyles.statutoryGrid}>
-      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-        GSTIN is now in the General tab
-      </div>
-    </div>
   );
 
   const tabItems = [

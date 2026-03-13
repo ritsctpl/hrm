@@ -4,13 +4,11 @@ import React, { useCallback } from 'react';
 import { Input, Select, DatePicker, Upload, Button, message } from 'antd';
 import { CloudUploadOutlined, ShopOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { parseCookies } from 'nookies';
 import OrgFormField from '../molecules/OrgFormField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import { INDUSTRY_OPTIONS } from '../../utils/constants';
 import type { CompanyIdentitySectionProps } from '../../types/ui.types';
-import type { UploadFile, RcFile } from 'antd/es/upload/interface';
+import type { RcFile } from 'antd/es/upload/interface';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -50,36 +48,21 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
       }
 
       try {
-        const cookies = parseCookies();
-        const site = cookies.site || '';
-        const userId = cookies.rl_user_id || cookies.userId || 'system';
-        const companyHandle = companyProfile.data?.handle || '';
-
-        if (companyHandle) {
-          const result = await HrmOrganizationService.uploadLogo(
-            site,
-            companyHandle,
-            file,
-            userId
-          );
-          setCompanyDraft({ logoUrl: result.logoUrl });
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64String = e.target?.result as string;
+          // Store base64 in logoUrl (will be sent in msmeUdyam field during save)
+          setCompanyDraft({ logoUrl: base64String });
           message.success('Logo uploaded successfully');
-        } else {
-          // For new companies, create local URL preview
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            setCompanyDraft({ logoUrl: dataUrl });
-          };
-          reader.readAsDataURL(file);
-          message.info('Logo will be uploaded after saving');
-        }
+        };
+        reader.readAsDataURL(file);
       } catch {
         message.error('Failed to upload logo');
       }
       return false; // Prevent default upload behavior
     },
-    [companyProfile.data?.handle, setCompanyDraft]
+    [setCompanyDraft]
   );
 
   return (

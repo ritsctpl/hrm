@@ -354,11 +354,18 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const data = await HrmOrganizationService.fetchCompanyByHandle(site, targetHandle);
+      
+      // If msmeUdyam contains base64 (starts with data:), use it as logoUrl for preview
+      const processedData = { ...data };
+      if (data.msmeUdyam && data.msmeUdyam.startsWith('data:')) {
+        processedData.logoUrl = data.msmeUdyam;
+      }
+      
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
-          data,
-          draft: { ...data },
+          data: processedData,
+          draft: { ...processedData },
           isLoading: false,
           isEditing: false,
         },
@@ -451,7 +458,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         cin: companyProfile.draft.cin || '',
         pan: companyProfile.draft.pan || '',
         tan: companyProfile.draft.tan || '',
-        msmeUdyam: companyProfile.draft.msmeUdyam || '',
+        // If logoUrl contains base64 (starts with data:), send it in msmeUdyam; otherwise use actual msmeUdyam value
+        msmeUdyam: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:')) 
+          ? companyProfile.draft.logoUrl 
+          : (companyProfile.draft.msmeUdyam || ''),
         pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo || '',
         esicCode: companyProfile.draft.esicCode || '',
         officialEmail: companyProfile.draft.officialEmail || '',
@@ -479,8 +489,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
-          data,
-          draft: { ...data },
+          data: { ...data, logoUrl: state.companyProfile.draft?.logoUrl },
+          draft: { ...data, logoUrl: state.companyProfile.draft?.logoUrl },
           isSaving: false,
           isEditing: false,
         },

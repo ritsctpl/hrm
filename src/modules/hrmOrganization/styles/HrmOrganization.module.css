@@ -385,6 +385,11 @@
   margin-top: 16px;
 }
 
+.formActions :global(button) {
+  height: 32px;
+  min-width: 80px;
+}
+
 /* Empty state */
 .emptyContainer {
   display: flex;

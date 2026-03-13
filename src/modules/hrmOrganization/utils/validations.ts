@@ -224,7 +224,7 @@ export const validateBusinessUnit = (data: any): Record<string, string> => {
     if (gstinError) errors.gstin = gstinError;
   }
 
-  // Address validation
+  // Address validation - ALL FIELDS REQUIRED
   if (data.address) {
     if (!data.address.line1?.trim()) {
       errors['address.line1'] = 'Address Line 1 is required';
@@ -232,12 +232,17 @@ export const validateBusinessUnit = (data: any): Record<string, string> => {
     if (!data.address.city?.trim()) {
       errors['address.city'] = 'City is required';
     }
+    if (!data.address.country?.trim()) {
+      errors['address.country'] = 'Country is required';
+    }
     if (!data.address.state?.trim()) {
       errors['address.state'] = 'State is required';
     }
     if (!data.address.pincode?.trim()) {
       errors['address.pincode'] = 'Pincode is required';
     }
+  } else {
+    errors['address'] = 'Address is required';
   }
 
   return errors;

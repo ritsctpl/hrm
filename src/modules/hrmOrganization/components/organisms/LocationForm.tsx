@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useCallback } from 'react';
-import { Input, Select, Button, Switch, message } from 'antd';
+import React, { useCallback, useMemo } from 'react';
+import { Input, Select, Button, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { INDIAN_STATES, COUNTRY_OPTIONS } from '../../utils/constants';
+import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
 import type { LocationFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
-
-const stateOptions = INDIAN_STATES.map((s) => ({ label: s, value: s }));
 
 const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
   const {
@@ -30,6 +28,13 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
     },
     [setLocationDraft]
   );
+
+  // Get states for selected country
+  const stateOptions = useMemo(() => {
+    const country = draft?.country || 'India';
+    const states = COUNTRY_STATES[country] || [];
+    return states.map((s) => ({ label: s, value: s }));
+  }, [draft?.country]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -92,11 +97,13 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
           </OrgFormField>
         </div>
 
-        <OrgFormField label="City" required error={errors?.city}>
-          <Input
-            value={draft?.city || ''}
-            onChange={(e) => handleFieldChange('city', e.target.value)}
-            placeholder="Enter city"
+        <OrgFormField label="Country" required error={errors?.country}>
+          <Select
+            value={draft?.country || 'India'}
+            onChange={(val) => handleFieldChange('country', val)}
+            options={[...COUNTRY_OPTIONS]}
+            placeholder="Select country"
+            style={{ width: '100%' }}
           />
         </OrgFormField>
 
@@ -112,13 +119,11 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
           />
         </OrgFormField>
 
-        <OrgFormField label="Country" required error={errors?.country}>
-          <Select
-            value={draft?.country || 'India'}
-            onChange={(val) => handleFieldChange('country', val)}
-            options={[...COUNTRY_OPTIONS]}
-            placeholder="Select country"
-            style={{ width: '100%' }}
+        <OrgFormField label="City" required error={errors?.city}>
+          <Input
+            value={draft?.city || ''}
+            onChange={(e) => handleFieldChange('city', e.target.value)}
+            placeholder="Enter city"
           />
         </OrgFormField>
 

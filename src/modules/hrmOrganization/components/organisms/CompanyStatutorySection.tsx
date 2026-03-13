@@ -20,7 +20,7 @@ const STATUTORY_FIELDS: ReadonlyArray<{
   { key: 'gstin', label: 'GSTIN', placeholder: 'Enter GSTIN' },
   { key: 'pfEstablishmentCode', label: 'PF Establishment Code', placeholder: 'Enter PF establishment code' },
   { key: 'esicCode', label: 'ESIC Code', placeholder: 'Enter ESIC code' },
-  { key: 'msmeUdyam', label: 'MSME / Udyam No.', placeholder: 'Enter MSME / Udyam registration number' },
+  // { key: 'msmeUdyam', label: 'MSME / Udyam No.', placeholder: 'Enter MSME / Udyam registration number' },
   { key: 'registrationNumber', label: 'Registration No.', placeholder: 'Enter company registration number' },
 ];
 

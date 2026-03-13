@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Input, Select } from 'antd';
 import OrgFormField from './OrgFormField';
-import { INDIAN_STATES, COUNTRY_OPTIONS } from '../../utils/constants';
+import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
 import type { OrgAddressFieldsProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
-
-const stateOptions = INDIAN_STATES.map((s) => ({ label: s, value: s }));
 
 const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
   prefix,
@@ -22,6 +20,13 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
     },
     [onChange]
   );
+
+  // Get states for selected country
+  const stateOptions = useMemo(() => {
+    const country = address.country || 'India';
+    const states = COUNTRY_STATES[country] || [];
+    return states.map((s) => ({ label: s, value: s }));
+  }, [address.country]);
 
   return (
     <div className={formStyles.addressFields}>
@@ -39,12 +44,13 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         </OrgFormField>
       </div>
 
-      <OrgFormField label="City" error={errors[`${prefix}.city`]}>
-        <Input
-          value={address.city || ''}
-          onChange={(e) => handleChange('city', e.target.value)}
-          placeholder="Enter city"
+      <OrgFormField label="Country" error={errors[`${prefix}.country`]}>
+        <Select
+          value={address.country || 'India'}
+          onChange={(val) => handleChange('country', val)}
+          options={[...COUNTRY_OPTIONS]}
           disabled={disabled}
+          style={{ width: '100%' }}
         />
       </OrgFormField>
 
@@ -61,6 +67,15 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         />
       </OrgFormField>
 
+      <OrgFormField label="City" error={errors[`${prefix}.city`]}>
+        <Input
+          value={address.city || ''}
+          onChange={(e) => handleChange('city', e.target.value)}
+          placeholder="Enter city"
+          disabled={disabled}
+        />
+      </OrgFormField>
+
       <OrgFormField label="PIN Code" error={errors[`${prefix}.pincode`] || errors[`${prefix}.pinCode`]}>
         <Input
           value={address.pincode || address.pinCode || ''}
@@ -68,16 +83,6 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
           placeholder="Enter PIN code"
           maxLength={6}
           disabled={disabled}
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Country" error={errors[`${prefix}.country`]}>
-        <Select
-          value={address.country || 'India'}
-          onChange={(val) => handleChange('country', val)}
-          options={[...COUNTRY_OPTIONS]}
-          disabled={disabled}
-          style={{ width: '100%' }}
         />
       </OrgFormField>
     </div>
