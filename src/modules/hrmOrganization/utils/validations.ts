@@ -218,8 +218,10 @@ export const validateBusinessUnit = (data: any): Record<string, string> => {
     errors.primaryContact = 'Primary Contact is required';
   }
 
-  // Optional fields with format validation
-  if (data.gstin) {
+  // GSTIN is now REQUIRED
+  if (!data.gstin?.trim()) {
+    errors.gstin = 'GSTIN is required';
+  } else {
     const gstinError = validateGSTIN(data.gstin);
     if (gstinError) errors.gstin = gstinError;
   }

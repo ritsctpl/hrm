@@ -19,7 +19,7 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
     <div>
       <div className={styles.listHeader}>
         {!disabled && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
+          <Button type="primary"  onClick={onAdd} size="small">
             Add Account
           </Button>
         )}

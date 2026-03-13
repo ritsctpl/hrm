@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Button, Input, Tag, Popconfirm, Select, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
@@ -17,9 +17,28 @@ const OrganizationListTemplate: React.FC = () => {
     deleteCompany,
   } = useHrmOrganizationStore();
 
+  const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 110px)');
+
+
   useEffect(() => {
     fetchCompanyList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Calculate table height based on screen resolution - use full viewport height
+  useEffect(() => {
+    const calculateTableHeight = () => {
+      // Use full viewport height minus only the header and search bar
+      const screenHeight = window.innerHeight;
+      // Reserve space for: top navbar (60px) + header (50px) + filters (40px) + padding (8px)
+      const reservedHeight = 158;
+      const calculatedHeight = screenHeight - reservedHeight;
+      setTableHeight(`${calculatedHeight}px`);
+    };
+
+    calculateTableHeight();
+    window.addEventListener('resize', calculateTableHeight);
+    return () => window.removeEventListener('resize', calculateTableHeight);
   }, []);
 
   const handleDeleteCompany = async (handle: string) => {
@@ -156,7 +175,9 @@ const OrganizationListTemplate: React.FC = () => {
         rowKey="handle"
         loading={companyList.isLoading}
         size="small"
-        pagination={{ pageSize: 20, showSizeChanger: true }}
+        pagination={false}
+        scroll={{ y: tableHeight, x: 'max-content' }}
+        
         onRow={(record) => ({
           onClick: (e: React.MouseEvent) => {
             // Don't navigate if clicking on actions column

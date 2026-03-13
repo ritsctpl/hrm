@@ -113,7 +113,6 @@ const CompanyFinancialYearSection: React.FC = () => {
       <div>
         <Button
           type="primary"
-          icon={<SaveOutlined />}
           onClick={handleSave}
           loading={saving}
           disabled={isCreating}

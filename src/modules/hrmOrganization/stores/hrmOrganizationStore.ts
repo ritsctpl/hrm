@@ -430,11 +430,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      // Prepare bank accounts array with proper format
+      // Prepare bank accounts array with proper format (use backend field names: branch, ifsc)
       const bankAccounts = (companyProfile.draft.bankAccounts || []).map((account: any) => ({
         bankName: account.bankName || '',
-        branch: account.branch || '',
-        ifsc: account.ifsc || '',
+        branch: account.branch || account.branchName || '',
+        ifsc: account.ifsc || account.ifscCode || '',
         accountNumber: account.accountNumber || '',
         accountType: (account.accountType || 'CURRENT').toUpperCase(),
         isPrimary: account.isPrimary || false,
@@ -628,7 +628,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         buName: businessUnit.draft.buName || '',
         state: businessUnit.draft.state || '',
         placeOfSupply: businessUnit.draft.placeOfSupply || '',
-        gstin: businessUnit.draft.gstin || undefined,
+        gstin: businessUnit.draft.gstin || '',
         primaryContact: businessUnit.draft.primaryContact || '',
         address: {
           line1: businessUnit.draft.address?.line1 || '',
@@ -1107,7 +1107,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         city: location.draft.city || '',
         state: location.draft.state || '',
         country: location.draft.country || 'India',
-        pincode: location.draft.pinZip || '',
+        pincode: location.draft.pincode || '',
         active: location.draft.active ?? 1,
         modifiedBy: userId,
       };

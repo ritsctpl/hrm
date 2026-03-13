@@ -39,14 +39,16 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
   const handleSave = useCallback(async () => {
     try {
       await saveLocation();
-      // Only show success if no error was thrown
-      message.success(isNew ? 'Location created' : 'Location updated');
+      // Check if there are any errors after save
+      if (!location.errors || Object.keys(location.errors).length === 0) {
+        message.success(isNew ? 'Location created' : 'Location updated');
+      }
     } catch (error: unknown) {
       // Don't show popup, error will be displayed in form
       const errorMsg = error instanceof Error ? error.message : 'Failed to save location';
       console.error('Save error:', errorMsg);
     }
-  }, [saveLocation, isNew]);
+  }, [saveLocation, isNew, location.errors]);
 
   return (
     <div className={mainStyles.formPanel}>

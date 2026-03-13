@@ -97,7 +97,7 @@ export const EMPTY_ADDRESS = {
   line2: '',
   city: '',
   state: '',
-  pinCode: '',
+  pincode: '',
   country: 'India',
 } as const;
 

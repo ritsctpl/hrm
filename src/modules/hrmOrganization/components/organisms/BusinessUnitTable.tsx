@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
@@ -20,6 +19,23 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
   } = useHrmOrganizationStore();
 
   const { list, searchText, isLoading, selected } = businessUnit;
+  const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 300px)');
+
+  // Calculate table height based on screen resolution - use full viewport height
+  useEffect(() => {
+    const calculateTableHeight = () => {
+      // Use full viewport height minus only the header and search bar
+      const screenHeight = window.innerHeight;
+      // Reserve space for: top navbar (60px) + header (50px) + search bar (40px) + padding (8px)
+      const reservedHeight = 158;
+      const calculatedHeight = screenHeight - reservedHeight;
+      setTableHeight(`${calculatedHeight}px`);
+    };
+
+    calculateTableHeight();
+    window.addEventListener('resize', calculateTableHeight);
+    return () => window.removeEventListener('resize', calculateTableHeight);
+  }, []);
 
   const filteredList = useMemo(() => {
     if (!searchText) return list;
@@ -150,7 +166,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
               selected?.handle === record.handle ? '#e6f4ff' : undefined,
           },
         })}
-        scroll={{ y: 'calc(100vh - 300px)', x: 'max-content' }}
+        scroll={{ y: tableHeight, x: 'max-content' }}
         virtual
       />
     </div>

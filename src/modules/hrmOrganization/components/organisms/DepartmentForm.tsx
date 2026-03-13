@@ -43,11 +43,15 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
   const handleSave = useCallback(async () => {
     try {
       await saveDepartment();
-      message.success(isNew ? 'Department created' : 'Department updated');
-    } catch {
-      message.error('Failed to save department');
+      // Check if there are any errors after save
+      if (!department.errors || Object.keys(department.errors).length === 0) {
+        message.success(isNew ? 'Department created' : 'Department updated');
+      }
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to save department';
+      console.error('Save error:', errorMsg);
     }
-  }, [saveDepartment, isNew]);
+  }, [saveDepartment, isNew, department.errors]);
 
   const handleDelete = useCallback(async () => {
     if (!selected?.handle) return;
