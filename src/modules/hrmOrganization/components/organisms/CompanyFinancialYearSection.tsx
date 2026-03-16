@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { Select, Button, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import { parseCookies } from 'nookies';
@@ -89,38 +90,48 @@ const CompanyFinancialYearSection: React.FC = () => {
   }, [data?.handle, startMonth, endMonth, fetchCompanyProfile]);
 
   const isCreating = !data?.handle;
+  const isEditing = companyProfile.isEditing;
 
   return (
     <div className={formStyles.contactGrid}>
-      <OrgFormField label="Start Month" required>
-        <Select
-          value={startMonth}
-          onChange={handleStartMonthChange}
-          options={MONTHS}
-          style={{ width: '100%' }}
-        />
-      </OrgFormField>
+      {isEditing ? (
+        <>
+          <OrgFormField label="Start Month" required>
+            <Select
+              value={startMonth}
+              onChange={handleStartMonthChange}
+              options={MONTHS}
+              style={{ width: '100%' }}
+            />
+          </OrgFormField>
 
-      <OrgFormField label="End Month" required>
-        <Select
-          value={endMonth}
-          onChange={handleEndMonthChange}
-          options={MONTHS}
-          style={{ width: '100%' }}
-        />
-      </OrgFormField>
+          <OrgFormField label="End Month" required>
+            <Select
+              value={endMonth}
+              onChange={handleEndMonthChange}
+              options={MONTHS}
+              style={{ width: '100%' }}
+            />
+          </OrgFormField>
 
-      <div>
-        <Button
-          type="primary"
-          onClick={handleSave}
-          loading={saving}
-          disabled={isCreating}
-          title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
-        >
-          {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
-        </Button>
-      </div>
+          <div>
+            <Button
+              type="primary"
+              onClick={handleSave}
+              loading={saving}
+              disabled={isCreating}
+              title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
+            >
+              {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <OrgViewField label="Start Month" required value={startMonth} />
+          <OrgViewField label="End Month" required value={endMonth} />
+        </>
+      )}
     </div>
   );
 };

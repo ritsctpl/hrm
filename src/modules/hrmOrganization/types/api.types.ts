@@ -42,6 +42,7 @@ export interface CompanyProfileRequest {
   officialEmail: string;
   officialPhone: string;
   gstin?: string;
+  logoBase64?: string;
   pfEstablishmentCode?: string;
   esicCode?: string;
   msmeUdyam?: string;

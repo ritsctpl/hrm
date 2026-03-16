@@ -3,6 +3,7 @@
 import React, { useCallback } from 'react';
 import { Input } from 'antd';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { validatePAN, validateTAN, validateCIN, validateGSTIN } from '../../utils/validations';
 import type { CompanyStatutorySectionProps } from '../../types/ui.types';
@@ -17,7 +18,7 @@ const STATUTORY_FIELDS: ReadonlyArray<{
   { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10 },
   { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10 },
   { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21 },
-  { key: 'gstin', label: 'GSTIN', placeholder: 'Enter GSTIN' },
+  { key: 'gstIn', label: 'GSTIN', placeholder: 'Enter GSTIN' },
   { key: 'pfEstablishmentCode', label: 'PF Establishment Code', placeholder: 'Enter PF establishment code' },
   { key: 'esicCode', label: 'ESIC Code', placeholder: 'Enter ESIC code' },
   // { key: 'msmeUdyam', label: 'MSME / Udyam No.', placeholder: 'Enter MSME / Udyam registration number' },
@@ -35,15 +36,15 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
     (field: string, value: string) => {
       setCompanyDraft({ [field]: value });
       
-      // Real-time validation for specific fields
+      // Real-time validation for specific fields - only if value exists
       let error: string | null = null;
-      if (field === 'pan' && value) {
+      if (field === 'pan' && value?.trim()) {
         error = validatePAN(value) || null;
-      } else if (field === 'tan' && value) {
+      } else if (field === 'tan' && value?.trim()) {
         error = validateTAN(value) || null;
-      } else if (field === 'cin' && value) {
+      } else if (field === 'cin' && value?.trim()) {
         error = validateCIN(value) || null;
-      } else if (field === 'gstin' && value) {
+      } else if (field === 'gstIn' && value?.trim()) {
         error = validateGSTIN(value) || null;
       }
       
@@ -59,19 +60,27 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
   return (
     <div className={formStyles.statutoryGrid}>
       {STATUTORY_FIELDS.map((field) => (
-        <OrgFormField
-          key={field.key}
-          label={field.label}
-          error={errors[field.key]}
-        >
-          <Input
+        disabled ? (
+          <OrgViewField
+            key={field.key}
+            label={field.label}
             value={(draft?.[field.key as keyof typeof draft] as string) || ''}
-            onChange={(e) => handleChange(field.key, e.target.value)}
-            placeholder={field.placeholder}
-            maxLength={field.maxLength}
-            disabled={disabled}
           />
-        </OrgFormField>
+        ) : (
+          <OrgFormField
+            key={field.key}
+            label={field.label}
+            error={errors[field.key]}
+          >
+            <Input
+              value={(draft?.[field.key as keyof typeof draft] as string) || ''}
+              onChange={(e) => handleChange(field.key, e.target.value)}
+              placeholder={field.placeholder}
+              maxLength={field.maxLength}
+              disabled={disabled}
+            />
+          </OrgFormField>
+        )
       ))}
     </div>
   );

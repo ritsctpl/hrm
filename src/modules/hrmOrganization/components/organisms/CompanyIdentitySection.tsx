@@ -5,6 +5,7 @@ import { Input, Select, DatePicker, Upload, Button, message } from 'antd';
 import { CloudUploadOutlined, ShopOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { INDUSTRY_OPTIONS } from '../../utils/constants';
 import type { CompanyIdentitySectionProps } from '../../types/ui.types';
@@ -52,7 +53,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
         const reader = new FileReader();
         reader.onload = (e) => {
           const base64String = e.target?.result as string;
-          // Store base64 in logoUrl (will be sent in msmeUdyam field during save)
+          // Store base64 in logoUrl (will be sent in logoBase64 field during save)
           setCompanyDraft({ logoUrl: base64String });
           message.success('Logo uploaded successfully');
         };
@@ -77,85 +78,104 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
           </div>
         )}
         <div className={mainStyles.logoInfo}>
-          <Upload
-            showUploadList={false}
-            beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}
-            accept="image/*"
-            disabled={disabled}
-          >
-            <Button icon={<CloudUploadOutlined />} disabled={disabled}>
-              Upload Logo
-            </Button>
-          </Upload>
-          <div className={mainStyles.logoInfoText}>
-            Recommended: 200x200px, PNG or JPG, max 2MB
-          </div>
+          {!disabled && (
+            <>
+              <Upload
+                showUploadList={false}
+                beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}
+                accept="image/*"
+                disabled={disabled}
+              >
+                <Button icon={<CloudUploadOutlined />} disabled={disabled}>
+                  Upload Logo
+                </Button>
+              </Upload>
+              <div className={mainStyles.logoInfoText}>
+                Recommended: 200x200px, PNG or JPG, max 2MB
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Identity Fields */}
       <div className={formStyles.identityGrid}>
-        <OrgFormField label="Legal Name" required error={errors.legalName}>
-          <Input
-            value={draft?.legalName || ''}
-            onChange={(e) => handleFieldChange('legalName', e.target.value)}
-            placeholder="Enter legal name"
-            disabled={disabled}
-          />
-        </OrgFormField>
+        {disabled ? (
+          <>
+            <OrgViewField label="Legal Name" required value={draft?.legalName} />
+            <OrgViewField label="Trade Name" value={draft?.tradeName} />
+            <OrgViewField label="Industry" required value={
+              INDUSTRY_OPTIONS.find(opt => opt.value === (draft?.industryType || draft?.industry))?.label || (draft?.industryType || draft?.industry)
+            } />
+            <OrgViewField label="Founded Date" value={draft?.foundedDate || draft?.incorporationDate} />
+            <OrgViewField label="Official Email" required value={draft?.officialEmail} />
+            <OrgViewField label="Official Phone" required value={draft?.officialPhone} />
+          </>
+        ) : (
+          <>
+            <OrgFormField label="Legal Name" required error={errors.legalName}>
+              <Input
+                value={draft?.legalName || ''}
+                onChange={(e) => handleFieldChange('legalName', e.target.value)}
+                placeholder="Enter legal name"
+                disabled={disabled}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="Trade Name" error={errors.companyName}>
-          <Input
-            value={draft?.companyName || ''}
-            onChange={(e) => handleFieldChange('companyName', e.target.value)}
-            placeholder="Enter trade name"
-            disabled={disabled}
-          />
-        </OrgFormField>
+            <OrgFormField label="Trade Name" error={errors.tradeName}>
+              <Input
+                value={draft?.tradeName || ''}
+                onChange={(e) => handleFieldChange('tradeName', e.target.value)}
+                placeholder="Enter trade name"
+                disabled={disabled}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="Industry" required error={errors.industryType || errors.industry}>
-          <Select
-            value={draft?.industryType || draft?.industry || undefined}
-            onChange={(val) => handleFieldChange('industryType', val)}
-            placeholder="Select industry"
-            options={[...INDUSTRY_OPTIONS]}
-            showSearch
-            optionFilterProp="label"
-            disabled={disabled}
-            style={{ width: '100%' }}
-          />
-        </OrgFormField>
+            <OrgFormField label="Industry" required error={errors.industryType || errors.industry}>
+              <Select
+                value={draft?.industryType || draft?.industry || undefined}
+                onChange={(val) => handleFieldChange('industryType', val)}
+                placeholder="Select industry"
+                options={[...INDUSTRY_OPTIONS]}
+                showSearch
+                optionFilterProp="label"
+                disabled={disabled}
+                style={{ width: '100%' }}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="Founded Date" error={errors.foundedDate || errors.incorporationDate}>
-          <DatePicker
-            value={(draft?.foundedDate || draft?.incorporationDate) ? dayjs(draft?.foundedDate || draft?.incorporationDate) : null}
-            onChange={handleDateChange}
-            format="YYYY-MM-DD"
-            placeholder="Select date"
-            disabled={disabled}
-            style={{ width: '100%' }}
-          />
-        </OrgFormField>
+            <OrgFormField label="Founded Date" error={errors.foundedDate || errors.incorporationDate}>
+              <DatePicker
+                value={(draft?.foundedDate || draft?.incorporationDate) ? dayjs(draft?.foundedDate || draft?.incorporationDate) : null}
+                onChange={handleDateChange}
+                format="YYYY-MM-DD"
+                placeholder="Select date"
+                disabled={disabled}
+                style={{ width: '100%' }}
+              />
+            </OrgFormField>
 
-        {/* Contact Information Fields */}
-        <OrgFormField label="Official Email" required error={errors.officialEmail}>
-          <Input
-            value={draft?.officialEmail || ''}
-            onChange={(e) => handleFieldChange('officialEmail', e.target.value)}
-            placeholder="Enter official email"
-            type="email"
-            disabled={disabled}
-          />
-        </OrgFormField>
+            {/* Contact Information Fields */}
+            <OrgFormField label="Official Email" required error={errors.officialEmail}>
+              <Input
+                value={draft?.officialEmail || ''}
+                onChange={(e) => handleFieldChange('officialEmail', e.target.value)}
+                placeholder="Enter official email"
+                type="email"
+                disabled={disabled}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="Official Phone" required error={errors.officialPhone}>
-          <Input
-            value={draft?.officialPhone || ''}
-            onChange={(e) => handleFieldChange('officialPhone', e.target.value)}
-            placeholder="Enter official phone"
-            disabled={disabled}
-          />
-        </OrgFormField>
+            <OrgFormField label="Official Phone" required error={errors.officialPhone}>
+              <Input
+                value={draft?.officialPhone || ''}
+                onChange={(e) => handleFieldChange('officialPhone', e.target.value)}
+                placeholder="Enter official phone"
+                disabled={disabled}
+              />
+            </OrgFormField>
+          </>
+        )}
       </div>
     </div>
   );

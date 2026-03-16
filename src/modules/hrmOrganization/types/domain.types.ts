@@ -9,6 +9,7 @@ export interface CompanyProfile {
   site: string;
   legalName: string;
   companyName?: string;
+  tradeName?: string;
   registrationNumber?: string;
   logoUrl?: string;
   logoFileName?: string;
@@ -19,6 +20,8 @@ export interface CompanyProfile {
   pan?: string;
   tan?: string;
   gstin?: string;
+  gstIn?: string;
+  logoBase64?: string;
   msmeUdyam?: string;
   pfEstablishmentCode?: string;
   esicCode?: string;
@@ -37,7 +40,6 @@ export interface CompanyProfile {
   createdDateTime?: string;
   modifiedDateTime?: string;
   /** @deprecated UI backward compat aliases */
-  tradeName?: string;
   industry?: string;
   incorporationDate?: string;
   pfRegistrationNo?: string;

@@ -45,8 +45,9 @@ export const validateCIN = (cin: string): string | null => {
 };
 
 export const validateGSTIN = (gstin: string): string | null => {
+  // Only validate format if GSTIN has a value (not null or empty string)
   if (!gstin || !gstin.trim()) {
-    return 'GSTIN is required';
+    return null; // Optional field - no error if empty
   }
   if (!GSTIN_PATTERN.test(gstin.toUpperCase())) {
     return 'GSTIN must be 15 characters (e.g., 33AABCA0633D1Z5)';

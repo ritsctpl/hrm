@@ -355,10 +355,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     try {
       const data = await HrmOrganizationService.fetchCompanyByHandle(site, targetHandle);
       
-      // If msmeUdyam contains base64 (starts with data:), use it as logoUrl for preview
+      // If logoBase64 contains base64 (starts with data:), use it as logoUrl for preview
       const processedData = { ...data };
-      if (data.msmeUdyam && data.msmeUdyam.startsWith('data:')) {
-        processedData.logoUrl = data.msmeUdyam;
+      if (data.logoBase64 && data.logoBase64.startsWith('data:')) {
+        processedData.logoUrl = data.logoBase64;
       }
       
       set((state) => ({
@@ -450,18 +450,21 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         country: registeredAddress.country || 'India',
       };
 
-      // Create payload with only required fields (no companyName, registrationNumber, gstin, website, modifiedBy)
+      // Create payload with all required fields
       const payload: any = {
         site,
         legalName: companyProfile.draft.legalName || '',
+        tradeName: companyProfile.draft.tradeName || null,
         industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
         cin: companyProfile.draft.cin || '',
         pan: companyProfile.draft.pan || '',
         tan: companyProfile.draft.tan || '',
-        // If logoUrl contains base64 (starts with data:), send it in msmeUdyam; otherwise use actual msmeUdyam value
-        msmeUdyam: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:')) 
+        gstIn: companyProfile.draft.gstIn || null,
+        foundedDate: companyProfile.draft.foundedDate || null,
+        // If logoUrl contains base64 (starts with data:), send it in logoBase64; otherwise use actual logoBase64 value
+        logoBase64: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:')) 
           ? companyProfile.draft.logoUrl 
-          : (companyProfile.draft.msmeUdyam || ''),
+          : (companyProfile.draft.logoBase64 || ''),
         pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo || '',
         esicCode: companyProfile.draft.esicCode || '',
         officialEmail: companyProfile.draft.officialEmail || '',
