@@ -107,13 +107,13 @@ const CompanyProfileForm: React.FC = () => {
   const isDisabled = !isEditing && !isNew;
 
   return (
-    <div style={{ display: 'flex', gap: '0', height: '100%' }}>
+    <div style={{ display: 'flex', gap: '0', height: '100%', minHeight: 0 }}>
       {/* Left Vertical Timeline - Fixed to content area */}
       <div style={{
         width: '220px',
         position: 'sticky',
         top: '0',
-        height: 'calc(100vh - 200px)',
+        height: '100%',
         overflowY: 'auto',
         padding: '24px 16px',
         backgroundColor: '#fafafa',
@@ -200,37 +200,10 @@ const CompanyProfileForm: React.FC = () => {
       </div>
 
       {/* Main Content - Offset by sidebar width */}
-      <div className={mainStyles.companyProfileContainer} style={{ flex: 1, paddingRight: '24px' }}>
-        {/* Header with actions */}
+      <div className={mainStyles.companyProfileContainer} style={{ flex: 1, paddingRight: '24px', overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
+        {/* Header with title only */}
         <div className={mainStyles.companyFormHeader}>
           <h2 className={mainStyles.companyFormTitle}>Company Profile</h2>
-          <div className={mainStyles.companyFormActions}>
-            {!isEditing && data && (
-              <Button
-                icon={<EditOutlined />}
-                onClick={handleEdit}
-                size="small"
-              >
-                Edit
-              </Button>
-            )}
-            {isEditing && data && (
-              <Button
-                icon={<CloseOutlined />}
-                onClick={handleCancel}
-                size="small"
-              >
-                Cancel
-              </Button>
-            )}
-            {(isEditing || isNew) && (
-              <OrgSaveButton
-                loading={isSaving}
-                onClick={handleSave}
-                label={data ? 'Update' : 'Create'}
-              />
-            )}
-          </div>
         </div>
 
         {errors._general && (

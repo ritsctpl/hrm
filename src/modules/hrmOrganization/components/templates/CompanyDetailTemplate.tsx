@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Tabs, Breadcrumb, Card, Tag, Spin } from 'antd';
+import React, { useEffect, useCallback } from 'react';
+import { Tabs, Breadcrumb, Card, Tag, Spin, Button, message } from 'antd';
 import {
   HomeOutlined,
   ShopOutlined,
@@ -11,8 +11,11 @@ import {
   ClusterOutlined,
   AuditOutlined,
   BarChartOutlined,
+  EditOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import OrgSaveButton from '../atoms/OrgSaveButton';
 import CompanyProfileTemplate from './CompanyProfileTemplate';
 import BusinessUnitTemplate from './BusinessUnitTemplate';
 import DepartmentTemplate from './DepartmentTemplate';
@@ -33,9 +36,41 @@ const CompanyDetailTemplate: React.FC = () => {
     fetchBusinessUnits,
     fetchLocations,
     companyProfile,
+    setCompanyEditing,
+    saveCompanyProfile,
   } = useHrmOrganizationStore();
 
+  const get = useHrmOrganizationStore.getState;
   const isNew = selectedCompanyHandle === 'new';
+  const { isEditing, isSaving, errors, data } = companyProfile;
+
+  const handleEdit = useCallback(() => {
+    setCompanyEditing(true);
+  }, [setCompanyEditing]);
+
+  const handleCancel = useCallback(() => {
+    setCompanyEditing(false);
+  }, [setCompanyEditing]);
+
+  const handleSave = useCallback(async () => {
+    try {
+      await saveCompanyProfile();
+      
+      const updatedState = get().companyProfile;
+      const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
+      
+      if (errorKeys.length > 0) {
+        const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
+        message.error(errorMessages);
+      } else if (updatedState.errors._general) {
+        message.error(updatedState.errors._general);
+      } else {
+        message.success('Company profile saved successfully');
+      }
+    } catch {
+      message.error('Failed to save company profile');
+    }
+  }, [saveCompanyProfile]);
 
   // Load company profile on mount
   useEffect(() => {
@@ -186,7 +221,36 @@ const CompanyDetailTemplate: React.FC = () => {
         items={tabItems}
         size="small"
         className={styles.detailTabs}
-        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        tabBarExtraContent={
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            {!isEditing && data && (
+              <Button
+                icon={<EditOutlined />}
+                onClick={handleEdit}
+                size="small"
+              >
+                Edit
+              </Button>
+            )}
+            {isEditing && data && (
+              <Button
+                icon={<CloseOutlined />}
+                onClick={handleCancel}
+                size="small"
+              >
+                Cancel
+              </Button>
+            )}
+            {(isEditing || isNew) && (
+              <OrgSaveButton
+                loading={isSaving}
+                onClick={handleSave}
+                label={data ? 'Update' : 'Create'}
+              />
+            )}
+          </div>
+        }
         destroyOnHidden={false}
       />
     </div>
