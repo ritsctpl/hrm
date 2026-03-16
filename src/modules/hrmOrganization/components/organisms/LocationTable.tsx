@@ -151,7 +151,7 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
           />
         </div>
         <Button type="primary" onClick={onAdd}>
-          Add Location
+          +
         </Button>
       </div>
 

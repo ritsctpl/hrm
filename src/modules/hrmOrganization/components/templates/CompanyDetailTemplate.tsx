@@ -224,7 +224,7 @@ const CompanyDetailTemplate: React.FC = () => {
         tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         tabBarExtraContent={
           <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-            {!isEditing && data && (
+            {activeDetailTab === 'profile' && !isEditing && data && (
               <Button
                 icon={<EditOutlined />}
                 onClick={handleEdit}

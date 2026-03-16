@@ -140,7 +140,7 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
           disabled={!selectedBuHandle}
           size="small"
         >
-          Add
+          +
         </Button>
       </div>
 

@@ -92,12 +92,12 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         dataIndex: 'state',
         key: 'state',
       },
-      {
-        title: 'Status',
-        dataIndex: 'active',
-        key: 'active',
-        render: (active: number) => <OrgStatusTag active={active} />,
-      },
+      // {
+      //   title: 'Status',
+      //   dataIndex: 'active',
+      //   key: 'active',
+      //   render: (active: number) => <OrgStatusTag active={active} />,
+      // },
       {
         title: 'Action',
         key: 'actions',
@@ -148,7 +148,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
           />
         </div>
         <Button type="primary" onClick={onAdd}>
-          Add Business Unit
+          +
         </Button>
       </div>
 

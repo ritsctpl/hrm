@@ -2,9 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Button, Input, Tag, Popconfirm, Select, message } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { HrmOrganizationService } from '../../services/hrmOrganizationService';
+import { parseCookies } from 'nookies';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -18,12 +20,36 @@ const OrganizationListTemplate: React.FC = () => {
   } = useHrmOrganizationStore();
 
   const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 110px)');
-
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchCompanyList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleGo = async () => {
+    try {
+      setIsExporting(true);
+      const cookies = parseCookies();
+      const site = cookies.site || '';
+      
+      if (!site) {
+        message.error('Site information not found');
+        return;
+      }
+
+      // Trigger the retrieveBySite endpoint
+      const result = await HrmOrganizationService.fetchBySite(site);
+      
+      message.success('Companies retrieved successfully');
+      console.log('Retrieved companies:', result);
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to retrieve companies';
+      message.error(errorMsg);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Calculate table height based on screen resolution - use full viewport height
   useEffect(() => {
@@ -67,6 +93,14 @@ const OrganizationListTemplate: React.FC = () => {
     } else if (companyList.statusFilter === 'inactive') {
       items = items.filter((c) => c.active !== 1);
     }
+    
+    // Sort by createdDateTime in descending order (newest first)
+    items = items.sort((a, b) => {
+      const dateA = new Date(a.createdDateTime || 0).getTime();
+      const dateB = new Date(b.createdDateTime || 0).getTime();
+      return dateB - dateA;
+    });
+    
     return items;
   }, [companyList.items, companyList.searchText, companyList.statusFilter]);
 
@@ -79,11 +113,11 @@ const OrganizationListTemplate: React.FC = () => {
         <a onClick={() => navigateToDetail(record.handle)}>{text}</a>
       ),
     },
-    // {
-    //   title: 'Trade Name',
-    //   dataIndex: 'tradeName',
-    //   key: 'tradeName',
-    // },
+    {
+      title: 'Trade Name',
+      dataIndex: 'tradeName',
+      key: 'tradeName',
+    },
     {
       title: 'Industry',
       dataIndex: 'industryType',
@@ -99,17 +133,17 @@ const OrganizationListTemplate: React.FC = () => {
       dataIndex: 'officialPhone',
       key: 'officialPhone',
     },
-    {
-      title: 'Status',
-      dataIndex: 'active',
-      key: 'active',
-      width: 100,
-      render: (active: number) => (
-        <Tag color={active === 1 ? 'green' : 'red'}>
-          {active === 1 ? 'Active' : 'Inactive'}
-        </Tag>
-      ),
-    },
+    // {
+    //   title: 'Status',
+    //   dataIndex: 'active',
+    //   key: 'active',
+    //   width: 100,
+    //   render: (active: number) => (
+    //     <Tag color={active === 1 ? 'green' : 'red'}>
+    //       {active === 1 ? 'Active' : 'Inactive'}
+    //     </Tag>
+    //   ),
+    // },
     {
       title: 'Actions',
       key: 'actions',
@@ -123,11 +157,13 @@ const OrganizationListTemplate: React.FC = () => {
               handleDeleteCompany(record.handle);
             }}
           >
-            <Button 
-              size="small" 
-              danger 
-              icon={<MdDelete />}
-            />
+            <Button
+                type="text"
+                size="small"
+                danger
+                icon={<MdDelete />}
+                onClick={(e) => e.stopPropagation()}
+              />
           </Popconfirm>
         </div>
       ),
@@ -148,7 +184,7 @@ const OrganizationListTemplate: React.FC = () => {
             size="small"
             allowClear
           />
-          <Select
+          {/* <Select
             value={companyList.statusFilter}
             onChange={setCompanyListStatusFilter}
             size="small"
@@ -158,16 +194,25 @@ const OrganizationListTemplate: React.FC = () => {
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },
             ]}
-          />
+          /> */}
         </div>
+         <Button
+          type="primary"
+          size="small"
+          onClick={handleGo}
+          loading={isExporting}
+        >
+          Go
+        </Button>
         <Button
           type="primary"
           size="small"
           // icon={<PlusOutlined />}
           onClick={() => navigateToDetail('new')}
         >
-          New Company
+          +
         </Button>
+       
       </div>
       <Table
         dataSource={filteredItems}
