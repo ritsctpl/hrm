@@ -87,6 +87,8 @@ export interface UpdateBasicRequest {
   handle: string;
   fullName?: string;
   phone?: string;
+  photoUrl?: string | null;
+  photoBase64?: string;
   modifiedBy: string;
 }
 

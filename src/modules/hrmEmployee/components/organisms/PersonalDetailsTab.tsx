@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { Button, Input, Form, Select, DatePicker } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -19,12 +19,18 @@ import type { ProfileTabProps } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 
-const PersonalDetailsTab: React.FC<ProfileTabProps> = ({
+export interface PersonalDetailsTabHandle {
+  save: () => Promise<void>;
+  cancel: () => void;
+}
+
+const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>(({
   profile,
   isEditing,
   isSaving,
   onSave,
-}) => {
+  onEdit,
+}, ref) => {
   const { personalDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
@@ -46,6 +52,14 @@ const PersonalDetailsTab: React.FC<ProfileTabProps> = ({
       // validation error
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    cancel: () => {
+      setLocalEditing(false);
+      form.resetFields();
+    },
+  }));
 
   const editing = isEditing || localEditing;
 
@@ -93,19 +107,6 @@ const PersonalDetailsTab: React.FC<ProfileTabProps> = ({
               />
             </Form.Item>
           </div>
-          <div className={formStyles.editFormActions}>
-            <Button icon={<CloseOutlined />} onClick={() => setLocalEditing(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              loading={isSaving}
-              onClick={handleSave}
-            >
-              Save
-            </Button>
-          </div>
         </Form>
       </div>
     );
@@ -117,11 +118,6 @@ const PersonalDetailsTab: React.FC<ProfileTabProps> = ({
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button type="text" icon={<EditOutlined />} onClick={() => setLocalEditing(true)}>
-          Edit
-        </Button>
-      </div>
       <div className={styles.detailGrid}>
         <EmpFieldLabel label="Date of Birth" value={formatDate(personalDetails.dateOfBirth)} />
         <EmpFieldLabel label="Gender" value={personalDetails.gender} />
@@ -136,6 +132,8 @@ const PersonalDetailsTab: React.FC<ProfileTabProps> = ({
       </div>
     </div>
   );
-};
+});
+
+PersonalDetailsTab.displayName = 'PersonalDetailsTab';
 
 export default PersonalDetailsTab;

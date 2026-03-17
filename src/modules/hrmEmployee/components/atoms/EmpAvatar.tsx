@@ -23,10 +23,53 @@ function avatarColor(name: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-const EmpAvatar: React.FC<EmpAvatarProps> = ({ name, photoUrl, size = 40 }) => {
-  if (photoUrl) {
+const EmpAvatar: React.FC<EmpAvatarProps> = ({ name, photoUrl, photoBase64, size = 40, shape = 'circle' }) => {
+  // Prefer photoBase64 if available, otherwise use photoUrl
+  const imageSource = photoBase64 || photoUrl;
+
+  // Passport size shape (rectangular)
+  if (shape === 'passport') {
+    if (imageSource) {
+      return (
+        <img 
+          src={imageSource} 
+          alt={name}
+          style={{
+            width: '100px',
+            height: '130px',
+            objectFit: 'cover',
+            borderRadius: '4px',
+            border: '1px solid #e2e8f0'
+          }}
+        />
+      );
+    }
+
     return (
-      <Avatar src={photoUrl} size={size} alt={name} />
+      <div
+        style={{
+          width: '100px',
+          height: '130px',
+          backgroundColor: avatarColor(name),
+          borderRadius: '4px',
+          border: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '32px',
+          fontWeight: 600,
+          color: '#fff',
+        }}
+      >
+        {getInitials(name)}
+      </div>
+    );
+  }
+
+  // Default circular avatar
+  if (imageSource) {
+    return (
+      <Avatar src={imageSource} size={size} alt={name} />
     );
   }
 

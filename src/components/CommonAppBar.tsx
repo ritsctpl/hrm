@@ -523,13 +523,15 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     <LoadingWrapper isLoading={isInitialLoad || (isClientSide && isLoading)}>
       {!isInitialLoad && (
         <AppBar
-          position="static"
+          position="sticky"
           style={{
             boxShadow: "none",
             backgroundColor: siteDetails?.theme?.background,
             color: siteDetails?.theme?.color,
             borderBottom:"1px solid var(--line-color)",
             width: "100%",
+            top: 0,
+            zIndex: 100,
           }}
           className={styles.appBar}
         >

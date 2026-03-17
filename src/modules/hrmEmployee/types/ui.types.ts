@@ -36,7 +36,9 @@ export interface EmpStatusBadgeProps {
 export interface EmpAvatarProps {
   name: string;
   photoUrl?: string;
+  photoBase64?: string;
   size?: number;
+  shape?: 'circle' | 'passport';
 }
 
 /** Field label props */
@@ -109,6 +111,8 @@ export interface ProfileTabProps {
   isEditing: boolean;
   isSaving: boolean;
   onSave: (section: string, data: Record<string, unknown>) => Promise<void>;
+  onEdit?: () => void;
+  onSectionSave?: () => Promise<void>;
 }
 
 /** Onboarding wizard props */

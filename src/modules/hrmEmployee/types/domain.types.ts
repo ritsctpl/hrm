@@ -116,6 +116,7 @@ export interface EmployeeSummary {
   workEmail: string;
   phone?: string;
   photoUrl?: string;
+  photoBase64?: string;
   status: EmployeeStatus;
   department: string;
   role?: string;
@@ -132,6 +133,7 @@ export interface BasicDetails {
   workEmail: string;
   phone: string;
   photoUrl?: string;
+  photoBase64?: string;
   status: string;
   employeeCode?: string;
 }

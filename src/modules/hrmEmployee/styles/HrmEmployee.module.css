@@ -7,6 +7,10 @@
 
 .landingWrapper {
   padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
 }
 
 /* ----- Header ----- */
@@ -97,6 +101,8 @@
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 12px;
   padding: 4px;
+  overflow: auto;
+  flex: 1;
 }
 
 /* ----- Empty state ----- */

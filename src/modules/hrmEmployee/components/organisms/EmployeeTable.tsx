@@ -33,7 +33,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         width: 260,
         render: (_: string, record: EmployeeSummary) => (
           <div className={styles.nameCell}>
-            <EmpAvatar name={record.fullName} photoUrl={record.photoUrl} size={32} />
+            <EmpAvatar name={record.fullName} photoUrl={record.photoUrl} photoBase64={record.photoBase64} size={32} />
             <div className={styles.nameCellText}>
               <span className={styles.nameCellName}>{record.fullName}</span>
               <span className={styles.nameCellEmail}>{record.workEmail}</span>

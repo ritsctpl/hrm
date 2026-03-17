@@ -137,8 +137,8 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
               <Button icon={<SettingOutlined />} onClick={onFieldConfig} />
             </Tooltip>
           )}
-          <Button type="primary" icon={<PlusOutlined />} onClick={onAddEmployee}>
-            Add Employee
+          <Button type="primary" onClick={onAddEmployee}>
+            +
           </Button>
         </div>
       </div>

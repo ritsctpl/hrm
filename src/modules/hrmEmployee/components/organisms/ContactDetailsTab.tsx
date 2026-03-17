@@ -1,11 +1,13 @@
 /**
  * ContactDetailsTab - View/edit addresses and emergency contacts
+ * Uses flat field structure for API payload:
+ * presentAddress, permanentAddress, city, state, country, pinZip, emergencyContacts
  */
 
 'use client';
 
-import React, { useState } from 'react';
-import { Button, Input, Form, Divider } from 'antd';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import { Button, Input, Form, Divider, Select } from 'antd';
 import {
   EditOutlined,
   SaveOutlined,
@@ -14,58 +16,45 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
-import { formatAddress } from '../../utils/transformations';
 import type { ProfileTabProps } from '../../types/ui.types';
-import type { Address, EmergencyContact } from '../../types/domain.types';
+import type { EmergencyContact } from '../../types/domain.types';
+import { COUNTRY_OPTIONS, COUNTRY_STATE_MAP } from '../../utils/constants';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 
-const AddressFields: React.FC<{ prefix: string; label: string }> = ({ prefix, label }) => (
-  <div className={formStyles.addressBlock}>
-    <div className={formStyles.addressBlockTitle}>{label}</div>
-    <div className={formStyles.formRow}>
-      <Form.Item name={[prefix, 'line1']} label="Line 1">
-        <Input />
-      </Form.Item>
-      <Form.Item name={[prefix, 'line2']} label="Line 2">
-        <Input />
-      </Form.Item>
-    </div>
-    <div className={formStyles.formRow}>
-      <Form.Item name={[prefix, 'city']} label="City">
-        <Input />
-      </Form.Item>
-      <Form.Item name={[prefix, 'state']} label="State">
-        <Input />
-      </Form.Item>
-    </div>
-    <div className={formStyles.formRow}>
-      <Form.Item name={[prefix, 'pinCode']} label="PIN Code">
-        <Input />
-      </Form.Item>
-      <Form.Item name={[prefix, 'country']} label="Country">
-        <Input />
-      </Form.Item>
-    </div>
-  </div>
-);
+export interface ContactDetailsTabHandle {
+  save: () => Promise<void>;
+  cancel: () => void;
+}
 
-const ContactDetailsTab: React.FC<ProfileTabProps> = ({
+const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>(({
   profile,
   isEditing,
   isSaving,
   onSave,
-}) => {
+  onEdit,
+}, ref) => {
   const { contactDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string>(contactDetails.country || '');
+
+  const handleCountryChange = (value: string) => {
+    setSelectedCountry(value);
+    // Reset state when country changes
+    form.setFieldValue('state', undefined);
+  };
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
       await onSave('contact', {
-        presentAddress: values.presentAddress as Address,
-        permanentAddress: values.permanentAddress as Address,
+        presentAddress: values.presentAddress || undefined,
+        permanentAddress: values.permanentAddress || undefined,
+        city: values.city || undefined,
+        state: values.state || undefined,
+        country: values.country || undefined,
+        pinZip: values.pinZip || undefined,
         emergencyContacts: values.emergencyContacts as EmergencyContact[],
       });
       setLocalEditing(false);
@@ -74,7 +63,17 @@ const ContactDetailsTab: React.FC<ProfileTabProps> = ({
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    cancel: () => {
+      setLocalEditing(false);
+      setSelectedCountry(contactDetails.country || '');
+      form.resetFields();
+    },
+  }));
+
   const editing = isEditing || localEditing;
+  const stateOptions = selectedCountry ? (COUNTRY_STATE_MAP[selectedCountry] || []) : [];
 
   if (editing) {
     return (
@@ -83,13 +82,76 @@ const ContactDetailsTab: React.FC<ProfileTabProps> = ({
           form={form}
           layout="vertical"
           initialValues={{
-            presentAddress: contactDetails.presentAddress || {},
-            permanentAddress: contactDetails.permanentAddress || {},
+            presentAddress: contactDetails.presentAddress || '',
+            permanentAddress: contactDetails.permanentAddress || '',
+            city: contactDetails.city || '',
+            state: contactDetails.state || '',
+            country: contactDetails.country || '',
+            pinZip: contactDetails.pinZip || '',
             emergencyContacts: contactDetails.emergencyContacts || [],
           }}
         >
-          <AddressFields prefix="presentAddress" label="Present Address" />
-          <AddressFields prefix="permanentAddress" label="Permanent Address" />
+          {/* Present Address */}
+          <div style={{ marginBottom: 16 }}>
+            <Form.Item
+              name="presentAddress"
+              label="Present Address"
+              rules={[{ required: false }]}
+            >
+              <Input.TextArea rows={3} placeholder="Enter present address" />
+            </Form.Item>
+          </div>
+
+          {/* Permanent Address */}
+          <div style={{ marginBottom: 16 }}>
+            <Form.Item
+              name="permanentAddress"
+              label="Permanent Address"
+              rules={[{ required: false }]}
+            >
+              <Input.TextArea rows={3} placeholder="Enter permanent address" />
+            </Form.Item>
+          </div>
+
+          {/* City, Country, State, PIN */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <Form.Item name="city" label="City">
+              <Input placeholder="City" />
+            </Form.Item>
+            <Form.Item
+              name="country"
+              label="Country"
+              rules={[{ required: false }]}
+            >
+              <Select
+                placeholder="Select country"
+                options={COUNTRY_OPTIONS.map((country) => ({
+                  value: country,
+                  label: country,
+                }))}
+                onChange={handleCountryChange}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item
+              name="state"
+              label="State/Province"
+              rules={[{ required: false }]}
+            >
+              <Select
+                placeholder={selectedCountry ? 'Select state' : 'Select country first'}
+                options={stateOptions.map((state) => ({
+                  value: state,
+                  label: state,
+                }))}
+                disabled={!selectedCountry}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item name="pinZip" label="PIN/ZIP Code">
+              <Input placeholder="PIN/ZIP Code" />
+            </Form.Item>
+          </div>
 
           <Divider orientation="left" style={{ fontSize: 13 }}>
             Emergency Contacts
@@ -146,20 +208,6 @@ const ContactDetailsTab: React.FC<ProfileTabProps> = ({
               </>
             )}
           </Form.List>
-
-          <div className={formStyles.editFormActions}>
-            <Button icon={<CloseOutlined />} onClick={() => setLocalEditing(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              loading={isSaving}
-              onClick={handleSave}
-            >
-              Save
-            </Button>
-          </div>
         </Form>
       </div>
     );
@@ -169,20 +217,30 @@ const ContactDetailsTab: React.FC<ProfileTabProps> = ({
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button type="text" icon={<EditOutlined />} onClick={() => setLocalEditing(true)}>
-          Edit
-        </Button>
-      </div>
-
       <div className={styles.detailGrid}>
         <EmpFieldLabel
           label="Present Address"
-          value={formatAddress(contactDetails.presentAddress)}
+          value={contactDetails.presentAddress || '--'}
         />
         <EmpFieldLabel
           label="Permanent Address"
-          value={formatAddress(contactDetails.permanentAddress)}
+          value={contactDetails.permanentAddress || '--'}
+        />
+        <EmpFieldLabel
+          label="City"
+          value={contactDetails.city || '--'}
+        />
+        <EmpFieldLabel
+          label="Country"
+          value={contactDetails.country || '--'}
+        />
+        <EmpFieldLabel
+          label="State/Province"
+          value={contactDetails.state || '--'}
+        />
+        <EmpFieldLabel
+          label="PIN/ZIP Code"
+          value={contactDetails.pinZip || '--'}
         />
       </div>
 
@@ -206,6 +264,8 @@ const ContactDetailsTab: React.FC<ProfileTabProps> = ({
       )}
     </div>
   );
-};
+});
+
+ContactDetailsTab.displayName = 'ContactDetailsTab';
 
 export default ContactDetailsTab;

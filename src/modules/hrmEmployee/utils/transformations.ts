@@ -18,6 +18,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     designation: row.role || '', // Backend returns 'role', map to 'designation' for UI
     status: row.status,
     photoUrl: row.photoUrl,
+    photoBase64: (row as unknown as Record<string, unknown>).photoBase64 as string | undefined,
     workEmail: row.workEmail,
   };
 }
@@ -216,6 +217,7 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       workEmail: (basic.workEmail as string) || '',
       phone: (basic.phone as string) || '',
       photoUrl: (basic.photoUrl as string) || undefined,
+      photoBase64: (basic.photoBase64 as string) || undefined,
       status: (basic.status as string) || 'ACTIVE',
       employeeCode: (basic.employeeCode as string) || undefined,
     },
@@ -273,5 +275,56 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
     education: (raw.educationEntries as EmployeeProfile['educationEntries']) || [],
     trainingCerts: (raw.trainingCertifications as EmployeeProfile['trainingCertifications']) || [],
     assets: (raw.assetDetails as EmployeeProfile['assetDetails']) || [],
+  };
+}
+
+/**
+ * Transform basic details update to include base64 photo if provided
+ * Flattens the payload and includes photoBase64 if image was uploaded
+ */
+export function buildUpdateBasicPayload(
+  site: string,
+  handle: string,
+  basicData: Record<string, unknown>,
+  modifiedBy: string
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    site,
+    handle,
+    fullName: basicData.fullName || undefined,
+    phone: basicData.phone || undefined,
+    modifiedBy,
+  };
+
+  // Include photoBase64 if provided (from image upload)
+  if (basicData.photoBase64) {
+    payload.photoBase64 = basicData.photoBase64;
+  }
+
+  return payload;
+}
+
+/**
+ * Transform contact details from nested structure to flat payload for API
+ * Input: { presentAddress, permanentAddress, city, state, country, pinZip, emergencyContacts }
+ * Output: Flat structure with all fields at top level
+ */
+export function buildUpdateContactPayload(
+  site: string,
+  handle: string,
+  contactData: Record<string, unknown>,
+  modifiedBy: string
+): Record<string, unknown> {
+  return {
+    site,
+    handle,
+    presentAddress: contactData.presentAddress || undefined,
+    permanentAddress: contactData.permanentAddress || undefined,
+    city: contactData.city || undefined,
+    state: contactData.state || undefined,
+    country: contactData.country || undefined,
+    pinZip: contactData.pinZip || undefined,
+    emergencyContacts: contactData.emergencyContacts || undefined,
+    modifiedBy,
   };
 }

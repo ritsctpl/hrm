@@ -12,7 +12,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Tabs, Button, Spin, Typography } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
@@ -35,12 +35,27 @@ import { PROFILE_TABS } from '../../utils/constants';
 import type { EmployeeProfile } from '../../types/domain.types';
 import type { EmployeeStatus } from '../../types/domain.types';
 import type { ProfileTabKey } from '../../types/ui.types';
+import type { BasicDetailsTabHandle } from '../organisms/BasicDetailsTab';
+import type { OfficialDetailsTabHandle } from '../organisms/OfficialDetailsTab';
+import type { PersonalDetailsTabHandle } from '../organisms/PersonalDetailsTab';
+import type { ContactDetailsTabHandle } from '../organisms/ContactDetailsTab';
 import styles from '../../styles/HrmEmployee.module.css';
 
 const { Text } = Typography;
 
 /** Shared card-style section wrapper used inside consolidated tabs */
-const ProfileSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const ProfileSection: React.FC<{ 
+  title: string; 
+  children: React.ReactNode; 
+  action?: React.ReactNode; 
+  sectionKey?: string; 
+  onEditSection?: (section: string) => void;
+  isEditing?: boolean;
+  isSaving?: boolean;
+  onSave?: (section: string) => void;
+  onCancel?: () => void;
+  tabRef?: React.RefObject<BasicDetailsTabHandle>;
+}> = ({ title, children, action, sectionKey, onEditSection, isEditing, isSaving, onSave, onCancel, tabRef }) => (
   <div
     style={{
       background: '#fff',
@@ -50,18 +65,66 @@ const ProfileSection: React.FC<{ title: string; children: React.ReactNode }> = (
       border: '1px solid #e2e8f0',
     }}
   >
-    <h4
-      style={{
-        margin: '0 0 12px 0',
-        paddingBottom: 8,
-        borderBottom: '1px solid #e2e8f0',
-        fontSize: 15,
-        fontWeight: 600,
-        color: '#1e293b',
-      }}
-    >
-      {title}
-    </h4>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <h4
+        style={{
+          margin: 0,
+          paddingBottom: 8,
+          borderBottom: '1px solid #e2e8f0',
+          fontSize: 15,
+          fontWeight: 600,
+          color: '#1e293b',
+          flex: 1,
+        }}
+      >
+        {title}
+      </h4>
+      <div style={{ marginLeft: 12, display: 'flex', gap: 8 }}>
+        {isEditing ? (
+          <>
+            <Button
+              type="primary"
+              size="small"
+              icon={<SaveOutlined />}
+              loading={isSaving}
+              onClick={() => {
+                // Call the ref's save method if available
+                if (tabRef?.current?.save) {
+                  tabRef.current.save();
+                } else {
+                  // Fallback: call onSave directly
+                  sectionKey && onSave?.(sectionKey);
+                }
+              }}
+            >
+              Save
+            </Button>
+            <Button
+              size="small"
+              icon={<CloseOutlined />}
+              onClick={() => {
+                // Call the ref's cancel method if available
+                if (tabRef?.current?.cancel) {
+                  tabRef.current.cancel();
+                }
+                // Then call onCancel to update template state
+                onCancel?.();
+              }}
+            >
+              Cancel
+            </Button>
+          </>
+        ) : (
+          action && (
+            <div 
+              onClick={() => sectionKey && onEditSection?.(sectionKey)}
+            >
+              {action}
+            </div>
+          )
+        )}
+      </div>
+    </div>
     {children}
   </div>
 );
@@ -91,6 +154,19 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   onBack,
   onRefresh,
 }) => {
+  // Track which section within a tab is being edited (for Overview tab with multiple sections)
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  
+  // Refs for tab components to call their save methods
+  const basicDetailsRef = useRef<BasicDetailsTabHandle>(null);
+  const officialDetailsRef = useRef<BasicDetailsTabHandle>(null);
+  const personalDetailsRef = useRef<BasicDetailsTabHandle>(null);
+  const contactDetailsRef = useRef<BasicDetailsTabHandle>(null);
+
+  const handleCancelSection = () => {
+    setEditingSection(null);
+  };
+
   if (isLoading || !profile) {
     return (
       <div
@@ -121,14 +197,68 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'overview':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Basic Details">
-              <BasicDetailsTab {...tabProps} />
+            <ProfileSection 
+              title="Basic Details"
+              sectionKey="basic"
+              onEditSection={setEditingSection}
+              isEditing={isEditing && editingSection === 'basic'}
+              isSaving={isSaving}
+              onSave={(section) => onSave(section, {})}
+              onCancel={handleCancelSection}
+              tabRef={basicDetailsRef}
+              action={
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={onEdit}
+                >
+                  Edit
+                </Button>
+              }
+            >
+              <BasicDetailsTab ref={basicDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection title="Official Details">
-              <OfficialDetailsTab {...tabProps} />
+            <ProfileSection 
+              title="Official Details"
+              sectionKey="official"
+              onEditSection={setEditingSection}
+              isEditing={isEditing && editingSection === 'official'}
+              isSaving={isSaving}
+              onSave={(section) => onSave(section, {})}
+              onCancel={handleCancelSection}
+              tabRef={officialDetailsRef}
+              action={
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={onEdit}
+                >
+                  Edit
+                </Button>
+              }
+            >
+              <OfficialDetailsTab ref={officialDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection title="Personal Details">
-              <PersonalDetailsTab {...tabProps} />
+            <ProfileSection 
+              title="Personal Details"
+              sectionKey="personal"
+              onEditSection={setEditingSection}
+              isEditing={isEditing && editingSection === 'personal'}
+              isSaving={isSaving}
+              onSave={(section) => onSave(section, {})}
+              onCancel={handleCancelSection}
+              tabRef={personalDetailsRef}
+              action={
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={onEdit}
+                >
+                  Edit
+                </Button>
+              }
+            >
+              <PersonalDetailsTab ref={personalDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
           </div>
         );
@@ -138,8 +268,26 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'contactFamily':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Contact Details">
-              <ContactDetailsTab {...tabProps} />
+            <ProfileSection 
+              title="Contact Details"
+              sectionKey="contact"
+              onEditSection={setEditingSection}
+              isEditing={isEditing && editingSection === 'contact'}
+              isSaving={isSaving}
+              onSave={(section) => onSave(section, {})}
+              onCancel={handleCancelSection}
+              tabRef={contactDetailsRef}
+              action={
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={onEdit}
+                >
+                  Edit
+                </Button>
+              }
+            >
+              <ContactDetailsTab ref={contactDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
           </div>
         );
@@ -222,6 +370,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
         <EmpAvatar
           name={basicDetails.fullName}
           photoUrl={basicDetails.photoUrl}
+          photoBase64={basicDetails.photoBase64}
           size={64}
         />
         <div className={styles.profileHeaderInfo}>
@@ -244,27 +393,6 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               <span>{officialDetails.businessUnits.join(', ')}</span>
             )}
           </div>
-        </div>
-        <div className={styles.profileActions}>
-          {isEditing ? (
-            <>
-              <Button
-                type="primary"
-                icon={<SaveOutlined />}
-                loading={isSaving}
-                onClick={() => onSave(activeTab, {})}
-              >
-                Save
-              </Button>
-              <Button icon={<CloseOutlined />} onClick={onBack}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button icon={<EditOutlined />} onClick={onEdit}>
-              Edit
-            </Button>
-          )}
         </div>
       </div>
 

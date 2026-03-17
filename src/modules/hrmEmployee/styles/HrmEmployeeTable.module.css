@@ -5,7 +5,8 @@
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
+  overflow: auto;
+  flex: 1;
 }
 
 .nameCell {
@@ -47,6 +48,8 @@
   align-items: center;
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
+  max-height: 320px;
+  height: fit-content;
 }
 
 .empCard:hover {
@@ -90,6 +93,14 @@
   padding: 3px 0;
   font-size: 11px;
   color: #475569;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.empCardDetailRow span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empCardDetailRow svg {

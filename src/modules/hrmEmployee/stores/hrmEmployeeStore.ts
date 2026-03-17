@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../services/hrmEmployeeService';
-import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile } from '../utils/transformations';
+import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload } from '../utils/transformations';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
 import type { EmployeeSummary, EmployeeProfile } from '../types/domain.types';
 import type { CreateEmployeeRequest } from '../types/api.types';
@@ -88,7 +88,7 @@ const initialDirectory: DirectoryState = {
   currentPage: 1,
   pageSize: DEFAULT_PAGE_SIZE,
   isLoading: false,
-  viewMode: 'table',
+  viewMode: 'card',
   searchKeyword: '',
   departmentFilter: null,
   statusFilter: null,
@@ -236,11 +236,13 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const basePayload = { site, handle: profile.handle, modifiedBy, ...data };
 
       switch (section) {
-        case 'basic':
+        case 'basic': {
+          const basicPayload = buildUpdateBasicPayload(site, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateBasicDetails(
-            basePayload as Parameters<typeof HrmEmployeeService.updateBasicDetails>[0]
+            basicPayload as unknown as Parameters<typeof HrmEmployeeService.updateBasicDetails>[0]
           );
           break;
+        }
         case 'official': {
           // Map UI 'designation' field to backend 'role' field
           const officialPayload = { ...basePayload } as Record<string, unknown>;
@@ -257,11 +259,13 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
             basePayload as Parameters<typeof HrmEmployeeService.updatePersonalDetails>[0]
           );
           break;
-        case 'contact':
+        case 'contact': {
+          const contactPayload = buildUpdateContactPayload(site, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateContactDetails(
-            basePayload as Parameters<typeof HrmEmployeeService.updateContactDetails>[0]
+            contactPayload as unknown as Parameters<typeof HrmEmployeeService.updateContactDetails>[0]
           );
           break;
+        }
         default:
           throw new Error(`Unknown section: ${section}`);
       }

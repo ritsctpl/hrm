@@ -34,6 +34,7 @@ const EmpBasicCard: React.FC<EmpBasicCardProps> = ({ employee, onClick }) => {
       <EmpAvatar
         name={employee.fullName}
         photoUrl={employee.photoUrl}
+        photoBase64={employee.photoBase64}
         size={52}
       />
 

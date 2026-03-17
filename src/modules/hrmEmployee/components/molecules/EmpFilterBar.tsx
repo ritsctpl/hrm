@@ -27,7 +27,7 @@ const EmpFilterBar: React.FC<EmpFilterBarProps> = ({
         options={departments.map((d) => ({ value: d, label: d }))}
       />
 
-      <Select
+      {/* <Select
         value={filters.statusFilter}
         onChange={(value) => onFilterChange({ statusFilter: value || null })}
         placeholder="Status"
@@ -38,7 +38,7 @@ const EmpFilterBar: React.FC<EmpFilterBarProps> = ({
           { value: 'ACTIVE', label: 'Active' },
           { value: 'INACTIVE', label: 'Inactive' },
         ]}
-      />
+      /> */}
 
       <Select
         value={filters.buFilter}
