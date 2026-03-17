@@ -83,7 +83,7 @@ export default function AssetCategoryForm({ open, onClose, editCategory }: Asset
       onClose={handleClose}
       title={isEdit ? 'Edit Category' : 'New Asset Category'}
       width={540}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>

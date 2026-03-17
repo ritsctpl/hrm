@@ -96,7 +96,6 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         <Button
           type="primary"
           size="small"
-          icon={<PlusOutlined />}
           onClick={() => setUploadOpen(true)}
         >
           Upload Document
@@ -130,7 +129,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         }}
         confirmLoading={uploading}
         okText="Upload"
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 0' }}>
           <div>

@@ -128,7 +128,7 @@ export default function HolidayFormPanel({
         </Typography.Text>
       }
       width={480}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div className={styles.drawerFooter}>
           <Space>

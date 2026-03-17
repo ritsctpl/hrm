@@ -81,7 +81,7 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
         onClose={() => setDrawerOpen(false)}
         title="Add Maintenance Event"
         width={440}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Space>

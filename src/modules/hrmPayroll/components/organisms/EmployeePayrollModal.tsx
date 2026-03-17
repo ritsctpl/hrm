@@ -65,7 +65,7 @@ const EmployeePayrollModal: React.FC<EmployeePayrollModalProps> = ({ entry, open
       open={open}
       onClose={onClose}
       width={720}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Employee Info */}
       <Descriptions size="small" bordered column={2} style={{ marginBottom: 16 }}>

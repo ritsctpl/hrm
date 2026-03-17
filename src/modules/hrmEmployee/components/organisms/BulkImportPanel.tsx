@@ -70,7 +70,7 @@ const BulkImportPanel: React.FC<BulkImportPanelProps> = ({ open, onClose }) => {
       open={open}
       onCancel={handleClose}
       width={600}
-      destroyOnClose
+      destroyOnHidden
       footer={
         result
           ? [

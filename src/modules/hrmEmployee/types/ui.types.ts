@@ -113,6 +113,8 @@ export interface ProfileTabProps {
   onSave: (section: string, data: Record<string, unknown>) => Promise<void>;
   onEdit?: () => void;
   onSectionSave?: () => Promise<void>;
+  editingSection?: string | null;
+  sectionKey?: string;
 }
 
 /** Onboarding wizard props */

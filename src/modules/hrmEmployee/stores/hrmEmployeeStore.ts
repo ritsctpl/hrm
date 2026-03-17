@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../services/hrmEmployeeService';
-import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload } from '../utils/transformations';
+import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload, buildUpdatePersonalPayload } from '../utils/transformations';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
 import type { EmployeeSummary, EmployeeProfile } from '../types/domain.types';
 import type { CreateEmployeeRequest } from '../types/api.types';
@@ -254,11 +254,13 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
           );
           break;
         }
-        case 'personal':
+        case 'personal': {
+          const personalPayload = buildUpdatePersonalPayload(site, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updatePersonalDetails(
-            basePayload as Parameters<typeof HrmEmployeeService.updatePersonalDetails>[0]
+            personalPayload as unknown as Parameters<typeof HrmEmployeeService.updatePersonalDetails>[0]
           );
           break;
+        }
         case 'contact': {
           const contactPayload = buildUpdateContactPayload(site, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateContactDetails(

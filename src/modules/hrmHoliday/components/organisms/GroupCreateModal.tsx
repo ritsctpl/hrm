@@ -54,7 +54,7 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={saving}
-      destroyOnClose
+      destroyOnHidden
       okText="Create Group"
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>

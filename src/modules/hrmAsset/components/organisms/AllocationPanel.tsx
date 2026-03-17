@@ -74,7 +74,7 @@ export default function AllocationPanel() {
       onClose={handleClose}
       title="Allocate Asset"
       width={480}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={(open) => { if (open) loadInStoreAssets(); }}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

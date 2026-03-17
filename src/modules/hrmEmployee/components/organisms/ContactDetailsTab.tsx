@@ -33,11 +33,21 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
   isSaving,
   onSave,
   onEdit,
+  editingSection,
 }, ref) => {
   const { contactDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string>(contactDetails.country || '');
+
+  // Sync with parent isEditing state - enter edit mode when parent says to
+  React.useEffect(() => {
+    if (isEditing && editingSection === 'contact') {
+      setLocalEditing(true);
+    } else {
+      setLocalEditing(false);
+    }
+  }, [isEditing, editingSection]);
 
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
@@ -72,7 +82,7 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
     },
   }));
 
-  const editing = isEditing || localEditing;
+  const editing = localEditing;
   const stateOptions = selectedCountry ? (COUNTRY_STATE_MAP[selectedCountry] || []) : [];
 
   if (editing) {
@@ -161,28 +171,39 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
-                  <div key={key} className={formStyles.contactItem}>
-                    <div className={formStyles.contactItemInfo} style={{ display: 'flex', gap: 8 }}>
+                  <div
+                    key={key}
+                    style={{
+                      padding: 12,
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 4,
+                      marginBottom: 12,
+                      display: 'flex',
+                      gap: 12,
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, flex: 1 }}>
                       <Form.Item
                         {...restField}
                         name={[name, 'name']}
+                        label="Name"
                         rules={[{ required: true, message: 'Name required' }]}
-                        style={{ flex: 1 }}
                       >
                         <Input placeholder="Name" />
                       </Form.Item>
                       <Form.Item
                         {...restField}
                         name={[name, 'relationship']}
-                        style={{ flex: 1 }}
+                        label="Relationship"
                       >
                         <Input placeholder="Relationship" />
                       </Form.Item>
                       <Form.Item
                         {...restField}
                         name={[name, 'phone']}
+                        label="Phone"
                         rules={[{ required: true, message: 'Phone required' }]}
-                        style={{ flex: 1 }}
                       >
                         <Input placeholder="Phone" />
                       </Form.Item>
@@ -193,6 +214,7 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
                       icon={<DeleteOutlined />}
                       onClick={() => remove(name)}
                       size="small"
+                      style={{ marginTop: 24 }}
                     />
                   </div>
                 ))}
@@ -251,16 +273,34 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
       {emergencyContacts.length === 0 ? (
         <div style={{ color: '#94a3b8', fontSize: 13 }}>No emergency contacts on file.</div>
       ) : (
-        emergencyContacts.map((ec, idx) => (
-          <div key={idx} className={formStyles.contactItem}>
-            <div className={formStyles.contactItemInfo}>
-              <span className={formStyles.contactItemName}>{ec.name}</span>
-              <span className={formStyles.contactItemMeta}>
-                {ec.relationship} &middot; {ec.phone}
-              </span>
+        <div style={{ display: 'grid', gap: 12 }}>
+          {emergencyContacts.map((ec, idx) => (
+            <div
+              key={idx}
+              style={{
+                padding: 12,
+                border: '1px solid #e2e8f0',
+                borderRadius: 4,
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: 16,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Name</div>
+                <div style={{ fontSize: 14, color: '#1e293b', marginTop: 4 }}>{ec.name}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Relationship</div>
+                <div style={{ fontSize: 14, color: '#1e293b', marginTop: 4 }}>{ec.relationship || '--'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Phone</div>
+                <div style={{ fontSize: 14, color: '#1e293b', marginTop: 4 }}>{ec.phone}</div>
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

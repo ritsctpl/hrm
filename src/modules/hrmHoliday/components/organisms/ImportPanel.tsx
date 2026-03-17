@@ -133,7 +133,7 @@ export default function ImportPanel({
       onClose={onClose}
       title={`Import Holidays — ${groupName}`}
       width={600}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div className={styles.drawerFooter}>
           <Space>

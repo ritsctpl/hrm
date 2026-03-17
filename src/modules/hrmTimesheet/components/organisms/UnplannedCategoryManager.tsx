@@ -145,7 +145,7 @@ export default function UnplannedCategoryManager() {
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={saving}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item name="label" label="Label" rules={[{ required: true, message: 'Required' }]}>

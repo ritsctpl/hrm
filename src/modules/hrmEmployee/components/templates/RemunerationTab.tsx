@@ -62,7 +62,7 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
     return (
       <div style={{ padding: 24 }}>
         <Empty description="No remuneration data available">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => { setEditing(true); form.resetFields(); }}>
+          <Button type="primary" onClick={() => { setEditing(true); form.resetFields(); }}>
             Set Remuneration
           </Button>
         </Empty>

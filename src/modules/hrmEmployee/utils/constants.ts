@@ -166,3 +166,25 @@ export const COUNTRY_STATE_MAP: Record<string, string[]> = {
 
 /** List of countries for dropdown */
 export const COUNTRY_OPTIONS = Object.keys(COUNTRY_STATE_MAP).sort();
+
+/** Government ID types */
+export const GOVT_ID_TYPES = [
+  { value: 'PAN', label: 'PAN Card' },
+  { value: 'AADHAR', label: 'Aadhar Card' },
+  { value: 'PASSPORT', label: 'Passport' },
+  { value: 'DRIVING_LICENSE', label: 'Driving License' },
+  { value: 'VOTER_ID', label: 'Voter ID' },
+  { value: 'NATIONAL_ID', label: 'National ID' },
+] as const;
+
+/** PAN validation regex - Format: AAAAA9999A */
+export const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+/** Aadhar validation regex - 12 digits */
+export const AADHAR_REGEX = /^[0-9]{12}$/;
+
+/** Passport validation regex - flexible format */
+export const PASSPORT_REGEX = /^[A-Z0-9]{6,9}$/;
+
+/** Driving License validation regex - flexible format */
+export const DRIVING_LICENSE_REGEX = /^[A-Z0-9]{8,16}$/;

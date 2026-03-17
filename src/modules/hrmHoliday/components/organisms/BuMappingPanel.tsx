@@ -95,7 +95,7 @@ export default function BuMappingPanel({
       onClose={onClose}
       title="Manage BU / Dept Mappings"
       width={520}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div className={styles.drawerFooter}>
           <Button onClick={onClose}>Close</Button>

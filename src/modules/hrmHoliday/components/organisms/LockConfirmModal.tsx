@@ -34,7 +34,7 @@ export default function LockConfirmModal({
       confirmLoading={loading}
       okText="Lock"
       okButtonProps={{ danger: true }}
-      destroyOnClose
+      destroyOnHidden
     >
       <Typography.Text>
         Locking <strong>{groupName}</strong> will prevent further edits.

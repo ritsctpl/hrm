@@ -25,10 +25,20 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
   isSaving,
   onSave,
   onEdit,
+  editingSection,
 }, ref) => {
   const { officialDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
+
+  // Sync with parent isEditing state - enter edit mode when parent says to
+  React.useEffect(() => {
+    if (isEditing && editingSection === 'official') {
+      setLocalEditing(true);
+    } else {
+      setLocalEditing(false);
+    }
+  }, [isEditing, editingSection]);
 
   const handleSave = async () => {
     try {
@@ -61,7 +71,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
     },
   }));
 
-  const editing = isEditing || localEditing;
+  const editing = localEditing;
 
   if (editing) {
     return (

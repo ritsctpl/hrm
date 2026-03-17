@@ -426,7 +426,7 @@ const OnboardingWizard: React.FC = () => {
       open={isOpen}
       onCancel={closeOnboarding}
       width={700}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="cancel" onClick={closeOnboarding}>
           Cancel

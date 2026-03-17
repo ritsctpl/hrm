@@ -117,6 +117,7 @@ export interface UpdatePersonalRequest {
   maritalStatus?: MaritalStatus;
   bloodGroup?: BloodGroup;
   nationality?: string;
+  govtIds?: Array<{ idType: string; idNumber: string; verified?: boolean }>;
   modifiedBy: string;
 }
 

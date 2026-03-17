@@ -32,7 +32,7 @@ export default function PublishConfirmModal({
       confirmLoading={loading}
       okText="Publish"
       okButtonProps={{ type: 'primary' }}
-      destroyOnClose
+      destroyOnHidden
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text>

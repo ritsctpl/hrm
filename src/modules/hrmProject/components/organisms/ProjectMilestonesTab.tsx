@@ -73,7 +73,7 @@ export default function ProjectMilestonesTab() {
         open={addModalOpen}
         onCancel={() => setAddModalOpen(false)}
         onOk={handleAdd}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item name="milestoneName" label="Name" rules={[{ required: true }]}>

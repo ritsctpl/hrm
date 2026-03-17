@@ -34,7 +34,7 @@ export default function UnlockConfirmModal({
       confirmLoading={loading}
       okText="Unlock"
       okButtonProps={{ danger: true }}
-      destroyOnClose
+      destroyOnHidden
     >
       <Alert
         message="This is a Superadmin action"

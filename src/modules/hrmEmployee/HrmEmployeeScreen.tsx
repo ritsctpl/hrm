@@ -41,6 +41,10 @@ const HrmEmployeeScreen: React.FC<HrmEmployeeScreenProps> = ({ handle, onBack })
     setEditing(true);
   };
 
+  const handleCancel = () => {
+    setEditing(false);
+  };
+
   if (!data && !isLoading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
@@ -58,6 +62,7 @@ const HrmEmployeeScreen: React.FC<HrmEmployeeScreenProps> = ({ handle, onBack })
       activeTab={activeTab}
       onTabChange={handleTabChange}
       onEdit={handleEdit}
+      onCancel={handleCancel}
       onSave={handleSave}
       onBack={onBack}
       onRefresh={refresh}

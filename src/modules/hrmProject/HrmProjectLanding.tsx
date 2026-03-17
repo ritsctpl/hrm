@@ -113,7 +113,7 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
         open={formOpen}
         onCancel={() => setFormOpen(false)}
         onOk={handleSave}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item name="clientCode" label="Code" rules={[{ required: true }]}>
@@ -273,7 +273,7 @@ export default function HrmProjectLanding() {
         onCancel={closeProjectForm}
         footer={null}
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         <ProjectForm />
       </Modal>
@@ -284,7 +284,7 @@ export default function HrmProjectLanding() {
         onCancel={closeAllocationForm}
         footer={null}
         width={640}
-        destroyOnClose
+        destroyOnHidden
       >
         {selectedProject && <AllocationForm projectHandle={selectedProject.handle} />}
       </Modal>

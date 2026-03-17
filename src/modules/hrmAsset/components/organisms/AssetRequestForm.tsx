@@ -60,7 +60,7 @@ export default function AssetRequestForm() {
       onClose={handleClose}
       title="New Asset Request"
       width={480}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>

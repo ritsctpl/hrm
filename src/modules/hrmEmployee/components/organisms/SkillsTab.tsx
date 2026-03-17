@@ -80,7 +80,6 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         <Button
           type="primary"
           size="small"
-          icon={<PlusOutlined />}
           onClick={() => setAddModalOpen(true)}
         >
           Add Skill
@@ -109,7 +108,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         onCancel={() => setAddModalOpen(false)}
         confirmLoading={loading}
         okText="Add"
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 0' }}>
           <div>

@@ -54,7 +54,7 @@ export default function DuplicateGroupModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={saving}
-      destroyOnClose
+      destroyOnHidden
       okText="Duplicate"
     >
       <Form

@@ -48,7 +48,7 @@ export default function ReturnAssetModal() {
       onCancel={() => { form.resetFields(); closeReturnModal(); }}
       onOk={handleOk}
       okText="Confirm Return"
-      destroyOnClose
+      destroyOnHidden
     >
       {selectedAsset && (
         <p style={{ marginBottom: 16, color: '#595959' }}>

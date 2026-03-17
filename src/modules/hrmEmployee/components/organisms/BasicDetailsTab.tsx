@@ -27,12 +27,22 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
   isSaving,
   onSave,
   onEdit,
+  editingSection,
 }, ref) => {
   const { basicDetails, employeeCode } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+
+  // Sync with parent isEditing state - enter edit mode when parent says to
+  React.useEffect(() => {
+    if (isEditing && editingSection === 'basic') {
+      setLocalEditing(true);
+    } else {
+      setLocalEditing(false);
+    }
+  }, [isEditing, editingSection]);
 
   /**
    * Convert file to base64 string
@@ -116,7 +126,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
     },
   }));
 
-  const editing = isEditing || localEditing;
+  const editing = localEditing;
 
   if (editing) {
     return (

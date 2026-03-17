@@ -82,7 +82,7 @@ export default function ProjectLandingTemplate() {
         onCancel={closeProjectForm}
         footer={null}
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         <ProjectForm />
       </Modal>
@@ -93,7 +93,7 @@ export default function ProjectLandingTemplate() {
         onCancel={closeAllocationForm}
         footer={null}
         width={640}
-        destroyOnClose
+        destroyOnHidden
       >
         {selectedProject && <AllocationForm projectHandle={selectedProject.handle} />}
       </Modal>

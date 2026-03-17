@@ -36,9 +36,6 @@ import type { EmployeeProfile } from '../../types/domain.types';
 import type { EmployeeStatus } from '../../types/domain.types';
 import type { ProfileTabKey } from '../../types/ui.types';
 import type { BasicDetailsTabHandle } from '../organisms/BasicDetailsTab';
-import type { OfficialDetailsTabHandle } from '../organisms/OfficialDetailsTab';
-import type { PersonalDetailsTabHandle } from '../organisms/PersonalDetailsTab';
-import type { ContactDetailsTabHandle } from '../organisms/ContactDetailsTab';
 import styles from '../../styles/HrmEmployee.module.css';
 
 const { Text } = Typography;
@@ -52,7 +49,7 @@ const ProfileSection: React.FC<{
   onEditSection?: (section: string) => void;
   isEditing?: boolean;
   isSaving?: boolean;
-  onSave?: (section: string) => void;
+  onSave?: (section: string, data?: Record<string, unknown>) => Promise<void>;
   onCancel?: () => void;
   tabRef?: React.RefObject<BasicDetailsTabHandle>;
 }> = ({ title, children, action, sectionKey, onEditSection, isEditing, isSaving, onSave, onCancel, tabRef }) => (
@@ -85,7 +82,6 @@ const ProfileSection: React.FC<{
             <Button
               type="primary"
               size="small"
-              icon={<SaveOutlined />}
               loading={isSaving}
               onClick={() => {
                 // Call the ref's save method if available
@@ -101,7 +97,6 @@ const ProfileSection: React.FC<{
             </Button>
             <Button
               size="small"
-              icon={<CloseOutlined />}
               onClick={() => {
                 // Call the ref's cancel method if available
                 if (tabRef?.current?.cancel) {
@@ -137,6 +132,7 @@ interface EmployeeProfileTemplateProps {
   activeTab: ProfileTabKey;
   onTabChange: (tab: ProfileTabKey) => void;
   onEdit: () => void;
+  onCancel?: () => void;
   onSave: (section: string, data: Record<string, unknown>) => Promise<void>;
   onBack: () => void;
   onRefresh: () => void;
@@ -150,6 +146,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   activeTab,
   onTabChange,
   onEdit,
+  onCancel,
   onSave,
   onBack,
   onRefresh,
@@ -165,6 +162,13 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
   const handleCancelSection = () => {
     setEditingSection(null);
+    onCancel?.();
+  };
+
+  const handleSaveSection = async (section: string, data: Record<string, unknown>) => {
+    await onSave(section, data);
+    setEditingSection(null); // Exit edit mode after successful save
+    onCancel?.(); // Reset parent's isEditing state
   };
 
   if (isLoading || !profile) {
@@ -186,7 +190,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   const officialDetails = profile.officialDetails || { firstName: '', lastName: '', title: '', department: '', designation: '', businessUnits: [], joiningDate: '' };
   const employeeCode = profile.employeeCode || '';
 
-  const tabProps = { profile, isEditing, isSaving, onSave };
+  const tabProps = { profile, isEditing, isSaving, onSave, editingSection };
 
   /** Build consolidated tab content */
   const tabItems = PROFILE_TABS.map((tab) => {
@@ -203,14 +207,17 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onEditSection={setEditingSection}
               isEditing={isEditing && editingSection === 'basic'}
               isSaving={isSaving}
-              onSave={(section) => onSave(section, {})}
+              onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={basicDetailsRef}
               action={
                 <Button
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={onEdit}
+                  onClick={() => {
+                    onEdit();
+                    setEditingSection('basic');
+                  }}
                 >
                   Edit
                 </Button>
@@ -224,14 +231,17 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onEditSection={setEditingSection}
               isEditing={isEditing && editingSection === 'official'}
               isSaving={isSaving}
-              onSave={(section) => onSave(section, {})}
+              onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
               action={
                 <Button
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={onEdit}
+                  onClick={() => {
+                    onEdit();
+                    setEditingSection('official');
+                  }}
                 >
                   Edit
                 </Button>
@@ -245,14 +255,17 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onEditSection={setEditingSection}
               isEditing={isEditing && editingSection === 'personal'}
               isSaving={isSaving}
-              onSave={(section) => onSave(section, {})}
+              onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
               action={
                 <Button
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={onEdit}
+                  onClick={() => {
+                    onEdit();
+                    setEditingSection('personal');
+                  }}
                 >
                   Edit
                 </Button>
@@ -274,14 +287,17 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onEditSection={setEditingSection}
               isEditing={isEditing && editingSection === 'contact'}
               isSaving={isSaving}
-              onSave={(section) => onSave(section, {})}
+              onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
               action={
                 <Button
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={onEdit}
+                  onClick={() => {
+                    onEdit();
+                    setEditingSection('contact');
+                  }}
                 >
                   Edit
                 </Button>
@@ -300,9 +316,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             <ProfileSection title="Skills">
               <SkillsTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>
-            <ProfileSection title="Job History">
+            {/* <ProfileSection title="Job History">
               <JobHistoryTab {...tabProps} />
-            </ProfileSection>
+            </ProfileSection> */}
             <ProfileSection title="Previous Experience">
               <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>

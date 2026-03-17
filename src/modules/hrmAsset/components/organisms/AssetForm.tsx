@@ -92,7 +92,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
       onClose={handleClose}
       title={isEdit ? 'Edit Asset' : 'Add New Asset'}
       width={520}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>
