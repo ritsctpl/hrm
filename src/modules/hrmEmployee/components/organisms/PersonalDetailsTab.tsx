@@ -251,7 +251,7 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
                           },
                         ]}
                       >
-                        <Input placeholder="Enter ID number" />
+                        <Input type="text" placeholder="Enter ID number" />
                       </Form.Item>
                       <Form.Item
                         {...restField}

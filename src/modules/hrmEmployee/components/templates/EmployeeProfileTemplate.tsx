@@ -397,10 +397,13 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             <span>{officialDetails.department}</span>
             {officialDetails.reportingManager && (
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Reports to: {officialDetails.reportingManager}
+                Reports to: {officialDetails.reportingManagerName}
               </Text>
             )}
-            <EmpStatusBadge status={basicDetails.status as EmployeeStatus} size="small" />
+            <EmpStatusBadge 
+              status={(profile?.isActive !== undefined ? (profile.isActive ? 'ACTIVE' : 'INACTIVE') : 'ACTIVE') as EmployeeStatus} 
+              size="small" 
+            />
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 2, fontSize: 12, color: '#64748b' }}>
             <span>{basicDetails.workEmail}</span>

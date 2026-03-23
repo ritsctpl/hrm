@@ -172,6 +172,10 @@ export interface HolidayGroupSearchBarProps {
   searchParams: HolidayGroupSearchParams;
   onSearchChange: (params: Partial<HolidayGroupSearchParams>) => void;
   onNewGroup?: () => void;
+  onNewHoliday?: () => void;
+  onEditGroup?: () => void;
+  onDeleteGroup?: () => void;
   onDuplicateYear?: () => void;
   canManageSettings: boolean;
+  hasSelectedGroup?: boolean;
 }

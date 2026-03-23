@@ -30,6 +30,7 @@ export interface UpdateHolidayGroupRequest {
   handle: string;
   groupName?: string;
   description?: string;
+  status?: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
   colorScheme?: Record<string, string>;
   modifiedBy: string;
 }

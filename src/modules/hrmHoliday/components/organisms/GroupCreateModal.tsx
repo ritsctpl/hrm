@@ -6,6 +6,7 @@ import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { GroupCreateModalProps } from '../../types/ui.types';
 import type { HolidayGroup } from '../../types/domain.types';
+import type { HolidayGroupResponse } from '../../types/api.types';
 import { groupFormRules } from '../../utils/validations';
 import { getYearOptions } from '../../utils/formatters';
 
@@ -28,20 +29,23 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
         year: values.year,
         description: values.description,
         createdBy: userId,
-      });
-      if (res.success) {
+      }) as any as HolidayGroupResponse;
+      
+      // After interceptor unwrapping, res contains the group object directly
+      if (res && res.handle) {
         const group: HolidayGroup = {
-          ...res.data,
-          mappings: res.data.mappings ?? [],
+          ...res,
+          mappings: res.mappings ?? [],
         };
-        message.success('Holiday group created');
+        message.success('Holiday group created successfully');
         form.resetFields();
         onCreated(group);
       } else {
-        message.error(res.message || 'Failed to create group');
+        message.error('Failed to create group');
       }
-    } catch {
-      // form validation
+    } catch (error) {
+      console.error('Failed to create holiday group:', error);
+      message.error('Failed to create holiday group');
     } finally {
       setSaving(false);
     }

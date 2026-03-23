@@ -30,17 +30,24 @@ export function useHolidayDetail(site: string, groupHandle: string) {
           groupHandle,
           ...params,
         });
-        if (res.success) {
-          const mapped = res.data.map((h) => ({
-            ...h,
-            compensatory: h.compensatory ?? false,
-            optional: h.optional ?? false,
-          }));
-          setHolidays(mapped);
-        } else {
-          setHolidaysError(res.message);
+        
+        // Handle both wrapped and unwrapped responses
+        const data = res?.data || res;
+        const holidays = Array.isArray(data) ? data : [];
+        
+        console.log('Holidays loaded:', holidays.length, 'items');
+        if (holidays.length > 0) {
+          console.log('Sample holiday:', holidays[0]);
         }
-      } catch {
+        
+        const mapped = holidays.map((h) => ({
+          ...h,
+          compensatory: h.compensatory ?? false,
+          optional: h.optional ?? false,
+        }));
+        setHolidays(mapped);
+      } catch (error) {
+        console.error('Failed to load holidays:', error);
         setHolidaysError('Failed to load holidays');
         message.error('Failed to load holidays');
       } finally {

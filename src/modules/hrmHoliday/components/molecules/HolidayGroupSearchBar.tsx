@@ -2,8 +2,11 @@
 
 import { Select, Input, Button, Space } from 'antd';
 import AddIcon from '@mui/icons-material/Add';
+import EventIcon from '@mui/icons-material/Event';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { HolidayGroupSearchBarProps } from '../../types/ui.types';
 import { HOLIDAY_GROUP_STATUSES } from '../../utils/constants';
 import { getYearOptions } from '../../utils/formatters';
@@ -15,8 +18,12 @@ export default function HolidayGroupSearchBar({
   searchParams,
   onSearchChange,
   onNewGroup,
+  onNewHoliday,
+  onEditGroup,
+  onDeleteGroup,
   onDuplicateYear,
   canManageSettings,
+  hasSelectedGroup,
 }: HolidayGroupSearchBarProps) {
   const yearOptions = getYearOptions(3);
 
@@ -51,9 +58,24 @@ export default function HolidayGroupSearchBar({
         />
       </Space>
       <Space wrap>
+        {onNewHoliday && (
+          <Button type="primary" onClick={onNewHoliday}>
+            Create Holiday
+          </Button>
+        )}
         {onNewGroup && (
-          <Button type="primary" icon={<AddIcon style={{ fontSize: 16 }} />} onClick={onNewGroup}>
+          <Button onClick={onNewGroup}>
             New Group
+          </Button>
+        )}
+        {onEditGroup && hasSelectedGroup && (
+          <Button onClick={onEditGroup}>
+            Edit Group
+          </Button>
+        )}
+        {onDeleteGroup && hasSelectedGroup && (
+          <Button danger  onClick={onDeleteGroup}>
+            Delete Group
           </Button>
         )}
         {onDuplicateYear && (

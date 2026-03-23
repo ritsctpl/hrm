@@ -2,13 +2,15 @@
 
 import { useEffect } from 'react';
 import { parseCookies } from 'nookies';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import CommonAppBar from '@/components/CommonAppBar';
 import HolidayGroupSearchBar from './components/molecules/HolidayGroupSearchBar';
 import HolidaysMasterDetail from './components/templates/HolidaysMasterDetail';
 import HolidayGroupsTable from './components/organisms/HolidayGroupsTable';
 import HrmHolidayScreen from './HrmHolidayScreen';
 import GroupCreateModal from './components/organisms/GroupCreateModal';
+import GroupUpdateModal from './components/organisms/GroupUpdateModal';
+import HolidayCreateModal from './components/organisms/HolidayCreateModal';
 import DuplicateGroupModal from './components/organisms/DuplicateGroupModal';
 import { useHrmHolidayStore } from './stores/hrmHolidayStore';
 import { HrmHolidayService } from './services/hrmHolidayService';
@@ -20,6 +22,7 @@ export default function HrmHolidayLanding() {
   const cookies = parseCookies();
   const site = cookies.site ?? '';
   const userRole = cookies.userRole ?? 'EMPLOYEE';
+  const username = cookies.username ?? 'system';
 
   const {
     groups,
@@ -28,6 +31,8 @@ export default function HrmHolidayLanding() {
     searchParams,
     selectedGroup,
     showGroupCreateModal,
+    showGroupUpdateModal,
+    showHolidayCreateModal,
     showDuplicateModal,
     setGroups,
     setGroupsLoading,
@@ -36,6 +41,10 @@ export default function HrmHolidayLanding() {
     setSearchParams,
     openGroupCreateModal,
     closeGroupCreateModal,
+    openGroupUpdateModal,
+    closeGroupUpdateModal,
+    openHolidayCreateModal,
+    closeHolidayCreateModal,
     openDuplicateModal,
     closeDuplicateModal,
   } = useHrmHolidayStore();
@@ -52,12 +61,16 @@ export default function HrmHolidayLanding() {
           site,
           year: searchParams.year,
           status: searchParams.status,
-          requestingUserRole: userRole,
+          requestingUserRole: '',
           buHandle: searchParams.buHandle,
         });
-        const groups = Array.isArray(res) ? res : [];
+        
+        // Handle both wrapped and unwrapped responses
+        const data = res?.data || res;
+        const groups = Array.isArray(data) ? data : [];
         setGroups(groups.map((g: HolidayGroup) => ({ ...g, mappings: g.mappings ?? [] })));
-      } catch {
+      } catch (error) {
+        console.error('Failed to load holiday groups:', error);
         const errMsg = 'Failed to load holiday groups';
         setGroupsError(errMsg);
         message.error(errMsg);
@@ -81,17 +94,58 @@ export default function HrmHolidayLanding() {
     setSearchParams({ year: searchParams.year });
   };
 
+  const handleEditGroup = () => {
+    if (!selectedGroup) return;
+    openGroupUpdateModal();
+  };
+
+  const handleGroupUpdated = (updatedGroup: HolidayGroup) => {
+    closeGroupUpdateModal();
+    setGroups(groups.map(g => g.handle === updatedGroup.handle ? updatedGroup : g));
+    selectGroup(updatedGroup);
+  };
+
+  const handleDeleteGroup = () => {
+    if (!selectedGroup) return;
+    
+    Modal.confirm({
+      title: 'Delete Holiday Group',
+      content: `Are you sure you want to delete "${selectedGroup.groupName}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await HrmHolidayService.deleteGroup({
+            handle: selectedGroup.handle,
+            site,
+            deletedBy: username,
+          });
+          
+          message.success('Holiday group deleted successfully');
+          setGroups(groups.filter(g => g.handle !== selectedGroup.handle));
+          selectGroup(null);
+        } catch (error) {
+          console.error('Failed to delete holiday group:', error);
+          message.error('Failed to delete holiday group');
+        }
+      },
+    });
+  };
+
   return (
     <div className={styles.landing}>
       <CommonAppBar appTitle="Holiday Management" />
       <HolidayGroupSearchBar
         searchParams={searchParams}
         onSearchChange={(params) => setSearchParams(params)}
-        onNewGroup={permissions.canCreate ? openGroupCreateModal : undefined}
-        onDuplicateYear={
-          permissions.canCreate && selectedGroup ? openDuplicateModal : undefined
-        }
+        onNewGroup={openGroupCreateModal}
+        onNewHoliday={openHolidayCreateModal}
+        onEditGroup={selectedGroup ? () => handleEditGroup() : undefined}
+        onDeleteGroup={selectedGroup ? () => handleDeleteGroup() : undefined}
+        onDuplicateYear={selectedGroup ? openDuplicateModal : undefined}
         canManageSettings={permissions.canManageSettings}
+        hasSelectedGroup={!!selectedGroup}
       />
 
       <HolidaysMasterDetail>
@@ -117,6 +171,31 @@ export default function HrmHolidayLanding() {
           open={showGroupCreateModal}
           onClose={closeGroupCreateModal}
           onCreated={handleGroupCreated}
+        />
+      )}
+
+      {showGroupUpdateModal && selectedGroup && (
+        <GroupUpdateModal
+          open={showGroupUpdateModal}
+          group={selectedGroup}
+          onClose={closeGroupUpdateModal}
+          onUpdated={handleGroupUpdated}
+        />
+      )}
+
+      {showHolidayCreateModal && (
+        <HolidayCreateModal
+          open={showHolidayCreateModal}
+          groups={groups}
+          onClose={closeHolidayCreateModal}
+          onCreated={() => {
+            closeHolidayCreateModal();
+            message.success('Holiday created successfully');
+            // Refresh the selected group if one is selected
+            if (selectedGroup) {
+              setSearchParams({ year: searchParams.year });
+            }
+          }}
         />
       )}
 

@@ -5,6 +5,7 @@ import { Modal, Form, Input, Select, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { DuplicateGroupModalProps } from '../../types/ui.types';
+import type { DuplicateGroupResponse } from '../../types/api.types';
 import { getYearOptions } from '../../utils/formatters';
 
 export default function DuplicateGroupModal({
@@ -32,16 +33,19 @@ export default function DuplicateGroupModal({
         newGroupName: values.newGroupName,
         shiftWeekends: values.shiftWeekends ?? false,
         createdBy: userId,
-      });
-      if (res.success) {
-        message.success(`Duplicated: ${res.data.holidaysCopied} holidays copied`);
+      }) as any as DuplicateGroupResponse;
+      
+      // After interceptor unwrapping, res contains the duplicate response directly
+      if (res && res.newGroupHandle) {
+        message.success(`Duplicated: ${res.holidaysCopied} holidays copied`);
         form.resetFields();
-        onDuplicated(res.data.newGroupHandle);
+        onDuplicated(res.newGroupHandle);
       } else {
-        message.error(res.message || 'Duplication failed');
+        message.error('Duplication failed');
       }
-    } catch {
-      // form validation
+    } catch (error) {
+      console.error('Failed to duplicate group:', error);
+      message.error('Failed to duplicate group');
     } finally {
       setSaving(false);
     }

@@ -262,6 +262,7 @@ export interface EmployeeProfile {
   handle: string;
   site?: string;
   employeeCode?: string;
+  isActive?: boolean;
   basicDetails: BasicDetails;
   officialDetails: OfficialDetails;
   personalDetails: PersonalDetails;

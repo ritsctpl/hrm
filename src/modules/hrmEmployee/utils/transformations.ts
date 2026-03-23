@@ -230,10 +230,14 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
   const personal = (raw.personalDetails || {}) as Record<string, unknown>;
   const contact = (raw.contactDetails || {}) as Record<string, unknown>;
 
+  // isActive comes at root level, not inside basicDetails
+  const isActive = raw.isActive !== undefined ? (raw.isActive as boolean) : (basic.status === 'ACTIVE');
+
   return {
     handle: (raw.handle as string) || '',
     site: (raw.site as string) || '',
     employeeCode: (basic.employeeCode as string) || (official.employeeCode as string) || '',
+    isActive,
     basicDetails: {
       fullName: (basic.fullName as string) || '',
       workEmail: (basic.workEmail as string) || '',
@@ -252,7 +256,7 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       departmentName: (official.departmentName as string) || undefined,
       role: (official.role as string) || undefined,
       roleName: (official.roleName as string) || undefined,
-      designation: (official.role as string) || undefined,
+      designation: (official.designation as string) || (official.role as string) || undefined,
       reportingManager: (official.reportingManager as string) || undefined,
       reportingManagerName: (official.reportingManagerName as string) || undefined,
       employeeCode: (official.employeeCode as string) || undefined,
@@ -303,6 +307,7 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
 /**
  * Transform basic details update to include base64 photo if provided
  * Flattens the payload and includes photoBase64 if image was uploaded
+ * NOTE: workEmail is NOT included as it's not accepted by update-basic endpoint
  */
 export function buildUpdateBasicPayload(
   site: string,
@@ -321,6 +326,16 @@ export function buildUpdateBasicPayload(
   // Include photoBase64 if provided (from image upload)
   if (basicData.photoBase64) {
     payload.photoBase64 = basicData.photoBase64;
+  }
+
+  // Include photoUrl if explicitly set to null (to clear photo)
+  if (basicData.photoUrl === null) {
+    payload.photoUrl = null;
+  }
+
+  // Include isActive if provided
+  if (basicData.isActive !== undefined) {
+    payload.isActive = basicData.isActive;
   }
 
   return payload;
@@ -349,6 +364,36 @@ export function buildUpdateContactPayload(
     emergencyContacts: contactData.emergencyContacts || undefined,
     modifiedBy,
   };
+}
+
+/**
+ * Transform official details to API payload format
+ * Maps UI fields to backend expected fields and includes reportingManagerName
+ */
+export function buildUpdateOfficialPayload(
+  site: string,
+  handle: string,
+  officialData: Record<string, unknown>,
+  modifiedBy: string
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    site,
+    handle,
+    firstName: officialData.firstName || undefined,
+    lastName: officialData.lastName || undefined,
+    title: officialData.title || undefined,
+    department: officialData.department || undefined,
+    role: officialData.role || officialData.designation || undefined,
+    designation: officialData.designation || undefined,
+    reportingManager: officialData.reportingManager || undefined,
+    reportingManagerName: officialData.reportingManagerName || undefined,
+    location: officialData.location || undefined,
+    businessUnits: officialData.businessUnits || undefined,
+    joiningDate: officialData.joiningDate || undefined,
+    modifiedBy,
+  };
+
+  return payload;
 }
 
 /**

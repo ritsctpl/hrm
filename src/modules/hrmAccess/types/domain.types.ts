@@ -6,6 +6,8 @@ export interface ModuleRegistry {
   moduleCode: string;
   moduleName: string;
   moduleCategory: string;
+  description?: string | null;
+  defaultPermissionObjects?: string[] | null;
   isActive: boolean;
   isSystemModule: boolean;
   active: number;

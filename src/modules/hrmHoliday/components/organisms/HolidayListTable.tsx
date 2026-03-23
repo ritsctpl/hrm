@@ -57,14 +57,21 @@ export default function HolidayListTable({
       dataIndex: 'category',
       key: 'category',
       width: 120,
-      render: (_: string, record: Holiday) => (
-        <HolidayCategoryTag
-          categoryCode={record.category}
-          displayName={record.categoryDisplayName}
-          colorHex={record.categoryColorHex}
-          isFaded={isDatePast(record.date)}
-        />
-      ),
+      render: (_: string, record: Holiday) => {
+        console.log('Category render:', {
+          category: record.category,
+          displayName: record.categoryDisplayName,
+          colorHex: record.categoryColorHex,
+        });
+        return (
+          <HolidayCategoryTag
+            categoryCode={record.category}
+            displayName={record.categoryDisplayName}
+            colorHex={record.categoryColorHex}
+            isFaded={isDatePast(record.date)}
+          />
+        );
+      },
     },
     {
       title: 'Status',

@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Button, Input, Form, Upload, message } from 'antd';
+import { Button, Input, Form, Upload, message, Switch } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, CameraOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import EmpAvatar from '../atoms/EmpAvatar';
@@ -34,6 +34,8 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
   const [localEditing, setLocalEditing] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [phoneValue, setPhoneValue] = useState(basicDetails.phone);
 
   // Sync with parent isEditing state - enter edit mode when parent says to
   React.useEffect(() => {
@@ -102,11 +104,11 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
       const values = await form.validateFields();
       await onSave('basic', {
         fullName: values.fullName,
-        workEmail: values.workEmail,
         phone: values.phone,
         photoUrl: basicDetails.photoUrl,
         photoBase64: photoBase64 || undefined,
         status: basicDetails.status,
+        isActive: values.isActive,
       });
       setLocalEditing(false);
       setPhotoBase64(null);
@@ -116,12 +118,50 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
     }
   };
 
+  /**
+   * Handle inline phone number update
+   */
+  const handlePhoneUpdate = async () => {
+    if (!phoneValue || phoneValue.trim() === '') {
+      message.error('Phone number is required');
+      return;
+    }
+
+    // Validate phone number (only digits, +, -, (, ), and spaces allowed)
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    if (!phoneRegex.test(phoneValue)) {
+      message.error('Please enter a valid phone number (numbers only)');
+      return;
+    }
+
+    try {
+      await onSave('basic', {
+        fullName: basicDetails.fullName,
+        phone: phoneValue,
+        photoUrl: basicDetails.photoUrl,
+        photoBase64: basicDetails.photoBase64,
+        status: basicDetails.status,
+      });
+      setIsEditingPhone(false);
+      message.success('Phone number updated successfully');
+    } catch (error) {
+      message.error('Failed to update phone number');
+    }
+  };
+
+  const handlePhoneCancelEdit = () => {
+    setPhoneValue(basicDetails.phone);
+    setIsEditingPhone(false);
+  };
+
   useImperativeHandle(ref, () => ({
     save: handleSave,
     cancel: () => {
       setLocalEditing(false);
       setPhotoBase64(null);
       setFileList([]);
+      setIsEditingPhone(false);
+      setPhoneValue(basicDetails.phone);
       form.resetFields();
     },
   }));
@@ -136,8 +176,8 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
           layout="vertical"
           initialValues={{
             fullName: basicDetails.fullName,
-            workEmail: basicDetails.workEmail,
             phone: basicDetails.phone,
+            isActive: profile.isActive !== undefined ? profile.isActive : (basicDetails.status === 'ACTIVE'),
           }}
         >
           {/* Photo Upload Section */}
@@ -146,13 +186,22 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               Photo
             </label>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                 <EmpAvatar
                   name={basicDetails.fullName}
                   photoUrl={photoBase64 || basicDetails.photoUrl}
                   photoBase64={photoBase64 || basicDetails.photoBase64}
                   size={80}
                 />
+                {/* Active/Inactive Switch */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <Form.Item name="isActive" valuePropName="checked" style={{ margin: 0 }}>
+                    <Switch />
+                  </Form.Item>
+                  <span style={{ fontSize: 11, color: '#64748b' }}>
+                    {form.getFieldValue('isActive') ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
               <div style={{ flex: 1 }}>
                 <Upload
@@ -182,22 +231,18 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               <Input />
             </Form.Item>
             <Form.Item
-              name="workEmail"
-              label="Work Email"
-              rules={[
-                { required: true, message: 'Email is required' },
-                { type: 'email', message: 'Invalid email' },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
               name="phone"
               label="Phone"
               rules={[{ required: true, message: 'Phone is required' }]}
             >
               <Input />
             </Form.Item>
+          </div>
+          
+          {/* Email is read-only, displayed for reference */}
+          <div style={{ marginTop: 16, padding: '12px', background: '#f8fafc', borderRadius: 6 }}>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Work Email (Read-only)</div>
+            <div style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.workEmail}</div>
           </div>
         </Form>
       </div>
@@ -208,8 +253,12 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         {/* Photo Section - Passport Size */}
-        <div style={{ flexShrink: 0 }}>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <EmpAvatar name={basicDetails.fullName} photoUrl={basicDetails.photoUrl} photoBase64={basicDetails.photoBase64} shape="passport" />
+          {/* Status Badge - derived from isActive */}
+          <div style={{ fontSize: 11, fontWeight: 500 }}>
+            <EmpStatusBadge status={(profile.isActive !== undefined ? (profile.isActive ? 'ACTIVE' : 'INACTIVE') : basicDetails.status) as EmployeeStatus} />
+          </div>
         </div>
 
         {/* Details Section */}
@@ -226,10 +275,52 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
 
             <span style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>Contact Number</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.phone}</span>
-              <Button type="text" size="small" style={{ padding: 0, height: 'auto' }}>
-                Update
-              </Button>
+              {isEditingPhone ? (
+                <>
+                  <Input
+                    value={phoneValue}
+                    onChange={(e) => {
+                      // Allow only numbers, +, -, (, ), and spaces
+                      const value = e.target.value;
+                      if (value === '' || /^[\d\s\-\+\(\)]+$/.test(value)) {
+                        setPhoneValue(value);
+                      }
+                    }}
+                    style={{ width: 200 }}
+                    placeholder="Enter phone number"
+                    disabled={isSaving}
+                  />
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={handlePhoneUpdate}
+                    loading={isSaving}
+                    icon={<SaveOutlined />}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={handlePhoneCancelEdit}
+                    disabled={isSaving}
+                    icon={<CloseOutlined />}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.phone}</span>
+                  <Button
+                    type="text"
+                    size="small"
+                    style={{ padding: 0, height: 'auto' }}
+                    onClick={() => setIsEditingPhone(true)}
+                  >
+                    Update
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -194,8 +194,14 @@ export class HrmAccessService {
     site: string,
     userId: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId });
+    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId:"update_user_1772906240637" });
     return res.data;
+  }
+
+  static async fetchAllUserAssignments(site: string): Promise<UserRoleAssignmentResponse[]> {
+    const res = await api.post(`${BASE}/assignment/retrieveAll`, { site });
+    // Handle both array and paginated response
+    return Array.isArray(res.data) ? res.data : res.data?.content ?? [];
   }
 
   static async fetchUsersWithRole(
@@ -360,8 +366,20 @@ export class HrmAccessService {
     site: string,
     query: string
   ): Promise<{ id: string; username: string; firstName: string; lastName: string; email: string }[]> {
-    const res = await api.post(`${BASE}/users/search`, { site, query });
-    return res.data;
+    try {
+      const res = await api.post(`${BASE}/users/search`, { site, query });
+      // Handle both array and object response
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      if (res.data?.content && Array.isArray(res.data.content)) {
+        return res.data.content;
+      }
+      return res.data || [];
+    } catch (error) {
+      console.error('User search error:', error);
+      return [];
+    }
   }
 
   // ---- Audit ----

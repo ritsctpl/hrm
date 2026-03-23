@@ -1,64 +1,65 @@
-'use client';
-
 import React from 'react';
-import { Avatar, List, Spin, Typography } from 'antd';
-import RbacSearchBar from '../molecules/RbacSearchBar';
+import { List, Avatar, Empty, Button } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import type { UserSearchPanelProps } from '../../types/ui.types';
 import styles from '../../styles/UserRoleAssignment.module.css';
 
-const { Text } = Typography;
-
 const UserSearchPanel: React.FC<UserSearchPanelProps> = ({
   searchText,
-  onSearchChange,
   searchResults,
   isSearching,
   selectedUserId,
   onSelectUser,
 }) => {
-  return (
-    <div className={styles.userPanel}>
-      <div className={styles.userPanelHeader}>
-        <Text strong>Users</Text>
-      </div>
-      <div className={styles.userSearch}>
-        <RbacSearchBar
-          value={searchText}
-          onChange={onSearchChange}
-          placeholder="Search users by name or email..."
-        />
-      </div>
+  if (!searchText.trim()) {
+    return (
+      <Empty
+        description="Enter a name or email to search"
+        style={{ marginTop: 40 }}
+      />
+    );
+  }
 
-      {isSearching ? (
-        <div className={styles.userSearchSpinner}>
-          <Spin size="small" />
-        </div>
-      ) : (
-        <List
-          dataSource={searchResults}
-          locale={{ emptyText: searchText ? 'No users found.' : 'Type to search users.' }}
-          renderItem={(user) => (
-            <List.Item
-              className={`${styles.userListItem} ${
-                user.id === selectedUserId ? styles.userListItemSelected : ''
-              }`}
-              onClick={() => onSelectUser(user.id, user.displayName, user.email)}
-            >
-              <List.Item.Meta
-                avatar={
-                  <Avatar style={{ backgroundColor: '#1976d2' }}>
-                    {user.avatarInitials}
-                  </Avatar>
-                }
-                title={<Text ellipsis>{user.displayName}</Text>}
-                description={<Text type="secondary" ellipsis>{user.email}</Text>}
-              />
-            </List.Item>
-          )}
-          className={styles.userList}
-        />
+  if (searchResults.length === 0 && !isSearching) {
+    return (
+      <Empty
+        description="No users found"
+        style={{ marginTop: 40 }}
+      />
+    );
+  }
+
+  return (
+    <List
+      className={styles.userSearchList}
+      dataSource={searchResults}
+      renderItem={(user) => (
+        <List.Item
+          className={`${styles.userSearchItem} ${selectedUserId === user.id ? styles.selected : ''}`}
+        >
+          <List.Item.Meta
+            avatar={
+              <Avatar
+                icon={<UserOutlined />}
+                style={{ backgroundColor: '#1890ff' }}
+              >
+                {user.avatarInitials}
+              </Avatar>
+            }
+            title={user.displayName}
+            description={user.email}
+          />
+          <Button
+            type={selectedUserId === user.id ? 'primary' : 'default'}
+            onClick={() => {
+              onSelectUser(user.id, user.displayName, user.email);
+            }}
+          >
+            {selectedUserId === user.id ? 'Selected' : 'Select'}
+          </Button>
+        </List.Item>
       )}
-    </div>
+    />
   );
 };
 

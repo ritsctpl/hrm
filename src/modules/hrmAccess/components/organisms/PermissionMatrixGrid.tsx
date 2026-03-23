@@ -49,7 +49,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
             </th>
             {visibleRoles.map((role) => (
               <th
-                key={role.roleCode}
+                key={`header-${role.roleCode}`}
                 className={styles.roleHeader}
                 colSpan={PERMISSION_ACTIONS.length}
               >
@@ -62,7 +62,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
           <tr>
             {visibleRoles.flatMap((role) =>
               PERMISSION_ACTIONS.map((action) => (
-                <th key={`${role.roleCode}-${action}`} className={styles.actionHeader}>
+                <th key={`header-action-${role.roleCode}-${action}`} className={styles.actionHeader}>
                   {action.charAt(0)}
                 </th>
               ))
@@ -70,7 +70,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filteredRows.map((row: PermissionsMatrixResponse) => {
+          {filteredRows.map((row: PermissionsMatrixResponse, rowIndex: number) => {
             const label = row.objectName
               ? `  > ${row.objectName}`
               : row.moduleName;
@@ -78,7 +78,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
 
             return (
               <tr
-                key={`${row.moduleCode}-${row.objectName ?? '__module__'}`}
+                key={`row-${rowIndex}-${row.moduleCode}-${row.objectName ?? '__module__'}`}
                 className={isObject ? styles.objectRow : styles.moduleRow}
               >
                 <td className={styles.moduleLabel}>{label}</td>
@@ -88,7 +88,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
                       (row.action === action && row.roleAccess?.[role.roleCode]) ||
                       (row.rolesWithAccess?.includes(role.roleCode) ?? false);
                     return (
-                      <td key={`${role.roleCode}-${action}`} className={styles.matrixCell}>
+                      <td key={`${row.moduleCode}-${row.objectName ?? '__module__'}-${role.roleCode}-${action}`} className={styles.matrixCell}>
                         {granted ? (
                           <CheckCircleOutlinedIcon
                             className={styles.grantedIcon}

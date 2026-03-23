@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, notification, Button, Input, Form } from 'antd';
+import { Modal, notification, Button, Input, Form, Tabs } from 'antd';
 import { PlusOutlined, CopyOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import RbacSearchBar from '../molecules/RbacSearchBar';
 import RbacEmptyState from '../atoms/RbacEmptyState';
@@ -206,33 +206,46 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
 
       <div className={styles.rightPanel}>
         {showRightPanel ? (
-          <>
-            <RoleForm
-              draft={role.draft}
-              isCreating={role.isCreating}
-              isSaving={role.isSaving}
-              isDeleting={role.isDeleting}
-              errors={role.errors}
-              onChange={store.updateRoleDraft}
-              onSave={handleSaveRole}
-              onDelete={handleDeleteRole}
-              onToggleStatus={handleToggleStatus}
-            />
-            {!role.isCreating && (
-              <RolePermissionGrid
-                modules={permission.allModules}
-                allPermissions={permission.allPermissions}
-                selectedHandles={permission.selectedPermissionHandles}
-                moduleFilter={permission.moduleFilter}
-                disabled={role.selected?.isSystemRole ?? false}
-                isLoading={permission.isLoadingPermissions}
-                isSaving={permission.isSavingPermissions}
-                onToggle={store.togglePermission}
-                onModuleFilterChange={store.setPermissionModuleFilter}
-                onSavePermissions={handleSavePermissions}
-              />
-            )}
-          </>
+          <Tabs
+            items={[
+              {
+                key: 'details',
+                label: 'Role Details',
+                children: (
+                  <RoleForm
+                    draft={role.draft}
+                    isCreating={role.isCreating}
+                    isSaving={role.isSaving}
+                    isDeleting={role.isDeleting}
+                    errors={role.errors}
+                    onChange={store.updateRoleDraft}
+                    onSave={handleSaveRole}
+                    onDelete={handleDeleteRole}
+                    onToggleStatus={handleToggleStatus}
+                  />
+                ),
+              },
+              {
+                key: 'permissions',
+                label: 'Permissions',
+                disabled: role.isCreating,
+                children: (
+                  <RolePermissionGrid
+                    modules={permission.allModules}
+                    allPermissions={permission.allPermissions}
+                    selectedHandles={permission.selectedPermissionHandles}
+                    moduleFilter={permission.moduleFilter}
+                    disabled={role.selected?.isSystemRole ?? false}
+                    isLoading={permission.isLoadingPermissions}
+                    isSaving={permission.isSavingPermissions}
+                    onToggle={store.togglePermission}
+                    onModuleFilterChange={store.setPermissionModuleFilter}
+                    onSavePermissions={handleSavePermissions}
+                  />
+                ),
+              },
+            ]}
+          />
         ) : (
           <RbacEmptyState
             icon={<SafetyCertificateOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />}

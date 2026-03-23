@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../services/hrmEmployeeService';
-import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload, buildUpdatePersonalPayload } from '../utils/transformations';
+import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload, buildUpdatePersonalPayload, buildUpdateOfficialPayload } from '../utils/transformations';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
 import type { EmployeeSummary, EmployeeProfile } from '../types/domain.types';
 import type { CreateEmployeeRequest } from '../types/api.types';
@@ -244,11 +244,7 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
           break;
         }
         case 'official': {
-          // Map UI 'designation' field to backend 'role' field
-          const officialPayload = { ...basePayload } as Record<string, unknown>;
-          if (officialPayload.designation && !officialPayload.role) {
-            officialPayload.role = officialPayload.designation;
-          }
+          const officialPayload = buildUpdateOfficialPayload(site, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateOfficialDetails(
             officialPayload as unknown as Parameters<typeof HrmEmployeeService.updateOfficialDetails>[0]
           );

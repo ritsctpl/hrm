@@ -1,141 +1,126 @@
-.assignmentTemplate {
+.userAssignmentTemplate {
   display: flex;
   height: 100%;
-  gap: 12px;
-  overflow: hidden;
+  gap: 16px;
+  padding: 16px;
+  background: #f5f5f5;
 }
 
 .leftPanel {
-  width: 360px;
-  min-width: 280px;
-  max-width: 400px;
+  flex: 0 0 320px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  background: white;
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   overflow: hidden;
+}
+
+.searchSection {
+  flex-shrink: 0;
+}
+
+.userSearchList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.userSearchItem {
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.userSearchItem:hover {
+  background-color: #f0f2f5;
+}
+
+.userSearchItem.selected {
+  background-color: #e6f7ff;
+  border-left: 3px solid #1890ff;
 }
 
 .rightPanel {
   flex: 1;
-  background: #fff;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 4px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* User Search Panel */
-.userPanel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   overflow: hidden;
 }
 
-.userPanelHeader {
-  padding: 12px 12px 4px;
-}
-
-.userSearch {
-  padding: 4px 12px 8px;
-}
-
-.userSearchSpinner {
+.rightContent {
   display: flex;
-  justify-content: center;
-  padding: 24px;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
 }
 
-.userList {
+.userHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.userHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.userHeader p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.assignmentDetail {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+.assignmentDetail h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.assignmentTable {
   flex: 1;
   overflow-y: auto;
 }
 
-.userListItem {
-  padding: 8px 12px !important;
-  cursor: pointer;
-  transition: background 0.15s;
+.assignmentTable h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.userListItem:hover {
-  background: #f5f5f5;
+.selectedRow {
+  background-color: #f0f7ff !important;
 }
 
-.userListItemSelected {
-  background: #e6f0ff !important;
-}
+@media (max-width: 1200px) {
+  .userAssignmentTemplate {
+    flex-direction: column;
+  }
 
-/* Selected User Info */
-.selectedUserInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
+  .leftPanel {
+    flex: 0 0 auto;
+    max-height: 300px;
+  }
 
-/* History Panel */
-.historyPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.historyList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.historyItem {
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.historyHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.historyDates {
-  font-size: 12px;
-}
-
-.historyNotes {
-  font-size: 12px;
-  font-style: italic;
-}
-
-.historyActions {
-  margin-top: 4px;
-}
-
-.noAssignments {
-  display: block;
-  padding: 12px 0;
-  font-size: 12px;
-}
-
-/* Assignment Form */
-.assignForm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-top: 1px solid #f0f0f0;
-  padding-top: 16px;
-}
-
-.assignFormTitle {
-  display: block;
-  margin-bottom: 4px;
+  .rightPanel {
+    flex: 1;
+  }
 }

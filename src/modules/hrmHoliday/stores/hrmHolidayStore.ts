@@ -52,6 +52,8 @@ interface HrmHolidayState {
   showBuMapping: boolean;
   showImport: boolean;
   showGroupCreateModal: boolean;
+  showGroupUpdateModal: boolean;
+  showHolidayCreateModal: boolean;
   showDuplicateModal: boolean;
   showPublishModal: boolean;
   showLockModal: boolean;
@@ -112,6 +114,10 @@ interface HrmHolidayState {
   closeImport: () => void;
   openGroupCreateModal: () => void;
   closeGroupCreateModal: () => void;
+  openGroupUpdateModal: () => void;
+  closeGroupUpdateModal: () => void;
+  openHolidayCreateModal: () => void;
+  closeHolidayCreateModal: () => void;
   openDuplicateModal: () => void;
   closeDuplicateModal: () => void;
   openPublishModal: () => void;
@@ -155,6 +161,8 @@ const defaultState = {
   showBuMapping: false,
   showImport: false,
   showGroupCreateModal: false,
+  showGroupUpdateModal: false,
+  showHolidayCreateModal: false,
   showDuplicateModal: false,
   showPublishModal: false,
   showLockModal: false,
@@ -232,6 +240,10 @@ export const useHrmHolidayStore = create<HrmHolidayState>((set) => ({
   closeImport: () => set({ showImport: false, importResult: null }),
   openGroupCreateModal: () => set({ showGroupCreateModal: true }),
   closeGroupCreateModal: () => set({ showGroupCreateModal: false }),
+  openGroupUpdateModal: () => set({ showGroupUpdateModal: true }),
+  closeGroupUpdateModal: () => set({ showGroupUpdateModal: false }),
+  openHolidayCreateModal: () => set({ showHolidayCreateModal: true }),
+  closeHolidayCreateModal: () => set({ showHolidayCreateModal: false }),
   openDuplicateModal: () => set({ showDuplicateModal: true }),
   closeDuplicateModal: () => set({ showDuplicateModal: false }),
   openPublishModal: () => set({ showPublishModal: true }),

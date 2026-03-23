@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, StopOutlined, SearchOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Tag, Checkbox } from 'antd';
+import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
+import { MdDelete } from 'react-icons/md';
 
 interface Props {
   site: string;
@@ -31,7 +32,30 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
+  const hasLoadedRef = useRef(false);
 
+  // Load modules only once on mount
+  useEffect(() => {
+    if (!site || hasLoadedRef.current) return;
+    
+    hasLoadedRef.current = true;
+    const loadModules = async () => {
+      setLoading(true);
+      try {
+        const data = await HrmAccessService.fetchAllModules(site);
+        setAllModules(data);
+      } catch {
+        message.error('Failed to load modules');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadModules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [site]);
+
+  // Refresh modules when category filter changes
   const refreshModules = async () => {
     if (!site) return;
     setLoading(true);
@@ -39,6 +63,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       const data = categoryFilter
         ? await HrmAccessService.fetchModulesByCategory(site, categoryFilter)
         : await HrmAccessService.fetchAllModules(site);
+      
       setAllModules(data);
     } catch {
       message.error('Failed to load modules');
@@ -46,16 +71,6 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (site && modules.length === 0) refreshModules();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
-
-  useEffect(() => {
-    if (site) refreshModules();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryFilter]);
 
   const filteredModules = useMemo(() => {
     if (!searchText.trim()) return modules;
@@ -74,7 +89,17 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         await HrmAccessService.updateModule(editingHandle, { ...values, site });
         message.success('Module updated');
       } else {
-        await HrmAccessService.createModule({ ...values, site, createdBy: user?.id ?? '' });
+        const payload = {
+          site,
+          moduleCode: values.moduleCode,
+          moduleName: values.moduleName,
+          moduleCategory: values.moduleCategory,
+          description: values.description || '',
+          defaultPermissionObjects: values.defaultPermissionObjects || [],
+          isActive: values.isActive !== false,
+          createdBy: user?.id ?? 'system',
+        };
+        await HrmAccessService.createModule(payload);
         message.success('Module created');
       }
       setModalOpen(false);
@@ -88,7 +113,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
 
   const handleDeactivate = async (handle: string) => {
     try {
-      await HrmAccessService.deactivateModule(site, handle, user?.id ?? '');
+      await HrmAccessService.deactivateModule(site, handle, user?.id ?? 'system');
       message.success('Module deactivated');
       refreshModules();
     } catch {
@@ -96,53 +121,38 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
     }
   };
 
-  const handleCreatePermissions = async (moduleCode: string) => {
-    const objectNames = form.getFieldValue('defaultPermissionObjects');
-    if (!objectNames) {
-      message.info('Enter default permission objects first');
-      return;
-    }
-    try {
-      const names = objectNames.split(',').map((n: string) => n.trim()).filter(Boolean);
-      await HrmAccessService.createPermissionsForModule(site, moduleCode, names, user?.id ?? '');
-      message.success('Permissions created for module');
-    } catch {
-      message.error('Failed to create permissions');
-    }
-  };
-
   const columns: ColumnsType<(typeof modules)[0]> = [
     {
       title: 'Module Code',
       dataIndex: 'moduleCode',
-      width: 160,
       sorter: (a, b) => a.moduleCode.localeCompare(b.moduleCode),
+      width: '15%',
     },
     {
       title: 'Module Name',
       dataIndex: 'moduleName',
       sorter: (a, b) => a.moduleName.localeCompare(b.moduleName),
+      width: '30%',
     },
     {
       title: 'Category',
       dataIndex: 'moduleCategory',
-      width: 140,
       render: (cat: string) => <Tag>{cat || 'N/A'}</Tag>,
+      width: '15%',
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
-      width: 100,
       render: (_: unknown, record) => <RbacStatusBadge isActive={record.isActive} />,
       filters: [
         { text: 'Active', value: true },
         { text: 'Inactive', value: false },
       ],
       onFilter: (value, record) => record.isActive === value,
+      width: '12%',
     },
     {
       title: 'Actions',
-      width: 150,
       render: (_, record) => (
         <>
           <Button
@@ -153,18 +163,21 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
               form.setFieldsValue({
                 moduleCode: record.moduleCode,
                 moduleName: record.moduleName,
-                category: record.moduleCategory,
-                description: '',
+                moduleCategory: record.moduleCategory,
+                description: record.description || '',
+                defaultPermissionObjects: record.defaultPermissionObjects || [],
+                isActive: record.isActive,
               });
               setModalOpen(true);
             }}
             style={{ marginRight: 8 }}
           />
           <Popconfirm title="Deactivate this module?" onConfirm={() => handleDeactivate(record.handle)}>
-            <Button size="small" icon={<StopOutlined />} danger />
+            <Button size="small" icon={<MdDelete />} danger />
           </Popconfirm>
         </>
       ),
+      width: '12%',
     },
   ];
 
@@ -189,17 +202,25 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             allowClear
           />
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingHandle(null);
-            form.resetFields();
-            setModalOpen(true);
-          }}
-        >
-          Register Module
-        </Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            type="default"
+            onClick={refreshModules}
+            loading={loading}
+          >
+            Go
+          </Button>
+          <Button
+            type="primary"
+            onClick={() => {
+              setEditingHandle(null);
+              form.resetFields();
+              setModalOpen(true);
+            }}
+          >
+            +
+          </Button>
+        </div>
       </div>
       <Table
         dataSource={filteredModules}
@@ -207,7 +228,8 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         rowKey="handle"
         loading={loading}
         size="small"
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `${t} modules` }}
+        scroll={{ x: 1000, y: 'calc(100vh - 280px)' }}
+        pagination={false}
       />
       <Modal
         title={editingHandle ? 'Edit Module' : 'Register New Module'}
@@ -222,22 +244,37 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="moduleCode" label="Module Code" rules={[{ required: true }]}>
-            <Input disabled={!!editingHandle} placeholder="e.g., MOD-EMP" />
+            <Input 
+              disabled={!!editingHandle} 
+              placeholder="e.g., ATTENDANCE"
+              onChange={(e) => {
+                // Allow only alphanumeric, underscore, and hyphen
+                const filtered = e.target.value.replace(/[^A-Za-z0-9_-]/g, '').toUpperCase();
+                form.setFieldValue('moduleCode', filtered);
+              }}
+            />
           </Form.Item>
           <Form.Item name="moduleName" label="Module Name" rules={[{ required: true }]}>
-            <Input placeholder="e.g., Employee Master" />
+            <Input placeholder="e.g., Attendance Management" />
           </Form.Item>
-          <Form.Item name="category" label="Category" rules={[{ required: true }]}>
+          <Form.Item name="moduleCategory" label="Category" rules={[{ required: true }]}>
             <Select
               placeholder="Select category"
               options={MODULE_CATEGORIES.filter((c) => c.value !== '')}
             />
           </Form.Item>
           <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} placeholder="Module description" />
+            <Input.TextArea rows={3} placeholder="Manages employee attendance and shifts" />
           </Form.Item>
-          <Form.Item name="defaultPermissionObjects" label="Default Permission Objects (comma-separated)">
-            <Input placeholder="e.g., Company, BusinessUnit, Department" />
+          <Form.Item name="defaultPermissionObjects" label="Default Permission Objects">
+            <Select
+              mode="tags"
+              placeholder="e.g., Attendance, Shift, Overtime"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item name="isActive" label="Active" valuePropName="checked" initialValue={true}>
+            <Checkbox />
           </Form.Item>
         </Form>
       </Modal>
