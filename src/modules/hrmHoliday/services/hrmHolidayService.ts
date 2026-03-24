@@ -120,8 +120,26 @@ export class HrmHolidayService {
   static async createHoliday(
     payload: CreateHolidayRequest
   ): Promise<HolidayApiResponse<HolidayResponse>> {
-    const { data } = await api.post(`${this.BASE}/holiday/create`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday/create`, payload);
+      // Check if response.data is an object with success field
+      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+        return response.data;
+      }
+      // If unwrapped, wrap it back
+      return {
+        success: true,
+        message: 'Holiday created successfully',
+        messageCode: 'SUCCESS',
+        data: response.data,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error.response?.data && typeof error.response.data === 'object' && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 
   static async bulkCreateHolidays(
@@ -148,15 +166,51 @@ export class HrmHolidayService {
   static async updateHoliday(
     payload: UpdateHolidayRequest
   ): Promise<HolidayApiResponse<string>> {
-    const { data } = await api.post(`${this.BASE}/holiday/update`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday/update`, payload);
+      // Check if response.data is an object with success field
+      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+        return response.data;
+      }
+      // If response.data is just a string (unwrapped by interceptor), wrap it back
+      return {
+        success: true,
+        message: 'Holiday updated successfully',
+        messageCode: 'SUCCESS',
+        data: response.data,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error.response?.data && typeof error.response.data === 'object' && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 
   static async deleteHoliday(
     payload: HolidayDeleteRequest
   ): Promise<HolidayApiResponse<string>> {
-    const { data } = await api.post(`${this.BASE}/holiday/delete`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday/delete`, payload);
+      // Check if response.data is an object with success field
+      if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+        return response.data;
+      }
+      // If unwrapped, wrap it back
+      return {
+        success: true,
+        message: 'Holiday deleted successfully',
+        messageCode: 'SUCCESS',
+        data: response.data,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error.response?.data && typeof error.response.data === 'object' && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 
   // ── Calendar Views ───────────────────────────────────────────────────
@@ -180,22 +234,82 @@ export class HrmHolidayService {
   static async addMapping(
     payload: AddBuMappingRequest
   ): Promise<HolidayApiResponse<HolidayBuMappingResponse>> {
-    const { data } = await api.post(`${this.BASE}/holiday-group/mapping/add`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday-group/mapping/add`, payload);
+      // Return the full axios response data which may be unwrapped by interceptor
+      // If interceptor unwrapped it, wrap it back
+      if (response.data && !('success' in response.data)) {
+        return {
+          success: true,
+          message: 'Mapping added successfully',
+          messageCode: 'SUCCESS',
+          data: response.data,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      return response.data;
+    } catch (error: any) {
+      // If error has response data with success field, return it
+      if (error.response?.data && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      // Otherwise throw to be caught by caller
+      throw error;
+    }
   }
 
   static async removeMapping(
     payload: MappingRemoveRequest
   ): Promise<HolidayApiResponse<string>> {
-    const { data } = await api.post(`${this.BASE}/holiday-group/mapping/remove`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday-group/mapping/remove`, payload);
+      // Return the full axios response data which may be unwrapped by interceptor
+      // If interceptor unwrapped it, wrap it back
+      if (response.data && !('success' in response.data)) {
+        return {
+          success: true,
+          message: 'Mapping removed successfully',
+          messageCode: 'SUCCESS',
+          data: response.data,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      return response.data;
+    } catch (error: any) {
+      // If error has response data with success field, return it
+      if (error.response?.data && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      // Otherwise throw to be caught by caller
+      throw error;
+    }
   }
 
   static async listMappings(
     payload: MappingListRequest
   ): Promise<HolidayApiResponse<HolidayBuMappingResponse[]>> {
-    const { data } = await api.post(`${this.BASE}/holiday-group/mapping/retrieve-all`, payload);
-    return data;
+    try {
+      const response = await api.post(`${this.BASE}/holiday-group/mapping/retrieve-all`, payload);
+      // Return the full axios response data which may be unwrapped by interceptor
+      // If interceptor unwrapped it, wrap it back
+      if (response.data && !('success' in response.data)) {
+        return {
+          success: true,
+          message: 'Mappings retrieved successfully',
+          messageCode: 'SUCCESS',
+          data: Array.isArray(response.data) ? response.data : [],
+          timestamp: new Date().toISOString(),
+        };
+      }
+      return response.data;
+    } catch (error: any) {
+      // If error has response data with success field, return it
+      if (error.response?.data && 'success' in error.response.data) {
+        return error.response.data;
+      }
+      // Otherwise throw to be caught by caller
+      throw error;
+    }
   }
 
   // ── Import / Export ──────────────────────────────────────────────────

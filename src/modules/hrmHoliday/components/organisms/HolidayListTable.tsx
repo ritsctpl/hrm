@@ -1,11 +1,10 @@
 'use client';
 
-import { Table, Button, Space, Tooltip, Popconfirm, Empty } from 'antd';
+import { Table, Button, Space, Tooltip, Popconfirm, Empty, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import HolidayCategoryTag from '../atoms/HolidayCategoryTag';
-import HolidayStatusIcon from '../atoms/HolidayStatusIcon';
 import HolidayOptionalBadge from '../atoms/HolidayOptionalBadge';
 import CompWindowDisplay from '../atoms/CompWindowDisplay';
 import type { HolidayListTableProps } from '../../types/ui.types';
@@ -18,9 +17,29 @@ export default function HolidayListTable({
   loading,
   groupStatus,
   onEdit,
+  onDelete,
   onAddHoliday,
 }: HolidayListTableProps) {
   const canEdit = !!onEdit && groupStatus !== 'LOCKED';
+  const canDelete = !!onDelete && groupStatus !== 'LOCKED';
+
+  console.log('HolidayListTable debug:', {
+    hasOnEdit: !!onEdit,
+    hasOnDelete: !!onDelete,
+    groupStatus,
+    canEdit,
+    canDelete,
+  });
+
+  const handleDelete = async (record: Holiday) => {
+    try {
+      if (onDelete) {
+        await onDelete(record);
+      }
+    } catch (error) {
+      message.error('Failed to delete holiday');
+    }
+  };
 
   const columns: ColumnsType<Holiday> = [
     {
@@ -73,28 +92,44 @@ export default function HolidayListTable({
         );
       },
     },
-    {
-      title: 'Status',
-      dataIndex: 'holidayStatus',
-      key: 'holidayStatus',
-      width: 80,
-      render: (status: Holiday['holidayStatus']) => <HolidayStatusIcon status={status} />,
-    },
-    ...(canEdit
+    ...(canEdit || canDelete
       ? [
           {
-            title: '',
+            title: 'Actions',
             key: 'actions',
-            width: 60,
+            width: 100,
             render: (_: unknown, record: Holiday) => (
-              <Tooltip title="Edit">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditIcon style={{ fontSize: 16 }} />}
-                  onClick={() => onEdit!(record)}
-                />
-              </Tooltip>
+              <Space size="small">
+                {canEdit && (
+                  <Tooltip title="Edit">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditIcon style={{ fontSize: 16 }} />}
+                      onClick={() => onEdit!(record)}
+                    />
+                  </Tooltip>
+                )}
+                {canDelete && (
+                  <Popconfirm
+                    title="Delete Holiday"
+                    description={`Are you sure you want to delete "${record.name}"?`}
+                    onConfirm={() => handleDelete(record)}
+                    okText="Yes"
+                    cancelText="No"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Tooltip title="Delete">
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<DeleteIcon style={{ fontSize: 16 }} />}
+                      />
+                    </Tooltip>
+                  </Popconfirm>
+                )}
+              </Space>
             ),
           },
         ]
@@ -103,18 +138,6 @@ export default function HolidayListTable({
 
   return (
     <div className={styles.listTableWrapper}>
-      {onAddHoliday && groupStatus !== 'LOCKED' && (
-        <div className={styles.tableActions}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<AddIcon style={{ fontSize: 16 }} />}
-            onClick={onAddHoliday}
-          >
-            Add Holiday
-          </Button>
-        </div>
-      )}
       <Table<Holiday>
         columns={columns}
         dataSource={holidays}

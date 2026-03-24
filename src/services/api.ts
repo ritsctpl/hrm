@@ -181,15 +181,14 @@ api.interceptors.response.use(
     if (error.response) {
       console.error('API Error:', error.response.status, error.response.data);
       
-      // Handle 400 errors with error response format
-      if (error.response.status === 400) {
-        const data = error.response.data;
-        if (data && typeof data === 'object' && data.message_details?.msg) {
-          // Create a new error with just the message
-          const err = new Error(data.message_details.msg);
-          (err as any).response = error.response;
-          return Promise.reject(err);
-        }
+      // Handle errors with message_details format (400, 500, etc.)
+      const data = error.response.data;
+      if (data && typeof data === 'object' && data.message_details?.msg) {
+        // Create a new error with the backend message
+        const err = new Error(data.message_details.msg);
+        (err as any).response = error.response;
+        (err as any).errorCode = data.errorCode;
+        return Promise.reject(err);
       }
     } else if (error.request) {
       console.error('Network Error: No response received');

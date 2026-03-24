@@ -27,10 +27,10 @@ const PolicyLibraryList: React.FC<PolicyLibraryListProps> = ({
     );
   }
   if (policies.length === 0) {
-    return <Empty description="No policies found" />;
+    return <Empty description="No policies found" style={{ marginTop: 40 }} />;
   }
   return (
-    <div className={styles.libraryList}>
+    <>
       {policies.map((policy) => (
         <PolicyListRow
           key={policy.handle}
@@ -39,7 +39,7 @@ const PolicyLibraryList: React.FC<PolicyLibraryListProps> = ({
           onEdit={onEdit}
         />
       ))}
-    </div>
+    </>
   );
 };
 

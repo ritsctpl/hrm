@@ -63,10 +63,29 @@
   margin-top: 16px;
 }
 
+.pdfViewerSection {
+  margin-top: 24px;
+}
+
 .pdfFrame {
   width: 100%;
   height: 70vh;
-  border: none;
+  min-height: 600px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+
+.pdfError {
+  padding: 40px;
+  text-align: center;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ackBanner {

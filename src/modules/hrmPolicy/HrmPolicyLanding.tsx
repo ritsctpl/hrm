@@ -9,6 +9,7 @@ import { HrmPolicyService } from "./services/hrmPolicyService";
 import { useHrmPolicyData } from "./hooks/useHrmPolicyData";
 import PolicyLibraryTemplate from "./components/templates/PolicyLibraryTemplate";
 import PolicyAdminTemplate from "./components/templates/PolicyAdminTemplate";
+import PolicyFormDrawer from "./components/organisms/PolicyFormDrawer";
 import HrmPolicyScreen from "./HrmPolicyScreen";
 import { PolicyDocument } from "./types/domain.types";
 import { POLICY_HR_ROLES } from "./utils/constants";
@@ -27,6 +28,7 @@ const HrmPolicyLanding: React.FC = () => {
     adminPolicies,
     adminPoliciesLoading,
     selectedPolicy,
+    selectedPolicyLoading,
     showPolicyViewer,
     showFormDrawer,
     editPolicy,
@@ -50,9 +52,28 @@ const HrmPolicyLanding: React.FC = () => {
     setFilterStatus,
     setPublishing,
     setArchiving,
+    setSelectedPolicy,
+    setSelectedPolicyLoading,
   } = useHrmPolicyStore();
 
   const { loadCategories, loadPolicies, loadAdminPolicies } = useHrmPolicyData();
+
+  // Fetch full policy details when opening viewer
+  const handlePolicyClick = async (policy: PolicyDocument) => {
+    openPolicyViewer(policy); // Show viewer with basic data first
+    try {
+      const fullPolicy = await HrmPolicyService.getPolicyDetail({ 
+        site, 
+        policyHandle: policy.handle 
+      });
+      setSelectedPolicy(fullPolicy); // Update with full data including pdfBase64
+    } catch (error) {
+      message.error("Failed to load policy details");
+      console.error("Error loading policy details:", error);
+    } finally {
+      setSelectedPolicyLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadCategories();
@@ -60,23 +81,66 @@ const HrmPolicyLanding: React.FC = () => {
 
   useEffect(() => {
     loadPolicies();
-  }, [filterCategoryId, filterDocType, filterStatus, searchText]);
+  }, [filterCategoryId, filterDocType, filterStatus]);
 
   useEffect(() => {
     if (activeTab === "admin" && canAdmin) {
       loadAdminPolicies();
     }
-  }, [activeTab]);
+  }, [activeTab, filterCategoryId, filterDocType, filterStatus]);
 
   const handlePublish = async (policyHandle: string) => {
     setPublishing(true);
     try {
       const user = cookies.userId ?? "system";
-      await HrmPolicyService.publishPolicy({ site, policyHandle, publishedBy: user });
-      message.success("Policy published");
+      
+      // Find the policy to check its status
+      const policy = adminPolicies.find(p => p.handle === policyHandle);
+      
+      if (!policy) {
+        message.error("Policy not found");
+        return;
+      }
+      
+      // Workflow: DRAFT → submitForReview → REVIEW → approve → APPROVED → publish → PUBLISHED
+      if (policy.status === "DRAFT") {
+        await HrmPolicyService.submitForReview({ 
+          site, 
+          policyHandle, 
+          submittedBy: user 
+        });
+        message.success("Policy submitted for review");
+      } else if (policy.status === "REVIEW") {
+        await HrmPolicyService.approvePolicy({ 
+          site, 
+          policyHandle, 
+          approvedBy: user 
+        });
+        message.success("Policy approved successfully");
+      } else if (policy.status === "APPROVED") {
+        await HrmPolicyService.publishPolicy({ 
+          site, 
+          policyHandle, 
+          publishedBy: user 
+        });
+        message.success("Policy published successfully");
+      } else {
+        message.warning(`Cannot process policy with status: ${policy.status}`);
+      }
+      
       loadAdminPolicies();
-    } catch {
-      message.error("Failed to publish policy");
+    } catch (error: any) {
+      console.error("Policy workflow error:", error);
+      
+      // Extract error message
+      let errorMessage = "Failed to process policy";
+      if (error?.response?.data?.message_details?.msg) {
+        errorMessage = error.response.data.message_details.msg;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      message.error(errorMessage);
     } finally {
       setPublishing(false);
     }
@@ -106,7 +170,7 @@ const HrmPolicyLanding: React.FC = () => {
     return (
       <div className={styles.landing}>
         <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`}  />
-        <HrmPolicyScreen policy={selectedPolicy} onBack={closePolicyViewer} />
+        <HrmPolicyScreen policy={selectedPolicy} loading={selectedPolicyLoading} onBack={closePolicyViewer} />
       </div>
     );
   }
@@ -126,7 +190,7 @@ const HrmPolicyLanding: React.FC = () => {
           filterStatus={filterStatus}
           searchText={searchText}
           canAdmin={canAdmin}
-          onPolicyClick={openPolicyViewer}
+          onPolicyClick={handlePolicyClick}
           onViewModeChange={setViewMode}
           onSearch={setSearchText}
           onCategoryFilter={setFilterCategoryId}
@@ -150,13 +214,21 @@ const HrmPolicyLanding: React.FC = () => {
           showFormDrawer={showFormDrawer}
           editPolicy={editPolicy}
           site={site}
+          searchText={searchText}
+          filterCategoryId={filterCategoryId}
+          filterDocType={filterDocType}
+          filterStatus={filterStatus}
           onEdit={(policy: PolicyDocument) => openFormDrawer(policy)}
           onPublish={handlePublish}
           onArchive={handleArchive}
-          onViewDetail={openPolicyViewer}
+          onViewDetail={handlePolicyClick}
           onCreateNew={() => openFormDrawer()}
           onDrawerClose={closeFormDrawer}
           onDrawerSaved={handleAdminDrawerSaved}
+          onSearch={setSearchText}
+          onCategoryFilter={setFilterCategoryId}
+          onDocTypeFilter={setFilterDocType}
+          onStatusFilter={setFilterStatus}
         />
       ),
     });
@@ -170,8 +242,30 @@ const HrmPolicyLanding: React.FC = () => {
         onChange={(key) => setActiveTab(key as "library" | "admin")}
         items={tabItems}
         size="small"
-        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-        style={{ flex: 1, overflow: "hidden" }}
+        tabBarStyle={{ 
+          marginBottom: 0, 
+          padding: '0 16px', 
+          borderBottom: '1px solid #e8e8e8',
+          flexShrink: 0 
+        }}
+        style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          minHeight: 0,
+          overflow: 'hidden'
+        }}
+        className="policy-tabs-container"
+      />
+      
+      {/* Form Drawer - render at landing level so it works from both tabs */}
+      <PolicyFormDrawer
+        open={showFormDrawer}
+        editPolicy={editPolicy}
+        categories={categories}
+        site={site}
+        onClose={closeFormDrawer}
+        onSaved={handleAdminDrawerSaved}
       />
     </div>
   );

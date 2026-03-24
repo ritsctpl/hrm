@@ -139,6 +139,8 @@ export interface GroupStatsBarProps {
   total: number;
   upcoming: number;
   completed: number;
+  onFilterChange?: (filter: 'all' | 'upcoming' | 'completed') => void;
+  activeFilter?: 'all' | 'upcoming' | 'completed';
 }
 
 export interface HolidayGroupsTableProps {
@@ -154,6 +156,7 @@ export interface HolidayListTableProps {
   loading: boolean;
   groupStatus: HolidayGroupStatus;
   onEdit?: (holiday: Holiday) => void;
+  onDelete?: (holiday: Holiday) => void;
   onAddHoliday?: () => void;
 }
 

@@ -3,6 +3,34 @@
   flex-direction: column;
   height: 100vh;
   background: #f0f2f5;
+  overflow: hidden;
+}
+
+/* Make Ant Design Tabs scrollable */
+.landing :global(.ant-tabs) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.landing :global(.ant-tabs-nav) {
+  flex-shrink: 0;
+}
+
+.landing :global(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: hidden;
+}
+
+.landing :global(.ant-tabs-content) {
+  height: 100%;
+  overflow: hidden;
+}
+
+.landing :global(.ant-tabs-tabpane) {
+  height: 100%;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -14,25 +42,28 @@
   border-bottom: 1px solid var(--border-color, #f0f0f0);
   flex-wrap: wrap;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .libraryTemplate {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  height: 100%;
   overflow: hidden;
 }
 
 .libraryGrid {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
 }
 
 .libraryList {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px;
+  overflow-x: hidden;
+  padding: 0;
 }
 
 .categorySection {

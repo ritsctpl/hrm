@@ -7,6 +7,7 @@ import {
   WaiveAcknowledgmentPayload,
   CreatePolicyPayload,
   UpdatePolicyPayload,
+  UpdatePdfPayload,
   PublishPolicyPayload,
   SubmitForReviewPayload,
   ApprovePolicyPayload,
@@ -59,6 +60,11 @@ export class HrmPolicyService {
 
   static async updatePolicy(payload: UpdatePolicyPayload): Promise<PolicyDocument> {
     const res = await api.post(`${BASE}/updatePolicy`, payload);
+    return res.data;
+  }
+
+  static async updatePdf(payload: UpdatePdfPayload): Promise<PolicyDocument> {
+    const res = await api.post(`${BASE}/updatePdf`, payload);
     return res.data;
   }
 

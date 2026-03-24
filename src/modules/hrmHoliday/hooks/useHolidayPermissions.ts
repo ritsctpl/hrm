@@ -5,7 +5,7 @@
 
 import type { HolidayPermissions } from '../types/ui.types';
 
-const SUPERADMIN_ROLES = ['SUPERADMIN', 'SUPER_ADMIN'];
+const SUPERADMIN_ROLES = ['SUPERADMIN', 'SUPER_ADMIN','EMPLOYEE'];
 const ADMIN_ROLES = ['ADMIN', 'HR_ADMIN', ...SUPERADMIN_ROLES];
 const MANAGER_ROLES = ['MANAGER', 'HR_MANAGER', ...ADMIN_ROLES];
 

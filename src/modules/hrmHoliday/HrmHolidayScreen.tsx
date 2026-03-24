@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
-import { PlusOutlined, SendOutlined, LockOutlined, UnlockOutlined, ApartmentOutlined, UploadOutlined } from '@ant-design/icons';
+import { SendOutlined, LockOutlined, UnlockOutlined, ApartmentOutlined, UploadOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
 import HolidayCalendarView from './components/organisms/HolidayCalendarView';
@@ -18,6 +18,7 @@ import GroupStatsBar from './components/molecules/GroupStatsBar';
 import HolidayStatusChip from './components/atoms/HolidayStatusChip';
 import { useHrmHolidayStore } from './stores/hrmHolidayStore';
 import { HrmHolidayService } from './services/hrmHolidayService';
+import type { Holiday } from './types/domain.types';
 import { useHolidayDetail } from './hooks/useHolidayDetail';
 import type { HrmHolidayScreenProps } from './types/ui.types';
 import styles from './styles/HolidayDetail.module.css';
@@ -58,6 +59,22 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
 
   const { loadHolidays, loadCategories } = useHolidayDetail(site, group.handle);
 
+  // Filter state for stats bar
+  const [statsFilter, setStatsFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+
+  // Filter holidays based on stats filter
+  const filteredHolidays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (statsFilter === 'upcoming') {
+      return holidays.filter(h => new Date(h.date) >= today);
+    } else if (statsFilter === 'completed') {
+      return holidays.filter(h => new Date(h.date) < today);
+    }
+    return holidays; // 'all'
+  }, [holidays, statsFilter]);
+
   useEffect(() => {
     loadHolidays({ groupHandle: group.handle, category: categoryFilter ?? undefined });
   }, [group.handle, categoryFilter]);
@@ -77,6 +94,16 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
       message.success('Holiday group published');
     } catch {
       message.error('Failed to publish group');
+    }
+  };
+
+  const handleDeleteHoliday = async (holiday: Holiday) => {
+    try {
+      await HrmHolidayService.deleteHoliday({ site, handle: holiday.handle, deletedBy: userId });
+      await loadHolidays({ groupHandle: group.handle, category: categoryFilter ?? undefined });
+      message.success('Holiday deleted successfully');
+    } catch {
+      message.error('Failed to delete holiday');
     }
   };
 
@@ -102,16 +129,23 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
     }
   };
 
+  console.log('HrmHolidayScreen permissions:', {
+    canEdit: permissions.canEdit,
+    canDelete: permissions.canDelete,
+    groupStatus: group.status,
+  });
+
   const tabItems = [
     {
       key: 'list',
       label: 'List',
       children: (
         <HolidayListTable
-          holidays={holidays}
+          holidays={filteredHolidays}
           loading={holidaysLoading}
           groupStatus={group.status}
           onEdit={permissions.canEdit ? openHolidayForm : undefined}
+          onDelete={permissions.canDelete ? handleDeleteHoliday : undefined}
           onAddHoliday={permissions.canEdit ? () => openHolidayForm() : undefined}
         />
       ),
@@ -121,7 +155,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
       label: 'Calendar',
       children: (
         <HolidayCalendarView
-          holidays={holidays}
+          holidays={filteredHolidays}
           categories={categories}
           year={group.year}
           month={calendarMonth}
@@ -147,26 +181,17 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
           total={group.totalHolidays}
           upcoming={group.upcomingCount}
           completed={group.completedCount}
+          onFilterChange={setStatsFilter}
+          activeFilter={statsFilter}
         />
       </div>
 
       <div className={styles.actionBar}>
         <Space wrap>
-          {permissions.canEdit && (
-            <Button
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={() => openHolidayForm()}
-              disabled={group.status === 'LOCKED'}
-            >
-              Add Holiday
-            </Button>
-          )}
           {permissions.canPublish && group.status === 'DRAFT' && (
             <Button
               size="small"
               type="primary"
-              icon={<SendOutlined />}
               onClick={openPublishModal}
             >
               Publish
@@ -199,16 +224,16 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
               Map BU
             </Button>
           )}
-          {permissions.canImport && (
-            <Button
+          {/* {permissions.canImport && ( */}
+            {/* <Button
               size="small"
               icon={<UploadOutlined />}
               onClick={openImport}
               disabled={group.status === 'LOCKED'}
             >
               Import
-            </Button>
-          )}
+            </Button> */}
+          {/* )} */}
         </Space>
       </div>
 

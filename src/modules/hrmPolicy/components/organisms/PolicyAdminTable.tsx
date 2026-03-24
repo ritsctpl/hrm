@@ -19,6 +19,12 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
 }) => {
   const columns: ColumnsType<PolicyDocument> = [
     {
+      title: "Code",
+      dataIndex: "policyCode",
+      key: "policyCode",
+      width: 120,
+    },
+    {
       title: "Title",
       dataIndex: "title",
       key: "title",
@@ -75,7 +81,28 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
           {record.status === "DRAFT" && (
             <Popconfirm
+              title="Submit for review?"
+              description="This will send the policy for review."
+              onConfirm={() => onPublish(record.handle)}
+              okText="Submit"
+            >
+              <Button size="small" icon={<CheckCircleOutlined />}  />
+            </Popconfirm>
+          )}
+          {record.status === "REVIEW" && (
+            <Popconfirm
+              title="Approve this policy?"
+              description="This will approve the policy after review."
+              onConfirm={() => onPublish(record.handle)}
+              okText="Approve"
+            >
+              <Button size="small" icon={<CheckCircleOutlined />} type="primary" />
+            </Popconfirm>
+          )}
+          {record.status === "APPROVED" && (
+            <Popconfirm
               title="Publish this policy?"
+              description="This will make the policy visible to all employees."
               onConfirm={() => onPublish(record.handle)}
               okText="Publish"
             >

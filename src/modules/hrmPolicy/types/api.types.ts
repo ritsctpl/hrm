@@ -42,6 +42,7 @@ export interface CreatePolicyPayload {
   categoryHandle: string;
   contentType?: ContentType;
   textContent?: string;
+  pdfBase64?: string;
   versionNumber?: string;
   changeDescription?: string;
   reviewerId?: string;
@@ -60,6 +61,14 @@ export interface CreatePolicyPayload {
   tags?: string[];
   relatedPolicies?: { handle: string }[];
   createdBy?: string;
+}
+
+export interface UpdatePdfPayload {
+  site: string;
+  policyHandle: string;
+  fileName: string;
+  pdfBase64: string;
+  updatedBy: string;
 }
 
 export interface UpdatePolicyPayload extends Partial<CreatePolicyPayload> {

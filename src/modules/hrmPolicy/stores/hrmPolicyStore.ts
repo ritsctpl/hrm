@@ -108,7 +108,7 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   setAckReportLoading: (ackReportLoading) => set({ ackReportLoading }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setViewMode: (viewMode) => set({ viewMode }),
-  openPolicyViewer: (policy) => set({ showPolicyViewer: true, selectedPolicy: policy }),
+  openPolicyViewer: (policy) => set({ showPolicyViewer: true, selectedPolicy: policy, selectedPolicyLoading: true }),
   closePolicyViewer: () => set({ showPolicyViewer: false, selectedPolicy: null }),
   openFormDrawer: (policy = null) => set({ showFormDrawer: true, editPolicy: policy }),
   closeFormDrawer: () => set({ showFormDrawer: false, editPolicy: null }),

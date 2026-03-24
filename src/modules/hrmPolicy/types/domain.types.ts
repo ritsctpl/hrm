@@ -50,6 +50,7 @@ export interface PolicyDocument {
   status: PolicyStatus;
   contentType?: ContentType;
   textContent?: string;
+  pdfBase64?: string;
   fileHandle?: string;
   fileName?: string;
   effectiveFrom?: string;

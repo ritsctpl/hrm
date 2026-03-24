@@ -34,6 +34,7 @@ export const POLICY_STATUS_LABELS: Record<PolicyStatus, string> = {
   SUPERSEDED: "Superseded",
 };
 
-export const POLICY_HR_ROLES = ["HR", "HR_MANAGER", "ADMIN", "SUPERADMIN"];
+// Temporarily allow all roles including EMPLOYEE until RBAC is implemented
+export const POLICY_HR_ROLES = ["HR", "HR_MANAGER", "HR_ADMIN", "ADMIN", "SUPERADMIN", "MANAGER", "EMPLOYEE"];
 
 export const PAGE_SIZE = 20;

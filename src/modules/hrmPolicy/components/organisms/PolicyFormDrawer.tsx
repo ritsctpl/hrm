@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Drawer, Form, Input, Select, DatePicker, Button, Space, message } from "antd";
+import { Drawer, Form, Input, Select, DatePicker, Button, Space, message, Upload } from "antd";
+import { UploadOutlined, FilePdfOutlined } from "@ant-design/icons";
+import type { UploadFile } from "antd";
 import dayjs from "dayjs";
+import { parseCookies } from "nookies";
 import { PolicyFormDrawerProps } from "../../types/ui.types";
 import { HrmPolicyService } from "../../services/hrmPolicyService";
+import { HrmOrganizationService } from "../../../hrmOrganization/services/hrmOrganizationService";
 import { POLICY_DOC_TYPE_LABELS } from "../../utils/constants";
 import { useHrmPolicyStore } from "../../stores/hrmPolicyStore";
 
@@ -21,6 +25,9 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
 }) => {
   const [form] = Form.useForm();
   const { saving, setSaving } = useHrmPolicyStore();
+  const [pdfFile, setPdfFile] = React.useState<File | null>(null);
+  const [pdfFileList, setPdfFileList] = React.useState<UploadFile[]>([]);
+  const [existingPdfName, setExistingPdfName] = React.useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -35,8 +42,19 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
           reviewDate: editPolicy.reviewDate ? dayjs(editPolicy.reviewDate) : undefined,
           tags: editPolicy.tags,
         });
+        // Show existing PDF if available
+        if (editPolicy.pdfBase64) {
+          setExistingPdfName(`${editPolicy.policyCode || 'policy'}.pdf`);
+        } else {
+          setExistingPdfName("");
+        }
+        setPdfFile(null);
+        setPdfFileList([]);
       } else {
         form.resetFields();
+        setExistingPdfName("");
+        setPdfFile(null);
+        setPdfFileList([]);
       }
     }
   }, [open, editPolicy, form]);
@@ -45,21 +63,97 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
     try {
       const values = await form.validateFields();
       setSaving(true);
+      const cookies = parseCookies();
+      const userId = cookies.userId ?? "system";
+      
       const payload = {
         ...values,
         site,
         effectiveFrom: values.effectiveFrom?.format("YYYY-MM-DD"),
         reviewDate: values.reviewDate?.format("YYYY-MM-DD"),
       };
+      
       if (editPolicy) {
+        // Update policy basic info (without PDF)
         await HrmPolicyService.updatePolicy({ ...payload, policyHandle: editPolicy.handle });
+        
+        // If new PDF uploaded, call separate updatePdf endpoint
+        if (pdfFile) {
+          const pdfBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64String = reader.result as string;
+              // Remove data URL prefix to get pure base64
+              const base64 = base64String.split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(pdfFile);
+          });
+          
+          await HrmPolicyService.updatePdf({
+            site,
+            policyHandle: editPolicy.handle,
+            fileName: pdfFile.name,
+            pdfBase64,
+            updatedBy: userId,
+          });
+        }
       } else {
-        await HrmPolicyService.createPolicy(payload);
+        // For create, first create the policy without PDF
+        const createdPolicy = await HrmPolicyService.createPolicy({ 
+          ...payload, 
+          createdBy: userId,
+        });
+        
+        // Then upload PDF if provided
+        if (pdfFile) {
+          const pdfBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64String = reader.result as string;
+              const base64 = base64String.split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(pdfFile);
+          });
+          
+          await HrmPolicyService.updatePdf({
+            site,
+            policyHandle: createdPolicy.handle,
+            fileName: pdfFile.name,
+            pdfBase64,
+            updatedBy: userId,
+          });
+        }
       }
+      
       message.success(editPolicy ? "Policy updated" : "Policy created");
       onSaved();
-    } catch {
-      message.error("Failed to save policy");
+    } catch (error: any) {
+      console.error("Save error:", error);
+      
+      // Extract error message from API response
+      let errorMessage = "Failed to save policy";
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        // Check for message_details.msg format
+        if (errorData.message_details?.msg) {
+          errorMessage = errorData.message_details.msg;
+        }
+        // Check for direct message field
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      }
+      // Check if error itself has a message
+      else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -112,6 +206,47 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
         </Form.Item>
         <Form.Item name="tags" label="Tags">
           <Select mode="tags" placeholder="Add tags" />
+        </Form.Item>
+        
+        <Form.Item label="PDF Document">
+          {existingPdfName && !pdfFile && (
+            <Space style={{ marginBottom: 8 }}>
+              <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
+              <span style={{ color: '#595959' }}>Current: {existingPdfName}</span>
+            </Space>
+          )}
+          <Upload
+            accept=".pdf"
+            maxCount={1}
+            fileList={pdfFileList}
+            beforeUpload={(file) => {
+              // Validate file type
+              if (file.type !== 'application/pdf') {
+                message.error('You can only upload PDF files!');
+                return Upload.LIST_IGNORE;
+              }
+              // Validate file size (max 10MB)
+              const isLt10M = file.size / 1024 / 1024 < 10;
+              if (!isLt10M) {
+                message.error('PDF must be smaller than 10MB!');
+                return Upload.LIST_IGNORE;
+              }
+              setPdfFile(file);
+              setPdfFileList([file as UploadFile]);
+              return false; // Prevent auto upload
+            }}
+            onRemove={() => {
+              setPdfFile(null);
+              setPdfFileList([]);
+            }}
+          >
+            <Button icon={<UploadOutlined />}>
+              {existingPdfName ? 'Replace PDF' : 'Upload PDF'}
+            </Button>
+          </Upload>
+          <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
+            Optional. Max size: 10MB. Format: PDF only.
+          </div>
         </Form.Item>
       </Form>
     </Drawer>

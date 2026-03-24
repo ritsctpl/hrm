@@ -22,22 +22,23 @@ export default function HolidayCalendarCell({ day, onHolidayClick }: HolidayCale
   return (
     <div className={cellClass}>
       <span className={styles.dayNumber}>{day.isCurrentMonth ? day.dayNumber : ''}</span>
-      <div className={styles.holidayDots}>
-        {day.holidays.slice(0, 3).map((h) => (
-          <Tooltip key={h.handle} title={h.name}>
-            <span
-              className={`${styles.holidayDot} ${h.optional ? styles.holidayDotOptional : ''}`}
-              style={{
-                backgroundColor: day.isPast ? undefined : h.categoryColorHex,
-                opacity: day.isPast ? 0.5 : 1,
-              }}
-              onClick={() => onHolidayClick?.(h.handle)}
-            />
-          </Tooltip>
+      <div className={styles.holidayList}>
+        {day.holidays.map((h) => (
+          <div
+            key={h.handle}
+            className={`${styles.holidayItem} ${h.optional ? styles.holidayItemOptional : ''}`}
+            style={{
+              backgroundColor: h.categoryColorHex || '#1890ff',
+              color: '#ffffff',
+              opacity: day.isPast ? 0.7 : 1,
+              borderLeft: `3px solid ${h.categoryColorHex || '#1890ff'}`,
+            }}
+            onClick={() => onHolidayClick?.(h.handle)}
+            title={h.name}
+          >
+            <span className={styles.holidayName}>{h.name}</span>
+          </div>
         ))}
-        {day.holidays.length > 3 && (
-          <span className={styles.holidayMoreDot}>+{day.holidays.length - 3}</span>
-        )}
       </div>
     </div>
   );

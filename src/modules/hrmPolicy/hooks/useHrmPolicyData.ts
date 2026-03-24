@@ -55,19 +55,24 @@ export const useHrmPolicyData = () => {
     } finally {
       setPoliciesLoading(false);
     }
-  }, [site, filterCategoryId, filterDocType, filterStatus, searchText]);
+  }, [site, filterCategoryId, filterDocType, filterStatus]);
 
   const loadAdminPolicies = useCallback(async () => {
     setAdminPoliciesLoading(true);
     try {
-      const data = await HrmPolicyService.getPolicies({ site });
+      const data = await HrmPolicyService.getPolicies({ 
+        site,
+        categoryHandle: filterCategoryId || undefined,
+        documentType: filterDocType as never || undefined,
+        status: filterStatus as never || undefined,
+      });
       setAdminPolicies(data);
     } catch {
       message.error("Failed to load admin policies");
     } finally {
       setAdminPoliciesLoading(false);
     }
-  }, [site]);
+  }, [site, filterCategoryId, filterDocType, filterStatus]);
 
   const loadVersionHistory = useCallback(async (policyHandle: string) => {
     setVersionHistoryLoading(true);

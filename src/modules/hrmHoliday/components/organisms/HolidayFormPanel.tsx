@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Drawer, Form, Button, Space, message, Typography } from 'antd';
 import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
@@ -41,6 +41,15 @@ export default function HolidayFormPanel({
       }
     : { visibility: 'PUBLIC', compensatory: false, optional: false };
 
+  // Reset form when holiday changes or drawer opens
+  React.useEffect(() => {
+    if (open) {
+      form.resetFields();
+      setIsCompensatory(holiday?.compensatory ?? false);
+      setIsLocal(holiday?.category === 'LOCAL');
+    }
+  }, [open, holiday, form]);
+
   const handleSubmit = async () => {
     const cookies = parseCookies();
     const site = cookies.site ?? '';
@@ -53,6 +62,7 @@ export default function HolidayFormPanel({
       const dateStr = values.date ? dayjs(values.date).format('YYYY-MM-DD') : '';
 
       if (isEdit && holiday) {
+        console.log('Updating holiday...');
         const res = await HrmHolidayService.updateHoliday({
           site,
           handle: holiday.handle,
@@ -73,13 +83,16 @@ export default function HolidayFormPanel({
           notes: values.notes,
           modifiedBy: userId,
         });
-        if (res.success) {
+        console.log('Update response:', res);
+        if (res && res.success) {
+          message.success(res.message || 'Holiday updated successfully');
           const updated: Holiday = { ...holiday, ...values, date: dateStr };
           onSaved(updated);
         } else {
-          message.error(res.message || 'Failed to update holiday');
+          message.error(res?.message || 'Failed to update holiday');
         }
       } else {
+        console.log('Creating holiday...');
         const res = await HrmHolidayService.createHoliday({
           site,
           groupHandle,
@@ -100,7 +113,9 @@ export default function HolidayFormPanel({
           notes: values.notes,
           createdBy: userId,
         });
-        if (res.success) {
+        console.log('Create response:', res);
+        if (res && res.success) {
+          message.success(res.message || 'Holiday created successfully');
           const created: Holiday = {
             ...res.data,
             compensatory: res.data.compensatory ?? false,
@@ -111,8 +126,15 @@ export default function HolidayFormPanel({
           message.error(res.message || 'Failed to create holiday');
         }
       }
-    } catch {
-      // validation errors handled by antd
+    } catch (error: any) {
+      // Extract error message from API response
+      const errorMessage = 
+        error?.response?.data?.message_details?.msg || 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Failed to save holiday';
+      message.error(errorMessage);
+      console.error('Save holiday error:', error);
     } finally {
       setSaving(false);
     }

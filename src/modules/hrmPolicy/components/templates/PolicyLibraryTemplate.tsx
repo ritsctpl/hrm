@@ -46,8 +46,23 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
   onDocTypeFilter,
   onStatusFilter,
   onCreatePolicy,
-}) => (
-  <div className={styles.libraryTemplate}>
+}) => {
+  // Client-side filtering by search text
+  const filteredPolicies = React.useMemo(() => {
+    if (!searchText || searchText.trim() === '') {
+      return policies;
+    }
+    
+    const searchLower = searchText.toLowerCase().trim();
+    return policies.filter(policy => 
+      policy.title?.toLowerCase().includes(searchLower) ||
+      policy.description?.toLowerCase().includes(searchLower) ||
+      policy.policyCode?.toLowerCase().includes(searchLower)
+    );
+  }, [policies, searchText]);
+
+  return (
+    <div className={styles.libraryTemplate}>
     <div className={styles.toolbar}>
       <Space wrap>
         <Input.Search
@@ -113,21 +128,25 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         )}
       </Space>
     </div>
-    {viewMode === "grid" ? (
-      <PolicyLibraryGrid
-        policies={policies}
-        categories={categories}
-        loading={loading}
-        onPolicyClick={onPolicyClick}
-      />
-    ) : (
-      <PolicyLibraryList
-        policies={policies}
-        loading={loading}
-        onPolicyClick={onPolicyClick}
-      />
-    )}
+    <div className={viewMode === "grid" ? styles.libraryGrid : styles.libraryList}>
+      {viewMode === "grid" ? (
+        <PolicyLibraryGrid
+          policies={filteredPolicies}
+          categories={categories}
+          loading={loading}
+          filterCategoryId={filterCategoryId}
+          onPolicyClick={onPolicyClick}
+        />
+      ) : (
+        <PolicyLibraryList
+          policies={filteredPolicies}
+          loading={loading}
+          onPolicyClick={onPolicyClick}
+        />
+      )}
+    </div>
   </div>
-);
+  );
+};
 
 export default PolicyLibraryTemplate;
