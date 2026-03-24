@@ -131,7 +131,8 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       rowKey="handle"
       loading={loading}
       size="small"
-      pagination={{ pageSize: 20, showSizeChanger: false, showTotal: (total) => `${total} policies` }}
+      pagination={false}
+      scroll={{ y: 'calc(100vh - 280px)' }}
     />
   );
 };

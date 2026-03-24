@@ -254,6 +254,8 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       title: (official.title as string) || '',
       department: (official.department as string) || '',
       departmentName: (official.departmentName as string) || undefined,
+      organizationName: (official.organizationName as string) || undefined,
+      organizationHandle: (official.organizationHandle as string) || undefined,
       role: (official.role as string) || undefined,
       roleName: (official.roleName as string) || undefined,
       designation: (official.designation as string) || (official.role as string) || undefined,
@@ -389,6 +391,8 @@ export function buildUpdateOfficialPayload(
     reportingManagerName: officialData.reportingManagerName || undefined,
     location: officialData.location || undefined,
     businessUnits: officialData.businessUnits || undefined,
+    organizationName: officialData.organizationName || undefined,
+    organizationHandle: officialData.organizationHandle || undefined,
     joiningDate: officialData.joiningDate || undefined,
     modifiedBy,
   };

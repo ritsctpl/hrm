@@ -145,6 +145,8 @@ export interface OfficialDetails {
   title: string;
   department: string;
   departmentName?: string;
+  organizationName?: string;
+  organizationHandle?: string;
   /** Backend field name for position/role */
   role?: string;
   roleName?: string;
