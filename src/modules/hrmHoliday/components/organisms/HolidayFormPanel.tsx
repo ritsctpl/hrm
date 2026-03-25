@@ -62,7 +62,6 @@ export default function HolidayFormPanel({
       const dateStr = values.date ? dayjs(values.date).format('YYYY-MM-DD') : '';
 
       if (isEdit && holiday) {
-        console.log('Updating holiday...');
         const res = await HrmHolidayService.updateHoliday({
           site,
           handle: holiday.handle,
@@ -83,7 +82,6 @@ export default function HolidayFormPanel({
           notes: values.notes,
           modifiedBy: userId,
         });
-        console.log('Update response:', res);
         if (res && res.success) {
           message.success(res.message || 'Holiday updated successfully');
           const updated: Holiday = { ...holiday, ...values, date: dateStr };
@@ -92,7 +90,6 @@ export default function HolidayFormPanel({
           message.error(res?.message || 'Failed to update holiday');
         }
       } else {
-        console.log('Creating holiday...');
         const res = await HrmHolidayService.createHoliday({
           site,
           groupHandle,
@@ -113,7 +110,6 @@ export default function HolidayFormPanel({
           notes: values.notes,
           createdBy: userId,
         });
-        console.log('Create response:', res);
         if (res && res.success) {
           message.success(res.message || 'Holiday created successfully');
           const created: Holiday = {

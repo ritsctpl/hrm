@@ -23,14 +23,6 @@ export default function HolidayListTable({
   const canEdit = !!onEdit && groupStatus !== 'LOCKED';
   const canDelete = !!onDelete && groupStatus !== 'LOCKED';
 
-  console.log('HolidayListTable debug:', {
-    hasOnEdit: !!onEdit,
-    hasOnDelete: !!onDelete,
-    groupStatus,
-    canEdit,
-    canDelete,
-  });
-
   const handleDelete = async (record: Holiday) => {
     try {
       if (onDelete) {
@@ -77,11 +69,6 @@ export default function HolidayListTable({
       key: 'category',
       width: 120,
       render: (_: string, record: Holiday) => {
-        console.log('Category render:', {
-          category: record.category,
-          displayName: record.categoryDisplayName,
-          colorHex: record.categoryColorHex,
-        });
         return (
           <HolidayCategoryTag
             categoryCode={record.category}

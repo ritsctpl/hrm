@@ -51,35 +51,49 @@ export default function HrmHolidayLanding() {
 
   const permissions = useHolidayPermissions(userRole);
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      if (!site) return;
-      setGroupsLoading(true);
-      setGroupsError(null);
-      try {
-        const res = await HrmHolidayService.listGroups({
-          site,
-          year: searchParams.year,
-          status: searchParams.status,
-          requestingUserRole: '',
-          buHandle: searchParams.buHandle,
-        });
-        
-        // Handle both wrapped and unwrapped responses
-        const data = res?.data || res;
-        const groups = Array.isArray(data) ? data : [];
-        setGroups(groups.map((g: HolidayGroup) => ({ ...g, mappings: g.mappings ?? [] })));
-      } catch (error) {
-        console.error('Failed to load holiday groups:', error);
-        const errMsg = 'Failed to load holiday groups';
-        setGroupsError(errMsg);
-        message.error(errMsg);
-      } finally {
-        setGroupsLoading(false);
+  const fetchGroups = async () => {
+    if (!site) return;
+    setGroupsLoading(true);
+    setGroupsError(null);
+    try {
+      const res = await HrmHolidayService.listGroups({
+        site,
+        year: searchParams.year,
+        status: searchParams.status,
+        requestingUserRole: '',
+        buHandle: searchParams.buHandle,
+      });
+      
+      // Handle both wrapped and unwrapped responses
+      const data = res?.data || res;
+      let groups = Array.isArray(data) ? data : [];
+      
+      // Apply client-side search filter if search term exists
+      if (searchParams.search && searchParams.search.trim()) {
+        const searchLower = searchParams.search.toLowerCase().trim();
+        groups = groups.filter((g: HolidayGroup) => 
+          g.groupName?.toLowerCase().includes(searchLower)
+        );
       }
-    };
+      
+      setGroups(groups.map((g: HolidayGroup) => ({ ...g, mappings: g.mappings ?? [] })));
+      
+      // BUG-003 FIX: Clear selected group if it's not in the filtered results
+      if (selectedGroup && !groups.find((g: HolidayGroup) => g.handle === selectedGroup.handle)) {
+        selectGroup(null);
+      }
+    } catch (error) {
+      const errMsg = 'Failed to load holiday groups';
+      setGroupsError(errMsg);
+      message.error(errMsg);
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchGroups();
-  }, [site, searchParams.year, searchParams.status, searchParams.buHandle, userRole]);
+  }, [site, searchParams.year, searchParams.status, searchParams.buHandle, searchParams.search, userRole]);
 
   const handleGroupCreated = (group: HolidayGroup) => {
     closeGroupCreateModal();
@@ -90,8 +104,8 @@ export default function HrmHolidayLanding() {
   const handleDuplicated = (handle: string) => {
     closeDuplicateModal();
     message.success('Group duplicated successfully');
-    // Refresh by re-triggering the effect via setSearchParams no-op
-    setSearchParams({ year: searchParams.year });
+    // Refresh groups list
+    fetchGroups();
   };
 
   const handleEditGroup = () => {
@@ -126,7 +140,6 @@ export default function HrmHolidayLanding() {
           setGroups(groups.filter(g => g.handle !== selectedGroup.handle));
           selectGroup(null);
         } catch (error) {
-          console.error('Failed to delete holiday group:', error);
           message.error('Failed to delete holiday group');
         }
       },
@@ -190,11 +203,10 @@ export default function HrmHolidayLanding() {
           onClose={closeHolidayCreateModal}
           onCreated={() => {
             closeHolidayCreateModal();
-            message.success('Holiday created successfully');
-            // Refresh the selected group if one is selected
-            if (selectedGroup) {
-              setSearchParams({ year: searchParams.year });
-            }
+            // Clear selected group to close right panel
+            selectGroup(null);
+            // Refresh groups list to update counts
+            fetchGroups();
           }}
         />
       )}

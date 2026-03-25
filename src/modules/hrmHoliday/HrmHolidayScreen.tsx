@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
-import { SendOutlined, LockOutlined, UnlockOutlined, ApartmentOutlined, UploadOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, ApartmentOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
 import HolidayCalendarView from './components/organisms/HolidayCalendarView';
@@ -128,12 +128,6 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
       message.error('Failed to unlock group');
     }
   };
-
-  console.log('HrmHolidayScreen permissions:', {
-    canEdit: permissions.canEdit,
-    canDelete: permissions.canDelete,
-    groupStatus: group.status,
-  });
 
   const tabItems = [
     {

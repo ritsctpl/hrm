@@ -4,7 +4,6 @@ import { Select, Input, Button, Space } from 'antd';
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { HolidayGroupSearchBarProps } from '../../types/ui.types';
@@ -22,6 +21,7 @@ export default function HolidayGroupSearchBar({
   onEditGroup,
   onDeleteGroup,
   onDuplicateYear,
+  onSettings,
   canManageSettings,
   hasSelectedGroup,
 }: HolidayGroupSearchBarProps) {
@@ -38,12 +38,13 @@ export default function HolidayGroupSearchBar({
           placeholder="Year"
         />
         <Select
-          value={searchParams.status}
-          onChange={(status) => onSearchChange({ status })}
+          value={searchParams.status || undefined}
+          onChange={(status) => onSearchChange({ status: status || undefined })}
           allowClear
           placeholder="All Status"
           style={{ width: 140 }}
           options={[
+            { value: undefined, label: 'All Status' },
             { value: HOLIDAY_GROUP_STATUSES.DRAFT, label: 'Draft' },
             { value: HOLIDAY_GROUP_STATUSES.PUBLISHED, label: 'Published' },
             { value: HOLIDAY_GROUP_STATUSES.LOCKED, label: 'Locked' },
@@ -82,9 +83,6 @@ export default function HolidayGroupSearchBar({
           <Button icon={<ContentCopyIcon style={{ fontSize: 16 }} />} onClick={onDuplicateYear}>
             Dup Year
           </Button>
-        )}
-        {canManageSettings && (
-          <Button icon={<SettingsIcon style={{ fontSize: 16 }} />}>Settings</Button>
         )}
       </Space>
     </div>

@@ -29,27 +29,39 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       setSaving(true);
       
       const dateStr = values.date ? dayjs(values.date).format('YYYY-MM-DD') : '';
+      const groupHandles = Array.isArray(values.groupHandle) ? values.groupHandle : [values.groupHandle];
       
-      const res = await HrmHolidayService.createHoliday({
-        site,
-        groupHandle: values.groupHandle,
-        name: values.name,
-        date: dateStr,
-        category: values.category || 'NATIONAL',
-        reason: values.description,
-        createdBy: userId,
-      }) as any as HolidayResponse;
+      // Create holiday for each selected group
+      const results = await Promise.allSettled(
+        groupHandles.map(groupHandle =>
+          HrmHolidayService.createHoliday({
+            site,
+            groupHandle,
+            name: values.name,
+            date: dateStr,
+            category: values.category || 'NATIONAL',
+            reason: values.description,
+            createdBy: userId,
+          })
+        )
+      );
       
-      // Response is unwrapped by interceptor
-      if (res && res.handle) {
-        message.success('Holiday created successfully');
+      // Count successes and failures
+      const successes = results.filter(r => r.status === 'fulfilled').length;
+      const failures = results.filter(r => r.status === 'rejected').length;
+      
+      if (successes > 0) {
+        if (failures === 0) {
+          message.success(`Holiday created successfully in ${successes} group${successes > 1 ? 's' : ''}`);
+        } else {
+          message.warning(`Holiday created in ${successes} group${successes > 1 ? 's' : ''}, failed in ${failures}`);
+        }
         form.resetFields();
         onCreated();
       } else {
-        message.error('Failed to create holiday');
+        message.error('Failed to create holiday in all selected groups');
       }
     } catch (error) {
-      console.error('Failed to create holiday:', error);
       message.error('Failed to create holiday');
     } finally {
       setSaving(false);
@@ -71,14 +83,16 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
         <Form.Item
           label="Holiday Group"
           name="groupHandle"
-          rules={[{ required: true, message: 'Please select a holiday group' }]}
+          rules={[{ required: true, message: 'Please select at least one holiday group' }]}
         >
           <Select
-            placeholder="Select holiday group"
+            mode="multiple"
+            placeholder="Select holiday group(s)"
             options={groups.map(g => ({
               value: g.handle,
               label: `${g.groupName} (${g.year})`,
             }))}
+            maxTagCount="responsive"
           />
         </Form.Item>
         
