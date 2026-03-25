@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import { parseCookies } from "nookies";
 import { PolicyFormDrawerProps } from "../../types/ui.types";
 import { HrmPolicyService } from "../../services/hrmPolicyService";
-import { HrmOrganizationService } from "../../../hrmOrganization/services/hrmOrganizationService";
 import { POLICY_DOC_TYPE_LABELS } from "../../utils/constants";
 import { useHrmPolicyStore } from "../../stores/hrmPolicyStore";
 
@@ -129,11 +128,9 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
         }
       }
       
-      message.success(editPolicy ? "Policy updated" : "Policy created");
+      message.success(editPolicy ? "Policy updated successfully" : "Policy created successfully");
       onSaved();
     } catch (error: any) {
-      console.error("Save error:", error);
-      
       // Extract error message from API response
       let errorMessage = "Failed to save policy";
       
@@ -154,6 +151,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       }
       
       message.error(errorMessage);
+      console.error("Policy save failed:", errorMessage, error);
     } finally {
       setSaving(false);
     }

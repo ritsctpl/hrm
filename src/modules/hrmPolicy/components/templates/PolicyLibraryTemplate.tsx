@@ -69,7 +69,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
           placeholder="Search policies..."
           value={searchText}
           onChange={(e) => onSearch(e.target.value)}
-          onSearch={onSearch}
+          onSearch={(value) => onSearch(value)}
           style={{ width: 240 }}
           allowClear
         />
