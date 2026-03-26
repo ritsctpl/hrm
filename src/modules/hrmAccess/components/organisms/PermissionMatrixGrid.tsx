@@ -27,11 +27,45 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
     return roles;
   }, [roles, roleFilter]);
 
+  // Create a map of moduleCode to moduleName for lookup
+  const moduleNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    matrixData.forEach((row) => {
+      if (row.moduleCode && row.moduleName) {
+        map.set(row.moduleCode, row.moduleName);
+      }
+    });
+    return map;
+  }, [matrixData]);
+
+  // Group permissions by module and object
+  const groupedData = useMemo(() => {
+    const groups = new Map<string, PermissionsMatrixResponse[]>();
+    
+    filteredRows.forEach((row) => {
+      const key = `${row.moduleCode}::${row.objectName || '__module__'}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(row);
+    });
+    
+    return Array.from(groups.entries()).map(([key, permissions]) => {
+      const [moduleCode, objectName] = key.split('::');
+      return {
+        moduleCode,
+        objectName: objectName === '__module__' ? null : objectName,
+        moduleName: permissions[0]?.moduleName || moduleNameMap.get(moduleCode) || moduleCode,
+        permissions,
+      };
+    });
+  }, [filteredRows, moduleNameMap]);
+
   if (isLoading) {
     return <Skeleton active paragraph={{ rows: 10 }} />;
   }
 
-  if (filteredRows.length === 0) {
+  if (groupedData.length === 0) {
     return (
       <div className={styles.noData}>
         No permission data available. Select filters or load the matrix.
@@ -70,26 +104,33 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filteredRows.map((row: PermissionsMatrixResponse, rowIndex: number) => {
-            const label = row.objectName
-              ? `  > ${row.objectName}`
-              : row.moduleName;
-            const isObject = row.objectName !== null;
+          {groupedData.map((group, rowIndex) => {
+            const label = group.objectName
+              ? `${group.moduleName} > ${group.objectName}`
+              : group.moduleName;
+            const isObject = group.objectName !== null;
 
             return (
               <tr
-                key={`row-${rowIndex}-${row.moduleCode}-${row.objectName ?? '__module__'}`}
+                key={`row-${rowIndex}-${group.moduleCode}-${group.objectName ?? '__module__'}`}
                 className={isObject ? styles.objectRow : styles.moduleRow}
               >
                 <td className={styles.moduleLabel}>{label}</td>
                 {visibleRoles.flatMap((role) =>
                   PERMISSION_ACTIONS.map((action) => {
-                    const granted =
-                      (row.action === action && row.roleAccess?.[role.roleCode]) ||
-                      (row.rolesWithAccess?.includes(role.roleCode) ?? false);
+                    // Find if this role has this action for this module/object
+                    const hasPermission = group.permissions.some((perm) => {
+                      const actionMatch = perm.action === action;
+                      const roleHasAccess = 
+                        perm.roleAccess?.[role.roleCode] || 
+                        perm.rolesWithAccess?.includes(role.roleCode) ||
+                        false;
+                      return actionMatch && roleHasAccess;
+                    });
+                    
                     return (
-                      <td key={`${row.moduleCode}-${row.objectName ?? '__module__'}-${role.roleCode}-${action}`} className={styles.matrixCell}>
-                        {granted ? (
+                      <td key={`${group.moduleCode}-${group.objectName ?? '__module__'}-${role.roleCode}-${action}`} className={styles.matrixCell}>
+                        {hasPermission ? (
                           <CheckCircleOutlinedIcon
                             className={styles.grantedIcon}
                             fontSize="small"

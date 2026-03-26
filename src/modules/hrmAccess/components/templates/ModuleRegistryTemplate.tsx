@@ -135,8 +135,27 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
     try {
       const values = await form.validateFields();
       if (editingHandle) {
+        // Update the module
         await HrmAccessService.updateModule(editingHandle, { ...values, site });
-        message.success('Module updated');
+        
+        // If there are default permission objects, create permissions for them
+        // (This will create permissions for any new objects added)
+        if (values.defaultPermissionObjects && values.defaultPermissionObjects.length > 0) {
+          try {
+            await HrmAccessService.createPermissionsForModule(
+              site,
+              values.moduleCode,
+              values.defaultPermissionObjects,
+              user?.id ?? 'system'
+            );
+            message.success('Module updated and permissions synchronized');
+          } catch (permError) {
+            console.error('Failed to create/update permissions:', permError);
+            message.warning('Module updated but some permissions may have failed');
+          }
+        } else {
+          message.success('Module updated');
+        }
       } else {
         const payload = {
           site,
@@ -148,8 +167,27 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           isActive: values.isActive !== false,
           createdBy: user?.id ?? 'system',
         };
+        
+        // Create the module
         await HrmAccessService.createModule(payload);
-        message.success('Module created');
+        
+        // If there are default permission objects, create permissions for them
+        if (values.defaultPermissionObjects && values.defaultPermissionObjects.length > 0) {
+          try {
+            await HrmAccessService.createPermissionsForModule(
+              site,
+              values.moduleCode,
+              values.defaultPermissionObjects,
+              user?.id ?? 'system'
+            );
+            message.success('Module and permissions created successfully');
+          } catch (permError) {
+            console.error('Failed to create permissions:', permError);
+            message.warning('Module created but some permissions may have failed');
+          }
+        } else {
+          message.success('Module created');
+        }
       }
       setModalOpen(false);
       form.resetFields();
