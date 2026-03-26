@@ -18,6 +18,17 @@
   overflow: hidden;
 }
 
+.leftPanelFullWidth {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
 .leftToolbar {
   display: flex;
   gap: 8px;
@@ -53,6 +64,18 @@
 }
 
 .rightPanel {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rightPanelFullWidth {
   flex: 1;
   background: #fff;
   border-radius: 8px;

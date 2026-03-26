@@ -159,53 +159,52 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
 
   return (
     <div className={styles.roleTemplate}>
-      <div className={styles.leftPanel}>
-        <div className={styles.leftToolbar}>
-          <RbacSearchBar
-            value={role.searchText}
-            onChange={store.setRoleSearch}
-            placeholder="Search roles..."
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => store.setRoleCreating(true)}
-            className={styles.addButton}
-          >
-            New Role
-          </Button>
-        </div>
-
-        {role.selected && !role.isCreating && (
-          <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+      {!showRightPanel ? (
+        <div className={styles.leftPanelFullWidth}>
+          <div className={styles.leftToolbar}>
+            <RbacSearchBar
+              value={role.searchText}
+              onChange={store.setRoleSearch}
+              placeholder="Search roles..."
+            />
             <Button
-              size="small"
-              icon={<CopyOutlined />}
-              onClick={() => {
-                setCloneNewName(`${role.selected!.roleName} (Copy)`);
-                setCloneModalOpen(true);
-              }}
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => store.setRoleCreating(true)}
+              className={styles.addButton}
             >
-              Clone
+              New Role
             </Button>
           </div>
-        )}
 
-        <RoleTable
-          data={filteredRoles}
-          isLoading={role.isLoading}
-          selectedHandle={role.selected?.handle ?? null}
-          searchText={role.searchText}
-          onRowClick={handleSelectRole}
-        />
+          <RoleTable
+            data={filteredRoles}
+            isLoading={role.isLoading}
+            selectedHandle={role.selected?.handle ?? null}
+            searchText={role.searchText}
+            onRowClick={handleSelectRole}
+          />
 
-        <div className={styles.tableFooter}>
-          Showing {filteredRoles.length} of {role.list.length}
+          <div className={styles.tableFooter}>
+            Showing {filteredRoles.length} of {role.list.length}
+          </div>
         </div>
-      </div>
-
-      <div className={styles.rightPanel}>
-        {showRightPanel ? (
+      ) : (
+        <div className={styles.rightPanelFullWidth}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Button
+              size="small"
+              onClick={() => {
+                store.selectRole(null);
+                store.clearRoleDraft();
+              }}
+            >
+              ← Back
+            </Button>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#595959' }}>
+              {role.isCreating ? 'Create New Role' : `Role: ${role.selected?.roleCode}`}
+            </span>
+          </div>
           <Tabs
             items={[
               {
@@ -246,14 +245,8 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
               },
             ]}
           />
-        ) : (
-          <RbacEmptyState
-            icon={<SafetyCertificateOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />}
-            title="No Role Selected"
-            description="Select a role from the list or create a new one."
-          />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Clone Role Modal */}
       <Modal

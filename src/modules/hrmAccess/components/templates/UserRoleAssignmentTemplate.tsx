@@ -33,27 +33,26 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       }
     };
     loadRoles();
+    
+    // Load initial user list (top 50)
+    handleSearchUsers('');
   }, [site]);
 
   const handleSearchUsers = async (query: string) => {
-    if (!query.trim()) {
-      store.setUserSearchResults([]);
-      return;
-    }
     store.setSearchingUsers(true);
     try {
       const results = await HrmAccessService.searchKeycloakUsers(site, query);
-      console.log('Search results:', results);
       const mapped = results.map((u) => ({
         id: u.id,
         displayName: `${u.firstName} ${u.lastName}`.trim() || u.username,
-        email: u.email,
-        avatarInitials: `${u.firstName?.[0] ?? ''}${u.lastName?.[0] ?? ''}`.toUpperCase(),
+        email: u.email || u.username,
+        avatarInitials: `${u.firstName?.[0] ?? ''}${u.lastName?.[0] ?? ''}`.toUpperCase() || u.username?.substring(0, 2).toUpperCase(),
       }));
       store.setUserSearchResults(mapped);
     } catch (err) {
       console.error('Search error:', err);
       notification.error({ message: 'Failed to search users.' });
+    } finally {
       store.setSearchingUsers(false);
     }
   };
@@ -94,6 +93,8 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       const payload = {
         site,
         userId: userAssignment.selectedUserId,
+        userDisplayName: userAssignment.selectedUserName,
+        userEmail: userAssignment.selectedUserEmail,
         roleCode: userAssignment.assignmentDraft.roleCode!,
         effectiveFrom: userAssignment.assignmentDraft.effectiveFrom!,
         effectiveTo: userAssignment.assignmentDraft.effectiveTo ?? null,

@@ -96,7 +96,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
               onConfirm={() => onPublish(record.handle)}
               okText="Approve"
             >
-              <Button size="small" icon={<CheckCircleOutlined />} type="primary" />
+              <Button size="small" icon={<CheckCircleOutlined />} />
             </Popconfirm>
           )}
           {record.status === "APPROVED" && (

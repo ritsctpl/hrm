@@ -78,6 +78,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
         {onSearch && (
           <Input.Search
             placeholder="Search policies..."
+            aria-label="Search policies by title, code, or description"
             value={searchText}
             onChange={(e) => onSearch(e.target.value)}
             onSearch={(value) => onSearch(value)}
@@ -88,6 +89,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
         {onCategoryFilter && (
           <Select
             placeholder="Category"
+            aria-label="Filter by policy category"
             value={filterCategoryId || undefined}
             allowClear
             onChange={(v) => onCategoryFilter(v || "")}
@@ -101,6 +103,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
         {onDocTypeFilter && (
           <Select
             placeholder="Type"
+            aria-label="Filter by document type"
             value={filterDocType || undefined}
             allowClear
             onChange={(v) => onDocTypeFilter(v || "")}
@@ -116,6 +119,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
         {onStatusFilter && (
           <Select
             placeholder="Status"
+            aria-label="Filter by policy status"
             value={filterStatus || undefined}
             allowClear
             onChange={(v) => onStatusFilter(v || "")}

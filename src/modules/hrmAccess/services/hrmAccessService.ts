@@ -194,7 +194,7 @@ export class HrmAccessService {
     site: string,
     userId: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId:"update_user_1772906240637" });
+    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId });
     return res.data;
   }
 
@@ -360,22 +360,40 @@ export class HrmAccessService {
     return res.data;
   }
 
-  // ---- Keycloak User Search ----
+  // ---- User Search (Top 50) ----
 
   static async searchKeycloakUsers(
     site: string,
     query: string
   ): Promise<{ id: string; username: string; firstName: string; lastName: string; email: string }[]> {
     try {
-      const res = await api.post(`${BASE}/users/search`, { site, query });
-      // Handle both array and object response
-      if (Array.isArray(res.data)) {
-        return res.data;
+      const res = await api.post('/user-service/retrieveTop50/', {});
+      
+      // Handle response format: { userList: [...] }
+      const userList = res.data?.userList || [];
+      
+      // Map the response to expected format
+      const mappedUsers = userList.map((user: any) => ({
+        id: user.user || user.username,
+        username: user.user || user.username,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.user || user.username, // Use username as email if not provided
+      }));
+      
+      // Filter by query if provided
+      if (query && query.trim()) {
+        const searchLower = query.toLowerCase().trim();
+        return mappedUsers.filter((user: any) => 
+          user.firstName?.toLowerCase().includes(searchLower) ||
+          user.lastName?.toLowerCase().includes(searchLower) ||
+          user.username?.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchLower)
+        );
       }
-      if (res.data?.content && Array.isArray(res.data.content)) {
-        return res.data.content;
-      }
-      return res.data || [];
+      
+      return mappedUsers;
     } catch (error) {
       console.error('User search error:', error);
       return [];

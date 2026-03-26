@@ -70,10 +70,6 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
     }
   });
 
-  console.log('PolicyLibraryGrid - Total policies:', policies.length);
-  console.log('PolicyLibraryGrid - Grouped by categoryName:', Object.entries(grouped).map(([cat, pols]) => ({ category: cat, count: pols.length })));
-  console.log('PolicyLibraryGrid - Uncategorized count:', uncategorized.length);
-
   return (
     <>
       {Object.entries(grouped).map(([categoryName, categoryPolicies]) => (

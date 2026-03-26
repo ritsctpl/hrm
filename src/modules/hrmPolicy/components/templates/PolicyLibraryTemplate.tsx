@@ -67,6 +67,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
       <Space wrap>
         <Input.Search
           placeholder="Search policies..."
+          aria-label="Search policies by title, code, or description"
           value={searchText}
           onChange={(e) => onSearch(e.target.value)}
           onSearch={(value) => onSearch(value)}
@@ -75,6 +76,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         />
         <Select
           placeholder="Category"
+          aria-label="Filter by policy category"
           value={filterCategoryId || undefined}
           allowClear
           onChange={(v) => onCategoryFilter(v || "")}
@@ -86,6 +88,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         </Select>
         <Select
           placeholder="Type"
+          aria-label="Filter by document type"
           value={filterDocType || undefined}
           allowClear
           onChange={(v) => onDocTypeFilter(v || "")}
@@ -99,6 +102,7 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
         </Select>
         <Select
           placeholder="Status"
+          aria-label="Filter by policy status"
           value={filterStatus || undefined}
           allowClear
           onChange={(v) => onStatusFilter(v || "")}
@@ -114,11 +118,12 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
       </Space>
       <Space>
         <Segmented
+          aria-label="Toggle between grid and list view"
           value={viewMode}
           onChange={(v) => onViewModeChange(v as "grid" | "list")}
           options={[
-            { value: "grid", icon: <AppstoreOutlined /> },
-            { value: "list", icon: <BarsOutlined /> },
+            { value: "grid", icon: <AppstoreOutlined />, label: "Grid view" },
+            { value: "list", icon: <BarsOutlined />, label: "List view" },
           ]}
         />
         {canAdmin && (

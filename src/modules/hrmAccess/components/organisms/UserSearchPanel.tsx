@@ -11,16 +11,15 @@ const UserSearchPanel: React.FC<UserSearchPanelProps> = ({
   selectedUserId,
   onSelectUser,
 }) => {
-  if (!searchText.trim()) {
-    return (
-      <Empty
-        description="Enter a name or email to search"
-        style={{ marginTop: 40 }}
-      />
-    );
-  }
-
   if (searchResults.length === 0 && !isSearching) {
+    if (!searchText.trim()) {
+      return (
+        <Empty
+          description="Enter a name or email to search"
+          style={{ marginTop: 40 }}
+        />
+      );
+    }
     return (
       <Empty
         description="No users found"

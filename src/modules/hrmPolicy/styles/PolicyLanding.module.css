@@ -116,3 +116,8 @@
   align-items: center;
   height: 200px;
 }
+
+/* Hide tab overflow button when not needed */
+.landing :global(.ant-tabs-nav-more) {
+  display: none !important;
+}

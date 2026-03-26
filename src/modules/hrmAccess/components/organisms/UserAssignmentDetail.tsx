@@ -39,11 +39,11 @@ const UserAssignmentDetail: React.FC<UserAssignmentDetailProps> = ({
     }
     if ('effectiveFrom' in changedValues) {
       const dateValue = changedValues.effectiveFrom as dayjs.Dayjs | null;
-      updates.effectiveFrom = dateValue ? dateValue.format('YYYY-MM-DD') : null;
+      updates.effectiveFrom = dateValue ? dateValue.format('YYYY-MM-DDTHH:mm:ss') : null;
     }
     if ('effectiveTo' in changedValues) {
       const dateValue = changedValues.effectiveTo as dayjs.Dayjs | null;
-      updates.effectiveTo = dateValue ? dateValue.format('YYYY-MM-DD') : null;
+      updates.effectiveTo = dateValue ? dateValue.format('YYYY-MM-DDTHH:mm:ss') : null;
     }
     if ('assignmentNotes' in changedValues) {
       updates.assignmentNotes = changedValues.assignmentNotes;
