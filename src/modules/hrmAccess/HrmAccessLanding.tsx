@@ -61,7 +61,7 @@ const HrmAccessLanding: React.FC = () => {
     {
       key: 'permissionMatrix',
       label: 'Permissions Matrix',
-      children: <PermissionMatrixTemplate site={site} />,
+      children: <PermissionMatrixTemplate site={site} isActive={activeMainTab === 'permissionMatrix'} />,
     },
     {
       key: 'userRoleAssignment',

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Table, Button, Input, message, Empty, Card, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Select, message, Empty, Card, Tag, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import type { ColumnsType } from 'antd/es/table';
@@ -11,17 +11,47 @@ interface Props {
   site: string;
 }
 
+interface UserOption {
+  value: string;
+  label: string;
+  email: string;
+}
+
 const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
   const [userAccessData, setUserAccessData] = useState<UserAccessReportResponse[]>([]);
   const [orphanedData, setOrphanedData] = useState<UserRoleAssignmentResponse[]>([]);
   const [loadingAccess, setLoadingAccess] = useState(false);
   const [loadingOrphaned, setLoadingOrphaned] = useState(false);
-  const [searchUserId, setSearchUserId] = useState('');
+  const [searchUserId, setSearchUserId] = useState<string | undefined>(undefined);
+  const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+
+  // Load initial users on mount
+  useEffect(() => {
+    loadUsers('');
+  }, [site]);
+
+  const loadUsers = async (query: string) => {
+    setSearchingUsers(true);
+    try {
+      const results = await HrmAccessService.searchKeycloakUsers(site, query);
+      const mapped = results.map((u) => ({
+        value: u.id,
+        label: `${u.firstName} ${u.lastName}`.trim() || u.username,
+        email: u.email || u.username,
+      }));
+      setUserOptions(mapped);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
 
   const loadUserAccessReport = async () => {
     setLoadingAccess(true);
     try {
-      const data = await HrmAccessService.getUserAccessReport(site, searchUserId || undefined);
+      const data = await HrmAccessService.getUserAccessReport(site, searchUserId);
       setUserAccessData(data);
     } catch {
       message.error('Failed to load user access report');
@@ -49,6 +79,8 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
       key: `${user.userId}-${idx}`,
       userId: user.userId,
       userName: user.userDisplayName,
+      isFirstRow: idx === 0,
+      rowSpan: idx === 0 ? user.permissions.length : 0,
       moduleCode: p.moduleCode,
       moduleName: p.moduleName,
       objectName: p.objectName,
@@ -59,12 +91,17 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
   );
 
   const userAccessColumns: ColumnsType<(typeof flattenedAccessData)[0]> = [
-    { title: 'User', dataIndex: 'userName', width: 160 },
     { title: 'Module', dataIndex: 'moduleName', width: 160 },
+    { 
+      title: 'Object', 
+      dataIndex: 'objectName', 
+      width: 140,
+      render: (text) => text || '--',
+    },
     {
-      title: 'Permission',
-      key: 'permission',
-      render: (_, r) => `${r.objectName ? `${r.objectName}.` : ''}${r.action}`,
+      title: 'Action',
+      dataIndex: 'action',
+      width: 100,
     },
     {
       title: 'Granted By',
@@ -94,13 +131,27 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
       {/* User Access Report */}
       <Card title="User Access Report" size="small">
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          <Input
-            placeholder="Filter by user ID (optional)"
+          <Select
+            showSearch
+            placeholder="Select a user (optional)"
             value={searchUserId}
-            onChange={(e) => setSearchUserId(e.target.value)}
-            style={{ maxWidth: 300 }}
+            onChange={(value) => setSearchUserId(value)}
+            onSearch={(value) => loadUsers(value)}
+            filterOption={false}
+            notFoundContent={searchingUsers ? <Spin size="small" /> : <Empty description="No users found" />}
+            style={{ minWidth: 300 }}
             allowClear
-          />
+            optionLabelProp="label"
+          >
+            {userOptions.map((user) => (
+              <Select.Option key={user.value} value={user.value} label={user.label}>
+                <div>
+                  <div style={{ fontWeight: 500 }}>{user.label}</div>
+                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>{user.email}</div>
+                </div>
+              </Select.Option>
+            ))}
+          </Select>
           <Button type="primary" icon={<SearchOutlined />} onClick={loadUserAccessReport} loading={loadingAccess}>
             Generate Report
           </Button>

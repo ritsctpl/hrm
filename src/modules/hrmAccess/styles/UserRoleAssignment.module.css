@@ -15,16 +15,21 @@
   border-radius: 4px;
   padding: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
+  max-height: calc(100vh - 200px);
 }
 
 .searchSection {
   flex-shrink: 0;
 }
 
-.userSearchList {
+.userListContainer {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
+}
+
+.userSearchList {
+  overflow-y: visible;
 }
 
 .userSearchItem {

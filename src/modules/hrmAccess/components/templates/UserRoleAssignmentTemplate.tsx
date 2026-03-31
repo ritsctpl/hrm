@@ -151,19 +151,21 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
           />
         </div>
 
-        <Spin spinning={userAssignment.isSearchingUsers}>
-          <UserSearchPanel
-            searchText={userAssignment.userSearchText}
-            onSearchChange={(text) => {
-              store.setUserSearchText(text);
-              handleSearchUsers(text);
-            }}
-            searchResults={userAssignment.userSearchResults}
-            isSearching={userAssignment.isSearchingUsers}
-            selectedUserId={userAssignment.selectedUserId}
-            onSelectUser={handleSelectUser}
-          />
-        </Spin>
+        <div className={styles.userListContainer}>
+          <Spin spinning={userAssignment.isSearchingUsers}>
+            <UserSearchPanel
+              searchText={userAssignment.userSearchText}
+              onSearchChange={(text) => {
+                store.setUserSearchText(text);
+                handleSearchUsers(text);
+              }}
+              searchResults={userAssignment.userSearchResults}
+              isSearching={userAssignment.isSearchingUsers}
+              selectedUserId={userAssignment.selectedUserId}
+              onSelectUser={handleSelectUser}
+            />
+          </Spin>
+        </div>
       </div>
 
       <div className={styles.rightPanel}>

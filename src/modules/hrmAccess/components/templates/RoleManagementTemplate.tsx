@@ -85,31 +85,27 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
     }
   };
 
-  const handleDeleteRole = () => {
-    if (role.selected?.isSystemRole) {
+  const handleDeleteRole = async (roleToDelete?: Role) => {
+    const targetRole = roleToDelete || role.selected;
+    if (!targetRole) return;
+    
+    if (targetRole.isSystemRole) {
       notification.warning({ message: 'System roles cannot be deleted.' });
       return;
     }
-    Modal.confirm({
-      title: 'Delete Role',
-      content: `Are you sure you want to delete "${role.selected?.roleCode}"? This action cannot be undone.`,
-      okType: 'danger',
-      okText: 'Delete',
-      onOk: async () => {
-        store.setRoleDeleting(true);
-        try {
-          await HrmAccessService.deleteRole(site, role.selected!.roleCode, user?.id ?? '');
-          notification.success({ message: 'Role deleted.' });
-          const refreshed = await HrmAccessService.fetchAllRoles(site);
-          store.setRoles(refreshed);
-          store.selectRole(null);
-        } catch (err: unknown) {
-          notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
-        } finally {
-          store.setRoleDeleting(false);
-        }
-      },
-    });
+    
+    try {
+      await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
+      notification.success({ message: 'Role deleted successfully.' });
+      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      store.setRoles(refreshed);
+      // Clear selection if deleted role was selected
+      if (role.selected?.handle === targetRole.handle) {
+        store.selectRole(null);
+      }
+    } catch (err: unknown) {
+      notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
+    }
   };
 
   const handleToggleStatus = async () => {
@@ -183,6 +179,7 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
             selectedHandle={role.selected?.handle ?? null}
             searchText={role.searchText}
             onRowClick={handleSelectRole}
+            onDelete={handleDeleteRole}
           />
 
           <div className={styles.tableFooter}>

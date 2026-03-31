@@ -1,26 +1,28 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { notification } from 'antd';
 import PermissionMatrixToolbar from '../organisms/PermissionMatrixToolbar';
 import PermissionMatrixGrid from '../organisms/PermissionMatrixGrid';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
 import { HrmAccessService } from '../../services/hrmAccessService';
-import type { PermissionMatrixTemplateProps } from '../../types/ui.types';
 import type { PermissionsMatrixResponse } from '../../types/api.types';
 import styles from '../../styles/PermissionMatrix.module.css';
 
-// Local state for raw matrix rows since store holds transformed data
-import { useState } from 'react';
+interface PermissionMatrixTemplateProps {
+  site: string;
+  isActive?: boolean;
+}
 
-const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ site }) => {
+const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ site, isActive }) => {
   const store = useHrmAccessStore();
   const { permissionMatrix, permission, role } = store;
 
   const [rawMatrixData, setRawMatrixData] = useState<PermissionsMatrixResponse[]>([]);
 
+  // Reload matrix data when tab becomes active
   useEffect(() => {
-    if (!site) return;
+    if (!site || !isActive) return;
 
     store.setMatrixLoading(true);
     HrmAccessService.fetchPermissionsMatrix(site, null, null)
@@ -32,7 +34,7 @@ const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ sit
         notification.error({ message: 'Failed to load permission matrix.' });
         store.setMatrixLoading(false);
       });
-  }, [site]);
+  }, [site, isActive]);
 
   const handleExport = async () => {
     try {

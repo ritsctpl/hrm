@@ -73,6 +73,7 @@ export interface RoleTableProps {
   selectedHandle: string | null;
   searchText: string;
   onRowClick: (role: Role) => void;
+  onDelete?: (role: Role) => void;
 }
 
 export interface RoleFormProps {

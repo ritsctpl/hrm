@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Table } from 'antd';
+import { Table, Button, Popconfirm } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Role } from '../../types/domain.types';
 import type { RoleTableProps } from '../../types/ui.types';
@@ -14,6 +15,7 @@ const RoleTable: React.FC<RoleTableProps> = ({
   isLoading,
   selectedHandle,
   onRowClick,
+  onDelete,
 }) => {
   const columns: ColumnsType<Role> = [
     {
@@ -53,6 +55,36 @@ const RoleTable: React.FC<RoleTableProps> = ({
       key: 'permissionCount',
       width: 65,
       align: 'right',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 80,
+      align: 'center',
+      render: (_, record) => (
+        <Popconfirm
+          title="Delete Role"
+          description={`Are you sure you want to delete "${record.roleName}"?`}
+          onConfirm={(e) => {
+            e?.stopPropagation();
+            onDelete?.(record);
+          }}
+          okText="Delete"
+          cancelText="Cancel"
+          okButtonProps={{ danger: true }}
+          disabled={record.isSystemRole}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<DeleteOutlined />}
+            danger
+            disabled={record.isSystemRole}
+            onClick={(e) => e.stopPropagation()}
+            title={record.isSystemRole ? 'System roles cannot be deleted' : 'Delete role'}
+          />
+        </Popconfirm>
+      ),
     },
   ];
 

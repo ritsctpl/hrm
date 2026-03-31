@@ -138,23 +138,63 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         // Update the module
         await HrmAccessService.updateModule(editingHandle, { ...values, site });
         
-        // If there are default permission objects, create permissions for them
-        // (This will create permissions for any new objects added)
+        // Handle permission objects synchronization
         if (values.defaultPermissionObjects && values.defaultPermissionObjects.length > 0) {
           try {
-            await HrmAccessService.createPermissionsForModule(
-              site,
-              values.moduleCode,
-              values.defaultPermissionObjects,
-              user?.id ?? 'system'
-            );
+            // Get existing permissions for this module
+            const existingPermissions = await HrmAccessService.fetchPermissionsByModule(values.moduleCode);
+            const existingObjects = existingPermissions.map(p => p.objectName);
+            const newObjects = values.defaultPermissionObjects;
+            
+            // Find objects to delete (in existing but not in new)
+            const objectsToDelete = existingObjects.filter(obj => !newObjects.includes(obj));
+            
+            // Find objects to create (in new but not in existing)
+            const objectsToCreate = newObjects.filter(obj => !existingObjects.includes(obj));
+            
+            // Delete removed objects
+            if (objectsToDelete.length > 0) {
+              const permissionsToDelete = existingPermissions.filter(p => 
+                objectsToDelete.includes(p.objectName)
+              );
+              await Promise.all(
+                permissionsToDelete.map(perm =>
+                  HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+                )
+              );
+            }
+            
+            // Create new objects
+            if (objectsToCreate.length > 0) {
+              await HrmAccessService.createPermissionsForModule(
+                site,
+                values.moduleCode,
+                objectsToCreate,
+                user?.id ?? 'system'
+              );
+            }
+            
             message.success('Module updated and permissions synchronized');
           } catch (permError) {
-            console.error('Failed to create/update permissions:', permError);
+            console.error('Failed to sync permissions:', permError);
             message.warning('Module updated but some permissions may have failed');
           }
         } else {
-          message.success('Module updated');
+          // If no default objects, delete all existing permissions for this module
+          try {
+            const existingPermissions = await HrmAccessService.fetchPermissionsByModule(values.moduleCode);
+            if (existingPermissions.length > 0) {
+              await Promise.all(
+                existingPermissions.map(perm =>
+                  HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+                )
+              );
+            }
+            message.success('Module updated and permissions cleared');
+          } catch (permError) {
+            console.error('Failed to clear permissions:', permError);
+            message.warning('Module updated but failed to clear permissions');
+          }
         }
       } else {
         const payload = {
@@ -198,12 +238,26 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
     }
   };
 
-  const handleDeactivate = async (handle: string) => {
+  const handleDeactivate = async (handle: string, moduleCode: string) => {
     try {
+      // First, get all permissions for this module
+      const permissions = await HrmAccessService.fetchPermissionsByModule(moduleCode);
+      
+      // Delete all permissions for this module
+      if (permissions && permissions.length > 0) {
+        await Promise.all(
+          permissions.map((perm) =>
+            HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+          )
+        );
+      }
+      
+      // Then deactivate the module
       await HrmAccessService.deactivateModule(site, handle, user?.id ?? 'system');
-      message.success('Module deactivated');
+      message.success('Module and all associated permissions deleted');
       refreshModules();
-    } catch {
+    } catch (error) {
+      console.error('Failed to deactivate module:', error);
       message.error('Failed to deactivate module');
     }
   };
@@ -259,7 +313,11 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             }}
             style={{ marginRight: 8 }}
           />
-          <Popconfirm title="Deactivate this module?" onConfirm={() => handleDeactivate(record.handle)}>
+          <Popconfirm 
+            title="Delete this module and all its permissions?" 
+            description="This will permanently delete all permissions associated with this module."
+            onConfirm={() => handleDeactivate(record.handle, record.moduleCode)}
+          >
             <Button size="small" icon={<MdDelete />} danger />
           </Popconfirm>
         </>
