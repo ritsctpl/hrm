@@ -77,7 +77,11 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
     const errs: Record<string, string> = {};
     if (!formData.bankName.trim()) errs.bankName = 'Bank name is required';
     if (!formData.branchName.trim()) errs.branchName = 'Branch name is required';
-    if (!formData.accountNumber.trim()) errs.accountNumber = 'Account number is required';
+    if (!formData.accountNumber.trim()) {
+      errs.accountNumber = 'Account number is required';
+    } else if (formData.accountNumber.trim().length < 10) {
+      errs.accountNumber = 'Account number must be at least 10 digits';
+    }
     if (!formData.ifscCode.trim()) errs.ifscCode = 'IFSC code is required';
     if (!formData.accountType) errs.accountType = 'Account type is required';
 

@@ -44,7 +44,7 @@ export const validateCIN = (cin: string): string | null => {
   return null;
 };
 
-export const validateGSTIN = (gstin: string): string | null => {
+export const validateGSTIN = (gstin: string, pan?: string): string | null => {
   // Only validate format if GSTIN has a value (not null or empty string)
   if (!gstin || !gstin.trim()) {
     return null; // Optional field - no error if empty
@@ -52,6 +52,16 @@ export const validateGSTIN = (gstin: string): string | null => {
   if (!GSTIN_PATTERN.test(gstin.toUpperCase())) {
     return 'GSTIN must be 15 characters (e.g., 33AABCA0633D1Z5)';
   }
+  
+  // If PAN is provided, validate that it matches the PAN embedded in GSTIN (positions 3-12)
+  if (pan && pan.trim()) {
+    const gstinPan = gstin.substring(2, 12).toUpperCase(); // Extract PAN from GSTIN
+    const enteredPan = pan.trim().toUpperCase();
+    if (gstinPan !== enteredPan) {
+      return `GSTIN contains PAN "${gstinPan}" which does not match entered PAN "${enteredPan}"`;
+    }
+  }
+  
   return null;
 };
 
@@ -117,8 +127,11 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
   const cinError = validateCIN(data.cin || '');
   if (cinError) errors.cin = cinError;
 
-  // GSTIN is NO LONGER required - REMOVED
-  // Do NOT validate GSTIN
+  // GSTIN validation (optional field, but if provided must be valid format and match PAN)
+  if (data.gstIn && data.gstIn.trim()) {
+    const gstinError = validateGSTIN(data.gstIn, data.pan);
+    if (gstinError) errors.gstIn = gstinError;
+  }
 
   // Email validation
   if (data.officialEmail) {
@@ -223,6 +236,7 @@ export const validateBusinessUnit = (data: any): Record<string, string> => {
   if (!data.gstin?.trim()) {
     errors.gstin = 'GSTIN is required';
   } else {
+    // Business units don't have separate PAN field, so just validate format
     const gstinError = validateGSTIN(data.gstin);
     if (gstinError) errors.gstin = gstinError;
   }
