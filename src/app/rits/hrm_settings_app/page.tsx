@@ -1,7 +1,7 @@
 'use client';
 
-import HrmSettingsPage from '@/modules/hrmSettings/HrmSettingsPage';
+import HrmSettingsLanding from '@/modules/hrmSettings/HrmSettingsLanding';
 
 export default function HrmSettingsApp() {
-  return <HrmSettingsPage />;
+  return <HrmSettingsLanding />;
 }

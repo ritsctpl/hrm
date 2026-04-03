@@ -32,6 +32,8 @@ interface ThemeContextType {
   updateThemeFromSite: (newSiteDetails: any) => Promise<void>;
   hrmThemeKey: string;
   setHrmTheme: (presetKey: string) => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -40,6 +42,16 @@ export const ThemeProviderComponent = ({ children }) => {
   const [themeData, setThemeData] = useState(DEFAULT_THEME);
   const [isInitialized, setIsInitialized] = useState(false);
   const [hrmThemeKey, setHrmThemeKey] = useState(DEFAULT_THEME_KEY);
+  const [darkMode, setDarkMode] = useState(false);
+
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode((prev) => {
+      const next = !prev;
+      document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+      try { localStorage.setItem('hrm-dark-mode', String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   /**
    * Applies HRM theme preset CSS variables to :root
@@ -205,6 +217,13 @@ export const ThemeProviderComponent = ({ children }) => {
             applyHrmPreset(preset);
           }
         } catch {}
+        try {
+          const savedDarkMode = localStorage.getItem('hrm-dark-mode');
+          if (savedDarkMode === 'true') {
+            setDarkMode(true);
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch {}
         setIsInitialized(true);
       }
     }
@@ -241,7 +260,7 @@ export const ThemeProviderComponent = ({ children }) => {
 
   return (
     <ThemeContext.Provider
-      value={{ themeData, setThemeData, updateThemeFromSite, hrmThemeKey, setHrmTheme }}
+      value={{ themeData, setThemeData, updateThemeFromSite, hrmThemeKey, setHrmTheme, darkMode, toggleDarkMode }}
     >
       <ConfigProvider theme={antdThemeConfig}>{children}</ConfigProvider>
     </ThemeContext.Provider>
