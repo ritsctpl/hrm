@@ -1,99 +1,64 @@
-/* src/app/HomePage.module.css */
-
-.container {
-  margin-top: 20px;
-  padding: 0;
-  background-color: #fafafa;
-  min-height: 100vh;
-}
-
-.appBar {
-  background-color: #124561;
-  height: 56px;
-}
-
-.toolbar {
+/* Homepage 3-panel layout */
+.homeLayout {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title {
-  color: white;
-  font-family: "Roboto", Arial, sans-serif;
-  font-weight: bold;
-  margin-left: 16px;
-}
-
-.searchField {
-  flex-grow: 1;
-  margin: 0 16px;
-  max-width: 400px;
-  background-color: #fff;
-  border-radius: 4px;
-}
-
-.userInfo {
-  display: flex;
-  align-items: center;
-  color: white;
-  margin-right: 16px;
-}
-
-.logoutButton {
-  color: white;
-  font-size: 14px;
-  padding: 6px 12px;
-  margin-left: 8px;
-}
-
-.content {
-  padding: 20px;
-}
-
-.tabPanel {
-  padding: 24px;
-}
-
-/* Futuristic mesh gradient background */
-.homeContainer {
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 64px - 32px);
   background:
     radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
     radial-gradient(ellipse at 90% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.03) 0%, transparent 70%),
     linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%);
 }
 
-/* Compact tile grid */
-.tileWrapper {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  padding: 24px 32px;
-  margin-top: 0;
-}
-
-/* Tab panel with futuristic scrollbar */
-.tabPanel {
-  height: calc(100vh - 110px);
+.centerGrid {
+  flex: 1;
+  padding: 20px 28px;
   overflow-y: auto;
-  overflow-x: hidden;
 }
 
-.tabPanel::-webkit-scrollbar {
+.centerGrid::-webkit-scrollbar {
   width: 5px;
 }
 
-.tabPanel::-webkit-scrollbar-track {
+.centerGrid::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.tabPanel::-webkit-scrollbar-thumb {
+.centerGrid::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, rgba(99,102,241,0.3), rgba(139,92,246,0.2));
   border-radius: 10px;
 }
 
-.tabPanel::-webkit-scrollbar-thumb:hover {
+.centerGrid::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgba(99,102,241,0.5), rgba(139,92,246,0.4));
+}
+
+.groupSection {
+  margin-bottom: 24px;
+}
+
+.groupLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hrm-text-secondary, #64748b);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tileWrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .homeLayout {
+    flex-direction: column;
+  }
+  .tileWrapper {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .centerGrid {
+    padding: 16px;
+  }
 }
