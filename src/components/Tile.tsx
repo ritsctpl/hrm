@@ -13,9 +13,11 @@ interface TileProps {
   description: string;
   url: string;
   activityId: string; // Ensure this is required
+  subLabel?: string;      // Short description below name
+  badgeCount?: number;    // Notification badge count
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
+const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, badgeCount }) => {
   const router = useRouter();
   const maxLength = 11;
 
@@ -38,10 +40,18 @@ const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
   return (
     <Tooltip title={description}>
       <Card className={styles.tile} onClick={handleClick}>
+        {badgeCount != null && badgeCount > 0 && (
+          <span className={styles.badge}>{badgeCount}</span>
+        )}
         <CardContent className={styles.cardContent}>
           <Typography className={styles.description} fontSize="0.9rem">
             {description}
           </Typography>
+          {subLabel && (
+            <Typography className={styles.subLabel}>
+              {subLabel}
+            </Typography>
+          )}
           <Typography variant="body2" className={styles.activityId}>
             {activityId.length > maxLength
               ? `${activityId.substring(0, maxLength)}...`
