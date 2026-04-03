@@ -38,6 +38,10 @@ import { CiSearch } from "react-icons/ci";
 import { useTheme as useAppTheme } from "./ThemeContext"; // Rename to avoid conflict with MUI useTheme
 import { CiLogin } from "react-icons/ci";
 import { DecodedToken } from "@modules/userMaintenance/types/userTypes";
+import { Bell } from "lucide-react";
+import EnhancedSearch from "./EnhancedSearch";
+import QuickSwitcher from "./QuickSwitcher";
+import UserAvatarMenu from "./UserAvatarMenu";
 const { Option } = Select;
 interface CommonAppBarProps {
   allActivities?: { description: string; url: string }[];
@@ -512,46 +516,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
             </Typography>
  
             <Box className={styles.searchBox}>
-              <Autocomplete
-                freeSolo
-                options={uniqueActivities}
-                inputValue={searchTerm}
-                value={null}
-                onInputChange={handleSearchChange}
-                onChange={(event, newValue) => {
-                  handleActivitySelect(event, newValue);
-                  setSearchTerm("");
-                  if (onSearchChange) {
-                    onSearchChange("");
-                  }
-                }}
-                filterOptions={(options, state) =>
-                  options.filter(
-                    (option) =>
-                      state.inputValue &&
-                      option
-                        .toLowerCase()
-                        .includes(state.inputValue.toLowerCase())
-                  )
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="outlined"
-                    placeholder={t("searchActivities")}
-                    style={{ borderRadius: "5px", width: "300px" }}
-                    className={styles.searchField}
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <CiSearch />,
-                      classes: {
-                        root: styles.searchFieldRoot,
-                        notchedOutline: styles.noBorder,
-                      },
-                    }}
-                  />
-                )}
-              />
+              <EnhancedSearch />
             </Box>
  
             <Box className={styles.userInfo}>
@@ -591,6 +556,13 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   </MenuItem>
                 ))}
               </Menu>
+              <IconButton
+                onClick={() => router.push('/rits/hrm_notification_app')}
+                sx={{ color: 'var(--text-color)' }}
+              >
+                <Bell size={20} />
+              </IconButton>
+              <QuickSwitcher />
               <div>
                 <Select
                   defaultValue={currentLanguage}
@@ -603,30 +575,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   <Option value="hi">हिंदी</Option>
                 </Select>
               </div>
-              <Button
-                color="inherit"
-                onClick={() => {
-                  destroyCookie(null, 'rl_user_id', { path: '/' });
-                  logout();
-                }}
-                className={styles.logoutButton}
-                style={{
-                  color: "var(--text-color)",
-                }}
-              >
-                {isSmallScreen ? (
-                  <CiLogin
-                    size={25}
-                    style={{
-                      color: "var(--text-color)",
-                      fontSize: 20,
-                      fontWeight: "bold",
-                    }}
-                  />
-                ) : (
-                  <>{t("logout")}</>
-                )}
-              </Button>
+              <UserAvatarMenu userName={username || undefined} />
             </Box>
           </Toolbar>
         </AppBar>
