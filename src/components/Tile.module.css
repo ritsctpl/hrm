@@ -1,112 +1,121 @@
+/* ─── Glassmorphism Tile ─── */
 .tile {
-  width: 140px;
-  height: 160px;
-  border-radius: 8px;
-  border: 2px solid #80808066;
+  position: relative;
+  width: 148px;
+  min-height: 140px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  /* padding: 10px; */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out;
+  align-items: center;
+  padding: 18px 12px 14px;
+  gap: 10px;
   cursor: pointer;
-  background-color: #ffffff;
-  /* margin: 12px; */
+  background: var(--hrm-bg-glass, rgba(255, 255, 255, 0.65));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--hrm-border-glass, rgba(255, 255, 255, 0.5));
+  box-shadow:
+    0 2px 8px rgba(99, 102, 241, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08), transparent 60%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .tile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow:
+    var(--hrm-shadow-lg, 0 12px 28px rgba(99, 102, 241, 0.12));
+  border-color: var(--hrm-border-accent, rgba(99, 102, 241, 0.2));
 }
 
-.cardContent {
-  text-align: center;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  gap: 6px;
-  padding: 4px 0;
+.tile:hover::before {
+  opacity: 1;
 }
 
-.description {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: #333;
-  font-family: "Roboto", Arial, sans-serif;
-  letter-spacing: 0.5px;
-  line-height: 1.4;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  height: 2.8em;
+.tile:hover .iconContainer {
+  background: var(--hrm-gradient, linear-gradient(135deg, #6366f1, #8b5cf6));
+  color: var(--hrm-text-on-accent, #fff);
+  box-shadow: var(--hrm-shadow-accent, 0 4px 16px rgba(99, 102, 241, 0.3));
+  transform: scale(1.08);
 }
 
-.activityId {
-  font-weight: 300;
-  font-size: 0.8rem;
-  color: #666;
-  font-family: "Roboto", Arial, sans-serif;
-  margin: 0;
+.tile:active {
+  transform: translateY(-1px);
+  transition-duration: 0.1s;
 }
 
-.iconButton {
-  align-self: center;
-  margin-top: 6px;
-}
-
-/* src/components/Tile.module.css */
-/*
-.tile {
-  cursor: pointer;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s, transform 0.3s;
-  width: 200px;
-  height: 200px;
+/* ─── Icon ─── */
+.iconContainer {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  font-size: 18px;
-  margin: 10px;
-  font-weight: bold;
-  color: #00457c;
+  background: linear-gradient(135deg, var(--hrm-accent-light, rgba(99, 102, 241, 0.1)), rgba(139, 92, 246, 0.06));
+  color: var(--hrm-accent, #6366f1);
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tile:hover {
-  background-color: #e0e0e0;
-  transform: scale(1.05);
+/* ─── Content ─── */
+.cardContent {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .description {
-  margin: 0;
-  color: #00457c;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--hrm-text-primary, #1e293b);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  max-width: 100%;
 }
-*/
 
 .subLabel {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--hrm-text-tertiary, #94a3b8);
-  margin-top: 2px;
   line-height: 1.2;
-  max-width: 115px;
+  max-width: 120px;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* ─── Badge ─── */
 .badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  background: #ef4444;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -118,4 +127,63 @@
   justify-content: center;
   padding: 0 5px;
   z-index: 2;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+/* ─── Open in new tab button ─── */
+.openButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.tile:hover .openButton {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.openButton:hover {
+  background: var(--hrm-accent, #6366f1);
+  color: var(--hrm-text-on-accent, #fff);
+  border-color: var(--hrm-accent, #6366f1);
+  box-shadow: var(--hrm-shadow-accent, 0 2px 8px rgba(99, 102, 241, 0.3));
+}
+
+/* ─── When badge is shown, hide the open button default position ─── */
+.badge ~ .openButton {
+  top: auto;
+  bottom: 8px;
+  right: 8px;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .tile {
+    width: 130px;
+    min-height: 125px;
+    padding: 14px 10px 12px;
+  }
+  .iconContainer {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .description {
+    font-size: 11.5px;
+  }
 }

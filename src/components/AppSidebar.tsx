@@ -116,9 +116,23 @@ const AppSidebar: React.FC = () => {
       .filter(Boolean)
       .join(' ');
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
       if (item.type === 'direct-nav' && item.route) {
-        router.push(item.route);
+        if (e.ctrlKey || e.metaKey) {
+          window.open(`/hrm${item.route}`, '_blank');
+        } else {
+          router.push(item.route);
+        }
+      }
+      if (item.type === 'flyout') {
+        // Toggle flyout on click
+        if (activeFlyout === item.key) {
+          closeFlyout();
+        } else {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setFlyoutTop(rect.top);
+          setActiveFlyout(item.key);
+        }
       }
     };
 

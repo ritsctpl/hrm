@@ -10,7 +10,7 @@
 .hrm-module-root {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 32px); /* account for footer padding */
   overflow: hidden;
   background: var(--hrm-mesh-bg);
   font-family: var(--hrm-font-family);

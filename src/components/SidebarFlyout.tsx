@@ -19,8 +19,12 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({ title, apps, top, onClose
   const router = useRouter();
   const { t } = useTranslation();
 
-  const handleAppClick = (route: string) => {
-    router.push(route);
+  const handleAppClick = (e: React.MouseEvent | React.KeyboardEvent, route: string) => {
+    if (e.ctrlKey || e.metaKey) {
+      window.open(`/hrm${route}`, '_blank');
+    } else {
+      router.push(route);
+    }
     onClose();
   };
 
@@ -46,13 +50,13 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({ title, apps, top, onClose
           <div
             key={app.key}
             className={styles.flyoutItem}
-            onClick={() => handleAppClick(app.route)}
+            onClick={(e) => handleAppClick(e, app.route)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleAppClick(app.route);
+                handleAppClick(e, app.route);
               }
             }}
           >

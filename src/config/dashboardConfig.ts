@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Shield, UserCheck, Wallet, CalendarDays,
+  Users, Shield, UserCheck, Wallet, CalendarDays,
   Settings, Bell,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -23,7 +23,6 @@ export interface SidebarItemConfig {
 }
 
 export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
-  { key: 'dashboard', labelKey: 'nav.sidebar.dashboard', icon: LayoutDashboard, type: 'direct-nav', route: '/rits/hrm_dashboard_app' },
   { key: 'employees', labelKey: 'nav.sidebar.employees', icon: Users, type: 'direct-nav', route: '/rits/hrm_employee_app' },
   {
     key: 'administration', labelKey: 'nav.sidebar.administration', icon: Shield, type: 'flyout',

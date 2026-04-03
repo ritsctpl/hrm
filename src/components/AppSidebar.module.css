@@ -1,7 +1,7 @@
 /* ─── Sidebar Rail ─── */
 .sidebar {
   position: fixed;
-  top: 48px; /* below AppBar */
+  top: 0;
   left: 0;
   bottom: 0;
   width: 56px;
@@ -9,30 +9,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 100;
-  padding: 8px 0;
+  z-index: 101;
+  padding: 0 0 8px;
   border-right: 1px solid var(--sidebar-border, #334155);
-  transition: background 0.2s ease;
+  transition: background 0.3s ease;
 }
 
 /* ─── Brand Mark ─── */
 .brandMark {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--accent-color, #3b82f6);
+  width: 100%;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid var(--sidebar-border, #334155);
 }
 
 .brandMark:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .brandMarkText {
@@ -139,7 +137,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   min-width: 260px;
   max-width: 320px;
-  z-index: 101;
+  z-index: 102;
   padding: 12px 0;
   animation: flyoutIn 0.15s ease-out;
 }

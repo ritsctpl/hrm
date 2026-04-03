@@ -112,3 +112,153 @@
   --hrm-sidebar-width:   260px;
   --hrm-content-max:     1440px;
 }
+
+/* ================================================================
+   DARK MODE OVERRIDES
+   ================================================================ */
+[data-theme="dark"] {
+  /* ---- Backgrounds ---- */
+  --hrm-bg-primary:      #0f172a;
+  --hrm-bg-secondary:    #1e293b;
+  --hrm-bg-white:        #1e293b;
+  --hrm-bg-hover:        rgba(99, 102, 241, 0.1);
+  --hrm-bg-active:       rgba(99, 102, 241, 0.15);
+  --hrm-bg-subtle:       #1a2332;
+  --hrm-bg-glass:        rgba(30, 41, 59, 0.8);
+  --hrm-bg-glass-hover:  rgba(30, 41, 59, 0.9);
+  --hrm-bg-page:         #0f172a;
+  --hrm-bg-surface:      #1e293b;
+
+  /* ---- Mesh Background ---- */
+  --hrm-mesh-bg:
+    radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+
+  /* ---- Borders ---- */
+  --hrm-border:          #334155;
+  --hrm-border-light:    rgba(51, 65, 85, 0.6);
+  --hrm-border-glass:    rgba(51, 65, 85, 0.3);
+  --hrm-divider:         #334155;
+
+  /* ---- Text ---- */
+  --hrm-text-primary:    #f1f5f9;
+  --hrm-text-secondary:  #94a3b8;
+  --hrm-text-tertiary:   #64748b;
+  --hrm-text-disabled:   #475569;
+
+  /* ---- Shadows ---- */
+  --hrm-shadow-xs:       0 1px 2px rgba(0, 0, 0, 0.2);
+  --hrm-shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --hrm-shadow-md:       0 4px 6px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --hrm-shadow-lg:       0 10px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --hrm-shadow-xl:       0 20px 40px rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode global overrides */
+[data-theme="dark"] body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .ant-table {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th,
+[data-theme="dark"] .ant-table-thead > tr > td {
+  background: #1a2332 !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #334155 !important;
+}
+
+[data-theme="dark"] .ant-table-tbody > tr > td {
+  border-bottom-color: #334155 !important;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ant-table-tbody > tr:hover > td {
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-card {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .ant-modal-content {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .ant-modal-header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .ant-modal-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .ant-input,
+[data-theme="dark"] .ant-input-number,
+[data-theme="dark"] .ant-picker,
+[data-theme="dark"] .ant-select-selector {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .ant-select-dropdown {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .ant-select-item {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ant-select-item-option-active,
+[data-theme="dark"] .ant-select-item-option-selected {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-theme="dark"] .ant-tabs-nav {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .ant-form-item-label > label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .ant-btn-default {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ant-btn-default:hover {
+  border-color: var(--hrm-accent);
+  color: var(--hrm-accent);
+}
+
+[data-theme="dark"] .ant-empty-description {
+  color: #64748b;
+}
+
+[data-theme="dark"] .ant-pagination-item {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .ant-pagination-item a {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .ant-tag {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: #334155;
+  color: #e2e8f0;
+}

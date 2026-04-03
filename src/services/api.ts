@@ -73,18 +73,23 @@ export const initializeApi = async (): Promise<void> => {
   try {
     if (!apiInitialized) {
       let config;
-      try {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Runtime config fetch timeout')), 10000)
-        );
-        config = await Promise.race([fetchRuntimeConfig(), timeoutPromise]);
-      } catch (error) {
-        console.error('Failed to fetch runtime config within timeout, using fallback:', error);
-        // Use fallback config instead of throwing
-        config = {
-          NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.147.129:8080/app/v1",
-          NEXT_PUBLIC_HOST: process.env.NEXT_PUBLIC_HOST || "http://192.168.147.129:8687",
-        };
+
+      // Fast path: use window.runtimeConfig if already set by layout
+      if (typeof window !== 'undefined' && window.runtimeConfig) {
+        config = window.runtimeConfig;
+      } else {
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Runtime config fetch timeout')), 15000)
+          );
+          config = await Promise.race([fetchRuntimeConfig(), timeoutPromise]);
+        } catch (error) {
+          console.warn('Runtime config fetch timed out, using env fallback');
+          config = {
+            NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.147.129:8080/app/v1",
+            NEXT_PUBLIC_HOST: process.env.NEXT_PUBLIC_HOST || "http://192.168.147.129:8687",
+          };
+        }
       }
       // console.log(api.defaults.baseURL,'API initialized with base URL:');
 
@@ -93,7 +98,7 @@ export const initializeApi = async (): Promise<void> => {
       apiInitialized = true;
     }
   } catch (error) {
-    console.error("Failed to initialize API:", error);
+    console.warn("Failed to initialize API, using fallback:", error);
     // Don't throw - use fallback and mark as initialized
     api.defaults.baseURL = "http://192.168.147.129:8080/app/v1";
     apiInitialized = true;

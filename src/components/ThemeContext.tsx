@@ -61,6 +61,10 @@ export const ThemeProviderComponent = ({ children }) => {
     Object.entries(preset.variables).forEach(([prop, value]) => {
       document.documentElement.style.setProperty(prop, value);
     });
+    // Also update sidebar to match the new theme
+    const bg = preset.variables['--background-color'];
+    const accent = preset.variables['--button-color'] || bg;
+    if (bg) applySidebarVars(bg, accent);
   }, []);
 
   /**
@@ -80,6 +84,9 @@ export const ThemeProviderComponent = ({ children }) => {
    * @param theme - Current theme object containing color values
    */
   const updateCSSVariables = (theme) => {
+    const bgColor = theme.backgroundColor || "#124561";
+    const accentColor = theme.buttonColor || bgColor;
+
     const cssVars = {
       "--icon-color": theme.iconColor,
       "--tab-active-color": theme.tabColor,
@@ -93,7 +100,57 @@ export const ThemeProviderComponent = ({ children }) => {
     Object.entries(cssVars).forEach(([property, value]) => {
       document.documentElement.style.setProperty(property, value);
     });
+
+    // Derive sidebar colors from theme
+    applySidebarVars(bgColor, accentColor);
   };
+
+  /** Darken a hex color by mixing with black */
+  function darkenColor(hex: string, factor: number): string {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return "#1e293b";
+    const r = Math.round(rgb.r * (1 - factor));
+    const g = Math.round(rgb.g * (1 - factor));
+    const b = Math.round(rgb.b * (1 - factor));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  /** Lighten a hex color */
+  function lightenColor(hex: string, factor: number): string {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return "#60a5fa";
+    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    } : null;
+  }
+
+  /** Apply sidebar CSS vars derived from a background color */
+  function applySidebarVars(bgColor: string, accentColor: string) {
+    const sidebarVars: Record<string, string> = {
+      "--sidebar-bg": darkenColor(bgColor, 0.25),
+      "--sidebar-border": lightenColor(bgColor, 0.15),
+      "--sidebar-icon-color": lightenColor(bgColor, 0.5),
+      "--sidebar-icon-hover-bg": "rgba(255,255,255,0.1)",
+      "--sidebar-icon-hover-color": "#ffffff",
+      "--sidebar-icon-active-bg": "rgba(255,255,255,0.15)",
+      "--sidebar-icon-active-color": "#ffffff",
+      "--accent-color": accentColor,
+      "--sidebar-divider": lightenColor(bgColor, 0.12),
+    };
+    Object.entries(sidebarVars).forEach(([prop, val]) => {
+      document.documentElement.style.setProperty(prop, val);
+    });
+  }
 
   /**
    * Updates theme based on site details and saves to cookies
@@ -244,6 +301,9 @@ export const ThemeProviderComponent = ({ children }) => {
             Object.entries(preset.variables).forEach(([prop, value]) => {
               document.documentElement.style.setProperty(prop, value);
             });
+            // Re-derive sidebar vars from the final background-color set by preset
+            const finalBg = preset.variables['--background-color'] || themeData.backgroundColor || "#124561";
+            applySidebarVars(finalBg, preset.variables['--button-color'] || finalBg);
           }
         }
       } catch {}
@@ -252,9 +312,18 @@ export const ThemeProviderComponent = ({ children }) => {
 
   // Ant Design theme configuration
   const antdThemeConfig = {
-    algorithm: antdTheme.defaultAlgorithm,
+    algorithm: darkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
-      colorPrimary: themeData.buttonColor || "#124561", // Ensure fallback
+      colorPrimary: themeData.buttonColor || "#124561",
+      ...(darkMode ? {
+        colorBgContainer: '#1e293b',
+        colorBgElevated: '#1e293b',
+        colorBgLayout: '#0f172a',
+        colorText: '#f1f5f9',
+        colorTextSecondary: '#94a3b8',
+        colorBorder: '#334155',
+        colorBorderSecondary: '#334155',
+      } : {}),
     },
   };
 

@@ -43,6 +43,7 @@ const HomePage: React.FC = () => {
                       activityId={app.key}
                       subLabel={t(app.subLabelKey)}
                       badgeCount={MOCK_BADGE_COUNTS[app.key] || 0}
+                      icon={getModuleIcon(app.route)}
                     />
                   ))}
                 </div>

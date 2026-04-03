@@ -1,30 +1,27 @@
 // src/components/Tile.tsx
 
 import React from "react";
-import { Card, CardContent, Typography, IconButton } from "@mui/material";
-import { Launch } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import { Button, Tooltip } from "antd";
+import { Tooltip } from "antd";
+import { ExternalLink } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import styles from "./Tile.module.css";
-import { ExportOutlined } from "@ant-design/icons";
-
 
 interface TileProps {
   description: string;
   url: string;
-  activityId: string; // Ensure this is required
-  subLabel?: string;      // Short description below name
-  badgeCount?: number;    // Notification badge count
+  activityId: string;
+  subLabel?: string;
+  badgeCount?: number;
+  icon?: LucideIcon;
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, badgeCount }) => {
+const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, badgeCount, icon: Icon }) => {
   const router = useRouter();
-  const maxLength = 11;
 
   const handleClick = (event: React.MouseEvent) => {
     const cleanedUrl = url.replace(/\/index\.html$/, "");
-
-    if (event.ctrlKey) {
+    if (event.ctrlKey || event.metaKey) {
       window.open(`/hrm${cleanedUrl}`, "_blank");
     } else {
       router.push(cleanedUrl);
@@ -39,33 +36,27 @@ const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, bad
 
   return (
     <Tooltip title={description}>
-      <Card className={styles.tile} onClick={handleClick}>
+      <div className={styles.tile} onClick={handleClick}>
         {badgeCount != null && badgeCount > 0 && (
           <span className={styles.badge}>{badgeCount}</span>
         )}
-        <CardContent className={styles.cardContent}>
-          <Typography className={styles.description} fontSize="0.9rem">
-            {description}
-          </Typography>
+        <div className={styles.iconContainer}>
+          {Icon && <Icon size={28} strokeWidth={1.5} />}
+        </div>
+        <div className={styles.cardContent}>
+          <span className={styles.description}>{description}</span>
           {subLabel && (
-            <Typography className={styles.subLabel}>
-              {subLabel}
-            </Typography>
+            <span className={styles.subLabel}>{subLabel}</span>
           )}
-          <Typography variant="body2" className={styles.activityId}>
-            {activityId.length > maxLength
-              ? `${activityId.substring(0, maxLength)}...`
-              : activityId}
-          </Typography>
-        </CardContent>
-        <Button
-          type="text"
-          className={styles.iconButton}
+        </div>
+        <button
+          className={styles.openButton}
           onClick={handleClickIcon}
           aria-label={`Open ${description} in new tab`}
-          icon={<ExportOutlined />}
-        />
-      </Card>
+        >
+          <ExternalLink size={13} />
+        </button>
+      </div>
     </Tooltip>
   );
 };

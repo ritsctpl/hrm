@@ -4,7 +4,6 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
   TextField,
   Box,
   Autocomplete,
@@ -17,7 +16,7 @@ import {
 import { fetchSiteAll, siteServices } from "@services/siteServices"; // Import siteServices
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
-import FactoryIcon from "@mui/icons-material/Factory"; // Plant icon
+import { Building2, LogOut } from "lucide-react";
 import styles from "./CommonAppBar.module.css";
 import logo from "../images/rits-logo-removebg-preview.png"; // Import the image
 import { destroyCookie, parseCookies, setCookie } from "nookies";
@@ -32,16 +31,12 @@ import SearchIcon from "@mui/icons-material/Search";
 import ritsLogo from "../images1/rits-logo.png";
 import himalayaLogo from "../images/image1.png"; // Add this import
 import exideLogo from "../images/EXIDE-logo.png"; // Add this import
-import LoadingWrapper from "./LoadingWrapper";
-import { MdFactory } from "react-icons/md";
+// LoadingWrapper removed - using inline appbar shell instead to avoid full-screen overlay on navigation
+// MdFactory removed - using Building2 from lucide-react
 import { CiSearch } from "react-icons/ci";
 import { useTheme as useAppTheme } from "./ThemeContext"; // Rename to avoid conflict with MUI useTheme
-import { CiLogin } from "react-icons/ci";
+// CiLogin removed - using LogOut from lucide-react
 import { DecodedToken } from "@modules/userMaintenance/types/userTypes";
-import { Bell } from "lucide-react";
-import EnhancedSearch from "./EnhancedSearch";
-import QuickSwitcher from "./QuickSwitcher";
-import UserAvatarMenu from "./UserAvatarMenu";
 const { Option } = Select;
 interface CommonAppBarProps {
   allActivities?: { description: string; url: string }[];
@@ -302,7 +297,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   ) => {
     const value = newValue || "";
     setSearchTerm(value);
-    onSearchChange(value);
+    onSearchChange?.(value);
   };
  
   const handleActivitySelect = (event: any, newValue: string | null) => {
@@ -471,8 +466,34 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       ? JSON.parse(sessionStorage.getItem("batchTop50Data") || "{}")
       : {};
  
+  if (isInitialLoad || (isClientSide && isLoading)) {
+    return (
+      <AppBar
+        position="sticky"
+        style={{
+          boxShadow: "none",
+          backgroundColor: "var(--background-color)",
+          color: "var(--text-color)",
+          borderBottom: "1px solid var(--line-color)",
+          width: "100%",
+          top: 0,
+          zIndex: 100,
+        }}
+        className={styles.appBar}
+      >
+        <Toolbar variant="dense" sx={{ minHeight: 48 }}>
+          <img src={logo.src} alt="Logo" className={styles.logo} />
+          <Typography variant="h6" className={styles.title} style={{ color: "var(--text-color)" }}>
+            {appTitle}
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+        </Toolbar>
+      </AppBar>
+    );
+  }
+
   return (
-    <LoadingWrapper isLoading={isInitialLoad || (isClientSide && isLoading)}>
+    <>
       {!isInitialLoad && (
         <AppBar
           position="sticky"
@@ -516,25 +537,55 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
             </Typography>
  
             <Box className={styles.searchBox}>
-              <EnhancedSearch />
+              <Autocomplete
+                freeSolo
+                options={uniqueActivities}
+                inputValue={searchTerm}
+                value={null}
+                onInputChange={handleSearchChange}
+                onChange={(event, newValue) => {
+                  handleActivitySelect(event, newValue);
+                  setSearchTerm("");
+                  if (onSearchChange) {
+                    onSearchChange("");
+                  }
+                }}
+                filterOptions={(options, state) =>
+                  options.filter(
+                    (option) =>
+                      state.inputValue &&
+                      option
+                        .toLowerCase()
+                        .includes(state.inputValue.toLowerCase())
+                  )
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="outlined"
+                    placeholder={t("searchActivities")}
+                    style={{ borderRadius: "5px", width: "300px" }}
+                    className={styles.searchField}
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <CiSearch />,
+                      classes: {
+                        root: styles.searchFieldRoot,
+                        notchedOutline: styles.noBorder,
+                      },
+                    }}
+                  />
+                )}
+              />
             </Box>
  
             <Box className={styles.userInfo}>
-              <Typography
-                variant="body1"
-                className={styles.userText}
-                style={{
-                  color: "var(--text-color)",
-                }}
-              >
-                {username} | {site}
-              </Typography>
               <IconButton
                 color="inherit"
                 onClick={handleMenuOpen}
                 className={styles.iconButton}
               >
-                <MdFactory style={{ color: "var(--text-color)" }} />
+                <Building2 size={18} style={{ color: "var(--text-color)" }} />
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
@@ -556,13 +607,6 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   </MenuItem>
                 ))}
               </Menu>
-              <IconButton
-                onClick={() => router.push('/rits/hrm_notification_app')}
-                sx={{ color: 'var(--text-color)' }}
-              >
-                <Bell size={20} />
-              </IconButton>
-              <QuickSwitcher />
               <div>
                 <Select
                   defaultValue={currentLanguage}
@@ -575,12 +619,28 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   <Option value="hi">हिंदी</Option>
                 </Select>
               </div>
-              <UserAvatarMenu userName={username || undefined} />
+              <IconButton
+                color="inherit"
+                onClick={() => {
+                  destroyCookie(null, 'rl_user_id', { path: '/' });
+                  logout();
+                }}
+                title={t("logout")}
+                sx={{ color: "var(--text-color)" }}
+              >
+                <LogOut size={18} />
+              </IconButton>
+              <div
+                className={styles.avatar}
+                title={`${username} | ${site}`}
+              >
+                {username ? username.charAt(0).toUpperCase() : "?"}
+              </div>
             </Box>
           </Toolbar>
         </AppBar>
       )}
-    </LoadingWrapper>
+    </>
   );
 };
  

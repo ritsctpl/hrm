@@ -19,7 +19,13 @@ const QuickTasksList: React.FC = () => {
           <div
             key={task.labelKey}
             className={styles.taskItem}
-            onClick={() => router.push(task.route)}
+            onClick={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                window.open(`/hrm${task.route}`, '_blank');
+              } else {
+                router.push(task.route);
+              }
+            }}
           >
             <Icon size={16} />
             <span>{t(task.labelKey)}</span>
