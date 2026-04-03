@@ -1,0 +1,30 @@
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--hrm-text-tertiary, #94a3b8);
+  background: var(--hrm-bg-white, #f8fafc);
+  border-top: 1px solid var(--hrm-border-light, #e2e8f0);
+  z-index: 50;
+}
+
+.separator {
+  color: var(--hrm-border-light, #e2e8f0);
+}
+
+.helpLink {
+  color: var(--hrm-accent, #6366f1);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.helpLink:hover {
+  text-decoration: underline;
+}
