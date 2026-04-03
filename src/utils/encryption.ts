@@ -9,24 +9,24 @@ export const encryptToken = (token: string): string => {
 export const decryptToken = (encryptedToken: string): string | null => {
   try {
     if (!encryptedToken) {
-      throw new Error('Encrypted token is null or undefined');
+      return null;
     }
 
-    // if (!secretKey) {
-    //   throw new Error('Secret key is null or undefined');
-    // }
+    // If it's already a raw JWT (starts with eyJ), return as-is
+    if (encryptedToken.startsWith('eyJ')) {
+      return encryptedToken;
+    }
 
     const bytes = CryptoJS.AES.decrypt(encryptedToken, secretKey);
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
 
     if (!decryptedData) {
-      throw new Error('Decryption failed, resulting in empty string');
+      return encryptedToken;
     }
 
     return decryptedData;
   } catch (error) {
-    console.error('Decryption error:', error.message);
-    return null; // Return null or handle the error as needed
+    return encryptedToken;
   }
 };
 

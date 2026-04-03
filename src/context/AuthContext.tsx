@@ -3,7 +3,6 @@ import '@/utils/i18n';
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
 import { getKeycloakInstance, keycloakInitOptions } from '../keycloak';
-import { decryptToken, encryptToken } from '../utils/encryption';
 import jwtDecode from 'jwt-decode';
 
 interface AuthContextProps {
@@ -44,8 +43,7 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
   const checkTokenExpiration = (token: string | null) => {
     if (token) {
       try {
-        const decryptedToken = decryptToken(token);
-        const decodedToken = jwtDecode<{ exp: number }>(decryptedToken);
+        const decodedToken = jwtDecode<{ exp: number }>(token);
         if (decodedToken.exp * 1000 < Date.now()) {
           return true; // Token expired
         }
@@ -67,9 +65,12 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
         setIsAuthenticated(authenticated);
 
         if (authenticated) {
-          const encryptedToken = encryptToken(keycloak.token!);
-          setToken(encryptedToken);
-          setCookie(null, 'token', encryptedToken, { path: '/' });
+          const rawToken = keycloak.token!;
+          setToken(rawToken);
+          setCookie(null, 'token', rawToken, { path: '/', sameSite: 'lax' });
+          if (keycloak.refreshToken) {
+            setCookie(null, 'refreshToken', keycloak.refreshToken, { path: '/' });
+          }
           if (keycloak.realmAccess?.roles) {
             setCookie(null, 'role', `${keycloak.realmAccess.roles}`, { path: '/' });
           }
