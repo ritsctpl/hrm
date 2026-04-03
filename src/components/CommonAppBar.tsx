@@ -140,14 +140,16 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       );
     });
 
-    // Check if the current URL contains /rits/user_manual
+    // Check if the current URL contains /rits/user_manual or settings
     const isUserManualPath = window.location.pathname.includes("/rits/user_manual");
- 
+    const isSettingsPath = currentPath === "hrm_settings_app";
+
     if (
       !isValidPath &&
       currentPath !== "manufacturing" &&
       currentPath !== "hrm" &&
       !isUserManualPath &&
+      !isSettingsPath &&
       !modalShownRef.current
     ) {
       modalShownRef.current = true;
@@ -446,60 +448,6 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   //   initializeTheme();
   // }, [isAuthenticated, username]);
 
-  useEffect(() => {
-    message.destroy();
-    const fetchUserDetails = async () => {
-      if (isAuthenticated && username) {
-        try {
-          setIsLoading(true);
-          // await new Promise(resolve => setTimeout(resolve, 10000));
-          const response = await api.post(
-            "/user-service/retrieve_detailed_user",
-            { user: username }
-          );
-          const groups = response.data.userActivityGroupDetails;
-          // console.log("Retrieve detailed user response: ", response.data);
-          // debugger
-          setUserActivityGroups(groups);
- 
-          // Fetch site details first
-          const responseSite = await fetchSiteAll(response.data.currentSite);
-          setSiteDetails(responseSite);
-          // Store theme in local storage
-          localStorage.setItem("theme", JSON.stringify(responseSite.theme));
-          // console.log(responseSite.theme, "responseSite");
-          // localStorage.setItem("theme", JSON.stringify(responseSite.theme));
-          // console.log(JSON.parse(localStorage.getItem("theme"))["color"]);
-          // Then update other state and cookies
-          setCookie(null, "site", response.data.currentSite, { path: "/" });
-          setSite(response.data.currentSite);
-          setFilteredActivities(groups);
-          setCookie(
-            null,
-            "activities",
-            JSON.stringify(response.data.userActivityGroupDetails),
-            { path: "/" }
-          );
- 
-          const activities = groups?.flatMap(
-            (group: any) => group.activityList
-          );
-          // console.log(activities, 'activities');
-          // Check if any activity URL matches the current browser URL path
- 
-          setAllActivities(activities);
-          setAvailableSites(response.data.site);
-        } catch (error) {
-          console.error("Error fetching retrieve detailed user:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
- 
-    fetchUserDetails();
-  }, [isAuthenticated, username]);
-
   const cookies = parseCookies();
   const language = cookies.language || "en";
   // const uniqueActivities = Array.from(
@@ -526,8 +474,8 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
           position="sticky"
           style={{
             boxShadow: "none",
-            backgroundColor: siteDetails?.theme?.background,
-            color: siteDetails?.theme?.color,
+            backgroundColor: "var(--background-color)",
+            color: "var(--text-color)",
             borderBottom:"1px solid var(--line-color)",
             width: "100%",
             top: 0,
@@ -557,11 +505,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               variant="h6"
               className={styles.title}
               style={{
-                color: siteDetails?.theme?.color,
-                fontFamily:
-                  siteDetails?.theme?.background === "#ffffff"
-                    ? "roboto"
-                    : "inherit",
+                color: "var(--text-color)",
               }}
             >
               {appTitle}
@@ -615,7 +559,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                 variant="body1"
                 className={styles.userText}
                 style={{
-                  color: siteDetails?.theme?.color,
+                  color: "var(--text-color)",
                 }}
               >
                 {username} | {site}
@@ -625,7 +569,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                 onClick={handleMenuOpen}
                 className={styles.iconButton}
               >
-                <MdFactory style={{ color: siteDetails?.theme?.color }} />
+                <MdFactory style={{ color: "var(--text-color)" }} />
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
@@ -667,17 +611,14 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                 }}
                 className={styles.logoutButton}
                 style={{
-                  color: siteDetails?.theme?.color,
+                  color: "var(--text-color)",
                 }}
               >
                 {isSmallScreen ? (
                   <CiLogin
                     size={25}
                     style={{
-                      color:
-                        siteDetails?.theme?.background === "#ffffff"
-                          ? "#0c4da2"
-                          : siteDetails?.theme?.color,
+                      color: "var(--text-color)",
                       fontSize: 20,
                       fontWeight: "bold",
                     }}

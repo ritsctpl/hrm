@@ -132,7 +132,7 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   if (showDetailPanel && selectedAnnouncement) {
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar
           appTitle={`Announcements > ${selectedAnnouncement.title}`}
         />
@@ -191,7 +191,7 @@ const HrmAnnouncementLanding: React.FC = () => {
   }
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Announcements" />
       <Tabs
         activeKey={activeTab}

@@ -1,0 +1,618 @@
+/* ================================================================
+   FUTURISTIC HRM COMMON STYLES
+   Glassmorphism + Gradient accents + Smooth micro-interactions
+
+   NOTE: This is a GLOBAL CSS file (not a CSS module).
+   Do NOT use :global() wrappers - selectors are already global.
+   ================================================================ */
+
+/* ========== MODULE ROOT ========== */
+.hrm-module-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--hrm-mesh-bg);
+  font-family: var(--hrm-font-family);
+  color: var(--hrm-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hrm-module-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--hrm-space-lg);
+}
+
+/* ========== GLASSMORPHISM CARDS ========== */
+.hrm-card {
+  background: var(--hrm-bg-glass);
+  backdrop-filter: blur(var(--hrm-blur-md));
+  -webkit-backdrop-filter: blur(var(--hrm-blur-md));
+  border-radius: var(--hrm-radius-lg);
+  border: 1px solid var(--hrm-border-glass);
+  box-shadow: var(--hrm-shadow-sm);
+  transition: all var(--hrm-duration-base) var(--hrm-ease-default);
+  overflow: hidden;
+}
+
+.hrm-card:hover {
+  box-shadow: var(--hrm-shadow-lg);
+  border-color: var(--hrm-border-accent);
+  transform: translateY(-1px);
+}
+
+.hrm-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--hrm-space-md) var(--hrm-space-base);
+  border-bottom: 1px solid var(--hrm-border-light);
+  background: var(--hrm-gradient-subtle);
+}
+
+.hrm-card-body {
+  padding: var(--hrm-space-base);
+}
+
+/* ========== STAT / KPI CARDS ========== */
+.hrm-stat-card {
+  background: var(--hrm-bg-white);
+  border-radius: var(--hrm-radius-xl);
+  padding: var(--hrm-space-lg);
+  border: 1px solid var(--hrm-border-light);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--hrm-duration-base) var(--hrm-ease-default);
+}
+
+.hrm-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--hrm-gradient);
+  opacity: 0;
+  transition: opacity var(--hrm-duration-base) ease;
+}
+
+.hrm-stat-card:hover::before { opacity: 1; }
+.hrm-stat-card:hover {
+  box-shadow: var(--hrm-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.hrm-stat-value {
+  font-size: var(--hrm-font-size-xxl);
+  font-weight: var(--hrm-font-weight-bold);
+  line-height: 1.2;
+  background: var(--hrm-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hrm-stat-label {
+  font-size: var(--hrm-font-size-sm);
+  color: var(--hrm-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: var(--hrm-font-weight-medium);
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   ANT DESIGN GLOBAL OVERRIDES
+   These are plain CSS selectors (NO :global() - this is not a CSS module)
+   ========================================================================== */
+
+/* ---- TABLES ---- */
+.ant-table {
+  font-size: var(--hrm-font-size-md) !important;
+  border-radius: var(--hrm-radius-lg) !important;
+  overflow: hidden;
+}
+
+.ant-table-container {
+  border-radius: var(--hrm-radius-lg) !important;
+}
+
+.ant-table-thead > tr > th,
+.ant-table-thead > tr > td {
+  background: var(--hrm-bg-subtle) !important;
+  font-weight: 600 !important;
+  font-size: var(--hrm-font-size-xs) !important;
+  color: var(--hrm-text-tertiary) !important;
+  padding: 11px 14px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--hrm-border) !important;
+}
+
+.ant-table-tbody > tr > td {
+  padding: 11px 14px !important;
+  font-size: var(--hrm-font-size-md) !important;
+  color: var(--hrm-text-secondary) !important;
+  transition: background 0.15s ease !important;
+  border-bottom: 1px solid var(--hrm-border-light) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--hrm-bg-hover) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--hrm-bg-active) !important;
+}
+
+/* Table cell links */
+.ant-table-tbody a,
+.ant-table-tbody .ant-typography-link {
+  color: var(--hrm-accent) !important;
+}
+
+/* Table pagination */
+.ant-table-pagination .ant-pagination-item-active {
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-table-pagination .ant-pagination-item-active a {
+  color: var(--hrm-accent) !important;
+}
+
+/* Sorter icon active */
+.ant-table-column-sorter-up.active,
+.ant-table-column-sorter-down.active {
+  color: var(--hrm-accent) !important;
+}
+
+/* ---- TABS ---- */
+.ant-tabs-tab {
+  font-size: var(--hrm-font-size-md) !important;
+  font-weight: 500 !important;
+  color: var(--hrm-text-tertiary) !important;
+  padding: 10px 18px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: var(--hrm-radius-md) var(--hrm-radius-md) 0 0 !important;
+}
+
+.ant-tabs-tab:hover {
+  color: var(--hrm-accent) !important;
+  background: var(--hrm-bg-hover) !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--hrm-accent) !important;
+  font-weight: 700 !important;
+}
+
+.ant-tabs-ink-bar {
+  background: var(--hrm-gradient) !important;
+  height: 2.5px !important;
+  border-radius: 2px !important;
+}
+
+.ant-tabs-nav::before {
+  border-bottom-color: var(--hrm-border-light) !important;
+}
+
+/* ---- FORMS & INPUTS ---- */
+.ant-form-item-label > label {
+  font-size: var(--hrm-font-size-md) !important;
+  font-weight: 500 !important;
+  color: var(--hrm-text-secondary) !important;
+}
+
+.ant-input,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker,
+.ant-input-affix-wrapper {
+  border-radius: var(--hrm-radius-md) !important;
+  font-size: var(--hrm-font-size-md) !important;
+  border-color: var(--hrm-border) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-input:hover,
+.ant-input-number:hover,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.ant-picker:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-number:focus,
+.ant-input-number-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--hrm-accent) !important;
+  box-shadow: 0 0 0 3px var(--hrm-accent-light) !important;
+}
+
+/* Select dropdown highlight */
+.ant-select-item-option-selected {
+  background: var(--hrm-bg-active) !important;
+  font-weight: 600 !important;
+}
+
+.ant-select-item-option-active {
+  background: var(--hrm-bg-hover) !important;
+}
+
+/* Checkbox / Radio / Switch */
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--hrm-accent) !important;
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-radio-checked .ant-radio-inner {
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-radio-checked .ant-radio-inner::after {
+  background-color: var(--hrm-accent) !important;
+}
+
+.ant-switch-checked {
+  background: var(--hrm-accent) !important;
+}
+
+/* ---- BUTTONS ---- */
+.ant-btn {
+  border-radius: var(--hrm-radius-md) !important;
+  font-size: var(--hrm-font-size-md) !important;
+  font-weight: 500 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  letter-spacing: 0.01em;
+}
+
+.ant-btn-primary,
+.ant-btn-color-primary {
+  background: var(--hrm-gradient) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px var(--hrm-accent-light) !important;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-color-primary:hover {
+  box-shadow: 0 4px 16px var(--hrm-accent-mid) !important;
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.ant-btn-primary:active,
+.ant-btn-color-primary:active {
+  transform: translateY(0);
+}
+
+.ant-btn-default:hover {
+  color: var(--hrm-accent) !important;
+  border-color: var(--hrm-accent) !important;
+  background: var(--hrm-bg-hover) !important;
+}
+
+.ant-btn-link {
+  color: var(--hrm-accent) !important;
+}
+
+.ant-btn-link:hover {
+  color: var(--hrm-accent-hover) !important;
+}
+
+.ant-btn-dangerous,
+.ant-btn-danger {
+  color: var(--hrm-error) !important;
+  border-color: var(--hrm-error) !important;
+}
+
+.ant-btn-dangerous:hover,
+.ant-btn-danger:hover {
+  color: #fff !important;
+  background: var(--hrm-error) !important;
+  border-color: var(--hrm-error) !important;
+}
+
+/* ---- MODAL / DRAWER ---- */
+.ant-modal-content {
+  border-radius: var(--hrm-radius-xl) !important;
+  overflow: hidden;
+  box-shadow: var(--hrm-shadow-xl) !important;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid var(--hrm-border-light) !important;
+  background: var(--hrm-gradient-subtle) !important;
+}
+
+.ant-modal-title {
+  font-size: var(--hrm-font-size-lg) !important;
+  font-weight: 600 !important;
+  color: var(--hrm-text-primary) !important;
+}
+
+.ant-drawer-header {
+  border-bottom: 1px solid var(--hrm-border-light) !important;
+  background: var(--hrm-gradient-subtle) !important;
+}
+
+.ant-drawer-title {
+  font-size: var(--hrm-font-size-lg) !important;
+  font-weight: 600 !important;
+}
+
+/* ---- BREADCRUMB ---- */
+.ant-breadcrumb a {
+  color: var(--hrm-accent) !important;
+}
+
+.ant-breadcrumb a:hover {
+  color: var(--hrm-accent-hover) !important;
+}
+
+/* ---- PROGRESS BAR ---- */
+.ant-progress-bg {
+  background: var(--hrm-gradient) !important;
+}
+
+/* ---- TOOLTIP ---- */
+.ant-tooltip-inner {
+  border-radius: var(--hrm-radius-md) !important;
+  font-size: var(--hrm-font-size-sm) !important;
+  padding: 6px 12px !important;
+}
+
+/* ---- TAG / CHIP ---- */
+.ant-tag {
+  border-radius: var(--hrm-radius-full) !important;
+  font-size: var(--hrm-font-size-xs) !important;
+  font-weight: 500 !important;
+  padding: 2px 10px !important;
+}
+
+/* ---- POPCONFIRM ---- */
+.ant-popconfirm .ant-btn-primary {
+  background: var(--hrm-gradient) !important;
+}
+
+/* ---- TREE ---- */
+.ant-tree .ant-tree-treenode-selected .ant-tree-node-content-wrapper {
+  background: var(--hrm-bg-active) !important;
+  color: var(--hrm-accent) !important;
+}
+
+.ant-tree .ant-tree-node-content-wrapper:hover {
+  background: var(--hrm-bg-hover) !important;
+}
+
+/* ---- SPIN ---- */
+.ant-spin-dot-item {
+  background-color: var(--hrm-accent) !important;
+}
+
+/* ---- MENU ---- */
+.ant-menu-item-selected,
+.ant-menu-item:hover {
+  color: var(--hrm-accent) !important;
+}
+
+/* ---- SEGMENTED ---- */
+.ant-segmented-item-selected {
+  background: var(--hrm-accent) !important;
+  color: #fff !important;
+}
+
+/* ---- STEPS ---- */
+.ant-steps-item-process .ant-steps-item-icon {
+  background: var(--hrm-accent) !important;
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+  border-color: var(--hrm-accent) !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+  color: var(--hrm-accent) !important;
+}
+
+/* ---- BADGE ---- */
+.ant-badge-count {
+  background: var(--hrm-accent) !important;
+}
+
+/* ---- CALENDAR ---- */
+.ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--hrm-accent) !important;
+}
+
+/* ---- TRANSFER ---- */
+.ant-transfer-operation .ant-btn-primary:not([disabled]) .anticon {
+  color: white !important;
+}
+
+/* ==========================================================================
+   MUI GLOBAL OVERRIDES (for MUI components used alongside Ant Design)
+   ========================================================================== */
+
+.MuiTabs-indicator {
+  background: var(--hrm-gradient) !important;
+}
+
+.MuiTab-root.Mui-selected {
+  color: var(--hrm-accent) !important;
+}
+
+.MuiButton-containedPrimary {
+  background: var(--hrm-gradient) !important;
+  box-shadow: 0 2px 8px var(--hrm-accent-light) !important;
+}
+
+.MuiButton-containedPrimary:hover {
+  box-shadow: 0 4px 16px var(--hrm-accent-mid) !important;
+}
+
+.MuiSvgIcon-root {
+  fill: var(--icon-color) !important;
+}
+
+.MuiTypography-root {
+  padding-left: 6px !important;
+}
+
+/* ==========================================================================
+   STATUS BADGES (utility classes)
+   ========================================================================== */
+
+.hrm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--hrm-radius-full);
+  font-size: var(--hrm-font-size-xs);
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.hrm-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.hrm-status-active  { background: var(--hrm-success-bg); color: var(--hrm-success); }
+.hrm-status-inactive { background: var(--hrm-warning-bg); color: var(--hrm-warning); }
+.hrm-status-error   { background: var(--hrm-error-bg); color: var(--hrm-error); }
+.hrm-status-info    { background: var(--hrm-info-bg); color: var(--hrm-info); }
+
+/* ==========================================================================
+   EMPTY STATE / PAGE HEADER / FILTER BAR / GRIDS / MASTER-DETAIL
+   ========================================================================== */
+
+.hrm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  color: var(--hrm-text-tertiary);
+}
+
+.hrm-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--hrm-space-md) var(--hrm-space-xl);
+  background: var(--hrm-bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--hrm-border-light);
+}
+
+.hrm-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--hrm-space-sm);
+  padding: var(--hrm-space-sm) var(--hrm-space-xl);
+  background: var(--hrm-bg-glass);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--hrm-border-light);
+  flex-wrap: wrap;
+}
+
+.hrm-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--hrm-space-lg);
+}
+
+.hrm-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--hrm-space-base);
+}
+
+.hrm-master-detail {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  gap: 1px;
+  background: var(--hrm-border-light);
+}
+
+.hrm-master-panel {
+  width: 380px;
+  min-width: 320px;
+  overflow-y: auto;
+  background: var(--hrm-bg-white);
+}
+
+.hrm-detail-panel {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--hrm-bg-primary);
+}
+
+/* ==========================================================================
+   FUTURISTIC SCROLLBAR (global)
+   ========================================================================== */
+
+.hrm-module-content::-webkit-scrollbar,
+.hrm-module-root ::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.hrm-module-content::-webkit-scrollbar-track,
+.hrm-module-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hrm-module-content::-webkit-scrollbar-thumb,
+.hrm-module-root ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--hrm-accent-light), var(--hrm-accent-mid));
+  border-radius: 10px;
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+@keyframes hrm-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hrm-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.hrm-animate-in {
+  animation: hrm-fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.hrm-stagger > * {
+  animation: hrm-fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.hrm-stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.hrm-stagger > *:nth-child(2)  { animation-delay: 40ms; }
+.hrm-stagger > *:nth-child(3)  { animation-delay: 80ms; }
+.hrm-stagger > *:nth-child(4)  { animation-delay: 120ms; }
+.hrm-stagger > *:nth-child(5)  { animation-delay: 160ms; }
+.hrm-stagger > *:nth-child(6)  { animation-delay: 200ms; }
+.hrm-stagger > *:nth-child(7)  { animation-delay: 240ms; }
+.hrm-stagger > *:nth-child(8)  { animation-delay: 280ms; }
+.hrm-stagger > *:nth-child(9)  { animation-delay: 320ms; }
+.hrm-stagger > *:nth-child(10) { animation-delay: 360ms; }
+.hrm-stagger > *:nth-child(n+11) { animation-delay: 400ms; }

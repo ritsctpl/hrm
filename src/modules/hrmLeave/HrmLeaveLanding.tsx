@@ -178,7 +178,7 @@ const HrmLeaveLanding: React.FC = () => {
     ];
 
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Leave Management" />
         <EmployeeDashboard
           balances={balances}
@@ -236,7 +236,7 @@ const HrmLeaveLanding: React.FC = () => {
     ];
 
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Leave Management — Approvals" />
         <EmployeeDashboard
           balances={balances}
@@ -306,7 +306,7 @@ const HrmLeaveLanding: React.FC = () => {
   );
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Leave Management — HR Console" />
       <LeaveFilterBar
         role={role}

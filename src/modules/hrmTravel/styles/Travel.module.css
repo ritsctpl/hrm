@@ -1,8 +1,5 @@
 .landing {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f0f2f5;
+  /* layout handled by .hrm-module-root */
 }
 
 .masterDetail {

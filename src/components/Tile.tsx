@@ -1,23 +1,21 @@
 // src/components/Tile.tsx
 
+"use client";
 import React from "react";
-import { Card, CardContent, Typography, IconButton } from "@mui/material";
-import { Launch } from "@mui/icons-material";
+import { Card, CardContent, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { Button, Tooltip } from "antd";
+import { Tooltip } from "antd";
+import { getModuleIcon } from "@utils/moduleIconMap";
 import styles from "./Tile.module.css";
-import { ExportOutlined } from "@ant-design/icons";
-
 
 interface TileProps {
   description: string;
   url: string;
-  activityId: string; // Ensure this is required
+  activityId: string;
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
+const Tile: React.FC<TileProps> = ({ description, url }) => {
   const router = useRouter();
-  const maxLength = 11;
 
   const handleClick = (event: React.MouseEvent) => {
     const cleanedUrl = url.replace(/\/index\.html$/, "");
@@ -29,32 +27,19 @@ const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
     }
   };
 
-  const handleClickIcon = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const cleanedUrlCtrl = `/hrm${url.replace(/\/index\.html$/, "")}`;
-    window.open(cleanedUrlCtrl, "_blank");
-  };
+  const IconComponent = getModuleIcon(url);
 
   return (
     <Tooltip title={description}>
       <Card className={styles.tile} onClick={handleClick}>
         <CardContent className={styles.cardContent}>
-          <Typography className={styles.description} fontSize="0.9rem">
+          <div className={styles.iconWrapper}>
+            <IconComponent size={24} strokeWidth={1.5} />
+          </div>
+          <Typography className={styles.description}>
             {description}
           </Typography>
-          <Typography variant="body2" className={styles.activityId}>
-            {activityId.length > maxLength
-              ? `${activityId.substring(0, maxLength)}...`
-              : activityId}
-          </Typography>
         </CardContent>
-        <Button
-          type="text"
-          className={styles.iconButton}
-          onClick={handleClickIcon}
-          aria-label={`Open ${description} in new tab`}
-          icon={<ExportOutlined />}
-        />
       </Card>
     </Tooltip>
   );

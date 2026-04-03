@@ -33,7 +33,7 @@ const HrmPayrollLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className={styles.payrollRoot}>
+    <div className={`hrm-module-root ${styles.payrollRoot}`}>
       <CommonAppBar appTitle="Payroll Processing" />
       <div className={styles.payrollContent}>
         <PayrollTabLayout

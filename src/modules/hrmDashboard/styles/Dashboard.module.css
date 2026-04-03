@@ -1,9 +1,5 @@
 /* ===== Root / Layout ===== */
 .dashboardRoot {
-  height: 100vh;
-  background: #f0f2f5;
-  display: flex;
-  flex-direction: column;
 }
 
 .dashboardContent {

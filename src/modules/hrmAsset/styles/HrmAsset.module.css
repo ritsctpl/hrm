@@ -1,11 +1,7 @@
 /* HRM Asset Module — Main Layout */
 
 .assetRoot {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   min-height: 0;
-  background: #f0f2f5;
 }
 
 .assetContent {

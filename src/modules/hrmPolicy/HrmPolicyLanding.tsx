@@ -168,7 +168,7 @@ const HrmPolicyLanding: React.FC = () => {
 
   if (showPolicyViewer && selectedPolicy) {
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`}  />
         <HrmPolicyScreen policy={selectedPolicy} loading={selectedPolicyLoading} onBack={closePolicyViewer} />
       </div>
@@ -235,7 +235,7 @@ const HrmPolicyLanding: React.FC = () => {
   }
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="HR Policies & SOPs"  />
       <Tabs
         activeKey={activeTab}

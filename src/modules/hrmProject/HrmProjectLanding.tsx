@@ -248,7 +248,7 @@ export default function HrmProjectLanding() {
   ];
 
   return (
-    <div className={styles.hrmProjectLanding}>
+    <div className={`hrm-module-root ${styles.hrmProjectLanding}`}>
       <CommonAppBar appTitle="Projects & Resource Allocation" />
       <div className={styles.content}>
         <ProjectDashboardHeader kpis={projectKpis} />

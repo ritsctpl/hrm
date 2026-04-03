@@ -100,7 +100,7 @@ export default function HrmDashboardLanding() {
   };
 
   return (
-    <div className={styles.dashboardRoot}>
+    <div className={`hrm-module-root ${styles.dashboardRoot}`}>
       <CommonAppBar appTitle={APP_BAR_TITLES[dashboardRole] ?? 'FENTA HRM'} />
 
       <div className={styles.dashboardContent}>

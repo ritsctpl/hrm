@@ -166,10 +166,10 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
           style: {
             cursor: 'pointer',
             backgroundColor:
-              selected?.id === record.id ? '#e6f4ff' : undefined,
+              selected?.id === record.id ? 'var(--hrm-bg-active)' : undefined,
           },
         })}
-        scroll={{ y: tableHeight, x: 'max-content' }}
+        scroll={{ y: tableHeight || 400, x: 800 }}
         virtual
       />
     </div>

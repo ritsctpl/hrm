@@ -218,7 +218,7 @@ const HrmAssetLanding: React.FC = () => {
   ];
 
   return (
-    <div className={styles.assetRoot}>
+    <div className={`hrm-module-root ${styles.assetRoot}`}>
       <CommonAppBar appTitle="Asset Management" />
       {(store.dashboard || store.loadingDashboard) && (
         <AssetDashboardHeader dashboard={store.dashboard!} loading={store.loadingDashboard} />

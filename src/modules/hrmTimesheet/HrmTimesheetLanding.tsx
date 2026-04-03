@@ -78,7 +78,7 @@ export default function HrmTimesheetLanding() {
   ];
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="hrm-module-root">
       <CommonAppBar appTitle={`Timesheets \u2014 ${weekLabel}`} />
       <Tabs
         activeKey={activeTab}

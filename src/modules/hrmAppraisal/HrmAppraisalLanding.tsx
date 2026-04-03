@@ -100,7 +100,7 @@ const HrmAppraisalLanding: React.FC = () => {
   }, [isManager, isHr, isAdmin]);
 
   return (
-    <div className={styles.landingRoot}>
+    <div className={`hrm-module-root ${styles.landingRoot}`}>
       <CommonAppBar appTitle="Performance Appraisal" />
       <div className={styles.content}>
         <Tabs

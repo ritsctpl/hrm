@@ -1,0 +1,114 @@
+/* ================================================================
+   FUTURISTIC HRM DESIGN TOKENS
+   Modern indigo/violet accent palette with glassmorphism support
+   ================================================================ */
+
+:root {
+  /* ---- Accent Gradient (Primary Brand) ---- */
+  --hrm-accent:          #6366f1;
+  --hrm-accent-hover:    #4f46e5;
+  --hrm-accent-light:    rgba(99, 102, 241, 0.1);
+  --hrm-accent-mid:      rgba(99, 102, 241, 0.18);
+  --hrm-accent-end:      #8b5cf6;
+  --hrm-gradient:        linear-gradient(135deg, #6366f1, #8b5cf6);
+  --hrm-gradient-subtle: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.06));
+
+  /* ---- Backgrounds ---- */
+  --hrm-bg-primary:      #f8faff;
+  --hrm-bg-secondary:    #f1f5f9;
+  --hrm-bg-white:        #ffffff;
+  --hrm-bg-hover:        rgba(99, 102, 241, 0.05);
+  --hrm-bg-active:       rgba(99, 102, 241, 0.08);
+  --hrm-bg-subtle:       #fafbfe;
+  --hrm-bg-glass:        rgba(255, 255, 255, 0.7);
+  --hrm-bg-glass-hover:  rgba(255, 255, 255, 0.85);
+
+  /* ---- Mesh Background (for landing pages) ---- */
+  --hrm-mesh-bg:
+    radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.03) 0%, transparent 70%),
+    linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%);
+
+  /* ---- Borders ---- */
+  --hrm-border:          #e2e8f0;
+  --hrm-border-light:    rgba(226, 232, 240, 0.6);
+  --hrm-border-glass:    rgba(255, 255, 255, 0.18);
+  --hrm-border-accent:   rgba(99, 102, 241, 0.2);
+  --hrm-divider:         #e2e8f0;
+
+  /* ---- Text ---- */
+  --hrm-text-primary:    #0f172a;
+  --hrm-text-secondary:  #475569;
+  --hrm-text-tertiary:   #94a3b8;
+  --hrm-text-disabled:   #cbd5e1;
+  --hrm-text-accent:     #6366f1;
+  --hrm-text-on-accent:  #ffffff;
+
+  /* ---- Status Colors ---- */
+  --hrm-success:         #10b981;
+  --hrm-success-bg:      rgba(16, 185, 129, 0.08);
+  --hrm-warning:         #f59e0b;
+  --hrm-warning-bg:      rgba(245, 158, 11, 0.08);
+  --hrm-error:           #ef4444;
+  --hrm-error-bg:        rgba(239, 68, 68, 0.08);
+  --hrm-info:            #3b82f6;
+  --hrm-info-bg:         rgba(59, 130, 246, 0.08);
+
+  /* ---- Typography ---- */
+  --hrm-font-family:     'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --hrm-font-size-xs:    11px;
+  --hrm-font-size-sm:    12px;
+  --hrm-font-size-md:    13px;
+  --hrm-font-size-base:  14px;
+  --hrm-font-size-lg:    16px;
+  --hrm-font-size-xl:    20px;
+  --hrm-font-size-xxl:   28px;
+  --hrm-font-weight-normal: 400;
+  --hrm-font-weight-medium: 500;
+  --hrm-font-weight-semi:   600;
+  --hrm-font-weight-bold:   700;
+
+  /* ---- Spacing ---- */
+  --hrm-space-xs:        4px;
+  --hrm-space-sm:        8px;
+  --hrm-space-md:        12px;
+  --hrm-space-base:      16px;
+  --hrm-space-lg:        20px;
+  --hrm-space-xl:        24px;
+  --hrm-space-xxl:       32px;
+
+  /* ---- Radius ---- */
+  --hrm-radius-sm:       6px;
+  --hrm-radius-md:       8px;
+  --hrm-radius-lg:       12px;
+  --hrm-radius-xl:       16px;
+  --hrm-radius-2xl:      20px;
+  --hrm-radius-full:     9999px;
+
+  /* ---- Shadows ---- */
+  --hrm-shadow-xs:       0 1px 2px rgba(15, 23, 42, 0.04);
+  --hrm-shadow-sm:       0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --hrm-shadow-md:       0 4px 6px rgba(15, 23, 42, 0.04), 0 2px 4px rgba(15, 23, 42, 0.06);
+  --hrm-shadow-lg:       0 10px 24px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --hrm-shadow-xl:       0 20px 40px rgba(15, 23, 42, 0.08), 0 8px 16px rgba(15, 23, 42, 0.04);
+  --hrm-shadow-glow:     0 0 20px rgba(99, 102, 241, 0.15);
+  --hrm-shadow-accent:   0 4px 14px rgba(99, 102, 241, 0.25);
+
+  /* ---- Transitions ---- */
+  --hrm-ease-default:    cubic-bezier(0.4, 0, 0.2, 1);
+  --hrm-ease-bounce:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --hrm-duration-fast:   150ms;
+  --hrm-duration-base:   250ms;
+  --hrm-duration-slow:   350ms;
+
+  /* ---- Blur ---- */
+  --hrm-blur-sm:         8px;
+  --hrm-blur-md:         12px;
+  --hrm-blur-lg:         20px;
+
+  /* ---- Layout ---- */
+  --hrm-appbar-height:   48px;
+  --hrm-sidebar-width:   260px;
+  --hrm-content-max:     1440px;
+}

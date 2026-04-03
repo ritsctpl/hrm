@@ -86,7 +86,7 @@ const HrmAccessLanding: React.FC = () => {
   ];
 
   return (
-    <div className={styles.rbacLanding}>
+    <div className={`hrm-module-root ${styles.rbacLanding}`}>
       <CommonAppBar appTitle="Access Control (RBAC)" />
       <div className={styles.tabsWrapper}>
         <Tabs

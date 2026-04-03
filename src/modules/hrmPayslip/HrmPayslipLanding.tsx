@@ -71,7 +71,7 @@ const HrmPayslipLanding: React.FC = () => {
   const defaultTab = isAdminOrHr ? "generate" : "myPayslips";
 
   return (
-    <div className={styles.payslipPage}>
+    <div className={`hrm-module-root ${styles.payslipPage}`}>
       <CommonAppBar appTitle="Payslip Management" />
       <div className={styles.tabsWrapper}>
         <Tabs

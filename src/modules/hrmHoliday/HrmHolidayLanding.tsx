@@ -147,7 +147,7 @@ export default function HrmHolidayLanding() {
   };
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Holiday Management" />
       <HolidayGroupSearchBar
         searchParams={searchParams}

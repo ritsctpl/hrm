@@ -23,7 +23,7 @@ const HrmCompensationLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className={styles.compensationPage}>
+    <div className={`hrm-module-root ${styles.compensationPage}`}>
       <CommonAppBar appTitle="Compensation Management" />
       <div className={styles.tabsWrapper}>
         <CompensationTabLayout />

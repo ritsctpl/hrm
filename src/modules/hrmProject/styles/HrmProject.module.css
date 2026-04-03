@@ -1,9 +1,6 @@
 .hrmProjectLanding {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  /* layout handled by .hrm-module-root */
   min-height: 0;
-  background: #f0f2f5;
   overflow: hidden;
 }
 

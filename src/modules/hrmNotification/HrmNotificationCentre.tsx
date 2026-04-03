@@ -55,7 +55,7 @@ export default function HrmNotificationCentre() {
   const isEmpty = !loadingNotifications && notifications.length === 0;
 
   return (
-    <div className={styles.centreRoot}>
+    <div className={`hrm-module-root ${styles.centreRoot}`}>
       <CommonAppBar appTitle="Notifications" />
 
       <NotificationCentreTemplate

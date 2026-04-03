@@ -189,7 +189,7 @@ const HrmExpenseLanding: React.FC = () => {
   // Employee only sees their expenses
   if (!isSupervisor && !isFinance && !isAdmin) {
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Expense Reports" />
         {myExpensesTab}
       </div>
@@ -281,7 +281,7 @@ const HrmExpenseLanding: React.FC = () => {
   }
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Expense Reports" />
       <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
     </div>

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ConfigProvider, theme as antdTheme } from "antd";
 import { parseCookies, setCookie } from "nookies";
+import { getPresetByKey, STORAGE_KEY, DEFAULT_THEME_KEY, type HrmThemePreset } from "@/config/hrmThemePresets";
 
 // Define the theme type
 type ThemeType = {
@@ -29,6 +30,8 @@ interface ThemeContextType {
   themeData: ThemeType;
   setThemeData: React.Dispatch<React.SetStateAction<ThemeType>>;
   updateThemeFromSite: (newSiteDetails: any) => Promise<void>;
+  hrmThemeKey: string;
+  setHrmTheme: (presetKey: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -36,6 +39,29 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export const ThemeProviderComponent = ({ children }) => {
   const [themeData, setThemeData] = useState(DEFAULT_THEME);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hrmThemeKey, setHrmThemeKey] = useState(DEFAULT_THEME_KEY);
+
+  /**
+   * Applies HRM theme preset CSS variables to :root
+   */
+  const applyHrmPreset = useCallback((preset: HrmThemePreset) => {
+    if (!preset?.variables) return;
+    Object.entries(preset.variables).forEach(([prop, value]) => {
+      document.documentElement.style.setProperty(prop, value);
+    });
+  }, []);
+
+  /**
+   * Sets the HRM module theme, applies CSS variables, and persists to localStorage
+   */
+  const setHrmTheme = useCallback((presetKey: string) => {
+    const preset = getPresetByKey(presetKey);
+    setHrmThemeKey(preset.key);
+    applyHrmPreset(preset);
+    try {
+      localStorage.setItem(STORAGE_KEY, preset.key);
+    } catch {}
+  }, [applyHrmPreset]);
 
   /**
    * Updates CSS custom properties in the document root based on current theme
@@ -170,16 +196,38 @@ export const ThemeProviderComponent = ({ children }) => {
         setThemeData(DEFAULT_THEME);
         updateCSSVariables(DEFAULT_THEME);
       } finally {
+        // Apply saved HRM module theme
+        try {
+          const savedHrmTheme = localStorage.getItem(STORAGE_KEY);
+          if (savedHrmTheme) {
+            const preset = getPresetByKey(savedHrmTheme);
+            setHrmThemeKey(preset.key);
+            applyHrmPreset(preset);
+          }
+        } catch {}
         setIsInitialized(true);
       }
     }
     initializeTheme();
-  }, []);
+  }, [applyHrmPreset]);
 
   // Ensure CSS variables are updated whenever themeData changes
+  // Then re-apply HRM theme on top so user's color choice takes precedence
   useEffect(() => {
     if (isInitialized) {
       updateCSSVariables(themeData);
+      // Re-apply HRM theme on top of site theme so user's choice wins
+      try {
+        const savedKey = localStorage.getItem(STORAGE_KEY);
+        if (savedKey) {
+          const preset = getPresetByKey(savedKey);
+          if (preset?.variables) {
+            Object.entries(preset.variables).forEach(([prop, value]) => {
+              document.documentElement.style.setProperty(prop, value);
+            });
+          }
+        }
+      } catch {}
     }
   }, [themeData, isInitialized]);
 
@@ -193,7 +241,7 @@ export const ThemeProviderComponent = ({ children }) => {
 
   return (
     <ThemeContext.Provider
-      value={{ themeData, setThemeData, updateThemeFromSite }}
+      value={{ themeData, setThemeData, updateThemeFromSite, hrmThemeKey, setHrmTheme }}
     >
       <ConfigProvider theme={antdThemeConfig}>{children}</ConfigProvider>
     </ThemeContext.Provider>

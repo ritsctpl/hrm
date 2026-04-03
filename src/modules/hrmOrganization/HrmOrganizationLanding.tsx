@@ -18,7 +18,7 @@ const HrmOrganizationLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className={styles.container}>
+    <div className={`hrm-module-root ${styles.container}`}>
       <CommonAppBar appTitle="Organization Setup" />
       <div className={styles.content}>
         {view === 'list' ? <OrganizationListTemplate /> : <CompanyDetailTemplate />}

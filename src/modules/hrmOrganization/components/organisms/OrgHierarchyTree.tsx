@@ -107,7 +107,7 @@ const OrgHierarchyTree: React.FC = () => {
   if (isLoading) {
     return (
       <div className={mainStyles.loadingContainer}>
-        <Spin size="large" tip="Loading organization hierarchy..." />
+        <Spin size="large" />
       </div>
     );
   }

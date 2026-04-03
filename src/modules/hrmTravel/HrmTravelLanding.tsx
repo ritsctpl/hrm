@@ -157,7 +157,7 @@ const HrmTravelLanding: React.FC = () => {
   // Employee only sees their requests
   if (!isSupervisor && !isAdmin) {
     return (
-      <div className={styles.landing}>
+      <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Travel Requests" />
         {myRequestsTab}
       </div>
@@ -214,7 +214,7 @@ const HrmTravelLanding: React.FC = () => {
   }
 
   return (
-    <div className={styles.landing}>
+    <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Travel Requests" />
       <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
     </div>
