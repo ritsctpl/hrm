@@ -4,7 +4,6 @@
 import "@/utils/i18n";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import api from "../services/api";
 import jwtDecode from "jwt-decode";
 import { decryptToken } from "../utils/encryption";
 import { Container, Box, Tabs, Tab } from "@mui/material";
@@ -12,6 +11,7 @@ import Tile from "../components/Tile";
 import CommonAppBar from "../components/CommonAppBar";
 import { setCookie } from "nookies";
 import styles from "./HomePage.module.css";
+import { useRbacContext } from "../modules/hrmAccess/context/RbacContext";
 
 interface DecodedToken {
   preferred_username: string;
@@ -19,12 +19,20 @@ interface DecodedToken {
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, token } = useAuth();
-  const [userActivityGroups, setUserActivityGroups] = useState<any[]>([]);
+  const {
+    currentSite,
+    currentOrgModules,
+    modulesByCategory,
+    organizations,
+    isReady,
+    switchOrganization,
+  } = useRbacContext();
+
   const [username, setUsername] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
-  const [filteredActivities, setFilteredActivities] = useState<any[]>([]);
-  const [site, setSite] = useState<string | null>(null);
-  const [allActivities, setAllActivities] = useState<any[]>([]);
+  const [filteredModules, setFilteredModules] = useState<
+    { category: string; modules: typeof currentOrgModules }[]
+  >([]);
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -39,74 +47,68 @@ const HomePage: React.FC = () => {
   }, [isAuthenticated, token]);
 
   useEffect(() => {
-    if (isAuthenticated && username) {
-      api
-        .post("/user-service/retrieve_detailed_user", { user: username })
-        .then((response) => {
-          const groups = response.data.userActivityGroupDetails;
-          console.log(response, "cookiesCheck");
-          console.log(groups, "cookiesCheck");
-
-          setUserActivityGroups(groups);
-          setCookie(null, "site", response.data.site, { path: "/" });
-          setSite(response.data.site);
-          setFilteredActivities(groups); // Set initial filtered activities
-          setCookie(
-            null,
-            "activities",
-            JSON.stringify(response.data.userActivityGroupDetails),
-            { path: "/" }
-          );
-
-          // Flatten all activities for the search suggestions
-          const activities = groups.flatMap((group: any) => group.activityList);
-          setAllActivities(activities);
-        })
-        .catch((error) => {
-          console.error("Error fetching user details:", error);
-        });
+    if (isReady && currentSite) {
+      setCookie(null, "site", currentSite, { path: "/" });
     }
-  }, [isAuthenticated, username]);
+  }, [isReady, currentSite]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  useEffect(() => {
+    if (isReady) {
+      const categories = Object.entries(modulesByCategory).map(
+        ([category, modules]) => ({ category, modules })
+      );
+      setFilteredModules(categories);
+    }
+  }, [isReady, modulesByCategory]);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
   const handleSearchChange = (searchTerm: string) => {
     setActiveTab(0);
     if (searchTerm === "") {
-      setFilteredActivities(userActivityGroups); // Reset to full list
+      const categories = Object.entries(modulesByCategory).map(
+        ([category, modules]) => ({ category, modules })
+      );
+      setFilteredModules(categories);
       return;
     }
 
-    const filtered = userActivityGroups
-      ?.map((group: any) => {
-        const filteredList = group.activityList.filter((activity: any) =>
-          activity.description.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    const filtered = Object.entries(modulesByCategory)
+      .map(([category, modules]) => ({
+        category,
+        modules: modules.filter((m) =>
+          m.moduleName.toLowerCase().includes(searchTerm.toLowerCase())
+        ),
+      }))
+      .filter((group) => group.modules.length > 0);
 
-        return { ...group, activityList: filteredList };
-      })
-      .filter((group: any) => group.activityList.length > 0);
-
-    setFilteredActivities(filtered);
+    setFilteredModules(filtered);
   };
+
   const handleSiteChange = (newSite: string) => {
-    setSite(newSite);
-    // Optionally, handle any additional logic required when the site changes
+    switchOrganization(newSite);
   };
+
+  // Build allActivities from currentOrgModules for CommonAppBar search
+  const allActivities = currentOrgModules.map((m) => ({
+    description: m.moduleName,
+    url: m.appUrl,
+    activityId: m.moduleCode,
+  }));
 
   return (
     <div>
       <CommonAppBar
         allActivities={allActivities}
         username={username}
-        site={site}
+        site={currentSite}
         onSearchChange={handleSearchChange}
         appTitle="Welcome to Fenta HRM"
         onSiteChange={handleSiteChange}
       />
-      {isAuthenticated && (
+      {isAuthenticated && isReady && (
         <Box>
           <Tabs
             value={activeTab}
@@ -114,12 +116,12 @@ const HomePage: React.FC = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
-            {filteredActivities?.map((group, index) => (
-              <Tab key={index} label={group.activityGroupDescription} />
+            {filteredModules.map((group, index) => (
+              <Tab key={index} label={group.category} />
             ))}
           </Tabs>
 
-          {filteredActivities?.map((group, index) => (
+          {filteredModules.map((group, index) => (
             <div
               style={{ height: "85vh", overflow: "scroll" }}
               className="home-tiles"
@@ -129,12 +131,12 @@ const HomePage: React.FC = () => {
             >
               {activeTab === index && (
                 <Box className={styles.tileWrapper}>
-                  {group.activityList.map((activity, activityIndex) => (
+                  {group.modules.map((mod, modIndex) => (
                     <Tile
-                      key={activityIndex}
-                      description={activity.description}
-                      url={activity.url}
-                      activityId={activity.activityId}
+                      key={modIndex}
+                      description={mod.moduleName}
+                      url={mod.appUrl}
+                      activityId={mod.moduleCode}
                     />
                   ))}
                 </Box>

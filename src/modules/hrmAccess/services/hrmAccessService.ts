@@ -19,6 +19,14 @@ import type {
   UserAccessReportResponse,
   RbacAuditLogDto,
 } from '../types/api.types';
+import type {
+  UserModulesByOrganizationResponse,
+  UpdateDefaultSiteResponse,
+  SystemInitializeRequest,
+  SystemInitializeResponse,
+  CreateEmployeeWithUserRequest,
+  CreateEmployeeWithUserResponse,
+} from '../types/rbac.types';
 
 const BASE = '/hrm-service/rbac';
 
@@ -112,8 +120,10 @@ export class HrmAccessService {
   }
 
   static async fetchAllRoles(site: string): Promise<RoleResponse[]> {
-    const res = await api.post(`${BASE}/role/retrieveAll`, { site });
-    return Array.isArray(res.data) ? res.data : res.data?.content ?? [];
+    const res = await api.post(`${BASE}/role/retrieveAll`, { site, size: 1000, page: 0 });
+    if (Array.isArray(res.data)) return res.data;
+    if (res.data?.content && Array.isArray(res.data.content)) return res.data.content;
+    return [];
   }
 
   static async fetchActiveRoles(site: string): Promise<RoleResponse[]> {
@@ -234,6 +244,37 @@ export class HrmAccessService {
 
   static async checkAccess(payload: AccessCheckRequest): Promise<AccessCheckResponse> {
     const res = await api.post(`${BASE}/checkAccess`, payload);
+    return res.data;
+  }
+
+  // ---- RBAC User Modules (EN-2026-017) ----
+
+  static async fetchUserModulesByOrganization(
+    userId: string
+  ): Promise<UserModulesByOrganizationResponse> {
+    const res = await api.post(`${BASE}/userModulesByOrganization`, { userId });
+    return res.data;
+  }
+
+  static async updateDefaultSite(
+    userId: string,
+    newSite: string
+  ): Promise<UpdateDefaultSiteResponse> {
+    const res = await api.post(`${BASE}/updateDefaultSite`, { userId, newSite });
+    return res.data;
+  }
+
+  static async getUserSitePreference(
+    userId: string
+  ): Promise<UpdateDefaultSiteResponse> {
+    const res = await api.post(`${BASE}/getUserSitePreference`, { userId });
+    return res.data;
+  }
+
+  static async initializeSystem(
+    request: SystemInitializeRequest
+  ): Promise<SystemInitializeResponse> {
+    const res = await api.post('/hrm-service/initialize', request);
     return res.data;
   }
 
