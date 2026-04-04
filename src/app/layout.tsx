@@ -75,8 +75,7 @@ import { AuthProvider } from "../context/AuthContext";
 import "@/utils/i18n";
 import LoadingWrapper from "@components/LoadingWrapper";
 import { ThemeProviderComponent } from "@components/ThemeContext";
-import AppSidebar from "@components/AppSidebar";
-import AppFooter from "@components/AppFooter";
+import RbacProvider from "@components/RbacProvider";
 import himalayaLogo from "../../public/ico/himalaya.ico";
 import ritsLogo from "../../public/ico/rits.ico";
 import exideLogo from "../../public/ico/exide.ico";
@@ -141,17 +140,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          <ThemeProviderComponent>
-            <LoadingWrapper>
-              <div style={{ display: 'flex', minHeight: '100vh' }}>
-                <AppSidebar />
-                <div style={{ flex: 1, marginLeft: 56, paddingBottom: 32, minHeight: 0, display: 'flex', flexDirection: 'column' as const }}>
-                  {children}
-                </div>
-              </div>
-              <AppFooter />
-            </LoadingWrapper>
-          </ThemeProviderComponent>
+          <RbacProvider>
+            <ThemeProviderComponent>
+              <LoadingWrapper>{children}</LoadingWrapper>
+            </ThemeProviderComponent>
+          </RbacProvider>
         </AuthProvider>
       </body>
     </html>

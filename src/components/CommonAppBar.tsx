@@ -26,6 +26,7 @@ import { message, Modal, Select } from "antd";
 import { decryptToken } from "@utils/encryption";
 import jwtDecode from "jwt-decode";
 import { updateUserSite } from "@services/userService";
+import { useRbacContext } from "@modules/hrmAccess/context/RbacContext";
 import { HomeOutlined, LogoutOutlined } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import ritsLogo from "../images1/rits-logo.png";
@@ -59,6 +60,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   setUserDetails,
 }) => {
   const { isAuthenticated, token, logout } = useAuth();
+  const rbac = useRbacContext();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

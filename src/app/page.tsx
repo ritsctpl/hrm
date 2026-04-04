@@ -1,57 +1,149 @@
-'use client';
+// src/app/page.tsx
 
-import '@/utils/i18n';
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
-import CommonAppBar from '../components/CommonAppBar';
-import Tile from '../components/Tile';
-import RightPanel from '../components/RightPanel';
-import Breadcrumbs from '../components/Breadcrumbs';
-import { CENTER_GRID_GROUPS, MOCK_BADGE_COUNTS } from '@/config/dashboardConfig';
-import { getModuleIcon } from '@utils/moduleIconMap';
-import styles from './HomePage.module.css';
+"use client";
+import "@/utils/i18n";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import jwtDecode from "jwt-decode";
+import { decryptToken } from "../utils/encryption";
+import { Container, Box, Tabs, Tab } from "@mui/material";
+import Tile from "../components/Tile";
+import CommonAppBar from "../components/CommonAppBar";
+import { setCookie } from "nookies";
+import styles from "./HomePage.module.css";
+import { useRbacContext } from "../modules/hrmAccess/context/RbacContext";
+
+interface DecodedToken {
+  preferred_username: string;
+}
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  const { t } = useTranslation();
-  const [site, setSite] = useState<string | null>(null);
+  const { isAuthenticated, token } = useAuth();
+  const {
+    currentSite,
+    currentOrgModules,
+    modulesByCategory,
+    organizations,
+    isReady,
+    switchOrganization,
+  } = useRbacContext();
+
+  const [username, setUsername] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [filteredModules, setFilteredModules] = useState<
+    { category: string; modules: typeof currentOrgModules }[]
+  >([]);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      try {
+        const decryptedToken = decryptToken(token);
+        const decoded: DecodedToken = jwtDecode<DecodedToken>(decryptedToken);
+        setUsername(decoded.preferred_username);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    }
+  }, [isAuthenticated, token]);
+
+  useEffect(() => {
+    if (isReady && currentSite) {
+      setCookie(null, "site", currentSite, { path: "/" });
+    }
+  }, [isReady, currentSite]);
+
+  useEffect(() => {
+    if (isReady) {
+      const categories = Object.entries(modulesByCategory).map(
+        ([category, modules]) => ({ category, modules })
+      );
+      setFilteredModules(categories);
+    }
+  }, [isReady, modulesByCategory]);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleSearchChange = (searchTerm: string) => {
+    setActiveTab(0);
+    if (searchTerm === "") {
+      const categories = Object.entries(modulesByCategory).map(
+        ([category, modules]) => ({ category, modules })
+      );
+      setFilteredModules(categories);
+      return;
+    }
+
+    const filtered = Object.entries(modulesByCategory)
+      .map(([category, modules]) => ({
+        category,
+        modules: modules.filter((m) =>
+          m.moduleName.toLowerCase().includes(searchTerm.toLowerCase())
+        ),
+      }))
+      .filter((group) => group.modules.length > 0);
+
+    setFilteredModules(filtered);
+  };
+
+  const handleSiteChange = (newSite: string) => {
+    switchOrganization(newSite);
+  };
+
+  // Build allActivities from currentOrgModules for CommonAppBar search
+  const allActivities = currentOrgModules.map((m) => ({
+    description: m.moduleName,
+    url: m.appUrl,
+    activityId: m.moduleCode,
+  }));
 
   return (
     <div>
       <CommonAppBar
-        appTitle="Fenta HRM"
-        site={site}
-        onSiteChange={(newSite: string) => setSite(newSite)}
-        setUserDetails={(data: any) => {
-          setSite(data.currentSite || data.site);
-        }}
+        allActivities={allActivities}
+        username={username}
+        site={currentSite}
+        onSearchChange={handleSearchChange}
+        appTitle="Welcome to Fenta HRM"
+        onSiteChange={handleSiteChange}
       />
-      {isAuthenticated && (
-        <div className={styles.homeLayout}>
-          <div className={styles.centerGrid}>
-            <Breadcrumbs />
-            {CENTER_GRID_GROUPS.map((group) => (
-              <div key={group.key} className={styles.groupSection}>
-                <h3 className={styles.groupLabel}>{t(group.labelKey)}</h3>
-                <div className={styles.tileWrapper}>
-                  {group.apps?.map((app) => (
+      {isAuthenticated && isReady && (
+        <Box>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+          >
+            {filteredModules.map((group, index) => (
+              <Tab key={index} label={group.category} />
+            ))}
+          </Tabs>
+
+          {filteredModules.map((group, index) => (
+            <div
+              style={{ height: "85vh", overflow: "scroll" }}
+              className="home-tiles"
+              key={index}
+              role="tabpanel"
+              hidden={activeTab !== index}
+            >
+              {activeTab === index && (
+                <Box className={styles.tileWrapper}>
+                  {group.modules.map((mod, modIndex) => (
                     <Tile
-                      key={app.key}
-                      description={t(app.labelKey)}
-                      url={app.route}
-                      activityId={app.key}
-                      subLabel={t(app.subLabelKey)}
-                      badgeCount={MOCK_BADGE_COUNTS[app.key] || 0}
-                      icon={getModuleIcon(app.route)}
+                      key={modIndex}
+                      description={mod.moduleName}
+                      url={mod.appUrl}
+                      activityId={mod.moduleCode}
                     />
                   ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <RightPanel />
-        </div>
+                </Box>
+              )}
+            </div>
+          ))}
+        </Box>
       )}
     </div>
   );
