@@ -1554,5 +1554,10 @@ export const kannadaLanguage = {
   "overRideRangeValue": "ರೇಂಜ ಮೂಲಕ ಮಾನವಿದೆ",
   "selectNcCode": "NC ಕೋಡ್ ಅಯ್ಕೆ",
   "ncLog": "NC ಲೋಗ",
-  "hideColumn": "ಕ೉ಲಂ ಛೋಡಿ"
+  "hideColumn": "ಕ೉ಲಂ ಛೋಡಿ",
+  "hrmHomeTitle": "Fenta HRM ಗೆ ಸ್ವಾಗತ",
+  "hrmHomeLoading": "ಮಾಡ್ಯೂಲ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "hrmHomeError": "ಮಾಡ್ಯೂಲ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+  "hrmHomeEmpty": "ಯಾವುದೇ ಮಾಡ್ಯೂಲ್‌ಗಳು ಲಭ್ಯವಿಲ್ಲ",
+  "hrmHomeEmptySubtext": "ನಿಮಗೆ ಯಾವುದೇ ಮಾಡ್ಯೂಲ್‌ಗಳಿಗೆ ಪ್ರವೇಶವಿಲ್ಲ। ನಿಮ್ಮ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ."
 }

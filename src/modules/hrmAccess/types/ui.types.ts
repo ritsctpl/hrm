@@ -154,6 +154,31 @@ export interface UserRoleAssignmentTemplateProps {
   user: { id: string; name: string } | null;
 }
 
+// ---- Home Page ----
+
+export interface HomePageProps {
+  className?: string;
+}
+
+export interface ModuleCategoryGroupProps {
+  category: string;
+  modules: {
+    moduleCode: string;
+    moduleName: string;
+    appUrl: string;
+  }[];
+}
+
+export interface ModuleTileSkeletonProps {
+  count?: number;
+}
+
+export interface HrmEmptyStateProps {
+  title: string;
+  subtext?: string;
+  icon?: React.ReactNode;
+}
+
 // ---- Shared UI ----
 
 export interface KeycloakUserSummaryUI {

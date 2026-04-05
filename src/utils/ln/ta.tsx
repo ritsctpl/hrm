@@ -1577,5 +1577,10 @@ export const tamilLanguage = {
   "overRideRangeValue": "ரேங்கு மூலக மானவிடு",
   "selectNcCode": "NC கோடு தேர்ந்தெடுக்கவும்",
   "ncLog": "NC லோக",
-  "hideColumn": "நிரலை மறைக்கவும்"
+  "hideColumn": "நிரலை மறைக்கவும்",
+  "hrmHomeTitle": "Fenta HRM க்கு வரவேற்கிறோம்",
+  "hrmHomeLoading": "தொகுதிகள் ஏற்றப்படுகின்றன...",
+  "hrmHomeError": "தொகுதிகளை ஏற்ற முடியவில்லை",
+  "hrmHomeEmpty": "தொகுதிகள் எதுவும் இல்லை",
+  "hrmHomeEmptySubtext": "உங்களுக்கு எந்த தொகுத��களுக்கும் அணுகல் இல்லை. உங்கள் நிர்வாகியைத் தொடர்புகொள்ளுங்கள்."
 }

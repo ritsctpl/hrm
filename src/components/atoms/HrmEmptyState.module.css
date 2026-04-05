@@ -1,0 +1,29 @@
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  min-height: 300px;
+}
+
+.icon {
+  font-size: 48px;
+  color: #bfbfbf;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #595959;
+  margin: 0 0 8px 0;
+}
+
+.subtext {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+  max-width: 400px;
+}

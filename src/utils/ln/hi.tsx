@@ -1562,5 +1562,10 @@ export const hindiLanguage = {
   "overRideRangeValue": "रेंज मान परिवर्तन करें",
   "selectNcCode": "NC कोड चुनें",
   "ncLog": "NC लॉग",
-  "hideColumn": "कॉलम छोड़ें"
+  "hideColumn": "कॉलम छोड़ें",
+  "hrmHomeTitle": "Fenta HRM में आपका स्वागत है",
+  "hrmHomeLoading": "मॉड्यूल लोड हो रहे हैं...",
+  "hrmHomeError": "मॉड्यूल लोड करने में विफल",
+  "hrmHomeEmpty": "कोई मॉड्यूल उपलब्ध नहीं",
+  "hrmHomeEmptySubtext": "आपके पास किसी भी मॉड्यूल की पहुँच नहीं है। अपने व्यवस्थापक से संपर्क करें।"
 }

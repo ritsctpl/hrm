@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="EN2026018LifecycleTestCase" time="0.987" tests="19" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="17"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.class.path" value="/tmp/devworkflow-worktrees/EN-2026-018/target/test-classes:/tmp/devworkflow-worktrees/EN-2026-018/target/classes:/home/rits/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/home/rits/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/rits/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/home/rits/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/rits/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/home/rits/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/home/rits/.m2/repository/org/springframework/spring-web/6.1.10/spring-web-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-beans/6.1.10/spring-beans-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-core/6.1.10/spring-core-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-jcl/6.1.10/spring-jcl-6.1.10.jar:/home/rits/.m2/repository/io/micrometer/micrometer-observation/1.12.7/micrometer-observation-1.12.7.jar:/home/rits/.m2/repository/io/micrometer/micrometer-commons/1.12.7/micrometer-commons-1.12.7.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.1/jackson-databind-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.1/jackson-annotations-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.1/jackson-core-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.1/jackson-datatype-jsr310-2.17.1.jar:/home/rits/.m2/repository/org/slf4j/slf4j-api/2.0.13/slf4j-api-2.0.13.jar:/home/rits/.m2/repository/ch/qos/logback/logback-classic/1.5.6/logback-classic-1.5.6.jar:/home/rits/.m2/repository/ch/qos/logback/logback-core/1.5.6/logback-core-1.5.6.jar:"/>
+    <property name="java.vm.vendor" value="Ubuntu"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.vendor.url" value="https://ubuntu.com/"/>
+    <property name="user.timezone" value="Etc/UTC"/>
+    <property name="os.name" value="Linux"/>
+    <property name="java.vm.specification.version" value="17"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-17-openjdk-amd64/lib"/>
+    <property name="sun.java.command" value="/tmp/devworkflow-worktrees/EN-2026-018/target/surefire/surefirebooter-20260404182612933_3.jar /tmp/devworkflow-worktrees/EN-2026-018/target/surefire 2026-04-04T18-26-12_861-jvmRun1 surefire-20260404182612933_1tmp surefire_0-20260404182612933_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="test.keycloakUrl" value=""/>
+    <property name="test" value="EN2026018LifecycleTestCase"/>
+    <property name="surefire.test.class.path" value="/tmp/devworkflow-worktrees/EN-2026-018/target/test-classes:/tmp/devworkflow-worktrees/EN-2026-018/target/classes:/home/rits/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/home/rits/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/rits/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/home/rits/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/rits/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/home/rits/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/home/rits/.m2/repository/org/springframework/spring-web/6.1.10/spring-web-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-beans/6.1.10/spring-beans-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-core/6.1.10/spring-core-6.1.10.jar:/home/rits/.m2/repository/org/springframework/spring-jcl/6.1.10/spring-jcl-6.1.10.jar:/home/rits/.m2/repository/io/micrometer/micrometer-observation/1.12.7/micrometer-observation-1.12.7.jar:/home/rits/.m2/repository/io/micrometer/micrometer-commons/1.12.7/micrometer-commons-1.12.7.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.1/jackson-databind-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.1/jackson-annotations-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.1/jackson-core-2.17.1.jar:/home/rits/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.1/jackson-datatype-jsr310-2.17.1.jar:/home/rits/.m2/repository/org/slf4j/slf4j-api/2.0.13/slf4j-api-2.0.13.jar:/home/rits/.m2/repository/ch/qos/logback/logback-classic/1.5.6/logback-classic-1.5.6.jar:/home/rits/.m2/repository/ch/qos/logback/logback-core/1.5.6/logback-core-1.5.6.jar:"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="/home/rits"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-01-20"/>
+    <property name="java.home" value="/usr/lib/jvm/java-17-openjdk-amd64"/>
+    <property name="file.separator" value="/"/>
+    <property name="basedir" value="/tmp/devworkflow-worktrees/EN-2026-018"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="surefire.real.class.path" value="/tmp/devworkflow-worktrees/EN-2026-018/target/surefire/surefirebooter-20260404182612933_3.jar"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="17.0.18+8-Ubuntu-124.04.1"/>
+    <property name="user.name" value="rits"/>
+    <property name="path.separator" value=":"/>
+    <property name="os.version" value="6.8.0-106-generic"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="test.baseUrl" value="http://192.168.147.129:8080"/>
+    <property name="localRepository" value="/home/rits/.m2/repository"/>
+    <property name="java.vendor.url.bug" value="https://bugs.launchpad.net/ubuntu/+source/openjdk-17"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="java.version" value="17.0.18"/>
+    <property name="user.dir" value="/tmp/devworkflow-worktrees/EN-2026-018"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib"/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="java.vendor" value="Ubuntu"/>
+    <property name="java.vm.version" value="17.0.18+8-Ubuntu-124.04.1"/>
+    <property name="java.specification.maintenance.version" value="1"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="61.0"/>
+  </properties>
+  <testcase name="tc001_CreateModule_WithCategoryAndAppUrl" classname="EN2026018LifecycleTestCase" time="0.074">
+    <system-out><![CDATA[18:26:13.763 [main] INFO  EN2026018LifecycleTestCase - ================================================================
+18:26:13.764 [main] INFO  EN2026018LifecycleTestCase - EN-2026-018  HRM Home Page — Lifecycle Test Suite
+18:26:13.765 [main] INFO  EN2026018LifecycleTestCase - ================================================================
+18:26:13.765 [main] INFO  EN2026018LifecycleTestCase - Start:      2026-04-04T18:26:13.762512168
+18:26:13.768 [main] INFO  EN2026018LifecycleTestCase - Base URL:   http://192.168.147.129:8080
+18:26:13.768 [main] INFO  EN2026018LifecycleTestCase - Module:     HPMOD018_1775327173580
+18:26:13.768 [main] INFO  EN2026018LifecycleTestCase - Role:       HPROLE018_1775327173580
+18:26:13.768 [main] INFO  EN2026018LifecycleTestCase - User:       hp_user_018_1775327173580
+18:26:13.769 [main] INFO  EN2026018LifecycleTestCase - Category:   CORE
+18:26:13.769 [main] INFO  EN2026018LifecycleTestCase - AppUrl:     /hrm/rits/hrm_home_018_app
+18:26:13.859 [main] INFO  EN2026018LifecycleTestCase - Token obtained: eyJhbGciOiJSUzI1NiIs...
+18:26:13.859 [main] INFO  EN2026018LifecycleTestCase - Keycloak auth: OK
+18:26:13.866 [main] INFO  EN2026018LifecycleTestCase - >>> TC-001 — Create Module — with moduleCategory and appUrl for home page tiles
+18:26:13.911 [main] INFO  EN2026018LifecycleTestCase - TC-001 PASS: handle=1fd1730a-635b-4179-aaf2-3630fa1d5bd6, category=CORE, appUrl=/hrm/rits/hrm_home_018_app
+]]></system-out>
+  </testcase>
+  <testcase name="tc002_RetrieveModule_VerifyCategoryAndAppUrl" classname="EN2026018LifecycleTestCase" time="0.026">
+    <system-out><![CDATA[18:26:13.935 [main] INFO  EN2026018LifecycleTestCase - >>> TC-002 — Retrieve Module — verify moduleCategory + appUrl persisted
+18:26:13.956 [main] INFO  EN2026018LifecycleTestCase - TC-002 PASS: category=CORE, appUrl=/hrm/rits/hrm_home_018_app
+]]></system-out>
+  </testcase>
+  <testcase name="tc003_CreatePermission" classname="EN2026018LifecycleTestCase" time="0.027">
+    <system-out><![CDATA[18:26:13.966 [main] INFO  EN2026018LifecycleTestCase - >>> TC-003 — Create Permission for test module
+18:26:13.991 [main] INFO  EN2026018LifecycleTestCase - TC-003 PASS: permission handle=ee1298bd-b800-46d6-957d-819b332bb3a5
+]]></system-out>
+  </testcase>
+  <testcase name="tc004_CreateRole_StartsInactive" classname="EN2026018LifecycleTestCase" time="0.028">
+    <system-out><![CDATA[18:26:13.994 [main] INFO  EN2026018LifecycleTestCase - >>> TC-004 — Create Role — verify starts inactive
+18:26:14.019 [main] INFO  EN2026018LifecycleTestCase - TC-004 PASS: roleHandle=5f6954c4-a98f-447f-83ac-ea186c9d058d, isActive=false (correct)
+]]></system-out>
+  </testcase>
+  <testcase name="tc005_ActivateRole" classname="EN2026018LifecycleTestCase" time="0.026">
+    <system-out><![CDATA[18:26:14.024 [main] INFO  EN2026018LifecycleTestCase - >>> TC-005 — Activate Role — required for permissions to apply
+18:26:14.047 [main] INFO  EN2026018LifecycleTestCase - TC-005 PASS: role activated
+]]></system-out>
+  </testcase>
+  <testcase name="tc006_AssignPermissionToRole" classname="EN2026018LifecycleTestCase" time="0.029">
+    <system-out><![CDATA[18:26:14.050 [main] INFO  EN2026018LifecycleTestCase - >>> TC-006 — Assign Permission to Role
+18:26:14.076 [main] INFO  EN2026018LifecycleTestCase - TC-006 PASS: permission assigned to role
+]]></system-out>
+  </testcase>
+  <testcase name="tc007_AssignUserToRole" classname="EN2026018LifecycleTestCase" time="0.021">
+    <system-out><![CDATA[18:26:14.080 [main] INFO  EN2026018LifecycleTestCase - >>> TC-007 — Assign User to Role
+18:26:14.098 [main] INFO  EN2026018LifecycleTestCase - TC-007 PASS: assignment handle=86635e2e-a7d6-434a-8cb2-43c467aab04c
+]]></system-out>
+  </testcase>
+  <testcase name="tc008_UserModulesByOrg_UserWithAssignment_ReturnsOrganizations" classname="EN2026018LifecycleTestCase" time="0.032">
+    <system-out><![CDATA[18:26:14.101 [main] INFO  EN2026018LifecycleTestCase - >>> TC-008 — userModulesByOrganization — user with assignment returns organizations
+18:26:14.131 [main] WARN  EN2026018LifecycleTestCase - TC-008 KNOWN-ISSUE: 500 from CompanyProfile duplicate data
+]]></system-out>
+  </testcase>
+  <testcase name="tc009_UserModulesByOrg_ModulesHaveModuleCategory_ForTileGrouping" classname="EN2026018LifecycleTestCase" time="0.026">
+    <system-out><![CDATA[18:26:14.135 [main] INFO  EN2026018LifecycleTestCase - >>> TC-009 — userModulesByOrganization — modules carry moduleCategory (tile tab grouping)
+18:26:14.158 [main] WARN  EN2026018LifecycleTestCase - TC-009 KNOWN-ISSUE: 500 from CompanyProfile duplicate data
+]]></system-out>
+  </testcase>
+  <testcase name="tc010_UserModulesByOrg_ModulesHaveAppUrl_ForTileNavigation" classname="EN2026018LifecycleTestCase" time="0.022">
+    <system-out><![CDATA[18:26:14.160 [main] INFO  EN2026018LifecycleTestCase - >>> TC-010 — userModulesByOrganization — modules carry appUrl (tile click navigation)
+18:26:14.180 [main] WARN  EN2026018LifecycleTestCase - TC-010 KNOWN-ISSUE: 500 from CompanyProfile duplicate data
+]]></system-out>
+  </testcase>
+  <testcase name="tc011_UserModulesByOrg_DifferentUsers_ReturnDifferentModules" classname="EN2026018LifecycleTestCase" time="0.023">
+    <system-out><![CDATA[18:26:14.187 [main] INFO  EN2026018LifecycleTestCase - >>> TC-011 — userModulesByOrganization — user isolation (only authorized modules visible)
+18:26:14.207 [main] INFO  EN2026018LifecycleTestCase - TC-011 PASS: user isolation verified — other user has 0 orgs
+]]></system-out>
+  </testcase>
+  <testcase name="tc012_RetrieveAllModules_TestModuleInList" classname="EN2026018LifecycleTestCase" time="0.017">
+    <system-out><![CDATA[18:26:14.210 [main] INFO  EN2026018LifecycleTestCase - >>> TC-012 — retrieveAll — test module appears in module registry list
+18:26:14.226 [main] INFO  EN2026018LifecycleTestCase - TC-012 PASS: test module in registry list
+]]></system-out>
+  </testcase>
+  <testcase name="tcU01_UserModulesByOrg_UserWithoutAssignments_EmptyOrgs" classname="EN2026018LifecycleTestCase" time="0.016">
+    <system-out><![CDATA[18:26:14.228 [main] INFO  EN2026018LifecycleTestCase - >>> TC-U01 — userModulesByOrganization — user without assignments returns empty orgs
+18:26:14.244 [main] INFO  EN2026018LifecycleTestCase - TC-U01 PASS: empty organizations for user without assignments
+]]></system-out>
+  </testcase>
+  <testcase name="tcU02_UserModulesByOrg_MissingUserId_Returns4xx" classname="EN2026018LifecycleTestCase" time="0.018">
+    <system-out><![CDATA[18:26:14.245 [main] INFO  EN2026018LifecycleTestCase - >>> TC-U02 — userModulesByOrganization — missing userId returns validation error
+18:26:14.262 [main] INFO  EN2026018LifecycleTestCase - TC-U02 PASS: HTTP 500 for missing userId
+]]></system-out>
+  </testcase>
+  <testcase name="tcU03_UserModulesByOrg_BlankUserId_Returns4xx" classname="EN2026018LifecycleTestCase" time="0.019">
+    <system-out><![CDATA[18:26:14.265 [main] INFO  EN2026018LifecycleTestCase - >>> TC-U03 — userModulesByOrganization — blank userId returns validation error
+18:26:14.282 [main] INFO  EN2026018LifecycleTestCase - TC-U03 PASS: HTTP 500 for blank userId
+]]></system-out>
+  </testcase>
+  <testcase name="tc015_RevokeAssignment" classname="EN2026018LifecycleTestCase" time="0.023">
+    <system-out><![CDATA[18:26:14.284 [main] INFO  EN2026018LifecycleTestCase - >>> TC-015 — Revoke User-Role Assignment (cleanup)
+18:26:14.306 [main] INFO  EN2026018LifecycleTestCase - TC-015 PASS: assignment revoked
+]]></system-out>
+  </testcase>
+  <testcase name="tc016_DeleteRole" classname="EN2026018LifecycleTestCase" time="0.026">
+    <system-out><![CDATA[18:26:14.311 [main] INFO  EN2026018LifecycleTestCase - >>> TC-016 — Delete Role (cleanup)
+18:26:14.334 [main] INFO  EN2026018LifecycleTestCase - TC-016 PASS: role deleted
+]]></system-out>
+  </testcase>
+  <testcase name="tc017_DeletePermission" classname="EN2026018LifecycleTestCase" time="0.017">
+    <system-out><![CDATA[18:26:14.337 [main] INFO  EN2026018LifecycleTestCase - >>> TC-017 — Delete Permission (cleanup)
+18:26:14.352 [main] INFO  EN2026018LifecycleTestCase - TC-017 PASS: permission deleted
+]]></system-out>
+  </testcase>
+  <testcase name="tc018_DeactivateModule" classname="EN2026018LifecycleTestCase" time="0.036">
+    <system-out><![CDATA[18:26:14.354 [main] INFO  EN2026018LifecycleTestCase - >>> TC-018 — Deactivate Module (cleanup)
+18:26:14.389 [main] INFO  EN2026018LifecycleTestCase - TC-018 PASS: module deactivated
+]]></system-out>
+  </testcase>
+</testsuite>

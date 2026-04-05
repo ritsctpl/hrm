@@ -1,61 +1,56 @@
 // src/components/Tile.tsx
 
 import React from "react";
-import { Card, CardContent, Typography, IconButton } from "@mui/material";
-import { Launch } from "@mui/icons-material";
-import { useRouter } from "next/navigation";
+import { Card, CardContent, Typography } from "@mui/material";
+import Link from "next/link";
 import { Button, Tooltip } from "antd";
 import styles from "./Tile.module.css";
 import { ExportOutlined } from "@ant-design/icons";
 
-
 interface TileProps {
   description: string;
   url: string;
-  activityId: string; // Ensure this is required
+  activityId: string;
 }
 
 const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
-  const router = useRouter();
   const maxLength = 11;
-
-  const handleClick = (event: React.MouseEvent) => {
-    const cleanedUrl = url.replace(/\/index\.html$/, "");
-
-    if (event.ctrlKey) {
-      window.open(`/hrm${cleanedUrl}`, "_blank");
-    } else {
-      router.push(cleanedUrl);
-    }
-  };
+  const cleanedUrl = url?.replace(/\/index\.html$/, "") || "/";
 
   const handleClickIcon = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    const cleanedUrlCtrl = `/hrm${url.replace(/\/index\.html$/, "")}`;
-    window.open(cleanedUrlCtrl, "_blank");
+    window.open(`/hrm${cleanedUrl}`, "_blank");
   };
 
   return (
     <Tooltip title={description}>
-      <Card className={styles.tile} onClick={handleClick}>
-        <CardContent className={styles.cardContent}>
-          <Typography className={styles.description} fontSize="0.9rem">
-            {description}
-          </Typography>
-          <Typography variant="body2" className={styles.activityId}>
-            {activityId.length > maxLength
-              ? `${activityId.substring(0, maxLength)}...`
-              : activityId}
-          </Typography>
-        </CardContent>
-        <Button
-          type="text"
-          className={styles.iconButton}
-          onClick={handleClickIcon}
-          aria-label={`Open ${description} in new tab`}
-          icon={<ExportOutlined />}
-        />
-      </Card>
+      <Link
+        href={cleanedUrl}
+        className={styles.tileLink}
+        data-testid={`tile-link-${activityId}`}
+      >
+        <Card className={styles.tile}>
+          <CardContent className={styles.cardContent}>
+            <Typography className={styles.description} fontSize="0.9rem">
+              {description}
+            </Typography>
+            <Typography variant="body2" className={styles.activityId}>
+              {activityId.length > maxLength
+                ? `${activityId.substring(0, maxLength)}...`
+                : activityId}
+            </Typography>
+          </CardContent>
+          <Button
+            type="text"
+            className={styles.iconButton}
+            onClick={handleClickIcon}
+            aria-label={`Open ${description} in new tab`}
+            data-testid={`tile-open-new-tab-${activityId}`}
+            icon={<ExportOutlined />}
+          />
+        </Card>
+      </Link>
     </Tooltip>
   );
 };

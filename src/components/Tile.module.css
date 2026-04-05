@@ -1,17 +1,23 @@
-.tile {
+.tileLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
   width: 160px;
   height: 160px;
+}
+
+.tile {
+  width: 100%;
+  height: 100%;
   border-radius: 8px;
   border: 2px solid #80808066;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  /* padding: 10px; */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease-in-out;
   cursor: pointer;
   background-color: #ffffff;
-  /* margin: 12px; */
 }
 
 .tile:hover {

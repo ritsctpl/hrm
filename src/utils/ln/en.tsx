@@ -2014,5 +2014,10 @@ export const englishLanguage = {
   "oeeReportDeltaUp": "up from previous period",
   "oeeReportDeltaDown": "down from previous period",
   "oeeReportDeltaNoChange": "No change",
-  "hideColumn": "Hide Column"
+  "hideColumn": "Hide Column",
+  "hrmHomeTitle": "Welcome to Fenta HRM",
+  "hrmHomeLoading": "Loading modules...",
+  "hrmHomeError": "Failed to load modules",
+  "hrmHomeEmpty": "No modules available",
+  "hrmHomeEmptySubtext": "You don't have access to any modules. Contact your administrator."
 }
