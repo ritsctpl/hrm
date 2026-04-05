@@ -4,6 +4,7 @@ import {
   AppBar,
   Toolbar,
   Typography,
+  Button,
   TextField,
   Box,
   Autocomplete,
@@ -13,31 +14,28 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { fetchSiteAll, siteServices } from "@services/siteServices"; // Import siteServices
+import { fetchSiteAll } from "@services/siteServices";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
-import { Building2, LogOut } from "lucide-react";
 import styles from "./CommonAppBar.module.css";
 import logo from "../images/rits-logo-removebg-preview.png"; // Import the image
 import { destroyCookie, parseCookies, setCookie } from "nookies";
-import api from "@services/api";
 import { useTranslation } from "react-i18next";
 import { message, Modal, Select } from "antd";
+import { DecodedToken } from "@modules/changeEquipmentStatus/types/changeEquipmentType";
 import { decryptToken } from "@utils/encryption";
 import jwtDecode from "jwt-decode";
 import { updateUserSite } from "@services/userService";
 import { useRbacContext } from "@modules/hrmAccess/context/RbacContext";
-import { HomeOutlined, LogoutOutlined } from "@mui/icons-material";
-import SearchIcon from "@mui/icons-material/Search";
+import { HomeOutlined } from "@mui/icons-material";
 import ritsLogo from "../images1/rits-logo.png";
 import himalayaLogo from "../images/image1.png"; // Add this import
 import exideLogo from "../images/EXIDE-logo.png"; // Add this import
-// LoadingWrapper removed - using inline appbar shell instead to avoid full-screen overlay on navigation
-// MdFactory removed - using Building2 from lucide-react
+import LoadingWrapper from "./LoadingWrapper";
+import { MdFactory } from "react-icons/md";
 import { CiSearch } from "react-icons/ci";
 import { useTheme as useAppTheme } from "./ThemeContext"; // Rename to avoid conflict with MUI useTheme
-// CiLogin removed - using LogOut from lucide-react
-import { DecodedToken } from "@modules/userMaintenance/types/userTypes";
+import { CiLogin } from "react-icons/ci";
 const { Option } = Select;
 interface CommonAppBarProps {
   allActivities?: { description: string; url: string }[];
@@ -45,10 +43,10 @@ interface CommonAppBarProps {
   site?: string | null;
   appTitle: string;
   color?: string;
-  onSiteChange?: (newSite: string) => void; // Add this prop
+  onSiteChange?: (newSite: string) => void;
   onSearchChange?: (searchTerm: string) => void;
   logoHeader?: string;
-  setUserDetails?: any;
+  setUserDetails?: unknown;
 }
  
 const CommonAppBar: React.FC<CommonAppBarProps> = ({
@@ -57,39 +55,41 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   onSiteChange,
   onSearchChange,
   logoHeader,
-  setUserDetails,
 }) => {
   const { isAuthenticated, token, logout } = useAuth();
   const rbac = useRbacContext();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [userActivityGroups, setUserActivityGroups] = useState<any[]>([]);
-  const [availableSites, setAvailableSites] = useState<string[]>([]);
   const [username, setUsername] = useState<string | null>(null);
-  const [site, setSite] = useState<any>(null);
   const [siteDetails, setSiteDetails] = useState<any>();
-  const [filteredActivities, setFilteredActivities] = useState<any[]>([]);
-  const [allActivities, setAllActivities] = useState<any[]>([]);
   const theme = useTheme();
- 
+
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
   const { i18n, t } = useTranslation();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isClientSide, setIsClientSide] = useState(false);
   const { updateThemeFromSite } = useAppTheme();
- 
+
+  // Derive from RBAC context
+  const site = rbac.currentSite;
+  const availableSites = rbac.organizations.map((org) => org.site);
+  const allActivities = rbac.currentOrgModules.map((m) => ({
+    description: m.moduleName,
+    url: m.appUrl,
+    activityId: m.moduleCode,
+    type: 'UI',
+  }));
+
   useEffect(() => {
     setIsClientSide(true);
   }, []);
- 
+
   useEffect(() => {
-    // This will handle showing content only after initial data is loaded
-    if (!isLoading && isInitialLoad) {
-      setIsInitialLoad(false);
+    if (rbac.isReady) {
+      setIsLoading(false);
     }
-  }, [isLoading]);
+  }, [rbac.isReady]);
  
   useEffect(() => {
     const cleanedUrl = window.location.pathname
@@ -141,16 +141,14 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       );
     });
 
-    // Check if the current URL contains /rits/user_manual or settings
+    // Check if the current URL contains /rits/user_manual
     const isUserManualPath = window.location.pathname.includes("/rits/user_manual");
-    const isSettingsPath = currentPath === "hrm_settings_app";
-
+ 
     if (
       !isValidPath &&
       currentPath !== "manufacturing" &&
       currentPath !== "hrm" &&
       !isUserManualPath &&
-      !isSettingsPath &&
       !modalShownRef.current
     ) {
       modalShownRef.current = true;
@@ -214,80 +212,21 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     }
   }, [isAuthenticated, token]);
  
+  // Fetch site details (theme/logo) from RBAC currentSite
   useEffect(() => {
-    const fetchSites = async () => {
-      try {
-        let response = await siteServices(username);
-        // debugger
-        if (Array.isArray(response)) {
-          // response = response.map(site => site == 'RITS' ? '*' : site);
-          // setAvailableSites(response);
-        } else {
-          console.error("Unexpected response format:", response);
-        }
-      } catch (error) {
-        console.error("Error fetching sites:", error);
-      }
-    };
- 
-    // fetchSites();
-  }, [username]);
- 
-  useEffect(() => {
-    message.destroy();
-    const fetchUserDetails = async () => {
-      if (isAuthenticated && username) {
+    const loadSiteDetails = async () => {
+      if (site) {
         try {
-          setIsLoading(true);
-          const response = await api.post(
-            "/user-service/retrieve_detailed_user",
-            { user: username }
-          );
-          const groups = response.data.userActivityGroupDetails;
-          // console.log("Retrieve detailed user response: ", response.data);
-          // debugger
-          setUserActivityGroups(groups);
-          setUserDetails?.(response.data);
- 
-          // Fetch site details first
-          const responseSite = await fetchSiteAll(response.data.currentSite);
+          const responseSite = await fetchSiteAll(site);
           setSiteDetails(responseSite);
           localStorage.setItem("theme", JSON.stringify(responseSite.theme));
-          // console.log(responseSite.theme, "responseSite");
-          // localStorage.setItem("theme", JSON.stringify(responseSite.theme));
-          // console.log(JSON.parse(localStorage.getItem("theme"))["color"]);
-          // Then update other state and cookies
-          setCookie(null, "site", response.data.currentSite, { path: "/" });
-          setCookie(null, "rl_user_id", username, { path: "/" });
-          setSite(response.data.currentSite);
-          setFilteredActivities(groups);
-          setCookie(
-            null,
-            "activities",
-            JSON.stringify(response.data.userActivityGroupDetails),
-            { path: "/" }
-          );
- 
-          const activities = groups?.flatMap(
-            (group: any) => group.activityList
-          );
-          // console.log(activities, 'activities');
-          // Check if any activity URL matches the current browser URL path
- 
-          setAllActivities(activities);
-          setAvailableSites(response.data.site);
         } catch (error) {
-          console.error("Error fetching retrieve detailed user:", error);
-        } finally {
-          setIsLoading(false);
+          console.error("Error fetching site details:", error);
         }
       }
     };
- 
-    fetchUserDetails();
-  }, [isAuthenticated, username]);
- 
-  useEffect(() => {}, []);
+    loadSiteDetails();
+  }, [site]);
  
   const handleLogoClick = () => {
     router.push("/");
@@ -299,7 +238,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   ) => {
     const value = newValue || "";
     setSearchTerm(value);
-    onSearchChange?.(value);
+    if (onSearchChange) onSearchChange(value);
   };
  
   const handleActivitySelect = (event: any, newValue: string | null) => {
@@ -343,66 +282,51 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     try {
       message.destroy();
       setIsLoading(true);
- 
+
       const cookies = parseCookies();
       const userId = cookies.rl_user_id;
-      const site = cookies.site;
+      const currentSite = cookies.site;
       const payload = {
         defaultSite: newSite,
-        site: site,
+        site: currentSite,
         user: userId,
       };
- 
+
       const res = await updateUserSite(payload);
       if (res.errorCode) {
         message.destroy();
         message.error(res.message || "Failed to update site");
         return;
       }
- 
+
       // Fetch new site details immediately
       const newSiteDetails = await fetchSiteAll(newSite);
       setSiteDetails(newSiteDetails);
       localStorage.setItem("theme", JSON.stringify(newSiteDetails.theme));
-      setSite(newSite);
- 
+
       // Update theme and store in cookie
       await updateThemeFromSite(newSiteDetails);
- 
+
       // Set the site cookie
       setCookie(null, "site", newSite, {
         path: "/",
         maxAge: 30 * 24 * 60 * 60,
       });
- 
+
+      // Switch organization via RBAC context
+      rbac.switchOrganization(newSite);
+
       if (onSiteChange) {
         onSiteChange(newSite);
         window.location.reload();
       }
- 
-      // Show success message based on available response structure
+
       if (res.message_details?.msg) {
         message.success(res.message_details.msg);
       } else if (res.message) {
         message.success(res.message);
       } else {
         message.success("Site updated successfully");
-      }
- 
-      // Optionally refresh user details to ensure everything is in sync
-      const response = await api.post("/user-service/retrieve_detailed_user", {
-        user: username,
-      });
- 
-      if (response.data) {
-        const groups = response.data.userActivityGroupDetails;
-        setUserActivityGroups(groups);
-        setFilteredActivities(groups);
-        setCookie(null, "activities", JSON.stringify(groups), { path: "/" });
- 
-        const activities = groups?.flatMap((group: any) => group.activityList);
-        setAllActivities(activities);
-        setAvailableSites(response.data.site);
       }
     } catch (e) {
       console.error("Error updating site:", e);
@@ -412,42 +336,6 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       setAnchorEl(null);
     }
   };
- 
-  // Modified useEffect for initializing theme
-  // useEffect(() => {
-  //   const initializeTheme = async () => {
-  //     if (isAuthenticated && username) {
-  //       try {
-  //         setIsLoading(true);
-  //         const response = await api.post(
-  //           "/user-service/retrieve_detailed_user",
-  //           {
-  //             user: username,
-  //           }
-  //         );
- 
-  //         // Fetch site details first
-  //         const responseSite = await fetchSiteAll(response.data.currentSite);
-  //         setSiteDetails(responseSite);
- 
-  //         // Update theme immediately after getting site details
-  //         await updateThemeFromSite(responseSite);
- 
-  //         // Set other state and cookies
-  //         setCookie(null, "site", response.data.currentSite, { path: "/" });
-  //         setSite(response.data.currentSite);
- 
-  //         // ... rest of your initialization code ...
-  //       } catch (error) {
-  //         console.error("Error initializing:", error);
-  //       } finally {
-  //         setIsLoading(false);
-  //       }
-  //     }
-  //   };
- 
-  //   initializeTheme();
-  // }, [isAuthenticated, username]);
 
   const cookies = parseCookies();
   const language = cookies.language || "en";
@@ -468,45 +356,17 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       ? JSON.parse(sessionStorage.getItem("batchTop50Data") || "{}")
       : {};
  
-  if (isInitialLoad || (isClientSide && isLoading)) {
-    return (
-      <AppBar
-        position="sticky"
-        style={{
-          boxShadow: "none",
-          backgroundColor: "var(--background-color)",
-          color: "var(--text-color)",
-          borderBottom: "1px solid var(--line-color)",
-          width: "100%",
-          top: 0,
-          zIndex: 100,
-        }}
-        className={styles.appBar}
-      >
-        <Toolbar variant="dense" sx={{ minHeight: 48 }}>
-          <img src={logo.src} alt="Logo" className={styles.logo} />
-          <Typography variant="h6" className={styles.title} style={{ color: "var(--text-color)" }}>
-            {appTitle}
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-        </Toolbar>
-      </AppBar>
-    );
-  }
-
   return (
-    <>
-      {!isInitialLoad && (
+    <LoadingWrapper isLoading={isClientSide && isLoading}>
+      {(
         <AppBar
-          position="sticky"
+          position="static"
           style={{
             boxShadow: "none",
-            backgroundColor: "var(--background-color)",
-            color: "var(--text-color)",
+            backgroundColor: siteDetails?.theme?.background,
+            color: siteDetails?.theme?.color,
             borderBottom:"1px solid var(--line-color)",
             width: "100%",
-            top: 0,
-            zIndex: 100,
           }}
           className={styles.appBar}
         >
@@ -532,7 +392,11 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               variant="h6"
               className={styles.title}
               style={{
-                color: "var(--text-color)",
+                color: siteDetails?.theme?.color,
+                fontFamily:
+                  siteDetails?.theme?.background === "#ffffff"
+                    ? "roboto"
+                    : "inherit",
               }}
             >
               {appTitle}
@@ -582,12 +446,21 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
             </Box>
  
             <Box className={styles.userInfo}>
+              <Typography
+                variant="body1"
+                className={styles.userText}
+                style={{
+                  color: siteDetails?.theme?.color,
+                }}
+              >
+                {username} | {site}
+              </Typography>
               <IconButton
                 color="inherit"
                 onClick={handleMenuOpen}
                 className={styles.iconButton}
               >
-                <Building2 size={18} style={{ color: "var(--text-color)" }} />
+                <MdFactory style={{ color: siteDetails?.theme?.color }} />
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
@@ -621,28 +494,38 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   <Option value="hi">हिंदी</Option>
                 </Select>
               </div>
-              <IconButton
+              <Button
                 color="inherit"
                 onClick={() => {
                   destroyCookie(null, 'rl_user_id', { path: '/' });
                   logout();
                 }}
-                title={t("logout")}
-                sx={{ color: "var(--text-color)" }}
+                className={styles.logoutButton}
+                style={{
+                  color: siteDetails?.theme?.color,
+                }}
               >
-                <LogOut size={18} />
-              </IconButton>
-              <div
-                className={styles.avatar}
-                title={`${username} | ${site}`}
-              >
-                {username ? username.charAt(0).toUpperCase() : "?"}
-              </div>
+                {isSmallScreen ? (
+                  <CiLogin
+                    size={25}
+                    style={{
+                      color:
+                        siteDetails?.theme?.background === "#ffffff"
+                          ? "#0c4da2"
+                          : siteDetails?.theme?.color,
+                      fontSize: 20,
+                      fontWeight: "bold",
+                    }}
+                  />
+                ) : (
+                  <>{t("logout")}</>
+                )}
+              </Button>
             </Box>
           </Toolbar>
         </AppBar>
       )}
-    </>
+    </LoadingWrapper>
   );
 };
  

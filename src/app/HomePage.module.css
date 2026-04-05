@@ -1,92 +1,49 @@
-/* ─── Homepage Layout ─── */
-.homeLayout {
+/* src/app/HomePage.module.css */
+
+.pageRoot {
   display: flex;
-  min-height: calc(100vh - 64px - 32px);
-  background:
-    radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 70%),
-    linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%);
+  flex-direction: column;
+  height: 100vh;
+  background: #f0f2f5;
 }
 
-/* ─── Center Grid ─── */
-.centerGrid {
+.contentWrapper {
   flex: 1;
-  padding: 24px 32px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.categoryTabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.categoryTabs :global(.ant-tabs-nav) {
+  padding: 0 24px;
+}
+
+.categoryTabs :global(.ant-tabs-content) {
+  flex: 1;
+  overflow: hidden;
+}
+
+.categoryTabs :global(.ant-tabs-tabpane) {
+  height: 100%;
+  overflow: hidden;
+}
+
+.tabContent {
+  height: 100%;
   overflow-y: auto;
+  padding-bottom: 24px;
 }
 
-.centerGrid::-webkit-scrollbar {
-  width: 5px;
-}
-
-.centerGrid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.centerGrid::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.2));
-  border-radius: 10px;
-}
-
-.centerGrid::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.4));
-}
-
-/* ─── Group Sections ─── */
-.groupSection {
-  margin-bottom: 28px;
-}
-
-.groupLabel {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--hrm-text-secondary, #64748b);
-  margin: 0 0 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-left: 4px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.groupLabel::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), transparent);
-}
-
-/* ─── Tile Grid ─── */
 .tileWrapper {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
-}
-
-/* ─── Responsive ─── */
-@media (max-width: 1024px) {
-  .centerGrid {
-    padding: 20px 24px;
-  }
-  .tileWrapper {
-    gap: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  .homeLayout {
-    flex-direction: column;
-  }
-  .centerGrid {
-    padding: 16px;
-  }
-  .tileWrapper {
-    gap: 10px;
-  }
-  .groupSection {
-    margin-bottom: 20px;
-  }
+  margin-top: 20px;
 }

@@ -1,62 +1,56 @@
 // src/components/Tile.tsx
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { Tooltip } from "antd";
-import { ExternalLink } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Card, CardContent, Typography } from "@mui/material";
+import Link from "next/link";
+import { Button, Tooltip } from "antd";
 import styles from "./Tile.module.css";
+import { ExportOutlined } from "@ant-design/icons";
 
 interface TileProps {
   description: string;
   url: string;
   activityId: string;
-  subLabel?: string;
-  badgeCount?: number;
-  icon?: LucideIcon;
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, badgeCount, icon: Icon }) => {
-  const router = useRouter();
-
-  const handleClick = (event: React.MouseEvent) => {
-    const cleanedUrl = url.replace(/\/index\.html$/, "");
-    if (event.ctrlKey || event.metaKey) {
-      window.open(`/hrm${cleanedUrl}`, "_blank");
-    } else {
-      router.push(cleanedUrl);
-    }
-  };
+const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
+  const maxLength = 11;
+  const cleanedUrl = url?.replace(/\/index\.html$/, "") || "/";
 
   const handleClickIcon = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    const cleanedUrlCtrl = `/hrm${url.replace(/\/index\.html$/, "")}`;
-    window.open(cleanedUrlCtrl, "_blank");
+    window.open(`/hrm${cleanedUrl}`, "_blank");
   };
 
   return (
     <Tooltip title={description}>
-      <div className={styles.tile} onClick={handleClick}>
-        {badgeCount != null && badgeCount > 0 && (
-          <span className={styles.badge}>{badgeCount}</span>
-        )}
-        <div className={styles.iconContainer}>
-          {Icon && <Icon size={28} strokeWidth={1.5} />}
-        </div>
-        <div className={styles.cardContent}>
-          <span className={styles.description}>{description}</span>
-          {subLabel && (
-            <span className={styles.subLabel}>{subLabel}</span>
-          )}
-        </div>
-        <button
-          className={styles.openButton}
-          onClick={handleClickIcon}
-          aria-label={`Open ${description} in new tab`}
-        >
-          <ExternalLink size={13} />
-        </button>
-      </div>
+      <Link
+        href={cleanedUrl}
+        className={styles.tileLink}
+        data-testid={`tile-link-${activityId}`}
+      >
+        <Card className={styles.tile}>
+          <CardContent className={styles.cardContent}>
+            <Typography className={styles.description} fontSize="0.9rem">
+              {description}
+            </Typography>
+            <Typography variant="body2" className={styles.activityId}>
+              {activityId.length > maxLength
+                ? `${activityId.substring(0, maxLength)}...`
+                : activityId}
+            </Typography>
+          </CardContent>
+          <Button
+            type="text"
+            className={styles.iconButton}
+            onClick={handleClickIcon}
+            aria-label={`Open ${description} in new tab`}
+            data-testid={`tile-open-new-tab-${activityId}`}
+            icon={<ExportOutlined />}
+          />
+        </Card>
+      </Link>
     </Tooltip>
   );
 };

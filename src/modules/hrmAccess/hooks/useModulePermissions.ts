@@ -11,11 +11,7 @@ export function useModulePermissions(moduleCode: string): ModulePermissions {
   const getModuleActions = useHrmRbacStore(s => s.getModuleActions);
   const isReady = useHrmRbacStore(s => s.isReady);
 
-  if (!isReady || !moduleCode) {
-    return { canView: false, canAdd: false, canEdit: false, canDelete: false };
-  }
-
-  const actions = getModuleActions(moduleCode);
+  const actions = isReady && moduleCode ? getModuleActions(moduleCode) : [];
   return {
     canView: actions.includes('VIEW'),
     canAdd: actions.includes('ADD'),
