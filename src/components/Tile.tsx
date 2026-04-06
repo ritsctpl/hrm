@@ -1,20 +1,20 @@
 // src/components/Tile.tsx
 
 import React from "react";
-import { Card, CardContent, Typography } from "@mui/material";
 import Link from "next/link";
-import { Button, Tooltip } from "antd";
+import { Tooltip } from "antd";
+import { ExternalLink } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import styles from "./Tile.module.css";
-import { ExportOutlined } from "@ant-design/icons";
 
 interface TileProps {
   description: string;
   url: string;
   activityId: string;
+  icon?: LucideIcon;
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
-  const maxLength = 11;
+const Tile: React.FC<TileProps> = ({ description, url, activityId, icon: Icon }) => {
   const cleanedUrl = url?.replace(/\/index\.html$/, "") || "/";
 
   const handleClickIcon = (e: React.MouseEvent) => {
@@ -30,26 +30,22 @@ const Tile: React.FC<TileProps> = ({ description, url, activityId }) => {
         className={styles.tileLink}
         data-testid={`tile-link-${activityId}`}
       >
-        <Card className={styles.tile}>
-          <CardContent className={styles.cardContent}>
-            <Typography className={styles.description} fontSize="0.9rem">
-              {description}
-            </Typography>
-            <Typography variant="body2" className={styles.activityId}>
-              {activityId.length > maxLength
-                ? `${activityId.substring(0, maxLength)}...`
-                : activityId}
-            </Typography>
-          </CardContent>
-          <Button
-            type="text"
-            className={styles.iconButton}
+        <div className={styles.tile}>
+          <div className={styles.iconContainer}>
+            {Icon && <Icon size={28} strokeWidth={1.5} />}
+          </div>
+          <div className={styles.cardContent}>
+            <span className={styles.description}>{description}</span>
+          </div>
+          <button
+            className={styles.openButton}
             onClick={handleClickIcon}
             aria-label={`Open ${description} in new tab`}
             data-testid={`tile-open-new-tab-${activityId}`}
-            icon={<ExportOutlined />}
-          />
-        </Card>
+          >
+            <ExternalLink size={13} />
+          </button>
+        </div>
       </Link>
     </Tooltip>
   );

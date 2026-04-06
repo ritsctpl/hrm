@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Tile from '../Tile';
+import { getModuleIcon } from '@utils/moduleIconMap';
 import type { ModuleCategoryGroupProps } from '@modules/hrmAccess/types/ui.types';
 import styles from './ModuleCategoryGroup.module.css';
 
@@ -21,6 +22,7 @@ const ModuleCategoryGroup: React.FC<ModuleCategoryGroupProps> = ({
             description={mod.moduleName}
             url={mod.appUrl}
             activityId={mod.moduleCode}
+            icon={getModuleIcon(mod.appUrl)}
           />
         ))}
       </div>
