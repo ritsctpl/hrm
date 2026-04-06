@@ -356,16 +356,18 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       : {};
  
   return (
-    <LoadingWrapper isLoading={isClientSide && isLoading}>
+    <>
       {(
         <AppBar
-          position="static"
+          position="sticky"
           style={{
             boxShadow: "none",
-            backgroundColor: siteDetails?.theme?.background,
-            color: siteDetails?.theme?.color,
-            borderBottom:"1px solid var(--line-color)",
+            backgroundColor: "var(--background-color)",
+            color: "var(--text-color)",
+            borderBottom: "1px solid var(--line-color)",
             width: "100%",
+            top: 0,
+            zIndex: 100,
           }}
           className={styles.appBar}
         >
@@ -391,11 +393,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               variant="h6"
               className={styles.title}
               style={{
-                color: siteDetails?.theme?.color,
-                fontFamily:
-                  siteDetails?.theme?.background === "#ffffff"
-                    ? "roboto"
-                    : "inherit",
+                color: "var(--text-color)",
               }}
             >
               {appTitle}
@@ -506,7 +504,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
           </Toolbar>
         </AppBar>
       )}
-    </LoadingWrapper>
+    </>
   );
 };
  
