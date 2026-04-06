@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Tooltip } from 'antd';
 import { SIDEBAR_ITEMS, SIDEBAR_BOTTOM_ITEMS } from '@/config/dashboardConfig';
 import type { SidebarItemConfig } from '@/config/dashboardConfig';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import SidebarFlyout from './SidebarFlyout';
 import styles from './AppSidebar.module.css';
 
@@ -28,6 +29,34 @@ const AppSidebar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
+  const hasModuleAccess = useHrmRbacStore((s) => s.hasModuleAccess);
+  const isRbacReady = useHrmRbacStore((s) => s.isReady);
+
+  /* Filter sidebar items based on RBAC access */
+  const filteredSidebarItems = useMemo(() => {
+    if (!isRbacReady) return [];
+    return SIDEBAR_ITEMS.map((item) => {
+      if (item.type === 'direct-nav' && item.route) {
+        return hasModuleAccess(item.route) ? item : null;
+      }
+      if (item.type === 'flyout' && item.apps) {
+        const accessibleApps = item.apps.filter((app) => hasModuleAccess(app.route));
+        if (accessibleApps.length === 0) return null;
+        return { ...item, apps: accessibleApps };
+      }
+      return item;
+    }).filter(Boolean) as SidebarItemConfig[];
+  }, [isRbacReady, hasModuleAccess]);
+
+  const filteredBottomItems = useMemo(() => {
+    if (!isRbacReady) return [];
+    return SIDEBAR_BOTTOM_ITEMS.filter((item) => {
+      if (item.type === 'direct-nav' && item.route) {
+        return hasModuleAccess(item.route);
+      }
+      return true;
+    });
+  }, [isRbacReady, hasModuleAccess]);
 
   /* Flyout state */
   const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
@@ -158,7 +187,7 @@ const AppSidebar: React.FC = () => {
 
     if (isFlyout) {
       // Flyout items: wrap in anchor div for flyout positioning
-      const flyoutItem = SIDEBAR_ITEMS.find((si) => si.key === item.key) ?? item;
+      const flyoutItem = filteredSidebarItems.find((si) => si.key === item.key) ?? item;
       return (
         <div key={item.key} className={styles.flyoutAnchor}>
           {iconButton}
@@ -208,14 +237,16 @@ const AppSidebar: React.FC = () => {
 
       {/* Main Nav Icons */}
       <div className={styles.navGroup}>
-        {SIDEBAR_ITEMS.map(renderIcon)}
+        {filteredSidebarItems.map(renderIcon)}
       </div>
 
       {/* Divider + Bottom Icons */}
-      <div className={styles.bottomSection}>
-        <div className={styles.divider} />
-        {SIDEBAR_BOTTOM_ITEMS.map(renderIcon)}
-      </div>
+      {filteredBottomItems.length > 0 && (
+        <div className={styles.bottomSection}>
+          <div className={styles.divider} />
+          {filteredBottomItems.map(renderIcon)}
+        </div>
+      )}
     </nav>
   );
 };
