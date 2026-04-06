@@ -96,14 +96,14 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       ?.replace(/.*\/rits/, "/rits")
       .replace(/\/index\.html$/, "");
     const filteredDescriptions = allActivities
-      ?.filter((activity) => activity.url.startsWith(cleanedUrl))
+      ?.filter((activity) => activity.url?.startsWith(cleanedUrl))
       ?.map((activity) => activity.description);
     // console.log(cleanedUrl,"filteredDescriptions");
     // Ensure /rits/mfr_request_app and /rits/mfr get distinct titles if their descriptions are different
     if (filteredDescriptions?.length > 0 && cleanedUrl !== "/rits/pod_app") {
       // If multiple descriptions exist for similar URLs, try to match the exact cleanedUrl
       const exactActivity = allActivities.find(
-        (activity) => activity.url.replace(/.*\/rits/, "/rits").replace(/\/index\.html$/, "") === cleanedUrl
+        (activity) => activity.url?.replace(/.*\/rits/, "/rits").replace(/\/index\.html$/, "") === cleanedUrl
       );
       if (exactActivity && exactActivity.description) {
         document.title = exactActivity.description;
@@ -128,7 +128,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     }
  
     const newActivitiesUrl = allActivities.map((activity) => {
-      const cleanedUrl = activity.url
+      const cleanedUrl = (activity.url || "")
         .replace(/\/rits/, "")
         .replace(/\/index\.html$/, "");
       return cleanedUrl;
