@@ -29,7 +29,7 @@ const EnhancedSearch: React.FC = () => {
     if (item.type === 'direct-nav' && item.route) {
       options.push({
         type: 'app',
-        label: t(item.labelKey),
+        label: item.label,
         route: item.route,
         iconRoute: item.route,
       });
@@ -38,8 +38,8 @@ const EnhancedSearch: React.FC = () => {
       item.apps.forEach((app) => {
         options.push({
           type: 'app',
-          label: t(app.labelKey),
-          subLabel: t(app.subLabelKey),
+          label: app.label,
+          subLabel: app.subLabel,
           route: app.route,
           iconRoute: app.route,
         });
@@ -51,7 +51,7 @@ const EnhancedSearch: React.FC = () => {
   TASK_SHORTCUTS.forEach((task) => {
     options.push({
       type: 'task',
-      label: t(task.labelKey),
+      label: task.label,
       route: task.route,
     });
   });

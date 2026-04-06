@@ -65,8 +65,8 @@ const SidebarFlyout: React.FC<SidebarFlyoutProps> = ({ title, apps, top, onClose
             </div>
 
             <div className={styles.flyoutItemText}>
-              <div className={styles.flyoutItemName}>{t(app.labelKey)}</div>
-              <div className={styles.flyoutSubLabel}>{t(app.subLabelKey)}</div>
+              <div className={styles.flyoutItemName}>{app.label}</div>
+              <div className={styles.flyoutSubLabel}>{app.subLabel}</div>
             </div>
 
             {badgeCount > 0 && (

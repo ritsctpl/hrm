@@ -22,7 +22,7 @@ const RecentActivityFeed: React.FC = () => {
         <div key={item.id} className={styles.activityItem}>
           <span className={styles.statusDot} style={{ background: STATUS_COLORS[item.status] }} />
           <div className={styles.activityText}>
-            <span>{t(item.descriptionKey)}</span>
+            <span>{item.description}</span>
             <span className={styles.activityTime}>{item.timeAgo}</span>
           </div>
         </div>

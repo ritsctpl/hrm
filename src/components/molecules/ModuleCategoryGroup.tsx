@@ -22,6 +22,7 @@ const ModuleCategoryGroup: React.FC<ModuleCategoryGroupProps> = ({
             description={mod.moduleName}
             url={mod.appUrl}
             activityId={mod.moduleCode}
+            subLabel={mod.subLabel}
             icon={getModuleIcon(mod.appUrl)}
           />
         ))}

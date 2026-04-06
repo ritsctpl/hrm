@@ -3,7 +3,6 @@
 import '@/utils/i18n';
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
 import { Tabs } from 'antd';
 import CommonAppBar from '../components/CommonAppBar';
 import ModuleCategoryGroup from '../components/molecules/ModuleCategoryGroup';
@@ -12,21 +11,21 @@ import styles from './HomePage.module.css';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslation();
   const [site, setSite] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Build categories from frontend config
   const allCategories = useMemo(() => {
     return CENTER_GRID_GROUPS.map((group) => ({
-      category: t(group.labelKey),
+      category: group.label,
       modules: (group.apps || []).map((app) => ({
         moduleCode: app.key,
-        moduleName: t(app.labelKey),
+        moduleName: app.label,
         appUrl: app.route,
+        subLabel: app.subLabel,
       })),
     }));
-  }, [t]);
+  }, []);
 
   const filteredCategories = useMemo(() => {
     if (!searchTerm) return allCategories;

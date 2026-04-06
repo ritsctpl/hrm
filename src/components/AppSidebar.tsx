@@ -150,7 +150,7 @@ const AppSidebar: React.FC = () => {
             handleFlyoutLeave();
           }
         }}
-        aria-label={t(item.labelKey)}
+        aria-label={item.label}
       >
         <Icon size={20} strokeWidth={1.8} />
       </button>
@@ -168,7 +168,7 @@ const AppSidebar: React.FC = () => {
               onMouseLeave={handleFlyoutPanelLeave}
             >
               <SidebarFlyout
-                title={t(item.labelKey)}
+                title={item.label}
                 apps={flyoutItem.apps}
                 top={flyoutTop}
                 onClose={closeFlyout}
@@ -181,7 +181,7 @@ const AppSidebar: React.FC = () => {
 
     // Direct-nav items: wrap with Tooltip
     return (
-      <Tooltip key={item.key} title={t(item.labelKey)} placement="right" mouseEnterDelay={0.3}>
+      <Tooltip key={item.key} title={item.label} placement="right" mouseEnterDelay={0.3}>
         {iconButton}
       </Tooltip>
     );

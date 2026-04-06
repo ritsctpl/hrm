@@ -17,7 +17,7 @@ const QuickTasksList: React.FC = () => {
         const Icon = getModuleIcon(task.route);
         return (
           <div
-            key={task.labelKey}
+            key={task.label}
             className={styles.taskItem}
             onClick={(e) => {
               if (e.ctrlKey || e.metaKey) {
@@ -28,7 +28,7 @@ const QuickTasksList: React.FC = () => {
             }}
           >
             <Icon size={16} />
-            <span>{t(task.labelKey)}</span>
+            <span>{task.label}</span>
           </div>
         );
       })}

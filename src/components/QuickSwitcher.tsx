@@ -17,10 +17,10 @@ const QuickSwitcher: React.FC = () => {
   const allApps: { label: string; route: string }[] = [];
   [...SIDEBAR_ITEMS, ...SIDEBAR_BOTTOM_ITEMS].forEach((item) => {
     if (item.type === 'direct-nav' && item.route) {
-      allApps.push({ label: t(item.labelKey), route: item.route });
+      allApps.push({ label: item.label, route: item.route });
     }
     item.apps?.forEach((app) => {
-      allApps.push({ label: t(app.labelKey), route: app.route });
+      allApps.push({ label: app.label, route: app.route });
     });
   });
   allApps.sort((a, b) => a.label.localeCompare(b.label));

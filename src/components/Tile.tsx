@@ -11,10 +11,11 @@ interface TileProps {
   description: string;
   url: string;
   activityId: string;
+  subLabel?: string;
   icon?: LucideIcon;
 }
 
-const Tile: React.FC<TileProps> = ({ description, url, activityId, icon: Icon }) => {
+const Tile: React.FC<TileProps> = ({ description, url, activityId, subLabel, icon: Icon }) => {
   const cleanedUrl = url?.replace(/\/index\.html$/, "") || "/";
 
   const handleClickIcon = (e: React.MouseEvent) => {
@@ -36,6 +37,7 @@ const Tile: React.FC<TileProps> = ({ description, url, activityId, icon: Icon })
           </div>
           <div className={styles.cardContent}>
             <span className={styles.description}>{description}</span>
+            {subLabel && <span className={styles.subLabel}>{subLabel}</span>}
           </div>
           <button
             className={styles.openButton}

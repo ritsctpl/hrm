@@ -167,6 +167,7 @@ export interface ModuleCategoryGroupProps {
     moduleCode: string;
     moduleName: string;
     appUrl: string;
+    subLabel?: string;
   }[];
 }
 
