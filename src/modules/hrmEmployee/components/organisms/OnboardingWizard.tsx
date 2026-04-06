@@ -4,12 +4,15 @@
 
 'use client';
 
-import React from 'react';
-import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
+import { parseCookies } from 'nookies';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
 import { ONBOARDING_STEPS } from '../../utils/constants';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
+import { EmployeeKeycloakService } from '../../services/keycloakService';
+import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 
 /* Step 0: Basic Info */
 const BasicStep: React.FC<{
@@ -86,7 +89,14 @@ const OfficialStep: React.FC<{
   draft: Partial<CreateEmployeeRequest>;
   errors: Record<string, string>;
   onChange: (data: Partial<CreateEmployeeRequest>) => void;
-}> = ({ draft, errors, onChange }) => (
+  keycloakSettings: {
+    createKeycloakUser: boolean;
+    username: string;
+    temporaryPassword: string;
+    sendCredentialsEmail: boolean;
+  };
+  onKeycloakChange: (settings: any) => void;
+}> = ({ draft, errors, onChange, keycloakSettings, onKeycloakChange }) => (
   <div className={formStyles.wizardStepBody}>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
@@ -192,6 +202,82 @@ const OfficialStep: React.FC<{
         )}
       </div>
     </div>
+
+    <Divider dashed style={{ margin: '12px 0' }} />
+
+    <div className={formStyles.formSectionTitle}>Login Credentials (Optional)</div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField} style={{ width: '100%' }}>
+        <Checkbox
+          checked={keycloakSettings.createKeycloakUser}
+          onChange={(e) => onKeycloakChange({
+            ...keycloakSettings,
+            createKeycloakUser: e.target.checked
+          })}
+        >
+          Create login credentials for this employee
+        </Checkbox>
+      </div>
+    </div>
+
+    {keycloakSettings.createKeycloakUser && (
+      <>
+        <div className={formStyles.formRow}>
+          <div className={formStyles.formField}>
+            <label className={formStyles.formFieldLabel}>Username</label>
+            <Input
+              value={keycloakSettings.username || draft.workEmail || ''}
+              onChange={(e) => onKeycloakChange({
+                ...keycloakSettings,
+                username: e.target.value
+              })}
+              placeholder="Will use work email if empty"
+            />
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              Leave empty to use work email as username
+            </div>
+          </div>
+          <div className={formStyles.formField}>
+            <label className={formStyles.formFieldLabel}>Temporary Password</label>
+            <Input.Password
+              value={keycloakSettings.temporaryPassword}
+              onChange={(e) => onKeycloakChange({
+                ...keycloakSettings,
+                temporaryPassword: e.target.value
+              })}
+              placeholder="Auto-generated if empty"
+              addonAfter={
+                <Button
+                  size="small"
+                  onClick={() => onKeycloakChange({
+                    ...keycloakSettings,
+                    temporaryPassword: EmployeeKeycloakService.generateTemporaryPassword()
+                  })}
+                >
+                  Generate
+                </Button>
+              }
+            />
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              Leave empty to auto-generate secure password
+            </div>
+          </div>
+        </div>
+        <div className={formStyles.formRow}>
+          <div className={formStyles.formField} style={{ width: '100%' }}>
+            <Checkbox
+              checked={keycloakSettings.sendCredentialsEmail}
+              onChange={(e) => onKeycloakChange({
+                ...keycloakSettings,
+                sendCredentialsEmail: e.target.checked
+              })}
+            >
+              Send credentials via email (credentials will be displayed on screen)
+            </Checkbox>
+          </div>
+        </div>
+      </>
+    )}
   </div>
 );
 
@@ -403,14 +489,151 @@ const OnboardingWizard: React.FC = () => {
     submitOnboarding,
   } = useOnboardingWizard();
 
+  const [keycloakSettings, setKeycloakSettings] = useState({
+    createKeycloakUser: false,
+    username: '',
+    temporaryPassword: '',
+    sendCredentialsEmail: true,
+  });
+
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    username: string;
+    password: string;
+  } | null>(null);
+
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  // Auto-fill username when work email changes
+  useEffect(() => {
+    if (draft.workEmail && keycloakSettings.createKeycloakUser && !keycloakSettings.username) {
+      setKeycloakSettings(prev => ({
+        ...prev,
+        username: draft.workEmail || ''
+      }));
+    }
+  }, [draft.workEmail, keycloakSettings.createKeycloakUser, keycloakSettings.username]);
+
   const isLastStep = currentStep === 3;
+
+  const handleNext = async () => {
+    // If on Basic Info step (step 0), validate email before proceeding
+    if (currentStep === 0 && draft.workEmail) {
+      setCheckingEmail(true);
+      try {
+        const cookies = parseCookies();
+        const site = cookies.site || 'RITS';
+        
+        console.log('Checking email availability for:', draft.workEmail);
+        const result = await HrmEmployeeService.checkEmailAvailability(site, draft.workEmail);
+        console.log('Email check result:', result);
+        
+        // If email is NOT available (already taken), show error and stop
+        if (!result.available) {
+          message.error('This email is already registered. Please use a different email.');
+          setCheckingEmail(false);
+          return; // Don't proceed to next step
+        }
+        
+        // Email is available, proceed to next step
+        console.log('Email is available, proceeding to next step');
+      } catch (error) {
+        console.error('Email check failed:', error);
+        message.warning('Could not verify email availability. Please proceed with caution.');
+      } finally {
+        setCheckingEmail(false);
+      }
+    }
+    
+    // Proceed to next step
+    setOnboardingStep(currentStep + 1);
+  };
+
+  const handleSubmitWithKeycloak = async () => {
+    try {
+      // Step 1: Create Keycloak user if requested
+      if (keycloakSettings.createKeycloakUser) {
+        const username = keycloakSettings.username || draft.workEmail || '';
+        const password = keycloakSettings.temporaryPassword || EmployeeKeycloakService.generateTemporaryPassword();
+
+        const keycloakResult = await EmployeeKeycloakService.createUserForEmployee({
+          workEmail: username,
+          firstName: draft.firstName || '',
+          lastName: draft.lastName || '',
+          password: password,
+        });
+
+        if (!keycloakResult.succes) {
+          // Check if user already exists
+          if (keycloakResult.error?.includes('User exists')) {
+            const proceed = window.confirm(
+              'A Keycloak user with this email already exists. Do you want to continue creating the employee without creating a new Keycloak user?'
+            );
+            if (!proceed) {
+              return;
+            }
+          } else {
+            throw new Error(keycloakResult.error || 'Failed to create Keycloak user');
+          }
+        } else {
+          // Store credentials to display after successful employee creation
+          setGeneratedCredentials({
+            username: username,
+            password: password,
+          });
+        }
+      }
+
+      // Step 2: Create employee
+      await submitOnboarding();
+
+      // Step 3: Show credentials if created
+      if (generatedCredentials) {
+        Modal.success({
+          title: 'Employee Created Successfully',
+          content: (
+            <div>
+              <p>Login credentials have been created:</p>
+              <p><strong>Username:</strong> {generatedCredentials.username}</p>
+              <p><strong>Temporary Password:</strong> {generatedCredentials.password}</p>
+              <p style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
+                {keycloakSettings.sendCredentialsEmail 
+                  ? 'Credentials have been sent via email.' 
+                  : 'Please share these credentials with the employee securely.'}
+              </p>
+            </div>
+          ),
+          width: 500,
+        });
+        setGeneratedCredentials(null);
+      }
+
+      // Reset Keycloak settings
+      setKeycloakSettings({
+        createKeycloakUser: false,
+        username: '',
+        temporaryPassword: '',
+        sendCredentialsEmail: true,
+      });
+
+    } catch (error: any) {
+      message.error(error.message || 'Failed to create employee');
+    }
+  };
 
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return <BasicStep draft={draft} errors={errors} onChange={updateOnboardingDraft} />;
       case 1:
-        return <OfficialStep draft={draft} errors={errors} onChange={updateOnboardingDraft} />;
+        return (
+          <OfficialStep 
+            draft={draft} 
+            errors={errors} 
+            onChange={updateOnboardingDraft}
+            keycloakSettings={keycloakSettings}
+            onKeycloakChange={setKeycloakSettings}
+          />
+        );
       case 2:
         return <ContactStep draft={draft} onChange={updateOnboardingDraft} />;
       case 3:
@@ -440,9 +663,10 @@ const OnboardingWizard: React.FC = () => {
           <Button
             key="next"
             type="primary"
-            onClick={() => setOnboardingStep(currentStep + 1)}
+            onClick={handleNext}
+            loading={checkingEmail}
           >
-            Next
+            {checkingEmail ? 'Checking...' : 'Next'}
           </Button>
         ),
         isLastStep && (
@@ -450,7 +674,7 @@ const OnboardingWizard: React.FC = () => {
             key="submit"
             type="primary"
             loading={isSaving}
-            onClick={submitOnboarding}
+            onClick={handleSubmitWithKeycloak}
           >
             Submit
           </Button>

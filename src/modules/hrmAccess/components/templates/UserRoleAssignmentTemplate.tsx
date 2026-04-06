@@ -18,6 +18,10 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
   const [selectedAssignmentHandle, setSelectedAssignmentHandle] = useState<string | null>(null);
   const [allRoles, setAllRoles] = useState<any[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
 
   // Load all roles on mount
   useEffect(() => {
@@ -34,24 +38,56 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
     };
     loadRoles();
     
-    // Load initial user list (top 50)
+    // Load initial employee list
     handleSearchUsers('');
   }, [site]);
 
-  const handleSearchUsers = async (query: string) => {
+  const handleSearchUsers = async (query: string, page = 0, size = 20) => {
     store.setSearchingUsers(true);
     try {
-      const results = await HrmAccessService.searchKeycloakUsers(site, query);
-      const mapped = results.map((u) => ({
-        id: u.id,
-        displayName: `${u.firstName} ${u.lastName}`.trim() || u.username,
-        email: u.email || u.username,
-        avatarInitials: `${u.firstName?.[0] ?? ''}${u.lastName?.[0] ?? ''}`.toUpperCase() || u.username?.substring(0, 2).toUpperCase(),
+      console.log('Fetching employees with:', { site, page, size, searchTerm: query, status: statusFilter });
+      
+      const response = await HrmAccessService.fetchEmployeeDirectory({
+        site,
+        page,
+        size,
+        searchTerm: query,
+        status: statusFilter,
+      });
+      
+      console.log('Employee directory response:', response);
+      console.log('Employees count:', response.employees?.length);
+      
+      if (!response.employees || response.employees.length === 0) {
+        console.warn('No employees found in response');
+        store.setUserSearchResults([]);
+        setTotalCount(0);
+        return;
+      }
+      
+      const mapped = response.employees.map((emp) => ({
+        id: emp.handle,
+        displayName: emp.fullName,
+        email: emp.workEmail,
+        avatarInitials: emp.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+        employeeCode: emp.employeeCode,
+        department: emp.department,
+        role: emp.role,
+        location: emp.location,
+        status: emp.status,
+        photoBase64: emp.photoBase64,
       }));
+      
+      console.log('Mapped employees:', mapped);
+      
       store.setUserSearchResults(mapped);
+      setTotalCount(response.totalCount);
+      setCurrentPage(page);
+      setPageSize(size);
     } catch (err) {
       console.error('Search error:', err);
-      notification.error({ message: 'Failed to search users.' });
+      notification.error({ message: 'Failed to search employees.' });
+      store.setUserSearchResults([]);
     } finally {
       store.setSearchingUsers(false);
     }
@@ -140,12 +176,12 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       <div className={styles.leftPanel}>
         <div className={styles.searchSection}>
           <Input
-            placeholder="Search users by name or email..."
+            placeholder="Search employees by name, code, or email..."
             prefix={<SearchOutlined />}
             value={userAssignment.userSearchText}
             onChange={(e) => {
               store.setUserSearchText(e.target.value);
-              handleSearchUsers(e.target.value);
+              handleSearchUsers(e.target.value, 0, pageSize);
             }}
             allowClear
           />
@@ -157,7 +193,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
               searchText={userAssignment.userSearchText}
               onSearchChange={(text) => {
                 store.setUserSearchText(text);
-                handleSearchUsers(text);
+                handleSearchUsers(text, 0, pageSize);
               }}
               searchResults={userAssignment.userSearchResults}
               isSearching={userAssignment.isSearchingUsers}

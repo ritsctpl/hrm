@@ -29,6 +29,13 @@ const MODULE_CATEGORIES = [
   { label: 'Reports', value: 'REPORTS' },
 ];
 
+const MODULE_TYPES = [
+  { label: 'CORE', value: 'CORE' },
+  { label: 'CUSTOM', value: 'CUSTOM' },
+  { label: 'INTEGRATION', value: 'INTEGRATION' },
+  { label: 'PLUGIN', value: 'PLUGIN' },
+];
+
 const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
   const { permission, setAllModules } = useHrmAccessStore();
   const modules = permission.allModules;
@@ -83,15 +90,12 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
     loadActivities();
   }, [site]);
 
-  // Refresh modules when category filter changes
+  // Refresh modules - always fetch all and filter client-side
   const refreshModules = async () => {
     if (!site) return;
     setLoading(true);
     try {
-      const data = categoryFilter
-        ? await HrmAccessService.fetchModulesByCategory(site, categoryFilter)
-        : await HrmAccessService.fetchAllModules(site);
-      
+      const data = await HrmAccessService.fetchAllModules(site);
       setAllModules(data);
     } catch {
       message.error('Failed to load modules');
@@ -101,14 +105,25 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
   };
 
   const filteredModules = useMemo(() => {
-    if (!searchText.trim()) return modules;
-    const q = searchText.toLowerCase();
-    return modules.filter(
-      (m) =>
-        m.moduleCode.toLowerCase().includes(q) ||
-        m.moduleName.toLowerCase().includes(q)
-    );
-  }, [modules, searchText]);
+    let result = modules;
+    
+    // Filter by category
+    if (categoryFilter) {
+      result = result.filter((m) => m.moduleCategory === categoryFilter);
+    }
+    
+    // Filter by search text
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      result = result.filter(
+        (m) =>
+          m.moduleCode.toLowerCase().includes(q) ||
+          m.moduleName.toLowerCase().includes(q)
+      );
+    }
+    
+    return result;
+  }, [modules, categoryFilter, searchText]);
 
   // Create activity options for dropdown - show description, store activityId
   const activityOptions = useMemo(() => {
@@ -204,6 +219,8 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           moduleCategory: values.moduleCategory,
           description: values.description || '',
           defaultPermissionObjects: values.defaultPermissionObjects || [],
+          url: values.url || '',
+          type: values.type || 'CORE',
           isActive: values.isActive !== false,
           createdBy: user?.id ?? 'system',
         };
@@ -267,19 +284,32 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       title: 'Module Code',
       dataIndex: 'moduleCode',
       sorter: (a, b) => a.moduleCode.localeCompare(b.moduleCode),
-      width: '15%',
+      width: '12%',
     },
     {
       title: 'Module Name',
       dataIndex: 'moduleName',
       sorter: (a, b) => a.moduleName.localeCompare(b.moduleName),
-      width: '30%',
+      width: '20%',
     },
     {
       title: 'Category',
       dataIndex: 'moduleCategory',
       render: (cat: string) => <Tag>{cat || 'N/A'}</Tag>,
-      width: '15%',
+      width: '10%',
+    },
+    {
+      title: 'URL',
+      dataIndex: 'url',
+      render: (url: string) => url || '-',
+      width: '18%',
+      ellipsis: true,
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      render: (type: string) => <Tag color="blue">{type || 'CORE'}</Tag>,
+      width: '10%',
     },
     {
       title: 'Status',
@@ -290,7 +320,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         { text: 'Inactive', value: false },
       ],
       onFilter: (value, record) => record.isActive === value,
-      width: '12%',
+      width: '10%',
     },
     {
       title: 'Actions',
@@ -307,6 +337,8 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
                 moduleCategory: record.moduleCategory,
                 description: record.description || '',
                 defaultPermissionObjects: record.defaultPermissionObjects || [],
+                url: (record as any).url || '',
+                type: (record as any).type || 'CORE',
                 isActive: record.isActive,
               });
               setModalOpen(true);
@@ -322,7 +354,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           </Popconfirm>
         </>
       ),
-      width: '12%',
+      width: '10%',
     },
   ];
 
@@ -416,6 +448,24 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           </Form.Item>
           <Form.Item name="description" label="Description">
             <Input.TextArea rows={3} placeholder="Manages employee attendance and shifts" />
+          </Form.Item>
+          <Form.Item 
+            name="url" 
+            label="URL" 
+            rules={[
+              {
+                pattern: /^(\/[\w\-\/]*|\w+:\/\/.+)$/,
+                message: 'Please enter a valid path (e.g., /hrm/employee) or full URL',
+              },
+            ]}
+          >
+            <Input placeholder="e.g., /hrm/employee or https://example.com/module" />
+          </Form.Item>
+          <Form.Item name="type" label="Type" rules={[{ required: true }]} initialValue="CORE">
+            <Select
+              placeholder="Select module type"
+              options={MODULE_TYPES}
+            />
           </Form.Item>
           <Form.Item name="defaultPermissionObjects" label="Default Permission Objects">
             <Select

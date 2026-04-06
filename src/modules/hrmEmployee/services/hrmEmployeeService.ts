@@ -46,6 +46,21 @@ import type {
 export class HrmEmployeeService {
   private static readonly BASE = '/hrm-service/employee';
 
+  /** Check if work email is available */
+  static async checkEmailAvailability(
+    site: string,
+    workEmail: string
+  ): Promise<{ available: boolean; message: string }> {
+    const response = await api.post(`${this.BASE}/check-email`, { site, workEmail });
+    console.log('Raw API response:', response.data);
+    const result = {
+      available: response.data.data === true,
+      message: response.data.message || '',
+    };
+    console.log('Parsed result:', result);
+    return result;
+  }
+
   /** Fetch paginated employee directory */
   static async fetchDirectory(
     payload: EmployeeSearchRequest

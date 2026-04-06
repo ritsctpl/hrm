@@ -24,16 +24,42 @@ function avatarColor(name: string): string {
 }
 
 const EmpAvatar: React.FC<EmpAvatarProps> = ({ name, photoUrl, photoBase64, size = 40, shape = 'circle' }) => {
-  // Prefer photoBase64 if available, otherwise use photoUrl
-  const imageSource = photoBase64 || photoUrl;
+  const [imageError, setImageError] = React.useState(false);
+  
+  // Only use valid image sources (base64 or data URLs)
+  // Ignore file paths that might not exist and cause 404 errors
+  const imageSource = React.useMemo(() => {
+    // Priority 1: photoBase64 (direct base64 string)
+    if (photoBase64 && photoBase64.trim()) {
+      return photoBase64;
+    }
+    
+    // Priority 2: photoUrl only if it's a data URL
+    if (photoUrl && photoUrl.trim()) {
+      // Only accept data URLs (base64 encoded images)
+      if (photoUrl.startsWith('data:image/')) {
+        return photoUrl;
+      }
+      // Reject all file paths to prevent 404 errors
+      // This includes: /uploads/..., /rits/uploads/..., etc.
+    }
+    
+    return null;
+  }, [photoBase64, photoUrl]);
+  
+  // Reset error state when image source changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [imageSource]);
 
   // Passport size shape (rectangular)
   if (shape === 'passport') {
-    if (imageSource) {
+    if (imageSource && !imageError) {
       return (
         <img 
           src={imageSource} 
           alt={name}
+          onError={() => setImageError(true)}
           style={{
             width: '100px',
             height: '130px',
@@ -67,9 +93,17 @@ const EmpAvatar: React.FC<EmpAvatarProps> = ({ name, photoUrl, photoBase64, size
   }
 
   // Default circular avatar
-  if (imageSource) {
+  if (imageSource && !imageError) {
     return (
-      <Avatar src={imageSource} size={size} alt={name} />
+      <Avatar 
+        src={imageSource} 
+        size={size} 
+        alt={name}
+        onError={() => {
+          setImageError(true);
+          return true;
+        }}
+      />
     );
   }
 

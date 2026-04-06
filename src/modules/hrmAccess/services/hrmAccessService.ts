@@ -41,10 +41,12 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async fetchModulesByCategory(site: string, category: string): Promise<ModuleRegistryResponse[]> {
-    const res = await api.post(`${BASE}/module/retrieveByCategory`, { site, category });
-    return res.data;
-  }
+  // Note: fetchModulesByCategory endpoint not available on backend
+  // Filtering is done client-side in the component
+  // static async fetchModulesByCategory(site: string, category: string): Promise<ModuleRegistryResponse[]> {
+  //   const res = await api.post(`${BASE}/module/retrieveByCategory`, { site, category });
+  //   return res.data;
+  // }
 
   static async updateModule(
     handle: string,
@@ -397,6 +399,50 @@ export class HrmAccessService {
     } catch (error) {
       console.error('User search error:', error);
       return [];
+    }
+  }
+
+  // ---- Employee Directory (New) ----
+
+  static async fetchEmployeeDirectory(payload: {
+    site?: string;
+    page?: number;
+    size?: number;
+    searchTerm?: string;
+    status?: string;
+    department?: string;
+    businessUnit?: string;
+  }): Promise<{
+    employees: Array<{
+      handle: string;
+      isActive: boolean;
+      employeeCode: string;
+      fullName: string;
+      workEmail: string;
+      phone: string;
+      photoUrl: string | null;
+      photoBase64: string;
+      status: string;
+      department: string;
+      role: string;
+      location: string;
+      businessUnits: string[];
+      reportingManager: string;
+      reportingManagerName: string;
+    }>;
+    totalCount: number;
+    page: number;
+    size: number;
+    totalPages: number;
+  }> {
+    try {
+      const res = await api.post('/hrm-service/employee/directory', payload);
+      // Response structure: { data: { data: { employees: [...], totalCount, page, size, totalPages } } }
+      const responseData = res.data?.data || res.data;
+      return responseData || { employees: [], totalCount: 0, page: 0, size: 20, totalPages: 0 };
+    } catch (error) {
+      console.error('Employee directory error:', error);
+      return { employees: [], totalCount: 0, page: 0, size: 20, totalPages: 0 };
     }
   }
 

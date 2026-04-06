@@ -17,6 +17,8 @@ export interface ModuleRegistryRequest {
   moduleCode: string;
   moduleName: string;
   moduleCategory?: string;
+  url?: string;
+  type?: string;
   isActive?: boolean;
   createdBy?: string;
 }
@@ -29,6 +31,8 @@ export interface ModuleRegistryResponse {
   moduleCategory: string;
   description?: string | null;
   defaultPermissionObjects?: string[] | null;
+  url?: string | null;
+  type?: string | null;
   isActive: boolean;
   isSystemModule: boolean;
   active: number;
