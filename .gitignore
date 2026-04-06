@@ -43,7 +43,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 nul
-.claude/settings.local.jsons
+.claude/settings.local.json
+.claude/worktrees/
+.superpowers/
 
 
 .DS_Store
