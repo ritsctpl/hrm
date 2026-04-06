@@ -54,7 +54,8 @@ const MODULE_ICON_MAP: Record<string, LucideIcon> = {
 
 const FALLBACK_ICON: LucideIcon = Blocks;
 
-export function getModuleIcon(url: string): LucideIcon {
+export function getModuleIcon(url: string | null | undefined): LucideIcon {
+  if (!url) return FALLBACK_ICON;
   const cleanUrl = url.replace(/\/index\.html$/, '');
   return MODULE_ICON_MAP[cleanUrl] ?? FALLBACK_ICON;
 }
