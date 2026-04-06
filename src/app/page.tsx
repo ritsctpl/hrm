@@ -1,66 +1,36 @@
-// src/app/page.tsx
+'use client';
 
-"use client";
-import "@/utils/i18n";
-import React, { useEffect, useState, useMemo } from "react";
-import { useAuth } from "../context/AuthContext";
-import jwtDecode from "jwt-decode";
-import { decryptToken } from "../utils/encryption";
-import { Tabs } from "antd";
-import CommonAppBar from "../components/CommonAppBar";
-import ModuleTileSkeleton from "../components/atoms/ModuleTileSkeleton";
-import HrmEmptyState from "../components/atoms/HrmEmptyState";
-import ModuleCategoryGroup from "../components/molecules/ModuleCategoryGroup";
-import { setCookie } from "nookies";
-import styles from "./HomePage.module.css";
-import { useRbacContext } from "../modules/hrmAccess/context/RbacContext";
-import { useTranslation } from "react-i18next";
-
-interface DecodedToken {
-  preferred_username: string;
-}
+import '@/utils/i18n';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { Tabs } from 'antd';
+import CommonAppBar from '../components/CommonAppBar';
+import ModuleCategoryGroup from '../components/molecules/ModuleCategoryGroup';
+import { CENTER_GRID_GROUPS } from '@/config/dashboardConfig';
+import styles from './HomePage.module.css';
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated, token } = useAuth();
-  const {
-    currentSite,
-    currentOrgModules,
-    modulesByCategory,
-    isReady,
-    isLoading,
-    switchOrganization,
-  } = useRbacContext();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation();
+  const [site, setSite] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const [username, setUsername] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      try {
-        const decryptedToken = decryptToken(token);
-        const decoded: DecodedToken = jwtDecode<DecodedToken>(decryptedToken);
-        setUsername(decoded.preferred_username);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-      }
-    }
-  }, [isAuthenticated, token]);
-
-  useEffect(() => {
-    if (isReady && currentSite) {
-      setCookie(null, "site", currentSite, { path: "/" });
-    }
-  }, [isReady, currentSite]);
+  // Build categories from frontend config
+  const allCategories = useMemo(() => {
+    return CENTER_GRID_GROUPS.map((group) => ({
+      category: t(group.labelKey),
+      modules: (group.apps || []).map((app) => ({
+        moduleCode: app.key,
+        moduleName: t(app.labelKey),
+        appUrl: app.route,
+      })),
+    }));
+  }, [t]);
 
   const filteredCategories = useMemo(() => {
-    const categories = Object.entries(modulesByCategory).map(
-      ([category, modules]) => ({ category, modules })
-    );
-
-    if (!searchTerm) return categories;
-
-    return categories
+    if (!searchTerm) return allCategories;
+    return allCategories
       .map((group) => ({
         ...group,
         modules: group.modules.filter((m) =>
@@ -68,21 +38,13 @@ const HomePage: React.FC = () => {
         ),
       }))
       .filter((group) => group.modules.length > 0);
-  }, [modulesByCategory, searchTerm]);
-
-  const handleSearchChange = (term: string) => {
-    setSearchTerm(term);
-  };
-
-  const handleSiteChange = (newSite: string) => {
-    switchOrganization(newSite);
-  };
+  }, [allCategories, searchTerm]);
 
   const tabItems = filteredCategories.map((group) => ({
     key: group.category,
     label: group.category,
     children: (
-      <div className={styles.tabContent} data-testid={`tab-panel-${group.category}`}>
+      <div className={styles.tabContent}>
         <ModuleCategoryGroup
           category={group.category}
           modules={group.modules}
@@ -92,37 +54,23 @@ const HomePage: React.FC = () => {
   }));
 
   return (
-    <div className={styles.pageRoot} data-testid="hrm-home-page">
+    <div className={styles.pageRoot}>
       <CommonAppBar
-        username={username}
-        site={currentSite}
-        onSearchChange={handleSearchChange}
-        appTitle="Welcome to Fenta HRM"
-        onSiteChange={handleSiteChange}
+        appTitle="Fenta HRM"
+        site={site}
+        onSearchChange={(term: string) => setSearchTerm(term)}
+        onSiteChange={(newSite: string) => setSite(newSite)}
+        setUserDetails={(data: any) => {
+          setSite(data.currentSite || data.site);
+        }}
       />
-      <div className={styles.contentWrapper}>
-        {isLoading && !isReady && (
-          <ModuleTileSkeleton count={12} />
-        )}
-
-        {isReady && filteredCategories.length === 0 && (
-          <HrmEmptyState
-            title={t("hrmHomeEmpty", "No modules available")}
-            subtext={t(
-              "hrmHomeEmptySubtext",
-              "You don't have access to any modules. Contact your administrator."
-            )}
-          />
-        )}
-
-        {isReady && filteredCategories.length > 0 && (
-          <Tabs
-            data-testid="category-tabs"
-            items={tabItems}
-            className={styles.categoryTabs}
-          />
-        )}
-      </div>
+      {isAuthenticated && (
+        <div className={styles.contentWrapper}>
+          {filteredCategories.length > 0 && (
+            <Tabs items={tabItems} className={styles.categoryTabs} />
+          )}
+        </div>
+      )}
     </div>
   );
 };
