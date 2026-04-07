@@ -25,6 +25,13 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const [proficiency, setProficiency] = useState<SkillProficiency>('INTERMEDIATE');
   const [loading, setLoading] = useState(false);
 
+  // Listen for event from header button
+  React.useEffect(() => {
+    const handleOpenModal = () => setAddModalOpen(true);
+    window.addEventListener('openSkillModal', handleOpenModal);
+    return () => window.removeEventListener('openSkillModal', handleOpenModal);
+  }, []);
+
   const handleAdd = useCallback(async () => {
     if (!skillName.trim()) {
       message.warning('Please enter a skill name');
@@ -76,16 +83,6 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddModalOpen(true)}
-        >
-          Add Skill
-        </Button>
-      </div>
-
       {skills.length === 0 ? (
         <Empty description="No skills recorded" />
       ) : (

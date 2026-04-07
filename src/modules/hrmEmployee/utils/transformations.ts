@@ -16,6 +16,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     fullName: row.fullName,
     department: row.department,
     designation: row.role || '', // Backend returns 'role', map to 'designation' for UI
+    isActive: row.isActive,
     status: row.status,
     photoUrl: row.photoUrl,
     photoBase64: (row as unknown as Record<string, unknown>).photoBase64 as string | undefined,
@@ -134,6 +135,8 @@ export function buildCreateRequest(
     businessUnits: draft.businessUnits || [],
     reportingManager: draft.reportingManager,
     designation: draft.designation,
+    organizationHandle: draft.organizationHandle,
+    organizationName: draft.organizationName,
     createdBy,
   };
 }
@@ -204,20 +207,18 @@ export function getProfileStats(profile: EmployeeProfile) {
  * Output: { "PAN": "ABCDE1234F" }
  */
 function convertGovtIdsArrayToObject(
-  govtIdsArray: Array<{ idType: string; idNumber: string }> | undefined
-): Record<string, string> | undefined {
+  govtIdsArray: Array<{ idType: string; idNumber: string; verified?: boolean }> | undefined
+): Array<{ idType: string; idNumber: string; verified?: boolean }> | undefined {
+  // Keep as array format to preserve verified field
   if (!govtIdsArray || !Array.isArray(govtIdsArray) || govtIdsArray.length === 0) {
     return undefined;
   }
   
-  const result: Record<string, string> = {};
-  govtIdsArray.forEach((item) => {
-    if (item.idType && item.idNumber) {
-      result[item.idType] = item.idNumber;
-    }
-  });
-  
-  return Object.keys(result).length > 0 ? result : undefined;
+  return govtIdsArray.map(item => ({
+    idType: item.idType,
+    idNumber: item.idNumber,
+    verified: item.verified || false,
+  }));
 }
 
 /**
@@ -274,11 +275,15 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       maritalStatus: personal.maritalStatus as EmployeeProfile['personalDetails']['maritalStatus'],
       bloodGroup: personal.bloodGroup as EmployeeProfile['personalDetails']['bloodGroup'],
       nationality: (personal.nationality as string) || undefined,
-      govtIds: convertGovtIdsArrayToObject(personal.govtIds as Array<{ idType: string; idNumber: string }> || []),
+      govtIds: convertGovtIdsArrayToObject(personal.govtIds as Array<{ idType: string; idNumber: string; verified?: boolean }> || []),
     },
     contactDetails: {
-      presentAddress: (contact.presentAddress as string) || undefined,
-      permanentAddress: (contact.permanentAddress as string) || undefined,
+      presentAddress: typeof contact.presentAddress === 'object' && contact.presentAddress !== null
+        ? contact.presentAddress as EmployeeProfile['contactDetails']['presentAddress']
+        : undefined,
+      permanentAddress: typeof contact.permanentAddress === 'object' && contact.permanentAddress !== null
+        ? contact.permanentAddress as EmployeeProfile['contactDetails']['permanentAddress']
+        : undefined,
       city: (contact.city as string) || undefined,
       state: (contact.state as string) || undefined,
       country: (contact.country as string) || undefined,
@@ -344,9 +349,9 @@ export function buildUpdateBasicPayload(
 }
 
 /**
- * Transform contact details from nested structure to flat payload for API
- * Input: { presentAddress, permanentAddress, city, state, country, pinZip, emergencyContacts }
- * Output: Flat structure with all fields at top level
+ * Transform contact details to API payload format with nested address objects
+ * Input: { presentAddress: {address, city, state, country, pinZip}, permanentAddress: {...}, emergencyContacts }
+ * Output: Nested structure with address objects
  */
 export function buildUpdateContactPayload(
   site: string,
@@ -354,18 +359,50 @@ export function buildUpdateContactPayload(
   contactData: Record<string, unknown>,
   modifiedBy: string
 ): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     site,
     handle,
-    presentAddress: contactData.presentAddress || undefined,
-    permanentAddress: contactData.permanentAddress || undefined,
-    city: contactData.city || undefined,
-    state: contactData.state || undefined,
-    country: contactData.country || undefined,
-    pinZip: contactData.pinZip || undefined,
-    emergencyContacts: contactData.emergencyContacts || undefined,
     modifiedBy,
   };
+
+  // Handle presentAddress - can be object or string (backward compat)
+  if (contactData.presentAddress) {
+    if (typeof contactData.presentAddress === 'object') {
+      payload.presentAddress = contactData.presentAddress;
+    } else {
+      // Convert string to object format
+      payload.presentAddress = {
+        address: contactData.presentAddress,
+        city: contactData.city || '',
+        state: contactData.state || '',
+        country: contactData.country || '',
+        pinZip: contactData.pinZip || '',
+      };
+    }
+  }
+
+  // Handle permanentAddress - can be object or string (backward compat)
+  if (contactData.permanentAddress) {
+    if (typeof contactData.permanentAddress === 'object') {
+      payload.permanentAddress = contactData.permanentAddress;
+    } else {
+      // Convert string to object format
+      payload.permanentAddress = {
+        address: contactData.permanentAddress,
+        city: contactData.city || '',
+        state: contactData.state || '',
+        country: contactData.country || '',
+        pinZip: contactData.pinZip || '',
+      };
+    }
+  }
+
+  // Include emergencyContacts
+  if (contactData.emergencyContacts) {
+    payload.emergencyContacts = contactData.emergencyContacts;
+  }
+
+  return payload;
 }
 
 /**
@@ -410,18 +447,30 @@ export function buildUpdatePersonalPayload(
   personalData: Record<string, unknown>,
   modifiedBy: string
 ): Record<string, unknown> {
-  // Convert govtIds object to array format if provided
-  const govtIdsArray: Array<{ idType: string; idNumber: string; verified?: boolean }> = [];
-  if (personalData.govtIds && typeof personalData.govtIds === 'object') {
-    Object.entries(personalData.govtIds).forEach(([idType, idNumber]) => {
-      if (idType && idNumber) {
-        govtIdsArray.push({
-          idType,
-          idNumber: idNumber as string,
-          verified: false, // Default to false, can be updated from API response
-        });
-      }
-    });
+  // govtIds should already be in array format from the form
+  // If it's an array, use it directly; if it's an object, convert it
+  let govtIdsArray: Array<{ idType: string; idNumber: string; verified?: boolean }> = [];
+  
+  if (personalData.govtIds) {
+    if (Array.isArray(personalData.govtIds)) {
+      // Already in array format, use as-is
+      govtIdsArray = personalData.govtIds.map((item: any) => ({
+        idType: item.idType,
+        idNumber: item.idNumber,
+        verified: item.verified || false,
+      }));
+    } else if (typeof personalData.govtIds === 'object') {
+      // Convert object format to array (backward compatibility)
+      Object.entries(personalData.govtIds).forEach(([idType, idNumber]) => {
+        if (idType && idNumber) {
+          govtIdsArray.push({
+            idType,
+            idNumber: idNumber as string,
+            verified: false,
+          });
+        }
+      });
+    }
   }
 
   return {

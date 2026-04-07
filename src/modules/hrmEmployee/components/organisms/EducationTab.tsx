@@ -5,13 +5,39 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } from 'antd';
+import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm, Select } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EducationEntry } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
+
+// Dropdown options
+const INSTITUTION_OPTIONS = [
+  'IIT Bombay', 'IIT Delhi', 'IIT Madras', 'IIT Kanpur', 'IIT Kharagpur',
+  'NIT Trichy', 'NIT Warangal', 'NIT Surathkal', 'BITS Pilani',
+  'Anna University', 'Delhi University', 'Mumbai University', 'Pune University',
+  'VTU', 'Osmania University', 'Jadavpur University', 'Other'
+];
+
+const DEGREE_OPTIONS = [
+  'B.Tech', 'B.E', 'M.Tech', 'M.E', 'B.Sc', 'M.Sc', 'BCA', 'MCA',
+  'B.Com', 'M.Com', 'BBA', 'MBA', 'B.A', 'M.A', 'Ph.D',
+  'Diploma', 'High School', 'Intermediate', 'Other'
+];
+
+const FIELD_OPTIONS = [
+  'Computer Science', 'Information Technology', 'Electronics', 'Electrical',
+  'Mechanical', 'Civil', 'Chemical', 'Biotechnology',
+  'Commerce', 'Business Administration', 'Finance', 'Accounting',
+  'Arts', 'Science', 'Mathematics', 'Physics', 'Chemistry',
+  'English', 'History', 'Economics', 'Other'
+];
+
+// Generate year options (current year to 1950)
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: currentYear - 1949 }, (_, i) => currentYear - i);
 
 const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   profile,
@@ -25,6 +51,13 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+
+  // Listen for event from header button
+  React.useEffect(() => {
+    const handleOpenModal = () => setAddOpen(true);
+    window.addEventListener('openEducationModal', handleOpenModal);
+    return () => window.removeEventListener('openEducationModal', handleOpenModal);
+  }, []);
 
   const handleAdd = useCallback(async () => {
     try {
@@ -140,16 +173,6 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddOpen(true)}
-        >
-          Add Education
-        </Button>
-      </div>
-
       {education.length === 0 ? (
         <Empty description="No education entries recorded" />
       ) : (
@@ -215,7 +238,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             label="Institution"
             rules={[{ required: true, message: 'Required' }]}
           >
-            <Input />
+            <Select
+              showSearch
+              placeholder="Select or type institution"
+              options={INSTITUTION_OPTIONS.map(inst => ({ label: inst, value: inst }))}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <div style={{ display: 'flex', gap: 12 }}>
             <Form.Item
@@ -224,7 +254,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <Select
+                showSearch
+                placeholder="Select or type degree"
+                options={DEGREE_OPTIONS.map(deg => ({ label: deg, value: deg }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
             <Form.Item
               name="field"
@@ -232,7 +269,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <Select
+                showSearch
+                placeholder="Select or type field"
+                options={FIELD_OPTIONS.map(field => ({ label: field, value: field }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -242,10 +286,17 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <InputNumber style={{ width: '100%' }} min={1950} max={2100} />
+              <Select
+                showSearch
+                placeholder="Select year"
+                options={YEAR_OPTIONS.map(year => ({ label: year.toString(), value: year }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').includes(input)
+                }
+              />
             </Form.Item>
             <Form.Item name="grade" label="Grade / GPA" style={{ flex: 1 }}>
-              <Input />
+              <Input placeholder="e.g., 8.5 CGPA, 85%, First Class" />
             </Form.Item>
           </div>
         </Form>
@@ -309,7 +360,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             label="Institution"
             rules={[{ required: true, message: 'Required' }]}
           >
-            <Input />
+            <Select
+              showSearch
+              placeholder="Select or type institution"
+              options={INSTITUTION_OPTIONS.map(inst => ({ label: inst, value: inst }))}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <div style={{ display: 'flex', gap: 12 }}>
             <Form.Item
@@ -318,7 +376,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <Select
+                showSearch
+                placeholder="Select or type degree"
+                options={DEGREE_OPTIONS.map(deg => ({ label: deg, value: deg }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
             <Form.Item
               name="field"
@@ -326,7 +391,14 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <Select
+                showSearch
+                placeholder="Select or type field"
+                options={FIELD_OPTIONS.map(field => ({ label: field, value: field }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -336,10 +408,17 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <InputNumber style={{ width: '100%' }} min={1950} max={2100} />
+              <Select
+                showSearch
+                placeholder="Select year"
+                options={YEAR_OPTIONS.map(year => ({ label: year.toString(), value: year }))}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').includes(input)
+                }
+              />
             </Form.Item>
             <Form.Item name="grade" label="Grade / GPA" style={{ flex: 1 }}>
-              <Input />
+              <Input placeholder="e.g., 8.5 CGPA, 85%, First Class" />
             </Form.Item>
           </div>
         </Form>

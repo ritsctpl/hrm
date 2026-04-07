@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Drawer, Table, Button, DatePicker, Input, Empty, Tag, message } from 'antd';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Drawer, Table, Button, Select, Empty, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
@@ -11,6 +11,12 @@ interface Props {
   open: boolean;
   onClose: () => void;
   employeeHandle?: string;
+}
+
+interface EmployeeOption {
+  label: string;
+  value: string;
+  searchText: string;
 }
 
 const ACTION_COLORS: Record<string, string> = {
@@ -25,10 +31,51 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
   const [handle, setHandle] = useState(employeeHandle ?? '');
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+
+  // Fetch employee list when drawer opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchEmployees = async () => {
+      setLoadingEmployees(true);
+      try {
+        const cookies = parseCookies();
+        const site = cookies.site;
+        const response = await HrmEmployeeService.fetchDirectory({
+          site,
+          page: 0,
+          size: 1000,
+        });
+        
+        console.log('Employee directory response:', response);
+        
+        const options: EmployeeOption[] = response.employees.map((emp) => {
+          const option = {
+            label: `${emp.fullName} (${emp.employeeCode})`,
+            value: emp.handle,
+            searchText: `${emp.fullName} ${emp.employeeCode} ${emp.workEmail || ''}`.toLowerCase(),
+          };
+          return option;
+        });
+        
+        console.log('Total options created:', options.length);
+        setEmployees(options);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        message.error('Failed to load employee list');
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+
+    fetchEmployees();
+  }, [open]);
 
   const loadAuditLog = useCallback(async (p = 0) => {
     if (!handle.trim()) {
-      message.warning('Please enter an employee handle');
+      message.warning('Please select an employee');
       return;
     }
     setLoading(true);
@@ -60,7 +107,12 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
         <Tag color={ACTION_COLORS[action] ?? 'default'}>{action}</Tag>
       ),
     },
-    { title: 'Field', dataIndex: 'field', width: 140 },
+    { 
+      title: 'Field', 
+      dataIndex: 'fieldKey',
+      width: 140,
+      render: (v: string | null) => v ?? '--',
+    },
     {
       title: 'Old Value',
       dataIndex: 'oldValue',
@@ -88,12 +140,20 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
       width={800}
     >
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <Input
-          placeholder="Employee handle"
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          style={{ width: 240 }}
+        <Select
+          placeholder="Select employee"
+          value={handle || undefined}
+          onChange={(value) => setHandle(value || '')}
+          style={{ width: 300 }}
           allowClear
+          showSearch
+          loading={loadingEmployees}
+          filterOption={(input, option) => {
+            if (!option) return false;
+            const label = option.label?.toString().toLowerCase() || '';
+            return label.includes(input.toLowerCase());
+          }}
+          options={employees}
         />
         <Button type="primary" onClick={() => loadAuditLog(0)} loading={loading}>
           Load

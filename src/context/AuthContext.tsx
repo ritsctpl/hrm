@@ -5,6 +5,7 @@ import { setCookie, destroyCookie, parseCookies } from 'nookies';
 import { getKeycloakInstance, keycloakInitOptions } from '../keycloak';
 import { decryptToken, encryptToken } from '../utils/encryption';
 import jwtDecode from 'jwt-decode';
+import { usePermissionsStore } from '@/stores/permissionsStore';
 
 interface AuthContextProps {
   children: ReactNode;
@@ -73,6 +74,10 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
           if (keycloak.realmAccess?.roles) {
             setCookie(null, 'role', `${keycloak.realmAccess.roles}`, { path: '/' });
           }
+          
+          // Fetch permissions after successful authentication
+          const fetchPermissions = usePermissionsStore.getState().fetchPermissions;
+          await fetchPermissions();
         } else {
           destroyCookie(null, 'token');
         }
@@ -119,6 +124,10 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
       setToken(null);
       destroyCookie(null, 'token');
       destroyCookie(null, 'role');
+      
+      // Clear permissions on logout
+      const clearPermissions = usePermissionsStore.getState().clearPermissions;
+      clearPermissions();
     } catch (err) {
       console.error('Logout failed:', err);
     }

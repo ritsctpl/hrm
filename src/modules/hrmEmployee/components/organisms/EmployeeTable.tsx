@@ -64,9 +64,13 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (status: EmployeeSummary['status']) => (
-          <EmpStatusBadge status={status} size="small" />
-        ),
+        render: (_: unknown, record: EmployeeSummary) => {
+          const displayStatus: 'ACTIVE' | 'INACTIVE' = 
+            record.isActive !== undefined 
+              ? (record.isActive === true ? 'ACTIVE' : 'INACTIVE')
+              : (record.status as 'ACTIVE' | 'INACTIVE');
+          return <EmpStatusBadge status={displayStatus} size="small" />;
+        },
       },
       {
         title: 'Actions',

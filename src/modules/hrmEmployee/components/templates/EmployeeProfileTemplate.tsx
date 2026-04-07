@@ -313,16 +313,58 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'career':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Skills">
+            <ProfileSection 
+              title="Skills"
+              action={
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    const event = new CustomEvent('openSkillModal');
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Add Skill
+                </Button>
+              }
+            >
               <SkillsTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>
             {/* <ProfileSection title="Job History">
               <JobHistoryTab {...tabProps} />
             </ProfileSection> */}
-            <ProfileSection title="Previous Experience">
+            <ProfileSection 
+              title="Previous Experience"
+              action={
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    const event = new CustomEvent('openExperienceModal');
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Add Experience
+                </Button>
+              }
+            >
               <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>
-            <ProfileSection title="Education">
+            <ProfileSection 
+              title="Education"
+              action={
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    const event = new CustomEvent('openEducationModal');
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Add Education
+                </Button>
+              }
+            >
               <EducationTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>
             <ProfileSection title="Training & Certifications">
@@ -336,7 +378,21 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'documentsAssets':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Documents">
+            <ProfileSection 
+              title="Documents"
+              action={
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => {
+                    const event = new CustomEvent('openDocumentModal');
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  Upload Document
+                </Button>
+              }
+            >
               <DocumentsTab {...tabProps} onRefresh={onRefresh} />
             </ProfileSection>
             <ProfileSection title="Assets">

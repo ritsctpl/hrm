@@ -46,6 +46,7 @@ export interface EmployeeDirectoryRow {
   workEmail: string;
   phone?: string;
   photoUrl?: string;
+  isActive?: boolean;
   status: EmployeeStatus;
   department: string;
   role: string;
@@ -71,6 +72,8 @@ export interface CreateEmployeeRequest {
   businessUnits: string[];
   reportingManager?: string;
   nickName?: string;
+  organizationHandle?: string;
+  organizationName?: string;
   createdBy: string;
   /** @deprecated UI backward compat - mapped to 'role' by buildCreateRequest */
   designation?: string;

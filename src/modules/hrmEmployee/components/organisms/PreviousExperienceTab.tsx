@@ -28,6 +28,13 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
+  // Listen for event from header button
+  React.useEffect(() => {
+    const handleOpenModal = () => setAddOpen(true);
+    window.addEventListener('openExperienceModal', handleOpenModal);
+    return () => window.removeEventListener('openExperienceModal', handleOpenModal);
+  }, []);
+
   const handleAdd = useCallback(async () => {
     try {
       const values = await form.validateFields();
@@ -140,16 +147,6 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddOpen(true)}
-        >
-          Add Experience
-        </Button>
-      </div>
-
       {previousExperience.length === 0 ? (
         <Empty description="No previous experience recorded" />
       ) : (

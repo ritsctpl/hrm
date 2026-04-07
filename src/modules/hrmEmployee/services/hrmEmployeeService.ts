@@ -53,9 +53,14 @@ export class HrmEmployeeService {
   ): Promise<{ available: boolean; message: string }> {
     const response = await api.post(`${this.BASE}/check-email`, { site, workEmail });
     console.log('Raw API response:', response.data);
+    
+    // The response interceptor unwraps { success, message, messageCode, data } to just data
+    // So response.data is already the boolean value (true/false)
+    const isAvailable = response.data === true;
+    
     const result = {
-      available: response.data.data === true,
-      message: response.data.message || '',
+      available: isAvailable,
+      message: isAvailable ? 'Email is available' : 'Email is already in use',
     };
     console.log('Parsed result:', result);
     return result;
@@ -220,18 +225,43 @@ export class HrmEmployeeService {
     });
   }
 
-  /** Upload employee document (multipart with metadata JSON part) */
+  /** Upload employee document with base64 encoding */
   static async uploadDocument(
     metadata: DocumentUploadMetadata,
     file: File
   ): Promise<EmployeeDocument> {
-    const formData = new FormData();
-    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    formData.append('file', file);
-    const response = await api.post(`${this.BASE}/document/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Convert file to base64
+    const base64 = await this.fileToBase64(file);
+    
+    const payload = {
+      site: metadata.site,
+      employeeHandle: metadata.employeeHandle,
+      documentType: metadata.documentType,
+      documentName: file.name,
+      contentType: file.type,
+      documentBase64: base64,
+      expiryDate: metadata.expiryDate || null,
+      tags: metadata.tags || null,
+      uploadedBy: metadata.uploadedBy,
+    };
+
+    const response = await api.post(`${this.BASE}/document/upload`, payload);
     return response.data;
+  }
+
+  /** Helper: Convert File to base64 string */
+  private static fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
   }
 
   /** Delete employee document */
@@ -519,7 +549,22 @@ export class HrmEmployeeService {
       page,
       size,
     });
-    return response.data;
+    
+    // Backend returns array directly after interceptor unwraps it
+    const data = response.data;
+    
+    // If it's already an array, wrap it in the expected format
+    if (Array.isArray(data)) {
+      return {
+        content: data,
+        totalElements: data.length,
+        page: page,
+        size: size,
+      };
+    }
+    
+    // Otherwise return as-is (fallback)
+    return data;
   }
 
   /** Upload employee photo */

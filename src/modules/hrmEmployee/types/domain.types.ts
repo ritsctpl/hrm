@@ -93,6 +93,8 @@ export interface EmployeeDocument {
   documentType: string;
   documentName: string;
   storagePath?: string;
+  documentBase64?: string; // Base64 encoded document content
+  contentType?: string; // MIME type (e.g., application/pdf)
   expiryDate?: string;
   tags?: string[];
   uploadedAt: string;
@@ -117,6 +119,7 @@ export interface EmployeeSummary {
   phone?: string;
   photoUrl?: string;
   photoBase64?: string;
+  isActive?: boolean;
   status: EmployeeStatus;
   department: string;
   role?: string;
@@ -168,18 +171,26 @@ export interface PersonalDetails {
   maritalStatus?: MaritalStatus;
   bloodGroup?: BloodGroup;
   nationality?: string;
-  govtIds?: Record<string, string>;
+  govtIds?: Array<{ idType: string; idNumber: string; verified?: boolean }>;
   /** @deprecated UI backward compat alias */
-  governmentIds?: Record<string, string>;
+  governmentIds?: Array<{ idType: string; idNumber: string; verified?: boolean }>;
+}
+
+export interface Address {
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  pinZip: string;
 }
 
 export interface ContactDetails {
-  presentAddress?: string;
-  permanentAddress?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  pinZip?: string;
+  presentAddress?: Address;
+  permanentAddress?: Address;
+  city?: string; // Deprecated - kept for backward compatibility
+  state?: string; // Deprecated - kept for backward compatibility
+  country?: string; // Deprecated - kept for backward compatibility
+  pinZip?: string; // Deprecated - kept for backward compatibility
   emergencyContacts?: EmergencyContact[];
 }
 

@@ -8,11 +8,13 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
+import { useHrmEmployeeStore } from '../../stores/hrmEmployeeStore';
 import { ONBOARDING_STEPS } from '../../utils/constants';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 
 /* Step 0: Basic Info */
 const BasicStep: React.FC<{
@@ -96,26 +98,184 @@ const OfficialStep: React.FC<{
     sendCredentialsEmail: boolean;
   };
   onKeycloakChange: (settings: any) => void;
-}> = ({ draft, errors, onChange, keycloakSettings, onKeycloakChange }) => (
+}> = ({ draft, errors, onChange, keycloakSettings, onKeycloakChange }) => {
+  const [companies, setCompanies] = React.useState<Array<{ label: string; value: string }>>([]);
+  const [departments, setDepartments] = React.useState<Array<{ label: string; value: string }>>([]);
+  const [locations, setLocations] = React.useState<Array<{ label: string; value: string }>>([]);
+  const [businessUnits, setBusinessUnits] = React.useState<Array<{ label: string; value: string }>>([]);
+  const [employees, setEmployees] = React.useState<Array<{ label: string; value: string }>>([]);
+  const [selectedCompany, setSelectedCompany] = React.useState<string | undefined>();
+  const [selectedCompanyName, setSelectedCompanyName] = React.useState<string | undefined>();
+  const [selectedBU, setSelectedBU] = React.useState<string | undefined>();
+
+  // Load initial dropdown options
+  React.useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const cookies = parseCookies();
+        const site = cookies.site || 'RITS';
+
+        // Fetch companies
+        const companyResponse = await HrmOrganizationService.fetchBySite(site);
+        const companyData = Array.isArray(companyResponse) ? companyResponse : [companyResponse];
+        setCompanies(companyData.map((c) => ({
+          label: c.companyName || c.legalName || c.tradeName || c.handle,
+          value: c.handle,
+        })));
+
+        // Fetch locations
+        const locationsData = await HrmOrganizationService.fetchAllLocations(site);
+        setLocations(locationsData.map((loc) => ({
+          label: loc.name || loc.code || loc.id,
+          value: loc.id,
+        })));
+
+        // Fetch employees for reporting manager
+        const employeesData = await HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 });
+        setEmployees((employeesData.employees || []).map((emp) => ({
+          label: `${emp.fullName} (${emp.employeeCode})`,
+          value: emp.handle,
+        })));
+      } catch (error) {
+        console.error('Failed to fetch dropdown options:', error);
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  // Load business units when company is selected
+  React.useEffect(() => {
+    const loadBusinessUnits = async () => {
+      if (selectedCompany) {
+        try {
+          const cookies = parseCookies();
+          const site = cookies.site || 'RITS';
+          const data = await HrmOrganizationService.fetchBusinessUnits(site, selectedCompany);
+          setBusinessUnits((data || []).map((bu) => ({
+            label: `${bu.buCode} - ${bu.buName}`,
+            value: bu.handle,
+          })));
+        } catch (error) {
+          console.error('Failed to load business units:', error);
+        }
+      } else {
+        setBusinessUnits([]);
+      }
+    };
+    loadBusinessUnits();
+  }, [selectedCompany]);
+
+  // Load departments when business unit is selected
+  React.useEffect(() => {
+    const loadDepartments = async () => {
+      if (selectedBU) {
+        try {
+          const cookies = parseCookies();
+          const site = cookies.site || 'RITS';
+          const data = await HrmOrganizationService.fetchDepartments(site, selectedBU);
+          setDepartments((data || []).map((dept) => ({
+            label: `${dept.deptCode} - ${dept.deptName}`,
+            value: dept.handle,
+          })));
+        } catch (error) {
+          console.error('Failed to load departments:', error);
+        }
+      } else {
+        setDepartments([]);
+      }
+    };
+    loadDepartments();
+  }, [selectedBU]);
+
+  return (
   <div className={formStyles.wizardStepBody}>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
-        <label className={formStyles.formFieldLabel}>Title</label>
-        <Input
-          value={draft.title || ''}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Mr. / Ms. / Dr."
+        <label className={formStyles.formFieldLabel}>Company/Organization</label>
+        <Select
+          value={selectedCompany || undefined}
+          onChange={(val, option: any) => {
+            setSelectedCompany(val);
+            setSelectedCompanyName(option?.label || '');
+            setSelectedBU(undefined); // Reset BU when company changes
+            onChange({ 
+              businessUnits: [], // Clear business units
+              organizationHandle: val,
+              organizationName: option?.label || ''
+            });
+          }}
+          placeholder="Select company"
+          style={{ width: '100%' }}
+          options={companies}
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
+      </div>
+      <div className={formStyles.formField}>
+        <label className={formStyles.formFieldLabel}>Title</label>
+        <Select
+          value={draft.title || undefined}
+          onChange={(val) => onChange({ title: val })}
+          placeholder="Select title"
+          style={{ width: '100%' }}
+          options={[
+            { label: 'Mr.', value: 'Mr.' },
+            { label: 'Ms.', value: 'Ms.' },
+            { label: 'Mrs.', value: 'Mrs.' },
+            { label: 'Dr.', value: 'Dr.' },
+          ]}
+          allowClear
+        />
+      </div>
+    </div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Business Units
+        </label>
+        <Select
+          value={draft.businessUnits?.[0] || undefined}
+          onChange={(val) => {
+            const selected = businessUnits.find(bu => bu.value === val);
+            onChange({ businessUnits: selected ? [selected.label] : [] });
+            setSelectedBU(val);
+          }}
+          placeholder="Select business unit"
+          style={{ width: '100%' }}
+          options={businessUnits}
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          disabled={!selectedCompany}
+          notFoundContent={selectedCompany ? 'No business units found' : 'Please select company first'}
+        />
+        {errors.businessUnits && (
+          <div className={formStyles.formFieldError}>{errors.businessUnits}</div>
+        )}
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Department
         </label>
-        <Input
-          value={draft.department || ''}
-          onChange={(e) => onChange({ department: e.target.value })}
+        <Select
+          value={draft.department || undefined}
+          onChange={(val) => {
+            const selected = departments.find(d => d.value === val);
+            onChange({ department: selected?.label || val });
+          }}
           status={errors.department ? 'error' : undefined}
-          placeholder="Engineering"
+          placeholder="Select department"
+          style={{ width: '100%' }}
+          options={departments}
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          disabled={!selectedBU}
+          notFoundContent={selectedBU ? 'No departments found' : 'Please select business unit first'}
         />
         {errors.department && (
           <div className={formStyles.formFieldError}>{errors.department}</div>
@@ -127,11 +287,18 @@ const OfficialStep: React.FC<{
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Role
         </label>
-        <Input
-          value={draft.role || ''}
-          onChange={(e) => onChange({ role: e.target.value })}
+        <Select
+          value={draft.role || undefined}
+          onChange={(val) => onChange({ role: val })}
           status={errors.role ? 'error' : undefined}
-          placeholder="EMPLOYEE / MANAGER"
+          placeholder="Select role"
+          style={{ width: '100%' }}
+          options={[
+            { label: 'EMPLOYEE', value: 'EMPLOYEE' },
+            { label: 'MANAGER', value: 'MANAGER' },
+            { label: 'ADMIN', value: 'ADMIN' },
+            { label: 'HR', value: 'HR' },
+          ]}
         />
         {errors.role && (
           <div className={formStyles.formFieldError}>{errors.role}</div>
@@ -149,21 +316,34 @@ const OfficialStep: React.FC<{
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Reporting Manager</label>
-        <Input
-          value={draft.reportingManager || ''}
-          onChange={(e) => onChange({ reportingManager: e.target.value })}
-          placeholder="Employee code or name"
+        <Select
+          value={draft.reportingManager || undefined}
+          onChange={(val) => onChange({ reportingManager: val })}
+          placeholder="Select reporting manager"
+          style={{ width: '100%' }}
+          options={employees}
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          allowClear
         />
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Location
         </label>
-        <Input
-          value={draft.location || ''}
-          onChange={(e) => onChange({ location: e.target.value })}
+        <Select
+          value={draft.location || undefined}
+          onChange={(val) => onChange({ location: val })}
           status={errors.location ? 'error' : undefined}
-          placeholder="Location code"
+          placeholder="Select location"
+          style={{ width: '100%' }}
+          options={locations}
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
         {errors.location && (
           <div className={formStyles.formFieldError}>{errors.location}</div>
@@ -171,21 +351,6 @@ const OfficialStep: React.FC<{
       </div>
     </div>
     <div className={formStyles.formRow}>
-      <div className={formStyles.formField}>
-        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
-          Business Units
-        </label>
-        <Select
-          mode="tags"
-          value={draft.businessUnits || []}
-          onChange={(val) => onChange({ businessUnits: val })}
-          placeholder="Type and press enter"
-          style={{ width: '100%' }}
-        />
-        {errors.businessUnits && (
-          <div className={formStyles.formFieldError}>{errors.businessUnits}</div>
-        )}
-      </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Joining Date
@@ -279,7 +444,8 @@ const OfficialStep: React.FC<{
       </>
     )}
   </div>
-);
+  );
+};
 
 /* Step 2: Contact Info */
 const ContactStep: React.FC<{
@@ -490,7 +656,7 @@ const OnboardingWizard: React.FC = () => {
   } = useOnboardingWizard();
 
   const [keycloakSettings, setKeycloakSettings] = useState({
-    createKeycloakUser: false,
+    createKeycloakUser: true, // Default to true
     username: '',
     temporaryPassword: '',
     sendCredentialsEmail: true,
@@ -549,73 +715,72 @@ const OnboardingWizard: React.FC = () => {
   };
 
   const handleSubmitWithKeycloak = async () => {
+    console.log('handleSubmitWithKeycloak called', { keycloakSettings });
+    
     try {
-      // Step 1: Create Keycloak user if requested
-      if (keycloakSettings.createKeycloakUser) {
-        const username = keycloakSettings.username || draft.workEmail || '';
+      // Step 1: Create employee first - call store directly to get proper typing
+      const createdEmployee = await useHrmEmployeeStore.getState().submitOnboarding();
+      
+      console.log('Employee created:', createdEmployee);
+      
+      if (!createdEmployee) {
+        throw new Error('Failed to create employee');
+      }
+
+      // Step 2: Create Keycloak user if requested, using employeeCode as username
+      if (keycloakSettings.createKeycloakUser && createdEmployee.employeeCode) {
+        console.log('Creating Keycloak user with employeeCode:', createdEmployee.employeeCode);
+        
+        const username = createdEmployee.employeeCode; // Use employeeCode from response
         const password = keycloakSettings.temporaryPassword || EmployeeKeycloakService.generateTemporaryPassword();
 
+        console.log('Calling Keycloak API with username:', username);
+
         const keycloakResult = await EmployeeKeycloakService.createUserForEmployee({
-          workEmail: username,
+          workEmail: createdEmployee.basicDetails.workEmail,
           firstName: draft.firstName || '',
           lastName: draft.lastName || '',
           password: password,
+          username: username, // Pass employeeCode as username
         });
 
-        if (!keycloakResult.succes) {
-          // Check if user already exists
-          if (keycloakResult.error?.includes('User exists')) {
-            const proceed = window.confirm(
-              'A Keycloak user with this email already exists. Do you want to continue creating the employee without creating a new Keycloak user?'
-            );
-            if (!proceed) {
-              return;
-            }
-          } else {
-            throw new Error(keycloakResult.error || 'Failed to create Keycloak user');
-          }
+        console.log('Keycloak result:', keycloakResult);
+
+        if (!keycloakResult.success) {
+          message.warning(`Employee created successfully, but Keycloak user creation failed: ${keycloakResult.error || 'Unknown error'}`);
         } else {
-          // Store credentials to display after successful employee creation
-          setGeneratedCredentials({
-            username: username,
-            password: password,
+          Modal.success({
+            title: 'Employee Created Successfully',
+            content: (
+              <div>
+                <p>Employee and login credentials have been created:</p>
+                <p><strong>Username:</strong> {username}</p>
+                <p><strong>Temporary Password:</strong> {password}</p>
+                <p style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
+                  Please share these credentials with the employee securely.
+                </p>
+              </div>
+            ),
+            width: 500,
           });
         }
-      }
-
-      // Step 2: Create employee
-      await submitOnboarding();
-
-      // Step 3: Show credentials if created
-      if (generatedCredentials) {
-        Modal.success({
-          title: 'Employee Created Successfully',
-          content: (
-            <div>
-              <p>Login credentials have been created:</p>
-              <p><strong>Username:</strong> {generatedCredentials.username}</p>
-              <p><strong>Temporary Password:</strong> {generatedCredentials.password}</p>
-              <p style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
-                {keycloakSettings.sendCredentialsEmail 
-                  ? 'Credentials have been sent via email.' 
-                  : 'Please share these credentials with the employee securely.'}
-              </p>
-            </div>
-          ),
-          width: 500,
+      } else {
+        console.log('Skipping Keycloak creation:', {
+          createKeycloakUser: keycloakSettings.createKeycloakUser,
+          employeeCode: createdEmployee?.employeeCode,
         });
-        setGeneratedCredentials(null);
       }
 
       // Reset Keycloak settings
       setKeycloakSettings({
-        createKeycloakUser: false,
+        createKeycloakUser: true,
         username: '',
         temporaryPassword: '',
         sendCredentialsEmail: true,
       });
 
     } catch (error: any) {
+      console.error('Error in handleSubmitWithKeycloak:', error);
       message.error(error.message || 'Failed to create employee');
     }
   };

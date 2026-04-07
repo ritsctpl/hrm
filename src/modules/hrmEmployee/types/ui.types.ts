@@ -83,6 +83,7 @@ export interface EmpDocumentRowProps {
   fileName: string;
   uploadedAt: string;
   expiryDate?: string;
+  onView?: (docId: string) => void;
   onDownload: (docId: string) => void;
   onDelete: (docId: string) => void;
 }

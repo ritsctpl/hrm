@@ -76,38 +76,50 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
   const { personalDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
+  
+  // Track which ID numbers existed when form was initialized (to disable editing)
+  const [existingIdNumbers, setExistingIdNumbers] = useState<Set<number>>(new Set());
 
   // Sync with parent isEditing state - enter edit mode when parent says to
   React.useEffect(() => {
     if (isEditing && editingSection === 'personal') {
       setLocalEditing(true);
+      // Track which govtIds already have ID numbers
+      const govtIdsArray = Array.isArray(personalDetails.govtIds)
+        ? personalDetails.govtIds
+        : [];
+      const existingIndices = new Set<number>();
+      govtIdsArray.forEach((item, index) => {
+        if (item.idNumber) {
+          existingIndices.add(index);
+        }
+      });
+      setExistingIdNumbers(existingIndices);
     } else {
       setLocalEditing(false);
+      setExistingIdNumbers(new Set());
     }
-  }, [isEditing, editingSection]);
+  }, [isEditing, editingSection, personalDetails.govtIds]);
 
-  // Convert govtIds object to array format for form
-  const govtIdsArray = personalDetails.govtIds
-    ? Object.entries(personalDetails.govtIds).map(([idType, idNumber]) => ({
-        idType,
-        idNumber,
-        verified: false, // Default to false, can be updated from API
-      }))
+  // govtIds is now already in array format from API
+  const govtIdsArray = Array.isArray(personalDetails.govtIds)
+    ? personalDetails.govtIds
     : [];
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
       
-      // Convert govtIds array back to object format for API
-      const govtIdsObj: Record<string, string> = {};
-      if (values.govtIds && Array.isArray(values.govtIds)) {
-        values.govtIds.forEach((item: any) => {
-          if (item.idType && item.idNumber) {
-            govtIdsObj[item.idType] = item.idNumber;
-          }
-        });
-      }
+      // Keep govtIds as array format with verified field
+      const govtIdsArray = values.govtIds && Array.isArray(values.govtIds)
+        ? values.govtIds
+            .filter((item: any) => item.idType && item.idNumber)
+            .map((item: any) => ({
+              idType: item.idType,
+              idNumber: item.idNumber,
+              verified: item.verified || false, // Preserve the checkbox value
+            }))
+        : [];
 
       await onSave('personal', {
         dateOfBirth: values.dateOfBirth
@@ -117,7 +129,7 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
         maritalStatus: values.maritalStatus || undefined,
         bloodGroup: values.bloodGroup || undefined,
         nationality: values.nationality || undefined,
-        govtIds: Object.keys(govtIdsObj).length > 0 ? govtIdsObj : undefined,
+        govtIds: govtIdsArray.length > 0 ? govtIdsArray : undefined,
       });
       setLocalEditing(false);
     } catch {
@@ -219,7 +231,10 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
           <Form.List name="govtIds">
             {(fields, { add, remove }) => (
               <>
-                {fields.map(({ key, name, ...restField }) => (
+                {fields.map(({ key, name, ...restField }) => {
+                  const isExistingId = existingIdNumbers.has(name);
+                  
+                  return (
                   <div key={key} style={{ marginBottom: 16, padding: 12, border: '1px solid #e2e8f0', borderRadius: 4 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, alignItems: 'flex-start' }}>
                       <Form.Item
@@ -231,6 +246,7 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
                         <Select
                           options={GOVT_ID_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                           placeholder="Select ID type"
+                          disabled={isExistingId}
                         />
                       </Form.Item>
                       <Form.Item
@@ -251,7 +267,11 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
                           },
                         ]}
                       >
-                        <Input type="text" placeholder="Enter ID number" />
+                        <Input 
+                          type="text" 
+                          placeholder="Enter ID number"
+                          disabled={isExistingId}
+                        />
                       </Form.Item>
                       <Form.Item
                         {...restField}
@@ -269,8 +289,14 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
                         style={{ marginTop: 24 }}
                       />
                     </div>
+                    {isExistingId && (
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                        ID Type and Number cannot be edited once saved. Only verification status can be updated.
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
                 <Button
                   type="dashed"
                   onClick={() => add()}
@@ -288,9 +314,9 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
     );
   }
 
-  // Government IDs display
-  const govIds = personalDetails.govtIds || {};
-  const govIdEntries = Object.entries(govIds);
+  // Government IDs display - now in array format
+  const govIds = personalDetails.govtIds || [];
+  const govIdEntries = Array.isArray(govIds) ? govIds : [];
 
   return (
     <div className={styles.tabContent}>
@@ -310,9 +336,9 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
         <div style={{ color: '#94a3b8', fontSize: 13 }}>No government IDs on file.</div>
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
-          {govIdEntries.map(([idType, idNumber]) => (
+          {govIdEntries.map((item) => (
             <div
-              key={idType}
+              key={item.idType}
               style={{
                 padding: 12,
                 border: '1px solid #e2e8f0',
@@ -324,12 +350,17 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
             >
               <div>
                 <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-                  {GOVT_ID_TYPES.find((t) => t.value === idType)?.label || idType}
+                  {GOVT_ID_TYPES.find((t) => t.value === item.idType)?.label || item.idType}
                 </div>
                 <div style={{ fontSize: 14, color: '#1e293b', marginTop: 4 }}>
-                  {idNumber}
+                  {item.idNumber}
                 </div>
               </div>
+              {item.verified && (
+                <div style={{ fontSize: 12, color: '#10b981', fontWeight: 500 }}>
+                  ✓ Verified
+                </div>
+              )}
             </div>
           ))}
         </div>

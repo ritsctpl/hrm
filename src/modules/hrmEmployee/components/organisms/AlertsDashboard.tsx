@@ -34,20 +34,23 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
 
     setLoading(true);
     Promise.all([
-      HrmEmployeeService.getExpiringDocuments(site),
-      HrmEmployeeService.getExpiringVisas(site),
-      HrmEmployeeService.getExpiringCertifications(site),
+      HrmEmployeeService.getExpiringDocuments(site, daysAhead),
+      HrmEmployeeService.getExpiringVisas(site, daysAhead),
+      HrmEmployeeService.getExpiringCertifications(site, daysAhead),
     ])
       .then(([docs, vis, certifications]) => {
+        console.log('Expiring documents:', docs);
+        console.log('Expiring visas:', vis);
+        console.log('Expiring certifications:', certifications);
         setDocuments(docs);
         setVisas(vis);
         setCerts(certifications);
       })
-      .catch(() => {
-        // silently handle errors
+      .catch((error) => {
+        console.error('Error fetching alerts:', error);
       })
       .finally(() => setLoading(false));
-  }, [open]);
+  }, [open, daysAhead]);
 
   const columns: ColumnsType<ExpiringAlertResponse> = [
     { title: 'Employee', dataIndex: 'employeeName', width: 160 },
@@ -67,22 +70,19 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
     },
   ];
 
-  const filterByDays = (items: ExpiringAlertResponse[]) =>
-    items.filter((i) => i.daysUntilExpiry <= daysAhead);
-
   const getContent = () => {
     if (loading) return <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>;
 
     let data: ExpiringAlertResponse[] = [];
     switch (activeTab) {
       case 'documents':
-        data = filterByDays(documents);
+        data = documents;
         break;
       case 'visas':
-        data = filterByDays(visas);
+        data = visas;
         break;
       case 'certs':
-        data = filterByDays(certs);
+        data = certs;
         break;
     }
 
@@ -119,24 +119,17 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        items={[
-          {
-            key: 'documents',
-            label: `Documents (${filterByDays(documents).length})`,
-            children: getContent(),
-          },
-          {
-            key: 'visas',
-            label: `Visas (${filterByDays(visas).length})`,
-            children: getContent(),
-          },
-          {
-            key: 'certs',
-            label: `Certifications (${filterByDays(certs).length})`,
-            children: getContent(),
-          },
-        ]}
-      />
+      >
+        <Tabs.TabPane tab={`Documents (${documents.length})`} key="documents">
+          {getContent()}
+        </Tabs.TabPane>
+        <Tabs.TabPane tab={`Visas (${visas.length})`} key="visas">
+          {getContent()}
+        </Tabs.TabPane>
+        <Tabs.TabPane tab={`Certifications (${certs.length})`} key="certs">
+          {getContent()}
+        </Tabs.TabPane>
+      </Tabs>
     </Drawer>
   );
 };

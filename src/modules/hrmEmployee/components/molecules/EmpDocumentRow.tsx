@@ -11,6 +11,7 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   WarningOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { formatDate, isExpiringSoon, isExpired } from '../../utils/transformations';
 import type { EmpDocumentRowProps } from '../../types/ui.types';
@@ -22,6 +23,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
   fileName,
   uploadedAt,
   expiryDate,
+  onView,
   onDownload,
   onDelete,
 }) => {
@@ -54,6 +56,16 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
       </div>
 
       <div className={styles.docRowActions}>
+        {onView && (
+          <Tooltip title="View">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => onView(docId)}
+            />
+          </Tooltip>
+        )}
         <Tooltip title="Download">
           <Button
             type="text"

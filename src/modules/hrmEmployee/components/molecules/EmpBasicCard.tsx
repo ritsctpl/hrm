@@ -17,6 +17,18 @@ import type { EmpBasicCardProps } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
 const EmpBasicCard: React.FC<EmpBasicCardProps> = ({ employee, onClick }) => {
+  // Determine status based on isActive field
+  const displayStatus: 'ACTIVE' | 'INACTIVE' = 
+    employee.isActive !== undefined 
+      ? (employee.isActive === true ? 'ACTIVE' : 'INACTIVE')
+      : (employee.status as 'ACTIVE' | 'INACTIVE');
+  
+  console.log('EmpBasicCard:', employee.fullName, {
+    isActive: employee.isActive,
+    status: employee.status,
+    displayStatus: displayStatus
+  });
+
   return (
     <div
       className={styles.empCard}
@@ -28,7 +40,10 @@ const EmpBasicCard: React.FC<EmpBasicCardProps> = ({ employee, onClick }) => {
       }}
     >
       <div className={styles.empCardStatus}>
-        <EmpStatusBadge status={employee.status} size="small" />
+        <EmpStatusBadge 
+          status={displayStatus} 
+          size="small" 
+        />
       </div>
 
       <EmpAvatar

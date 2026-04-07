@@ -72,7 +72,7 @@ export interface HrmEmployeeState {
   closeOnboarding: () => void;
   setOnboardingStep: (step: number) => void;
   updateOnboardingDraft: (data: Partial<CreateEmployeeRequest>) => void;
-  submitOnboarding: () => Promise<void>;
+  submitOnboarding: () => Promise<EmployeeProfile | undefined>;
 
   // Utility
   reset: () => void;
@@ -330,17 +330,21 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const createdBy = cookies.username || 'system';
       const payload = buildCreateRequest(onboarding.draft, site, createdBy);
 
-      await HrmEmployeeService.createEmployee(payload);
+      const createdEmployee = await HrmEmployeeService.createEmployee(payload);
       message.success('Employee created successfully');
 
       set({ onboarding: { ...initialOnboarding } });
 
       // Refresh directory
       await get().fetchDirectory();
+      
+      // Return the created employee data for Keycloak integration
+      return createdEmployee;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create employee';
       message.error(msg);
       set({ onboarding: { ...get().onboarding, isSaving: false } });
+      throw error; // Re-throw to allow caller to handle
     }
   },
 
