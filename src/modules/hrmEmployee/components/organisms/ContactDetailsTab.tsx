@@ -58,13 +58,31 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      
+      // Build nested address objects for API
+      const presentAddress = values.presentAddress || values.city || values.state || values.country || values.pinZip
+        ? {
+            address: values.presentAddress || '',
+            city: values.city || '',
+            state: values.state || '',
+            country: values.country || '',
+            pinZip: values.pinZip || '',
+          }
+        : undefined;
+
+      const permanentAddress = values.permanentAddress || values.permCity || values.permState || values.permCountry || values.permPinZip
+        ? {
+            address: values.permanentAddress || '',
+            city: values.permCity || '',
+            state: values.permState || '',
+            country: values.permCountry || '',
+            pinZip: values.permPinZip || '',
+          }
+        : undefined;
+
       await onSave('contact', {
-        presentAddress: values.presentAddress || undefined,
-        permanentAddress: values.permanentAddress || undefined,
-        city: values.city || undefined,
-        state: values.state || undefined,
-        country: values.country || undefined,
-        pinZip: values.pinZip || undefined,
+        presentAddress,
+        permanentAddress,
         emergencyContacts: values.emergencyContacts as EmergencyContact[],
       });
       setLocalEditing(false);
@@ -86,18 +104,43 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
   const stateOptions = selectedCountry ? (COUNTRY_STATE_MAP[selectedCountry] || []) : [];
 
   if (editing) {
+    // Extract address strings from nested objects for form initialization
+    const presentAddr = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+      ? contactDetails.presentAddress.address
+      : contactDetails.presentAddress || '';
+    
+    const permanentAddr = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+      ? contactDetails.permanentAddress.address
+      : contactDetails.permanentAddress || '';
+
+    const city = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+      ? contactDetails.presentAddress.city
+      : contactDetails.city || '';
+
+    const state = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+      ? contactDetails.presentAddress.state
+      : contactDetails.state || '';
+
+    const country = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+      ? contactDetails.presentAddress.country
+      : contactDetails.country || '';
+
+    const pinZip = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+      ? contactDetails.presentAddress.pinZip
+      : contactDetails.pinZip || '';
+
     return (
       <div className={styles.tabContent}>
         <Form
           form={form}
           layout="vertical"
           initialValues={{
-            presentAddress: contactDetails.presentAddress || '',
-            permanentAddress: contactDetails.permanentAddress || '',
-            city: contactDetails.city || '',
-            state: contactDetails.state || '',
-            country: contactDetails.country || '',
-            pinZip: contactDetails.pinZip || '',
+            presentAddress: presentAddr,
+            permanentAddress: permanentAddr,
+            city: city,
+            state: state,
+            country: country,
+            pinZip: pinZip,
             emergencyContacts: contactDetails.emergencyContacts || [],
           }}
         >
@@ -237,32 +280,57 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
 
   const emergencyContacts = contactDetails.emergencyContacts || [];
 
+  // Extract display values from nested objects - ensure they're always strings
+  const presentAddr: string = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    ? contactDetails.presentAddress.address || '--'
+    : (contactDetails.presentAddress as string) || '--';
+
+  const permanentAddr: string = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+    ? contactDetails.permanentAddress.address || '--'
+    : (contactDetails.permanentAddress as string) || '--';
+
+  const city: string = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    ? contactDetails.presentAddress.city || '--'
+    : contactDetails.city || '--';
+
+  const state: string = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    ? contactDetails.presentAddress.state || '--'
+    : contactDetails.state || '--';
+
+  const country: string = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    ? contactDetails.presentAddress.country || '--'
+    : contactDetails.country || '--';
+
+  const pinZip: string = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    ? contactDetails.presentAddress.pinZip || '--'
+    : contactDetails.pinZip || '--';
+
   return (
     <div className={styles.tabContent}>
       <div className={styles.detailGrid}>
         <EmpFieldLabel
           label="Present Address"
-          value={contactDetails.presentAddress || '--'}
+          value={presentAddr}
         />
         <EmpFieldLabel
           label="Permanent Address"
-          value={contactDetails.permanentAddress || '--'}
+          value={permanentAddr}
         />
         <EmpFieldLabel
           label="City"
-          value={contactDetails.city || '--'}
+          value={city}
         />
         <EmpFieldLabel
           label="Country"
-          value={contactDetails.country || '--'}
+          value={country}
         />
         <EmpFieldLabel
           label="State/Province"
-          value={contactDetails.state || '--'}
+          value={state}
         />
         <EmpFieldLabel
           label="PIN/ZIP Code"
-          value={contactDetails.pinZip || '--'}
+          value={pinZip}
         />
       </div>
 

@@ -52,11 +52,30 @@ export class HrmEmployeeService {
     workEmail: string
   ): Promise<{ available: boolean; message: string }> {
     const response = await api.post(`${this.BASE}/check-email`, { site, workEmail });
-    console.log('Raw API response:', response.data);
-    const result = {
-      available: response.data.data === true,
-      message: response.data.message || '',
-    };
+    console.log('Raw API response:', response);
+    console.log('Response data:', response.data);
+    
+    // When API returns success: true, it means email can be processed (is available)
+    // The axios interceptor may or may not unwrap the response
+    // Check both possible structures
+    let available = false;
+    let message = '';
+    
+    if (response.data && typeof response.data === 'object') {
+      // If response.data is an object with success field
+      if ('success' in response.data) {
+        available = response.data.success === true;
+        message = response.data.message || '';
+      } else {
+        // If response.data is just the boolean value after unwrapping
+        available = response.data === true;
+      }
+    } else {
+      // If response.data is a primitive boolean
+      available = response.data === true;
+    }
+    
+    const result = { available, message };
     console.log('Parsed result:', result);
     return result;
   }
@@ -220,17 +239,30 @@ export class HrmEmployeeService {
     });
   }
 
-  /** Upload employee document (multipart with metadata JSON part) */
+  /** Upload employee document (base64 encoded in JSON payload) */
   static async uploadDocument(
-    metadata: DocumentUploadMetadata,
-    file: File
+    site: string,
+    employeeHandle: string,
+    documentType: string,
+    documentName: string,
+    contentType: string,
+    documentBase64: string,
+    uploadedBy: string,
+    expiryDate?: string,
+    tags?: string[]
   ): Promise<EmployeeDocument> {
-    const formData = new FormData();
-    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    formData.append('file', file);
-    const response = await api.post(`${this.BASE}/document/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const payload = {
+      site,
+      employeeHandle,
+      documentType,
+      documentName,
+      contentType,
+      documentBase64,
+      uploadedBy,
+      expiryDate: expiryDate || null,
+      tags: tags || null,
+    };
+    const response = await api.post(`${this.BASE}/document/upload`, payload);
     return response.data;
   }
 

@@ -23,6 +23,9 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docType, setDocType] = useState<string>('OTHER');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
+  const [loadingView, setLoadingView] = useState(false);
 
   const handleUpload = useCallback(async () => {
     if (!selectedFile) {
@@ -36,15 +39,27 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       const site = cookies.site;
       const uploadedBy = cookies.username || 'system';
 
+      // Convert file to base64
+      const base64String = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
+
       await HrmEmployeeService.uploadDocument(
-        {
-          site,
-          employeeHandle: profile.handle,
-          documentType: docType,
-          documentName: selectedFile.name,
-          uploadedBy,
-        },
-        selectedFile
+        site,
+        profile.handle,
+        docType,
+        selectedFile.name,
+        selectedFile.type || 'application/octet-stream',
+        base64String,
+        uploadedBy
       );
       message.success('Document uploaded');
       setUploadOpen(false);
@@ -86,17 +101,130 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   );
 
   const handleDownload = useCallback((docId: string) => {
-    // In production this would call a download endpoint or use a presigned URL
-    message.info(`Download requested for document ${docId}`);
-  }, []);
+    try {
+      // Find the document in the profile
+      const doc = documents.find(d => d.docId === docId);
+      if (!doc) {
+        message.error('Document not found');
+        return;
+      }
+
+      // Check if documentBase64 is available
+      if (!doc.documentBase64) {
+        message.error('Document content not available');
+        return;
+      }
+
+      // Determine content type from file extension or use provided contentType
+      const fileName = doc.fileName || doc.documentName;
+      const contentType = doc.contentType || 
+        (fileName.endsWith('.pdf') ? 'application/pdf' :
+         fileName.match(/\.(png|jpg|jpeg|gif)$/i) ? 'image/jpeg' :
+         'application/octet-stream');
+
+      // Convert base64 to blob
+      const byteCharacters = atob(doc.documentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: contentType });
+      
+      // Create download link
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      
+      message.success('Download started');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Download failed';
+      message.error(msg);
+    }
+  }, [documents]);
+
+  const handleView = useCallback(async (docId: string) => {
+    setLoadingView(true);
+    try {
+      // Find the document in the profile
+      const doc = documents.find(d => d.docId === docId);
+      if (!doc) {
+        message.error('Document not found');
+        setLoadingView(false);
+        return;
+      }
+
+      // Check if documentBase64 is available
+      if (!doc.documentBase64) {
+        message.error('Document content not available');
+        setLoadingView(false);
+        return;
+      }
+
+      // Determine content type from file extension or use provided contentType
+      const fileName = doc.fileName || doc.documentName;
+      const contentType = doc.contentType || 
+        (fileName.endsWith('.pdf') ? 'application/pdf' :
+         fileName.match(/\.(png|jpg|jpeg|gif)$/i) ? 'image/jpeg' :
+         'application/octet-stream');
+
+      // Convert base64 to blob
+      const byteCharacters = atob(doc.documentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: contentType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      setViewingDoc({
+        url: blobUrl,
+        fileName: fileName,
+        contentType: contentType,
+      });
+      
+      setViewerOpen(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load document';
+      message.error(msg);
+    } finally {
+      setLoadingView(false);
+    }
+  }, [documents]);
+
+  // Cleanup blob URL when modal closes
+  const handleCloseViewer = useCallback(() => {
+    if (viewingDoc && viewingDoc.url && viewingDoc.url.startsWith('blob:')) {
+      URL.revokeObjectURL(viewingDoc.url);
+    }
+    setViewerOpen(false);
+    setViewingDoc(null);
+  }, [viewingDoc]);
 
   return (
     <div className={styles.tabContent}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Documents</h3>
         <Button
           type="primary"
           size="small"
           onClick={() => setUploadOpen(true)}
+          style={{
+            background: '#6366f1',
+            borderColor: '#6366f1',
+            borderRadius: '6px',
+            fontSize: '12px',
+            height: '28px',
+            padding: '0 12px',
+          }}
         >
           Upload Document
         </Button>
@@ -113,6 +241,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             fileName={doc.fileName}
             uploadedAt={doc.uploadedAt}
             expiryDate={doc.expiryDate}
+            onView={handleView}
             onDownload={handleDownload}
             onDelete={handleDelete}
           />
@@ -173,6 +302,67 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             </Upload>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        title={viewingDoc?.fileName || 'Document Viewer'}
+        open={viewerOpen}
+        onCancel={handleCloseViewer}
+        width={900}
+        footer={[
+          <Button key="close" onClick={handleCloseViewer}>
+            Close
+          </Button>,
+          <Button
+            key="download"
+            type="primary"
+            onClick={() => {
+              if (viewingDoc) {
+                const link = document.createElement('a');
+                link.href = viewingDoc.url;
+                link.download = viewingDoc.fileName;
+                link.click();
+              }
+            }}
+          >
+            Download
+          </Button>,
+        ]}
+        destroyOnHidden
+      >
+        {loadingView ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div>Loading document...</div>
+          </div>
+        ) : viewingDoc ? (
+          <div style={{ width: '100%', height: '70vh', overflow: 'auto' }}>
+            {viewingDoc.contentType === 'application/pdf' ? (
+              <iframe
+                src={viewingDoc.url}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title={viewingDoc.fileName}
+              />
+            ) : viewingDoc.contentType.startsWith('image/') ? (
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.fileName}
+                style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p>Preview not available for this file type.</p>
+                <Button type="primary" onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = viewingDoc.url;
+                  link.download = viewingDoc.fileName;
+                  link.click();
+                }}>
+                  Download to View
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : null}
       </Modal>
     </div>
   );

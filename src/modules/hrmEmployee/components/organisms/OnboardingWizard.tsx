@@ -13,6 +13,7 @@ import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 
 /* Step 0: Basic Info */
 const BasicStep: React.FC<{
@@ -31,6 +32,7 @@ const BasicStep: React.FC<{
           onChange={(e) => onChange({ firstName: e.target.value })}
           status={errors.firstName ? 'error' : undefined}
           placeholder="John"
+          style={{ width: '100%' }}
         />
         {errors.firstName && (
           <div className={formStyles.formFieldError}>{errors.firstName}</div>
@@ -45,6 +47,7 @@ const BasicStep: React.FC<{
           onChange={(e) => onChange({ lastName: e.target.value })}
           status={errors.lastName ? 'error' : undefined}
           placeholder="Doe"
+          style={{ width: '100%' }}
         />
         {errors.lastName && (
           <div className={formStyles.formFieldError}>{errors.lastName}</div>
@@ -61,6 +64,7 @@ const BasicStep: React.FC<{
           onChange={(e) => onChange({ workEmail: e.target.value })}
           status={errors.workEmail ? 'error' : undefined}
           placeholder="john.doe@company.com"
+          style={{ width: '100%' }}
         />
         {errors.workEmail && (
           <div className={formStyles.formFieldError}>{errors.workEmail}</div>
@@ -75,6 +79,7 @@ const BasicStep: React.FC<{
           onChange={(e) => onChange({ phone: e.target.value })}
           status={errors.phone ? 'error' : undefined}
           placeholder="+91 98765 43210"
+          style={{ width: '100%' }}
         />
         {errors.phone && (
           <div className={formStyles.formFieldError}>{errors.phone}</div>
@@ -96,26 +101,129 @@ const OfficialStep: React.FC<{
     sendCredentialsEmail: boolean;
   };
   onKeycloakChange: (settings: any) => void;
-}> = ({ draft, errors, onChange, keycloakSettings, onKeycloakChange }) => (
+  // Dropdown props
+  companies: Array<{ label: string; value: string }>;
+  departments: Array<{ label: string; value: string }>;
+  locations: Array<{ label: string; value: string }>;
+  businessUnits: Array<{ label: string; value: string }>;
+  employees: Array<{ label: string; value: string }>;
+  loadingOptions: boolean;
+  selectedCompany: string | undefined;
+  selectedBU: string | undefined;
+  onCompanyChange: (value: string, label: string) => void;
+  onBUChange: (value: string, label: string) => void;
+  onDepartmentChange: (value: string, label: string) => void;
+}> = ({ 
+  draft, 
+  errors, 
+  onChange, 
+  keycloakSettings, 
+  onKeycloakChange,
+  companies,
+  departments,
+  locations,
+  businessUnits,
+  employees,
+  loadingOptions,
+  selectedCompany,
+  selectedBU,
+  onCompanyChange,
+  onBUChange,
+  onDepartmentChange,
+}) => (
   <div className={formStyles.wizardStepBody}>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Title</label>
-        <Input
-          value={draft.title || ''}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Mr. / Ms. / Dr."
+        <Select
+          showSearch
+          allowClear
+          value={draft.title || undefined}
+          onChange={(value) => onChange({ title: value })}
+          placeholder="Select or type title"
+          style={{ width: '100%' }}
+          options={[
+            { label: 'Mr', value: 'Mr' },
+            { label: 'Ms', value: 'Ms' },
+            { label: 'Mrs', value: 'Mrs' },
+            { label: 'Dr', value: 'Dr' },
+          ]}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
+      </div>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Organization
+        </label>
+        <Select
+          showSearch
+          allowClear
+          value={draft.organizationHandle || undefined}
+          onChange={(value, option: any) => {
+            onCompanyChange(value, option?.label || '');
+          }}
+          status={errors.organizationHandle ? 'error' : undefined}
+          placeholder="Select organization"
+          style={{ width: '100%' }}
+          loading={loadingOptions}
+          options={companies}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+        />
+        {errors.organizationHandle && (
+          <div className={formStyles.formFieldError}>{errors.organizationHandle}</div>
+        )}
+      </div>
+    </div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Business Unit
+        </label>
+        <Select
+          showSearch
+          allowClear
+          value={draft.businessUnits?.[0] || undefined}
+          onChange={(value, option: any) => {
+            onBUChange(value, option?.label || '');
+          }}
+          status={errors.businessUnits ? 'error' : undefined}
+          placeholder="Select business unit"
+          style={{ width: '100%' }}
+          loading={loadingOptions}
+          options={businessUnits}
+          disabled={!selectedCompany}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+        />
+        {errors.businessUnits && (
+          <div className={formStyles.formFieldError}>{errors.businessUnits}</div>
+        )}
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Department
         </label>
-        <Input
-          value={draft.department || ''}
-          onChange={(e) => onChange({ department: e.target.value })}
+        <Select
+          showSearch
+          allowClear
+          value={draft.department || undefined}
+          onChange={(value, option: any) => {
+            onDepartmentChange(value, option?.label || '');
+          }}
           status={errors.department ? 'error' : undefined}
-          placeholder="Engineering"
+          placeholder="Select department"
+          style={{ width: '100%' }}
+          loading={loadingOptions}
+          options={departments}
+          disabled={!selectedBU}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
         {errors.department && (
           <div className={formStyles.formFieldError}>{errors.department}</div>
@@ -127,11 +235,24 @@ const OfficialStep: React.FC<{
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Role
         </label>
-        <Input
-          value={draft.role || ''}
-          onChange={(e) => onChange({ role: e.target.value })}
+        <Select
+          showSearch
+          allowClear
+          value={draft.role || undefined}
+          onChange={(value) => onChange({ role: value })}
           status={errors.role ? 'error' : undefined}
-          placeholder="EMPLOYEE / MANAGER"
+          placeholder="Select role"
+          style={{ width: '100%' }}
+          options={[
+            { label: 'EMPLOYEE', value: 'EMPLOYEE' },
+            { label: 'MANAGER', value: 'MANAGER' },
+            { label: 'ADMIN', value: 'ADMIN' },
+            { label: 'HR', value: 'HR' },
+            { label: 'DIRECTOR', value: 'DIRECTOR' },
+          ]}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
         {errors.role && (
           <div className={formStyles.formFieldError}>{errors.role}</div>
@@ -139,31 +260,63 @@ const OfficialStep: React.FC<{
       </div>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Designation</label>
-        <Input
-          value={draft.designation || ''}
-          onChange={(e) => onChange({ designation: e.target.value })}
-          placeholder="Software Engineer"
+        <Select
+          showSearch
+          allowClear
+          value={draft.designation || undefined}
+          onChange={(value) => onChange({ designation: value })}
+          placeholder="Select designation"
+          style={{ width: '100%' }}
+          options={[
+            { label: 'Software Engineer', value: 'Software Engineer' },
+            { label: 'Senior Software Engineer', value: 'Senior Software Engineer' },
+            { label: 'Team Lead', value: 'Team Lead' },
+            { label: 'Manager', value: 'Manager' },
+            { label: 'Senior Manager', value: 'Senior Manager' },
+            { label: 'Director', value: 'Director' },
+            { label: 'HR Executive', value: 'HR Executive' },
+            { label: 'HR Manager', value: 'HR Manager' },
+          ]}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
       </div>
     </div>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Reporting Manager</label>
-        <Input
-          value={draft.reportingManager || ''}
-          onChange={(e) => onChange({ reportingManager: e.target.value })}
-          placeholder="Employee code or name"
+        <Select
+          showSearch
+          allowClear
+          value={draft.reportingManager || undefined}
+          onChange={(value) => onChange({ reportingManager: value })}
+          placeholder="Select reporting manager"
+          style={{ width: '100%' }}
+          loading={loadingOptions}
+          options={employees}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Location
         </label>
-        <Input
-          value={draft.location || ''}
-          onChange={(e) => onChange({ location: e.target.value })}
+        <Select
+          showSearch
+          allowClear
+          value={draft.location || undefined}
+          onChange={(value) => onChange({ location: value })}
           status={errors.location ? 'error' : undefined}
-          placeholder="Location code"
+          placeholder="Select location"
+          style={{ width: '100%' }}
+          loading={loadingOptions}
+          options={locations}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
         {errors.location && (
           <div className={formStyles.formFieldError}>{errors.location}</div>
@@ -171,21 +324,6 @@ const OfficialStep: React.FC<{
       </div>
     </div>
     <div className={formStyles.formRow}>
-      <div className={formStyles.formField}>
-        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
-          Business Units
-        </label>
-        <Select
-          mode="tags"
-          value={draft.businessUnits || []}
-          onChange={(val) => onChange({ businessUnits: val })}
-          placeholder="Type and press enter"
-          style={{ width: '100%' }}
-        />
-        {errors.businessUnits && (
-          <div className={formStyles.formFieldError}>{errors.businessUnits}</div>
-        )}
-      </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Joining Date
@@ -200,6 +338,9 @@ const OfficialStep: React.FC<{
         {errors.joiningDate && (
           <div className={formStyles.formFieldError}>{errors.joiningDate}</div>
         )}
+      </div>
+      <div className={formStyles.formField}>
+        {/* Empty field for layout balance */}
       </div>
     </div>
 
@@ -503,6 +644,21 @@ const OnboardingWizard: React.FC = () => {
 
   const [checkingEmail, setCheckingEmail] = useState(false);
 
+  // Dropdown options state
+  const [companies, setCompanies] = useState<Array<{ label: string; value: string }>>([]);
+  const [departments, setDepartments] = useState<Array<{ label: string; value: string }>>([]);
+  const [locations, setLocations] = useState<Array<{ label: string; value: string }>>([]);
+  const [businessUnits, setBusinessUnits] = useState<Array<{ label: string; value: string }>>([]);
+  const [employees, setEmployees] = useState<Array<{ label: string; value: string }>>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // Cascading selection state
+  const [selectedCompany, setSelectedCompany] = useState<string | undefined>();
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string | undefined>();
+  const [selectedBU, setSelectedBU] = useState<string | undefined>();
+  const [selectedBUName, setSelectedBUName] = useState<string | undefined>();
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState<string | undefined>();
+
   // Auto-fill username when work email changes
   useEffect(() => {
     if (draft.workEmail && keycloakSettings.createKeycloakUser && !keycloakSettings.username) {
@@ -512,6 +668,142 @@ const OnboardingWizard: React.FC = () => {
       }));
     }
   }, [draft.workEmail, keycloakSettings.createKeycloakUser, keycloakSettings.username]);
+
+  // Fetch dropdown options when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchDropdownOptions();
+    }
+  }, [isOpen]);
+
+  // Load business units when company is selected
+  useEffect(() => {
+    const loadBusinessUnits = async () => {
+      if (selectedCompany) {
+        try {
+          const site = parseCookies().site;
+          const data = await HrmOrganizationService.fetchBusinessUnits(site, selectedCompany);
+          const buOptions = (data || []).map((bu) => ({
+            label: `${bu.buCode} - ${bu.buName}`,
+            value: bu.handle,
+          }));
+          setBusinessUnits(buOptions);
+        } catch (error) {
+          console.error('Failed to load business units:', error);
+        }
+      } else {
+        setBusinessUnits([]);
+      }
+    };
+    loadBusinessUnits();
+  }, [selectedCompany]);
+
+  // Load departments when business unit is selected
+  useEffect(() => {
+    const loadDepartments = async () => {
+      if (selectedBU) {
+        try {
+          const site = parseCookies().site;
+          const data = await HrmOrganizationService.fetchDepartments(site, selectedBU);
+          const deptOptions = (data || []).map((dept) => ({
+            label: `${dept.deptCode} - ${dept.deptName}`,
+            value: dept.handle,
+          }));
+          setDepartments(deptOptions);
+        } catch (error) {
+          console.error('Failed to load departments:', error);
+        }
+      } else {
+        setDepartments([]);
+      }
+    };
+    loadDepartments();
+  }, [selectedBU]);
+
+  const fetchDropdownOptions = async () => {
+    setLoadingOptions(true);
+    try {
+      const site = parseCookies().site;
+      if (!site) {
+        message.error('Site not found');
+        return;
+      }
+
+      // Fetch companies/organizations
+      try {
+        const response = await HrmOrganizationService.fetchBySite(site);
+        const companyData = Array.isArray(response) ? response : [response];
+        const companyOptions = companyData.map((company) => ({
+          label: company.companyName || company.legalName || company.tradeName || company.handle,
+          value: company.handle,
+        }));
+        setCompanies(companyOptions);
+      } catch (error) {
+        console.error('Failed to fetch companies:', error);
+      }
+
+      // Fetch locations
+      try {
+        const locationsData = await HrmOrganizationService.fetchAllLocations(site);
+        setLocations(
+          locationsData.map((loc) => ({
+            label: loc.name || loc.code || loc.id,
+            value: loc.id,
+          }))
+        );
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+      }
+
+      // Fetch employees for reporting manager dropdown
+      try {
+        const employeesData = await HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 });
+        setEmployees(
+          (employeesData.employees || []).map((emp) => ({
+            label: `${emp.fullName} (${emp.employeeCode})`,
+            value: emp.handle,
+          }))
+        );
+      } catch (error) {
+        console.error('Failed to fetch employees:', error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dropdown options:', error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
+
+  const handleCompanyChange = (value: string, label: string) => {
+    setSelectedCompany(value);
+    setSelectedCompanyName(label);
+    setSelectedBU(undefined);
+    setSelectedBUName(undefined);
+    setSelectedDepartmentName(undefined);
+    updateOnboardingDraft({
+      organizationHandle: value,
+      organizationName: label,
+      businessUnits: [],
+      department: '',
+    });
+  };
+
+  const handleBUChange = (value: string, label: string) => {
+    setSelectedBU(value);
+    setSelectedBUName(label);
+    setSelectedDepartmentName(undefined);
+    updateOnboardingDraft({
+      businessUnits: [label],
+      department: '',
+    });
+  };
+
+  const handleDepartmentChange = (value: string, label: string) => {
+    setSelectedDepartmentName(label);
+    updateOnboardingDraft({
+      department: label,
+    });
+  };
 
   const isLastStep = currentStep === 3;
 
@@ -632,6 +924,17 @@ const OnboardingWizard: React.FC = () => {
             onChange={updateOnboardingDraft}
             keycloakSettings={keycloakSettings}
             onKeycloakChange={setKeycloakSettings}
+            companies={companies}
+            departments={departments}
+            locations={locations}
+            businessUnits={businessUnits}
+            employees={employees}
+            loadingOptions={loadingOptions}
+            selectedCompany={selectedCompany}
+            selectedBU={selectedBU}
+            onCompanyChange={handleCompanyChange}
+            onBUChange={handleBUChange}
+            onDepartmentChange={handleDepartmentChange}
           />
         );
       case 2:
@@ -648,8 +951,9 @@ const OnboardingWizard: React.FC = () => {
       title="Add New Employee"
       open={isOpen}
       onCancel={closeOnboarding}
-      width={700}
+      width={900}
       destroyOnHidden
+      maskClosable={false}
       footer={[
         <Button key="cancel" onClick={closeOnboarding}>
           Cancel

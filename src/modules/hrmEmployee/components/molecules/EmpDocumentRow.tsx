@@ -1,5 +1,5 @@
 /**
- * EmpDocumentRow - Single document row with download and delete actions
+ * EmpDocumentRow - Single document row with view, download and delete actions
  */
 
 'use client';
@@ -8,6 +8,7 @@ import React from 'react';
 import { Button, Tooltip } from 'antd';
 import {
   FileTextOutlined,
+  EyeOutlined,
   DownloadOutlined,
   DeleteOutlined,
   WarningOutlined,
@@ -22,6 +23,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
   fileName,
   uploadedAt,
   expiryDate,
+  onView,
   onDownload,
   onDelete,
 }) => {
@@ -54,6 +56,16 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
       </div>
 
       <div className={styles.docRowActions}>
+        {onView && (
+          <Tooltip title="View">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => onView(docId)}
+            />
+          </Tooltip>
+        )}
         <Tooltip title="Download">
           <Button
             type="text"

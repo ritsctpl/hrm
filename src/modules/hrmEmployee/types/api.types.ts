@@ -72,6 +72,8 @@ export interface CreateEmployeeRequest {
   reportingManager?: string;
   nickName?: string;
   createdBy: string;
+  organizationHandle?: string;
+  organizationName?: string;
   /** @deprecated UI backward compat - mapped to 'role' by buildCreateRequest */
   designation?: string;
   /** @deprecated UI backward compat - not sent to API */
@@ -125,12 +127,20 @@ export interface UpdatePersonalRequest {
 export interface UpdateContactRequest {
   site: string;
   handle: string;
-  presentAddress?: string;
-  permanentAddress?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  pinZip?: string;
+  presentAddress?: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    pinZip: string;
+  };
+  permanentAddress?: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    pinZip: string;
+  };
   emergencyContacts?: EmergencyContact[];
   modifiedBy: string;
 }

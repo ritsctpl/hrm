@@ -96,6 +96,8 @@ export interface EmployeeDocument {
   expiryDate?: string;
   tags?: string[];
   uploadedAt: string;
+  documentBase64?: string;
+  contentType?: string;
   /** @deprecated UI backward compat aliases */
   docType?: string;
   fileName?: string;
@@ -174,8 +176,20 @@ export interface PersonalDetails {
 }
 
 export interface ContactDetails {
-  presentAddress?: string;
-  permanentAddress?: string;
+  presentAddress?: string | {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    pinZip: string;
+  };
+  permanentAddress?: string | {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    pinZip: string;
+  };
   city?: string;
   state?: string;
   country?: string;
