@@ -41,8 +41,7 @@ const StructureTemplate: React.FC = () => {
     if (location.list.length === 0) {
       fetchLocations();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.list.length, fetchLocations]);
 
   // Department form state
   const isDeptFormOpen = useMemo(

@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Button, Input, Tag, Popconfirm, Select, message } from 'antd';
-import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
-import { MdDelete } from 'react-icons/md';
+import React, { useEffect, useMemo } from 'react';
+import { Button, Input, Popconfirm, Skeleton, message, Tooltip } from 'antd';
+import {
+  SearchOutlined,
+  PlusOutlined,
+  ShopOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ApartmentOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { HrmOrganizationService } from '../../services/hrmOrganizationService';
-import { parseCookies } from 'nookies';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -14,60 +25,16 @@ const OrganizationListTemplate: React.FC = () => {
     companyList,
     fetchCompanyList,
     setCompanyListSearch,
-    setCompanyListStatusFilter,
     navigateToDetail,
     deleteCompany,
   } = useHrmOrganizationStore();
 
-  const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 110px)');
-  const [isExporting, setIsExporting] = useState(false);
-
   useEffect(() => {
     fetchCompanyList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchCompanyList]);
 
-  const handleGo = async () => {
-    try {
-      setIsExporting(true);
-      const cookies = parseCookies();
-      const site = cookies.site || '';
-      
-      if (!site) {
-        message.error('Site information not found');
-        return;
-      }
-
-      // Trigger the retrieveBySite endpoint
-      const result = await HrmOrganizationService.fetchBySite(site);
-      
-      message.success('Companies retrieved successfully');
-      console.log('Retrieved companies:', result);
-    } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to retrieve companies';
-      message.error(errorMsg);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // Calculate table height based on screen resolution - use full viewport height
-  useEffect(() => {
-    const calculateTableHeight = () => {
-      // Use full viewport height minus only the header and search bar
-      const screenHeight = window.innerHeight;
-      // Reserve space for: top navbar (60px) + header (50px) + filters (40px) + padding (8px)
-      const reservedHeight = 158;
-      const calculatedHeight = screenHeight - reservedHeight;
-      setTableHeight(`${calculatedHeight}px`);
-    };
-
-    calculateTableHeight();
-    window.addEventListener('resize', calculateTableHeight);
-    return () => window.removeEventListener('resize', calculateTableHeight);
-  }, []);
-
-  const handleDeleteCompany = async (handle: string) => {
+  const handleDeleteCompany = async (handle: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await deleteCompany(handle);
       message.success('Company deleted successfully');
@@ -88,153 +55,208 @@ const OrganizationListTemplate: React.FC = () => {
           (c.industryType || c.industry)?.toLowerCase().includes(q)
       );
     }
-    if (companyList.statusFilter === 'active') {
-      items = items.filter((c) => c.active === 1);
-    } else if (companyList.statusFilter === 'inactive') {
-      items = items.filter((c) => c.active !== 1);
-    }
-    
-    // Sort by createdDateTime in descending order (newest first)
-    items = items.sort((a, b) => {
+    return [...items].sort((a, b) => {
       const dateA = new Date(a.createdDateTime || 0).getTime();
       const dateB = new Date(b.createdDateTime || 0).getTime();
       return dateB - dateA;
     });
-    
-    return items;
-  }, [companyList.items, companyList.searchText, companyList.statusFilter]);
+  }, [companyList.items, companyList.searchText]);
 
-  const columns = [
-    {
-      title: 'Legal Name',
-      dataIndex: 'legalName',
-      key: 'legalName',
-      render: (text: string, record: typeof companyList.items[number]) => (
-        <a onClick={() => navigateToDetail(record.handle)}>{text}</a>
-      ),
-    },
-    {
-      title: 'Trade Name',
-      dataIndex: 'tradeName',
-      key: 'tradeName',
-    },
-    {
-      title: 'Industry',
-      dataIndex: 'industryType',
-      key: 'industryType',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'officialEmail',
-      key: 'officialEmail',
-    },
-    {
-      title: 'Phone',
-      dataIndex: 'officialPhone',
-      key: 'officialPhone',
-    },
-    // {
-    //   title: 'Status',
-    //   dataIndex: 'active',
-    //   key: 'active',
-    //   width: 100,
-    //   render: (active: number) => (
-    //     <Tag color={active === 1 ? 'green' : 'red'}>
-    //       {active === 1 ? 'Active' : 'Inactive'}
-    //     </Tag>
-    //   ),
-    // },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 80,
-      render: (_: unknown, record: typeof companyList.items[number]) => (
-        <div data-actions-column onClick={(e) => e.stopPropagation()}>
-          <Popconfirm 
-            title="Delete this company?" 
-            onConfirm={(e) => {
-              e?.stopPropagation();
-              handleDeleteCompany(record.handle);
-            }}
-          >
-            <Button
-                type="text"
-                size="small"
-                danger
-                icon={<MdDelete />}
-                onClick={(e) => e.stopPropagation()}
-              />
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+  const totalCount = companyList.items.length;
+  const activeCount = companyList.items.filter((c) => c.active === 1).length;
+  const inactiveCount = totalCount - activeCount;
 
   return (
     <div className={styles.listViewContainer}>
+      {/* ───── Stats Bar ───── */}
+      <div className={styles.statsBar}>
+        <div className={styles.statPill}>
+          <span className={styles.statPillIconWrap} style={{ background: 'rgba(24,144,255,0.1)' }}>
+            <BankOutlined style={{ color: '#1890ff', fontSize: 18 }} />
+          </span>
+          <div>
+            <div className={styles.statPillValue}>{totalCount}</div>
+            <div className={styles.statPillLabel}>Total Companies</div>
+          </div>
+        </div>
+        <div className={styles.statPill}>
+          <span className={styles.statPillIconWrap} style={{ background: 'rgba(82,196,26,0.1)' }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+          </span>
+          <div>
+            <div className={styles.statPillValue}>{activeCount}</div>
+            <div className={styles.statPillLabel}>Active</div>
+          </div>
+        </div>
+        <div className={styles.statPill}>
+          <span className={styles.statPillIconWrap} style={{ background: 'rgba(255,77,79,0.08)' }}>
+            <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
+          </span>
+          <div>
+            <div className={styles.statPillValue}>{inactiveCount}</div>
+            <div className={styles.statPillLabel}>Inactive</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ───── Header: Title + Search + Add ───── */}
       <div className={styles.listHeader}>
         <div className={styles.listHeaderLeft}>
           <span className={styles.listTitle}>Companies ({filteredItems.length})</span>
-          <Input
-            placeholder="Search companies..."
-            prefix={<SearchOutlined />}
-            value={companyList.searchText}
-            onChange={(e) => setCompanyListSearch(e.target.value)}
-            style={{ width: 240 }}
-            size="small"
-            allowClear
-          />
-          {/* <Select
-            value={companyList.statusFilter}
-            onChange={setCompanyListStatusFilter}
-            size="small"
-            style={{ width: 120 }}
-            options={[
-              { value: 'all', label: 'All Status' },
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-            ]}
-          /> */}
         </div>
-         <Button
-          type="primary"
-          size="small"
-          onClick={handleGo}
-          loading={isExporting}
-        >
-          Go
+        <Input
+          placeholder="Search by name, industry..."
+          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          value={companyList.searchText}
+          onChange={(e) => setCompanyListSearch(e.target.value)}
+          className={styles.searchInput}
+          allowClear
+        />
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
+          Add Company
         </Button>
-        <Button
-          type="primary"
-          size="small"
-          // icon={<PlusOutlined />}
-          onClick={() => navigateToDetail('new')}
-        >
-          +
-        </Button>
-       
       </div>
-      <Table
-        dataSource={filteredItems}
-        columns={columns}
-        rowKey="handle"
-        loading={companyList.isLoading}
-        size="small"
-        pagination={false}
-        scroll={{ y: tableHeight, x: 'max-content' }}
-        
-        onRow={(record) => ({
-          onClick: (e: React.MouseEvent) => {
-            // Don't navigate if clicking on actions column
-            const target = e.target as HTMLElement;
-            if (target.closest('[data-actions-column]')) {
-              return;
-            }
-            navigateToDetail(record.handle);
-          },
-          style: { cursor: 'pointer' },
-        })}
-      />
+
+      {/* ───── Content ───── */}
+      {companyList.isLoading ? (
+        <div className={styles.cardListScroll}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={styles.companyCardH} style={{ cursor: 'default' }}>
+              <Skeleton active avatar={{ shape: 'square', size: 48 }} paragraph={{ rows: 1 }} />
+            </div>
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className={styles.emptyStateBox}>
+          <div className={styles.emptyIllustration}>
+            <ShopOutlined />
+          </div>
+          <h3 className={styles.emptyTitle}>
+            {companyList.searchText ? 'No companies match your search' : 'No companies yet'}
+          </h3>
+          <p className={styles.emptySubtitle}>
+            {companyList.searchText
+              ? 'Try a different search term'
+              : 'Set up your first company to get started with organization management'}
+          </p>
+          {!companyList.searchText && (
+            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
+              Create First Company
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className={styles.cardListScroll}>
+          {filteredItems.map((company) => {
+            const initials = (company.legalName || 'C').substring(0, 2).toUpperCase();
+            const isActive = company.active === 1;
+            const logoSrc = company.logoUrl || company.logoBase64 || '';
+
+            return (
+              <div
+                key={company.handle}
+                className={styles.companyCardH}
+                onClick={() => navigateToDetail(company.handle)}
+              >
+                {/* Left: Avatar or Logo */}
+                {logoSrc ? (
+                  <img
+                    src={logoSrc}
+                    alt={company.legalName}
+                    className={styles.cardHLogo}
+                  />
+                ) : (
+                  <div className={styles.cardHAvatar}>{initials}</div>
+                )}
+
+                {/* Center: Info */}
+                <div className={styles.cardHBody}>
+                  <div className={styles.cardHRow1}>
+                    <span className={styles.cardHName}>{company.legalName}</span>
+                    <span className={`${styles.statusBadge} ${isActive ? styles.statusActive : styles.statusInactive}`}>
+                      {isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    {(company.industryType || company.industry) && (
+                      <span className={styles.industryTag}>{company.industryType || company.industry}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.cardHRow2}>
+                    {company.officialEmail && (
+                      <span className={styles.metaItem}>
+                        <MailOutlined className={styles.metaIcon} />
+                        {company.officialEmail}
+                      </span>
+                    )}
+                    {company.officialPhone && (
+                      <span className={styles.metaItem}>
+                        <PhoneOutlined className={styles.metaIcon} />
+                        {company.officialPhone}
+                      </span>
+                    )}
+                    {company.tradeName && (
+                      <span className={styles.metaItem} style={{ color: '#8c8c8c', fontStyle: 'italic' }}>
+                        {company.tradeName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Counters - show if available from API */}
+                  {(company.businessUnitCount || company.departmentCount || company.employeeCount) && (
+                    <div className={styles.cardHRow2} style={{ marginTop: 2 }}>
+                      {company.businessUnitCount != null && (
+                        <span className={styles.counterChip}>
+                          <BankOutlined className={styles.metaIcon} />{company.businessUnitCount} BUs
+                        </span>
+                      )}
+                      {company.departmentCount != null && (
+                        <span className={styles.counterChip}>
+                          <ApartmentOutlined className={styles.metaIcon} />{company.departmentCount} Depts
+                        </span>
+                      )}
+                      {company.employeeCount != null && (
+                        <span className={styles.counterChip}>
+                          <TeamOutlined className={styles.metaIcon} />{company.employeeCount} Employees
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: Quick Actions (always visible) */}
+                <div className={styles.cardHActions} onClick={(e) => e.stopPropagation()}>
+                  <Tooltip title="View">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      onClick={() => navigateToDetail(company.handle)}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Edit">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => navigateToDetail(company.handle)}
+                    />
+                  </Tooltip>
+                  <Popconfirm
+                    title="Delete this company?"
+                    description="This action cannot be undone."
+                    onConfirm={(e) => handleDeleteCompany(company.handle, e as unknown as React.MouseEvent)}
+                    onCancel={(e) => e?.stopPropagation()}
+                  >
+                    <Tooltip title="Delete">
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                    </Tooltip>
+                  </Popconfirm>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

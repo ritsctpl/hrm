@@ -125,7 +125,7 @@ api.interceptors.request.use(
       const cookies = parseCookies();
       const encryptedToken = cookies.token;
 
-      if (!api.defaults.baseURL || api.defaults.baseURL.includes('8687')) {
+      if (!api.defaults.baseURL || api.defaults.baseURL.includes('8687') || api.defaults.baseURL.includes('8686')) {
         const response = await fetch("/hrm/api/config");
         // console.log("Fetching runtimeConfig from API...", response);
         const runtimeConfig = await response.json();
@@ -170,26 +170,47 @@ api.interceptors.response.use(
 
     const data = response.data;
     if (data && typeof data === 'object' && !Array.isArray(data)) {
+      // Check for error response (msg_type 'E' = error)
+      if (data.errorCode || data.message_details?.msg_type === 'E') {
+        const err = new Error(data.message_details?.msg || 'API Error');
+        (err as any).errorCode = data.errorCode;
+        (err as any).response = response;
+        return Promise.reject(err);
+      }
+
       // Backend wrapper format 1: { handle, message_details, errorCode, response }
       if ('response' in data && 'message_details' in data) {
-        response.data = data.response;
+        response.data = data.response ?? [];
       }
       // Backend wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }
       else if ('data' in data && 'success' in data && 'messageCode' in data) {
-        response.data = data.data;
+        response.data = data.data ?? [];
       }
     }
     return response;
   },
   (error) => {
-    // Log only critical errors in production
     if (error.response) {
-      console.error('API Error:', error.response.status, error.response.data);
-      
+      const status = error.response.status;
+
+      // 401 Unauthorized — session expired, redirect to login
+      if (status === 401) {
+        console.error('Session expired (401). Redirecting to login...');
+        if (typeof window !== 'undefined') {
+          const isAlreadyRedirecting = sessionStorage.getItem('auth_redirecting');
+          if (!isAlreadyRedirecting) {
+            sessionStorage.setItem('auth_redirecting', 'true');
+            window.location.href = '/hrm/login';
+          }
+        }
+        return Promise.reject(new Error('Session expired. Please log in again.'));
+      }
+
+      console.warn('API Error:', status, error.response.data);
+
       // Handle errors with message_details format (400, 500, etc.)
       const data = error.response.data;
       if (data && typeof data === 'object' && data.message_details?.msg) {
-        // Create a new error with the backend message
         const err = new Error(data.message_details.msg);
         (err as any).response = error.response;
         (err as any).errorCode = data.errorCode;

@@ -103,6 +103,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           }
         } catch (error) {
           console.error('Failed to load business units:', error);
+          message.error('Failed to load business units');
         }
       } else {
         setBusinessUnits([]);
@@ -135,6 +136,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           }
         } catch (error) {
           console.error('Failed to load departments:', error);
+          message.error('Failed to load departments');
         }
       } else {
         setDepartments([]);
@@ -164,6 +166,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         setCompaniesLoaded(true);
       } catch (error) {
         console.error('Failed to fetch companies:', error);
+        message.error('Failed to load companies. Please refresh.');
       }
 
       // Fetch locations
@@ -177,6 +180,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         );
       } catch (error) {
         console.error('Failed to fetch locations:', error);
+        message.error('Failed to load locations');
       }
 
       // Fetch employees for reporting manager dropdown
@@ -190,6 +194,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         );
       } catch (error) {
         console.error('Failed to fetch employees:', error);
+        message.error('Failed to load employees');
       }
       
     } catch (error) {

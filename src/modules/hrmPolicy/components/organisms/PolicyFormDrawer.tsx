@@ -61,6 +61,13 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // Validate PDF is uploaded for new policies
+      if (!editPolicy && !pdfFile) {
+        message.error('Please upload a PDF document');
+        return;
+      }
+
       setSaving(true);
       const cookies = parseCookies();
       const userId = cookies.userId ?? "system";
@@ -173,8 +180,15 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       }
     >
       <Form form={form} layout="vertical" requiredMark="optional">
-        <Form.Item name="title" label="Title" rules={[{ required: true }]}>
-          <Input placeholder="Policy title" />
+        <Form.Item
+          name="title"
+          label="Title"
+          rules={[
+            { required: true, message: 'Please enter policy title' },
+            { min: 3, message: 'Title must be at least 3 characters' },
+          ]}
+        >
+          <Input placeholder="Policy title (minimum 3 characters)" />
         </Form.Item>
         <Form.Item name="documentType" label="Document Type" rules={[{ required: true }]}>
           <Select placeholder="Select type">
@@ -206,7 +220,17 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
           <Select mode="tags" placeholder="Add tags" />
         </Form.Item>
         
-        <Form.Item label="PDF Document">
+        <Form.Item
+          label={
+            <span>
+              PDF Document
+              {!editPolicy && <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>}
+            </span>
+          }
+          required={!editPolicy}
+          help={!editPolicy && !pdfFile ? "PDF document is required for new policies" : undefined}
+          validateStatus={!editPolicy && !pdfFile ? "error" : undefined}
+        >
           {existingPdfName && !pdfFile && (
             <Space style={{ marginBottom: 8 }}>
               <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
@@ -243,7 +267,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
             </Button>
           </Upload>
           <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
-            Optional. Max size: 10MB. Format: PDF only.
+            {!editPolicy ? 'Required. ' : 'Optional. '}Max size: 10MB. Format: PDF only.
           </div>
         </Form.Item>
       </Form>

@@ -17,16 +17,14 @@ export function useHrmOrganizationData() {
     if (store.companyProfile.data?.handle && store.activeDetailTab === 'businessUnits') {
       store.fetchBusinessUnits();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.companyProfile.data?.handle, store.activeDetailTab]);
+  }, [store.companyProfile.data?.handle, store.activeDetailTab, store.fetchBusinessUnits]);
 
   // Fetch departments when BU is selected and on departments tab
   useEffect(() => {
     if (store.department.selectedBuHandle && store.activeDetailTab === 'departments') {
       store.fetchDepartments(store.department.selectedBuHandle);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.department.selectedBuHandle, store.activeDetailTab]);
+  }, [store.department.selectedBuHandle, store.activeDetailTab, store.fetchDepartments]);
 
   // Filtered business units based on search
   const filteredBusinessUnits: BusinessUnit[] = useMemo(() => {
@@ -36,7 +34,7 @@ export function useHrmOrganizationData() {
       (bu) =>
         bu.buCode.toLowerCase().includes(searchLower) ||
         bu.buName.toLowerCase().includes(searchLower) ||
-        bu.buType.toLowerCase().includes(searchLower)
+        (bu.buType || '').toLowerCase().includes(searchLower)
     );
   }, [store.businessUnit.list, store.businessUnit.searchText]);
 

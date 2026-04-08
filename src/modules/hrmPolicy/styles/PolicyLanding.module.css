@@ -1,47 +1,34 @@
+/* ================================================================
+   Policy Module — Landing & Library Styles (Design V2)
+   Modern glassmorphism, gradient accents, premium feel
+   ================================================================ */
+
 .landing {
-  /* layout handled by .hrm-module-root */
   overflow: hidden;
 }
 
-/* Make Ant Design Tabs scrollable */
-.landing :global(.ant-tabs) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+/* Ant Tabs layout */
+.landing :global(.ant-tabs) { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.landing :global(.ant-tabs-nav) { flex-shrink: 0; background: var(--hrm-bg-white, #fff); }
+.landing :global(.ant-tabs-content-holder) { flex: 1; overflow: hidden; }
+.landing :global(.ant-tabs-content) { height: 100%; overflow: hidden; }
+.landing :global(.ant-tabs-tabpane) { height: 100%; overflow: hidden; }
+.landing :global(.ant-tabs-nav-more) { display: none !important; }
 
-.landing :global(.ant-tabs-nav) {
-  flex-shrink: 0;
-}
-
-.landing :global(.ant-tabs-content-holder) {
-  flex: 1;
-  overflow: hidden;
-}
-
-.landing :global(.ant-tabs-content) {
-  height: 100%;
-  overflow: hidden;
-}
-
-.landing :global(.ant-tabs-tabpane) {
-  height: 100%;
-  overflow: hidden;
-}
-
+/* ========== Toolbar ========== */
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  background: #fff;
-  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  padding: 10px 20px;
+  background: var(--hrm-bg-white, #fff);
+  border-bottom: 1px solid var(--hrm-border-light, #f0f0f0);
   flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
 }
 
+/* ========== Library Template ========== */
 .libraryTemplate {
   display: flex;
   flex-direction: column;
@@ -53,7 +40,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: 20px;
+  background: var(--hrm-bg-subtle, #f8f9fb);
 }
 
 .libraryList {
@@ -63,58 +51,130 @@
   padding: 0;
 }
 
+/* ========== Category Section ========== */
 .categorySection {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .categoryTitle {
-  margin-bottom: 12px !important;
-  color: var(--text-secondary, #8c8c8c);
+  margin-bottom: 14px !important;
+  color: var(--hrm-text-secondary, #595959);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+.categoryTitle::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--hrm-accent, #1890ff);
+  border-radius: 2px;
+}
+
+/* ========== Policy Card (Grid View) ========== */
 .policyCard {
-  height: 160px;
+  height: 180px;
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  border-radius: 12px !important;
+  border: 1px solid var(--hrm-border-light, #eee) !important;
+  background: var(--hrm-bg-white, #fff) !important;
+  transition: all 0.25s ease !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.policyCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--hrm-accent, #1890ff), #69c0ff);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 .policyCard:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+  border-color: var(--hrm-accent, #1890ff) !important;
+  transform: translateY(-3px);
+}
+
+.policyCard:hover::before {
+  opacity: 1;
 }
 
 .policyCardTitle {
-  margin: 4px 0 !important;
-  font-size: 13px !important;
-  line-height: 1.4 !important;
+  margin: 6px 0 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+  color: var(--hrm-text-primary, #1f1f1f);
 }
 
 .policyCardMeta {
   font-size: 11px;
+  color: var(--hrm-text-muted, #8c8c8c);
 }
 
 .policyAckLabel {
   font-size: 11px;
 }
 
+/* ========== Policy List Row ========== */
 .policyListRow {
-  padding: 10px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--hrm-border-light, #f0f0f0);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
+  margin: 0;
 }
 
 .policyListRow:hover {
-  background: #fafafa;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.02), rgba(24, 144, 255, 0.04));
+  border-left: 3px solid var(--hrm-accent, #1890ff);
+  padding-left: 17px;
 }
 
+.policyListRow:last-child {
+  border-bottom: none;
+}
+
+/* ========== Loading ========== */
 .loadingCenter {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 200px;
+  height: 300px;
 }
 
-/* Hide tab overflow button when not needed */
-.landing :global(.ant-tabs-nav-more) {
-  display: none !important;
+/* ========== Empty State ========== */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px;
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f5ff, #e6f7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--hrm-accent, #1890ff);
+  margin-bottom: 16px;
 }

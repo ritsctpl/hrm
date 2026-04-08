@@ -15,12 +15,13 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import CompanyProfileTemplate from './CompanyProfileTemplate';
 import BusinessUnitTemplate from './BusinessUnitTemplate';
 import DepartmentTemplate from './DepartmentTemplate';
 import LocationTemplate from './LocationTemplate';
-import OrgHierarchyTree from '../organisms/OrgHierarchyTree';
+import OrgHierarchyChart from '../organisms/OrgHierarchyChart';
 import OrgAuditLogPanel from '../organisms/OrgAuditLogPanel';
 import DataCompletenessPanel from '../organisms/DataCompletenessPanel';
 import type { DetailTabKey } from '../../types/ui.types';
@@ -40,6 +41,7 @@ const CompanyDetailTemplate: React.FC = () => {
     saveCompanyProfile,
   } = useHrmOrganizationStore();
 
+  const { confirmNavigation } = useUnsavedChanges();
   const get = useHrmOrganizationStore.getState;
   const isNew = selectedCompanyHandle === 'new';
   const { isEditing, isSaving, errors, data } = companyProfile;
@@ -77,8 +79,7 @@ const CompanyDetailTemplate: React.FC = () => {
     if (!isNew && selectedCompanyHandle) {
       fetchCompanyProfile(selectedCompanyHandle);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCompanyHandle]);
+  }, [isNew, selectedCompanyHandle, fetchCompanyProfile]);
 
   // Once company profile loads, fetch BUs and locations
   useEffect(() => {
@@ -86,12 +87,10 @@ const CompanyDetailTemplate: React.FC = () => {
       fetchBusinessUnits();
       fetchLocations();
     } else if (selectedCompanyHandle && selectedCompanyHandle !== 'new') {
-      // If company profile is still loading but we have the handle, try fetching anyway
       fetchBusinessUnits();
       fetchLocations();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyProfile.data?.handle, selectedCompanyHandle]);
+  }, [companyProfile.data?.handle, selectedCompanyHandle, fetchBusinessUnits, fetchLocations]);
 
   const companyName = companyProfile.data?.legalName || (isNew ? 'New Company' : 'Loading...');
 
@@ -103,6 +102,26 @@ const CompanyDetailTemplate: React.FC = () => {
     );
   }
 
+  // Compute section completion status for tab dots
+  const profileData = companyProfile.draft || companyProfile.data;
+  const profileFields = ['legalName', 'pan', 'tan', 'cin'];
+  const profileFilledCount = profileFields.filter(
+    (f) => !!(profileData as Record<string, unknown>)?.[f]
+  ).length;
+  const hasBankAccounts = (profileData?.bankAccounts?.length ?? 0) > 0;
+  const profileComplete = profileFilledCount === profileFields.length && hasBankAccounts;
+  const profilePartial = profileFilledCount > 0;
+
+  const { businessUnit, department, location } = useHrmOrganizationStore.getState();
+  const buComplete = (businessUnit.list?.length ?? 0) > 0;
+  const deptComplete = (department.list?.length ?? 0) > 0;
+  const locComplete = (location.list?.length ?? 0) > 0;
+
+  const StatusDot: React.FC<{ status: 'complete' | 'partial' | 'empty' }> = ({ status }) => {
+    const color = status === 'complete' ? '#52c41a' : status === 'partial' ? '#faad14' : '#d9d9d9';
+    return <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: color, marginLeft: 6, flexShrink: 0 }} />;
+  };
+
   const tabItems = [
     {
       key: 'profile',
@@ -110,6 +129,7 @@ const CompanyDetailTemplate: React.FC = () => {
         <span className={styles.tabLabel}>
           <ShopOutlined />
           Profile
+          <StatusDot status={profileComplete ? 'complete' : profilePartial ? 'partial' : 'empty'} />
         </span>
       ),
       children: <CompanyProfileTemplate />,
@@ -120,6 +140,7 @@ const CompanyDetailTemplate: React.FC = () => {
         <span className={styles.tabLabel}>
           <BankOutlined />
           Business Units
+          {!isNew && <StatusDot status={buComplete ? 'complete' : 'empty'} />}
         </span>
       ),
       children: <BusinessUnitTemplate />,
@@ -131,6 +152,7 @@ const CompanyDetailTemplate: React.FC = () => {
         <span className={styles.tabLabel}>
           <ApartmentOutlined />
           Departments
+          {!isNew && <StatusDot status={deptComplete ? 'complete' : 'empty'} />}
         </span>
       ),
       children: <DepartmentTemplate />,
@@ -142,6 +164,7 @@ const CompanyDetailTemplate: React.FC = () => {
         <span className={styles.tabLabel}>
           <EnvironmentOutlined />
           Locations
+          {!isNew && <StatusDot status={locComplete ? 'complete' : 'empty'} />}
         </span>
       ),
       children: <LocationTemplate />,
@@ -155,11 +178,7 @@ const CompanyDetailTemplate: React.FC = () => {
           Hierarchy
         </span>
       ),
-      children: (
-        <div className={styles.hierarchyContainer}>
-          <OrgHierarchyTree />
-        </div>
-      ),
+      children: <OrgHierarchyChart />,
       disabled: false,
     },
     {
@@ -194,7 +213,7 @@ const CompanyDetailTemplate: React.FC = () => {
             items={[
               {
                 title: (
-                  <a onClick={navigateToList}>
+                  <a onClick={() => confirmNavigation(navigateToList)}>
                     <HomeOutlined /> Organizations
                   </a>
                 ),

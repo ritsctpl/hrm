@@ -12,6 +12,7 @@ import { usePermissionsStore } from "@/stores/permissionsStore";
 import PolicyLibraryTemplate from "./components/templates/PolicyLibraryTemplate";
 import PolicyAdminTemplate from "./components/templates/PolicyAdminTemplate";
 import PolicyFormDrawer from "./components/organisms/PolicyFormDrawer";
+import SupersedePolicyModal from "./components/organisms/SupersedePolicyModal";
 import HrmPolicyScreen from "./HrmPolicyScreen";
 import { PolicyDocument } from "./types/domain.types";
 import { POLICY_HR_ROLES } from "./utils/constants";
@@ -19,7 +20,7 @@ import styles from "./styles/PolicyLanding.module.css";
 
 const HrmPolicyLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "RITS";
+  const site = cookies.site ?? "";
   const userId = cookies.rl_user_id ?? "system";  // ← Use rl_user_id instead of userId
   const role = cookies.userRole ?? "EMPLOYEE";
   const canAdmin = POLICY_HR_ROLES.includes(role);
@@ -66,6 +67,9 @@ const HrmPolicyLanding: React.FC = () => {
     setArchiving,
     setSelectedPolicy,
     setSelectedPolicyLoading,
+    showSupersedeModal,
+    openSupersedeModal,
+    closeSupersedeModal,
   } = useHrmPolicyStore();
 
   const { loadCategories, loadPolicies, loadAdminPolicies } = useHrmPolicyData();
@@ -177,6 +181,48 @@ const HrmPolicyLanding: React.FC = () => {
     }
   };
 
+  const handleDelete = async (policyHandle: string) => {
+    try {
+      const user = cookies.userId ?? "system";
+      await HrmPolicyService.deletePolicy({ site, policyHandle, deletedBy: user });
+      message.success("Policy deleted successfully");
+      loadAdminPolicies();
+      loadPolicies();
+    } catch (error: any) {
+      let errorMessage = "Failed to delete policy";
+      if (error?.response?.data?.message_details?.msg) {
+        errorMessage = error.response.data.message_details.msg;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      message.error(errorMessage);
+    }
+  };
+
+  const handleSupersede = async (oldPolicyHandle: string, newPolicyHandle: string) => {
+    try {
+      const user = cookies.userId ?? "system";
+      await HrmPolicyService.supersedePolicy({
+        site,
+        oldPolicyHandle,
+        newPolicyHandle,
+        updatedBy: user,
+      });
+      message.success("Policy superseded successfully");
+      loadAdminPolicies();
+      loadPolicies();
+    } catch (error: any) {
+      let errorMessage = "Failed to supersede policy";
+      if (error?.response?.data?.message_details?.msg) {
+        errorMessage = error.response.data.message_details.msg;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      message.error(errorMessage);
+      throw error;
+    }
+  };
+
   const handleAdminDrawerSaved = () => {
     closeFormDrawer();
     loadAdminPolicies();
@@ -236,8 +282,10 @@ const HrmPolicyLanding: React.FC = () => {
           onEdit={(policy: PolicyDocument) => openFormDrawer(policy)}
           onPublish={handlePublish}
           onArchive={handleArchive}
+          onDelete={handleDelete}
           onViewDetail={handlePolicyClick}
           onCreateNew={() => openFormDrawer()}
+          onSupersede={openSupersedeModal}
           onDrawerClose={closeFormDrawer}
           onDrawerSaved={handleAdminDrawerSaved}
           onSearch={setAdminSearchText}
@@ -282,6 +330,14 @@ const HrmPolicyLanding: React.FC = () => {
         site={site}
         onClose={closeFormDrawer}
         onSaved={handleAdminDrawerSaved}
+      />
+
+      <SupersedePolicyModal
+        open={showSupersedeModal}
+        policies={adminPolicies}
+        site={site}
+        onClose={closeSupersedeModal}
+        onSupersede={handleSupersede}
       />
     </div>
   );

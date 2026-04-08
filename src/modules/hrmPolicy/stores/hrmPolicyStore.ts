@@ -25,6 +25,7 @@ interface HrmPolicyState {
   viewMode: "grid" | "list";
   showPolicyViewer: boolean;
   showFormDrawer: boolean;
+  showSupersedeModal: boolean;
   editPolicy: PolicyDocument | null;
   
   // Library tab filters
@@ -63,6 +64,8 @@ interface HrmPolicyState {
   closePolicyViewer: () => void;
   openFormDrawer: (policy?: PolicyDocument | null) => void;
   closeFormDrawer: () => void;
+  openSupersedeModal: () => void;
+  closeSupersedeModal: () => void;
   
   // Library tab filter actions
   setLibrarySearchText: (text: string) => void;
@@ -99,6 +102,7 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   viewMode: "list",
   showPolicyViewer: false,
   showFormDrawer: false,
+  showSupersedeModal: false,
   editPolicy: null,
   
   // Library tab filters
@@ -135,6 +139,8 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   closePolicyViewer: () => set({ showPolicyViewer: false, selectedPolicy: null }),
   openFormDrawer: (policy = null) => set({ showFormDrawer: true, editPolicy: policy }),
   closeFormDrawer: () => set({ showFormDrawer: false, editPolicy: null }),
+  openSupersedeModal: () => set({ showSupersedeModal: true }),
+  closeSupersedeModal: () => set({ showSupersedeModal: false }),
   
   // Library tab filter setters
   setLibrarySearchText: (librarySearchText) => set({ librarySearchText }),

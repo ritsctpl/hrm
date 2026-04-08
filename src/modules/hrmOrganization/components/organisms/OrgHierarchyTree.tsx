@@ -74,8 +74,7 @@ const OrgHierarchyTree: React.FC = () => {
 
   useEffect(() => {
     fetchHierarchy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchHierarchy]);
 
   const treeData = useMemo(() => {
     if (!data) return [];
@@ -89,8 +88,7 @@ const OrgHierarchyTree: React.FC = () => {
     if (treeData.length > 0 && expandedKeys.length === 0) {
       setExpandedKeys(allKeys);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [treeData]);
+  }, [treeData, allKeys, expandedKeys.length]);
 
   const handleExpandAll = useCallback(() => {
     setExpandedKeys(allKeys);

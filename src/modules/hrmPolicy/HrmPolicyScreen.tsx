@@ -23,7 +23,7 @@ interface HrmPolicyScreenProps {
 
 const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = false, onBack }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "RITS";
+  const site = cookies.site ?? "";
   const role = cookies.userRole ?? "EMPLOYEE";
   const canAdmin = POLICY_HR_ROLES.includes(role);
 
@@ -158,10 +158,21 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
               )}
             </Space>
 
-            <PolicyContentRenderer
-              content={policy.textContent}
-              contentType="html"
-            />
+            <div style={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              padding: '20px 24px',
+              border: '1px solid #eee',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              backgroundColor: '#f8f9fb',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)',
+            }}>
+              <PolicyContentRenderer
+                content={policy.textContent}
+                contentType="html"
+              />
+            </div>
 
             {policy.pdfBase64 && (
               <>
@@ -169,7 +180,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
                 <div className={styles.pdfViewerSection}>
                   <Space style={{ marginBottom: 12 }}>
                     <Typography.Text strong>Policy Document (PDF)</Typography.Text>
-                    {/* {pdfUrl && (
+                    {pdfUrl && (
                       <Button
                         type="primary"
                         size="small"
@@ -183,7 +194,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
                       >
                         Download PDF
                       </Button>
-                    )} */}
+                    )}
                   </Space>
                   {pdfUrl ? (
                     <iframe

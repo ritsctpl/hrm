@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Button, Input, Form, Select, DatePicker, Checkbox, Divider } from 'antd';
+import { Button, Input, Form, Select, DatePicker, Checkbox, Divider, message } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
@@ -120,8 +120,12 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
         govtIds: Object.keys(govtIdsObj).length > 0 ? govtIdsObj : undefined,
       });
       setLocalEditing(false);
-    } catch {
-      // validation error
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error('Failed to save personal details. Please try again.');
+      }
     }
   };
 

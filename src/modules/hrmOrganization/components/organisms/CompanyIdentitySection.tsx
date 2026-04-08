@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Input, Select, DatePicker, Upload, Button, message } from 'antd';
-import { CloudUploadOutlined, ShopOutlined } from '@ant-design/icons';
+import { Input, Select, DatePicker, Upload, Button, Dropdown, message } from 'antd';
+import type { MenuProps } from 'antd';
+import { CloudUploadOutlined, ShopOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
@@ -70,13 +71,51 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
     <div>
       {/* Logo Upload */}
       <div className={mainStyles.logoSection}>
-        {draft?.logoUrl ? (
-          <img src={draft.logoUrl} alt="Company Logo" className={mainStyles.logoPreview} />
-        ) : (
-          <div className={mainStyles.logoPlaceholder}>
-            <ShopOutlined />
-          </div>
-        )}
+        <div style={{ position: 'relative' }}>
+          {draft?.logoUrl ? (
+            <>
+              <img src={draft.logoUrl} alt="Company Logo" className={mainStyles.logoPreview} />
+              {!disabled && (
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: 'remove',
+                        label: 'Remove Logo',
+                        icon: <DeleteOutlined />,
+                        danger: true,
+                        onClick: () => {
+                          setCompanyDraft({ logoUrl: '' });
+                          message.success('Logo removed');
+                        },
+                      },
+                    ] as MenuProps['items'],
+                  }}
+                  trigger={['click']}
+                  placement="bottomRight"
+                >
+                  <Button
+                    type="text"
+                    icon={<MoreOutlined />}
+                    size="small"
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      backgroundColor: 'rgba(255,255,255,0.9)',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                      borderRadius: '50%',
+                    }}
+                  />
+                </Dropdown>
+              )}
+            </>
+          ) : (
+            <div className={mainStyles.logoPlaceholder}>
+              <ShopOutlined />
+            </div>
+          )}
+        </div>
         <div className={mainStyles.logoInfo}>
           {!disabled && (
             <>

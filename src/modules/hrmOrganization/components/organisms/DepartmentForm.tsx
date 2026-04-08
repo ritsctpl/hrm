@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { Input, Select, Button, message } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, UserOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
+import { parseCookies } from 'nookies';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { HrmEmployeeService } from '../../../hrmEmployee/services/hrmEmployeeService';
 import type { DepartmentFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
@@ -14,14 +16,71 @@ import formStyles from '../../styles/HrmOrganizationForm.module.css';
 const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
   const {
     department,
+    businessUnit,
     setDepartmentDraft,
+    setDepartmentSelectedBu,
     saveDepartment,
     deleteDepartment,
   } = useHrmOrganizationStore();
 
-  const { draft, isSaving, isCreating, selected, errors, list } = department;
+  const { draft, isSaving, isCreating, selected, errors, list, selectedBuHandle } = department;
   const isNew = isCreating && !selected;
+
+  const buOptions = useMemo(() =>
+    businessUnit.list.map((bu) => ({
+      label: `${bu.buName} (${bu.buCode})`,
+      value: bu.handle,
+    })),
+    [businessUnit.list]
+  );
   const title = isNew ? 'New Department' : `Edit: ${selected?.deptName || ''}`;
+
+  // Employee search state
+  const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: React.ReactNode }[]>([]);
+  const [employeeSearchLoading, setEmployeeSearchLoading] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEmployeeSearch = useCallback((keyword: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!keyword || keyword.length < 2) {
+      setEmployeeOptions([]);
+      return;
+    }
+
+    searchTimerRef.current = setTimeout(async () => {
+      const cookies = parseCookies();
+      const site = cookies.site || '';
+      if (!site) return;
+
+      setEmployeeSearchLoading(true);
+      try {
+        const result = await HrmEmployeeService.searchByKeyword(site, keyword);
+        const employees = result?.employees || [];
+        setEmployeeOptions(
+          employees.map((emp) => ({
+            value: emp.employeeCode || emp.handle,
+            // Simple string label for the selected display (prevents overflow)
+            title: `${emp.fullName} (${emp.employeeCode})`,
+            label: (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                <UserOutlined style={{ color: '#8c8c8c', flexShrink: 0 }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 500, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.fullName}</div>
+                  <div style={{ fontSize: 11, color: '#8c8c8c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {emp.employeeCode}{emp.department ? ` · ${emp.department}` : ''}{emp.role ? ` · ${emp.role}` : ''}
+                  </div>
+                </div>
+              </div>
+            ),
+          }))
+        );
+      } catch {
+        setEmployeeOptions([]);
+      } finally {
+        setEmployeeSearchLoading(false);
+      }
+    }, 400);
+  }, []);
 
   // Parent department options (exclude current department)
   const parentOptions = useMemo(() => {
@@ -43,15 +102,12 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
   const handleSave = useCallback(async () => {
     try {
       await saveDepartment();
-      // Check if there are any errors after save
-      if (!department.errors || Object.keys(department.errors).length === 0) {
-        message.success(isNew ? 'Department created' : 'Department updated');
-      }
+      message.success(isNew ? 'Department created' : 'Department updated');
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to save department';
-      console.error('Save error:', errorMsg);
+      message.error(errorMsg);
     }
-  }, [saveDepartment, isNew, department.errors]);
+  }, [saveDepartment, isNew]);
 
   const handleDelete = useCallback(async () => {
     if (!selected?.handle) return;
@@ -87,6 +143,22 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       </div>
 
       <div className={formStyles.deptFormGrid}>
+        {isNew && (
+          <div className={formStyles.addressFieldFull}>
+            <OrgFormField label="Business Unit" required error={!selectedBuHandle ? 'Business Unit is required' : undefined}>
+              <Select
+                value={selectedBuHandle || undefined}
+                onChange={(val) => setDepartmentSelectedBu(val)}
+                options={buOptions}
+                placeholder="Select Business Unit"
+                showSearch
+                optionFilterProp="label"
+                style={{ width: '100%' }}
+              />
+            </OrgFormField>
+          </div>
+        )}
+
         <OrgFormField label="Department Code" required error={errors.deptCode}>
           <Input
             value={draft?.deptCode || ''}
@@ -119,13 +191,32 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
           </OrgFormField>
         </div>
 
-        <OrgFormField label="Head Employee" error={errors.headOfDepartmentEmployeeId}>
-          <Input
-            value={draft?.headOfDepartmentEmployeeId || ''}
-            onChange={(e) => handleFieldChange('headOfDepartmentEmployeeId', e.target.value)}
-            placeholder="Enter employee ID or name"
-          />
-        </OrgFormField>
+        <div className={formStyles.addressFieldFull}>
+          <OrgFormField label="Head of Department" error={errors.headOfDepartmentEmployeeId}>
+            <Select
+              showSearch
+              value={draft?.headOfDepartmentEmployeeId || undefined}
+              placeholder="Type to search employee..."
+              filterOption={false}
+              onSearch={handleEmployeeSearch}
+              onChange={(val) => handleFieldChange('headOfDepartmentEmployeeId', val)}
+              options={employeeOptions}
+              loading={employeeSearchLoading}
+              allowClear
+              style={{ width: '100%' }}
+              optionLabelProp="title"
+              popupMatchSelectWidth={350}
+              notFoundContent={
+                employeeSearchLoading
+                  ? 'Searching...'
+                  : employeeOptions.length === 0
+                  ? 'Type at least 2 characters to search'
+                  : 'No employees found'
+              }
+              suffixIcon={<UserOutlined style={{ color: '#bfbfbf' }} />}
+            />
+          </OrgFormField>
+        </div>
       </div>
 
       {errors._general && (

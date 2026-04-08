@@ -3,7 +3,7 @@
 import React from "react";
 import { Table, Space, Button, Popconfirm, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined } from "@ant-design/icons";
+import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PolicyDocument } from "../../types/domain.types";
 import { PolicyAdminTableProps } from "../../types/ui.types";
 import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
@@ -15,6 +15,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   onEdit,
   onPublish,
   onArchive,
+  onDelete,
   onViewDetail,
 }) => {
   const columns: ColumnsType<PolicyDocument> = [
@@ -85,7 +86,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
     {
       title: "Actions",
       key: "actions",
-      width: 140,
+      width: 180,
       render: (_, record) => (
         <Space size={4}>
           <Tooltip title="View Details">
@@ -95,16 +96,30 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
             <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
           </Tooltip>
           {record.status === "DRAFT" && (
-            <Popconfirm
-              title="Submit for review?"
-              description="This will send the policy for review."
-              onConfirm={() => onPublish(record.handle)}
-              okText="Submit"
-            >
-              <Tooltip title="Submit for Review">
-                <Button size="small" icon={<CheckCircleOutlined />}  />
-              </Tooltip>
-            </Popconfirm>
+            <>
+              <Popconfirm
+                title="Submit for review?"
+                description="This will send the policy for review."
+                onConfirm={() => onPublish(record.handle)}
+                okText="Submit"
+              >
+                <Tooltip title="Submit for Review">
+                  <Button size="small" icon={<CheckCircleOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+              <Popconfirm
+                title="Delete this draft policy?"
+                description="This action cannot be undone."
+                onConfirm={() => onDelete(record.handle)}
+                okText="Yes, Delete"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title="Delete Policy">
+                  <Button size="small" danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </>
           )}
           {record.status === "REVIEW" && (
             <Popconfirm

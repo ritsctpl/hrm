@@ -26,8 +26,7 @@ const DataCompletenessPanel: React.FC = () => {
 
   useEffect(() => {
     fetchDataCompleteness(entityTypeFilter || undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityTypeFilter]);
+  }, [entityTypeFilter, fetchDataCompleteness]);
 
   const handleExport = async () => {
     const site = parseCookies().site ?? '';

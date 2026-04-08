@@ -117,7 +117,6 @@ export class HrmOrganizationService {
     companyHandle: string
   ): Promise<BusinessUnit[]> {
     const payload = { site, companyHandle };
-    console.log('fetchBusinessUnits API call - payload:', payload);
     const res = await api.post(`${this.BASE}/businessUnit/retrieveAll`, payload);
     return res.data;
   }

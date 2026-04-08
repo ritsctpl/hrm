@@ -17,7 +17,7 @@ const DepartmentTemplate: React.FC = () => {
     companyProfile,
   } = useHrmOrganizationStore();
 
-  // Ensure BU list is loaded for the BU selector in the tree
+  // Ensure BU list is loaded (needed for department form's parent BU context)
   useEffect(() => {
     if (companyProfile.data?.handle && businessUnit.list.length === 0) {
       fetchBusinessUnits();

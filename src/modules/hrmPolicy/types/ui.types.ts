@@ -47,6 +47,7 @@ export interface PolicyAdminTableProps {
   onEdit: (policy: PolicyDocument) => void;
   onPublish: (policyId: string) => void;
   onArchive: (policyId: string) => void;
+  onDelete: (policyId: string) => void;
   onViewDetail: (policy: PolicyDocument) => void;
 }
 

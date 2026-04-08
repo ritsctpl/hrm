@@ -291,9 +291,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       set((state) => ({
         companyList: { ...state.companyList, items, isLoading: false },
       }));
-    } catch {
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Failed to load companies';
+      console.error('fetchCompanies error:', errMsg);
       set((state) => ({
-        companyList: { ...state.companyList, items: [], isLoading: false },
+        companyList: { ...state.companyList, items: [], isLoading: false, error: errMsg },
       }));
     }
   },
@@ -311,7 +313,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   deleteCompany: async (handle) => {
     const site = getSite();
     const userId = getUserId();
-    if (!site) return;
+    if (!site || !userId) return;
 
     try {
       const response = await HrmOrganizationService.deleteCompany(site, handle, userId);
@@ -359,6 +361,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const processedData = { ...data };
       if (data.logoBase64 && data.logoBase64.startsWith('data:')) {
         processedData.logoUrl = data.logoBase64;
+      }
+      // Normalize API field `gstin` → UI field `gstIn` for consistent form binding
+      if (processedData.gstin && !processedData.gstIn) {
+        processedData.gstIn = processedData.gstin;
       }
       
       set((state) => ({
@@ -450,37 +456,50 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         country: registeredAddress.country || 'India',
       };
 
+      // Prepare corporate office address
+      const corpAddr = (companyProfile.draft.corporateOfficeAddress || companyProfile.draft.corporateAddress || {}) as any;
+      const corporateOfficeAddress = {
+        line1: corpAddr.line1 || '',
+        city: corpAddr.city || '',
+        state: corpAddr.state || '',
+        pincode: corpAddr.pincode || '',
+        country: corpAddr.country || 'India',
+      };
+
       // Create payload with all required fields
+      // NOTE: field names must match backend exactly (gstin not gstIn)
       const payload: any = {
         site,
         legalName: companyProfile.draft.legalName || '',
-        tradeName: companyProfile.draft.tradeName || null,
+        tradeName: companyProfile.draft.tradeName || undefined,
         industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
         cin: companyProfile.draft.cin || '',
         pan: companyProfile.draft.pan || '',
         tan: companyProfile.draft.tan || '',
-        gstIn: companyProfile.draft.gstIn || null,
-        foundedDate: companyProfile.draft.foundedDate || null,
-        // If logoUrl contains base64 (starts with data:), send it in logoBase64; otherwise use actual logoBase64 value
-        logoBase64: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:')) 
-          ? companyProfile.draft.logoUrl 
+        gstin: companyProfile.draft.gstIn || companyProfile.draft.gstin || undefined,
+        foundedDate: companyProfile.draft.foundedDate || undefined,
+        logoBase64: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:'))
+          ? companyProfile.draft.logoUrl
           : (companyProfile.draft.logoBase64 || ''),
         pfEstablishmentCode: companyProfile.draft.pfEstablishmentCode || companyProfile.draft.pfRegistrationNo || '',
         esicCode: companyProfile.draft.esicCode || '',
+        msmeUdyam: companyProfile.draft.msmeUdyam || undefined,
         officialEmail: companyProfile.draft.officialEmail || '',
         officialPhone: companyProfile.draft.officialPhone || '',
         financialYearStartMonth: companyProfile.draft.financialYearStartMonth || 'April',
         registeredOfficeAddress,
+        corporateOfficeAddress,
         bankAccounts,
       };
 
       let data: CompanyProfile;
-      const isNewCompany = !companyProfile.data?.handle && selectedCompanyHandle !== 'new';
-      
-      if (companyProfile.data?.handle || (selectedCompanyHandle && selectedCompanyHandle !== 'new')) {
+      // Determine handle: from loaded data, selected handle, or draft handle
+      const existingHandle = companyProfile.data?.handle || (selectedCompanyHandle && selectedCompanyHandle !== 'new' ? selectedCompanyHandle : null) || (companyProfile.draft as any)?.handle;
+
+      if (existingHandle) {
         // UPDATE: Call update endpoint if company already has a handle
         data = await HrmOrganizationService.updateCompany(
-          companyProfile.data?.handle || selectedCompanyHandle!,
+          existingHandle,
           payload
         );
       } else {
@@ -489,11 +508,17 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         data = await HrmOrganizationService.createCompany(payload);
       }
 
+      // Normalize gstin → gstIn after save so form binding stays consistent
+      const logoUrl = get().companyProfile.draft?.logoUrl;
+      const savedData = { ...data, logoUrl };
+      if (savedData.gstin && !savedData.gstIn) {
+        savedData.gstIn = savedData.gstin;
+      }
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
-          data: { ...data, logoUrl: state.companyProfile.draft?.logoUrl },
-          draft: { ...data, logoUrl: state.companyProfile.draft?.logoUrl },
+          data: savedData,
+          draft: { ...savedData },
           isSaving: false,
           isEditing: false,
         },
@@ -531,12 +556,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   fetchBusinessUnits: async () => {
     const site = getSite();
     const { companyProfile, selectedCompanyHandle } = get();
-    const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
-
-    console.log('fetchBusinessUnits - site:', site, 'companyHandle:', companyHandle, 'selectedCompanyHandle:', selectedCompanyHandle, 'companyProfile.data?.handle:', companyProfile.data?.handle);
+    const companyHandle = companyProfile.data?.handle || (selectedCompanyHandle !== 'new' ? selectedCompanyHandle : null);
 
     if (!site || !companyHandle) {
-      console.warn('fetchBusinessUnits - Missing site or companyHandle');
       return;
     }
 

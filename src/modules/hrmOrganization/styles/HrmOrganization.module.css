@@ -1,5 +1,14 @@
 /* HRM Organization Module - Main Styles */
 
+/* Save success animation - global keyframe */
+:global {
+  @keyframes fadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 0.6; }
+    100% { opacity: 0; }
+  }
+}
+
 .container {
   min-height: 0;
 }
@@ -116,8 +125,11 @@
 .tableContainer {
   flex: 1;
   transition: flex 0.3s ease;
-  overflow: auto;
+  overflow: hidden;
   padding: 16px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .shrink {
@@ -324,7 +336,18 @@
   padding: 16px;
   background: #fff;
   border-radius: 8px;
-  min-height: 400px;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.treeContainer > div:last-child {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
 }
 
 .treeHeader {
@@ -529,6 +552,264 @@
   gap: 6px;
 }
 
+/* ========== Stats Bar ========== */
+.statsBar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.statPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--hrm-bg-glass, rgba(255,255,255,0.8));
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--hrm-border-light, #f0f0f0);
+  border-radius: 10px;
+  min-width: 120px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.statPill:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-color: var(--hrm-border-accent, #d9d9d9);
+}
+
+.statPillIcon {
+  font-size: 20px;
+}
+
+.statPillValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--hrm-text-primary, #1f1f1f);
+  line-height: 1.2;
+}
+
+.statPillLabel {
+  font-size: 11px;
+  color: var(--hrm-text-muted, #8c8c8c);
+  letter-spacing: 0.3px;
+}
+
+.statPillIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+/* Search input in header */
+.searchInput {
+  width: 280px;
+  border-radius: 8px;
+}
+
+/* ========== Horizontal Company Cards ========== */
+.cardListScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+
+.companyCardH {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--hrm-bg-white, #fff);
+  border: 1px solid var(--hrm-border-light, #eee);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.companyCardH:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: var(--hrm-accent, #1890ff);
+  transform: translateY(-1px);
+}
+
+/* Avatar */
+.cardHAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--hrm-accent, #1890ff), #69c0ff);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+  letter-spacing: 1px;
+}
+
+.cardHLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border: 1px solid var(--hrm-border-light, #f0f0f0);
+  background: #fff;
+}
+
+/* Body */
+.cardHBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cardHRow1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cardHName {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--hrm-text-primary, #1f1f1f);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+/* Modern status badge (tint bg + dark text) */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.statusActive {
+  background: rgba(82, 196, 26, 0.12);
+  color: #389e0d;
+}
+
+.statusInactive {
+  background: rgba(0, 0, 0, 0.05);
+  color: #8c8c8c;
+}
+
+.industryTag {
+  display: inline-flex;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(24, 144, 255, 0.06);
+  color: #1890ff;
+  flex-shrink: 0;
+}
+
+.cardHRow2 {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--hrm-text-secondary, #595959);
+}
+
+.metaIcon {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+.counterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--hrm-text-muted, #8c8c8c);
+  background: var(--hrm-bg-subtle, #f5f5f5);
+  padding: 1px 8px;
+  border-radius: 4px;
+}
+
+/* Quick actions — always visible on right */
+.cardHActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.companyCardH:hover .cardHActions {
+  opacity: 1;
+}
+
+/* ========== Empty State ========== */
+.emptyStateBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+  flex: 1;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.emptyIllustration {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f5ff, #e6f7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.emptyTitle {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hrm-text-primary, #262626);
+}
+
+.emptySubtitle {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--hrm-text-muted, #8c8c8c);
+  max-width: 360px;
+  line-height: 1.5;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sectionGrid {
@@ -554,5 +835,35 @@
 
   .companyProfileContainer {
     padding: 12px;
+  }
+
+  .statsBar {
+    flex-wrap: wrap;
+  }
+
+  .statPill {
+    min-width: 100px;
+    flex: 1;
+  }
+
+  .searchInput {
+    width: 100% !important;
+    order: 3;
+  }
+
+  .listHeader {
+    flex-wrap: wrap;
+  }
+
+  .companyCardH {
+    flex-wrap: wrap;
+  }
+
+  .cardHName {
+    max-width: 180px;
+  }
+
+  .cardHActions {
+    opacity: 1;
   }
 }

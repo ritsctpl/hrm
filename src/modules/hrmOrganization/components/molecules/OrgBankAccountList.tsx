@@ -17,9 +17,10 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
 }) => {
   return (
     <div>
-      <div className={styles.listHeader}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#1f1f1f' }}>Bank Accounts</span>
         {!disabled && (
-          <Button type="primary"  onClick={onAdd} size="small">
+          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
             Add Account
           </Button>
         )}

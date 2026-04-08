@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
-import { Tree, Select, Button, Spin, Empty } from 'antd';
-import { PlusOutlined, ApartmentOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Tree, Button, Spin, Empty, Tag } from 'antd';
+import { PlusOutlined, ApartmentOutlined, BankOutlined } from '@ant-design/icons';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import type { Department, DepartmentNode } from '../../types/domain.types';
+import type { Department, DepartmentNode, BusinessUnit } from '../../types/domain.types';
 import type { DepartmentTreeProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
@@ -14,18 +14,19 @@ interface AntTreeNode {
   title: React.ReactNode;
   children?: AntTreeNode[];
   isLeaf?: boolean;
+  selectable?: boolean;
 }
 
-function buildTreeData(nodes: DepartmentNode[]): AntTreeNode[] {
+function buildDeptNodes(nodes: DepartmentNode[]): AntTreeNode[] {
   return nodes.map((node) => ({
     key: node.handle,
     title: `${node.deptName} (${node.deptCode})`,
-    children: node.children && node.children.length > 0 ? buildTreeData(node.children) : undefined,
+    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children) : undefined,
     isLeaf: !node.children || node.children.length === 0,
   }));
 }
 
-function getAllKeys(nodes: DepartmentNode[]): string[] {
+function getAllDeptKeys(nodes: DepartmentNode[]): string[] {
   const keys: string[] = [];
   const traverse = (items: DepartmentNode[]) => {
     for (const item of items) {
@@ -37,6 +38,23 @@ function getAllKeys(nodes: DepartmentNode[]): string[] {
   return keys;
 }
 
+function filterDeptNodes(nodes: DepartmentNode[], searchLower: string): DepartmentNode[] {
+  return nodes.reduce<DepartmentNode[]>((acc, node) => {
+    const matches =
+      node.deptCode.toLowerCase().includes(searchLower) ||
+      node.deptName.toLowerCase().includes(searchLower);
+    const filteredChildren = node.children ? filterDeptNodes(node.children, searchLower) : [];
+
+    if (matches || filteredChildren.length > 0) {
+      acc.push({
+        ...node,
+        children: filteredChildren.length > 0 ? filteredChildren : node.children,
+      });
+    }
+    return acc;
+  }, []);
+}
+
 const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
   const {
     department,
@@ -45,79 +63,110 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     setDepartmentSelectedBu,
     setDepartmentExpandedKeys,
     fetchDepartments,
+    hierarchy: hierarchyState,
+    fetchHierarchy,
   } = useHrmOrganizationStore();
 
   const {
-    hierarchy,
     isLoading,
     searchText,
-    selectedBuHandle,
-    expandedKeys,
     selected,
+    expandedKeys,
   } = department;
 
-  const buOptions = useMemo(
-    () =>
-      businessUnit.list.map((bu) => ({
-        label: `${bu.buName} (${bu.buCode})`,
-        value: bu.handle,
-      })),
-    [businessUnit.list]
-  );
+  // Fetch hierarchy data (contains all BUs with their departments)
+  const [allBuDepts, setAllBuDepts] = useState<{ bu: BusinessUnit; depts: DepartmentNode[] }[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
 
-  // Filter hierarchy by search
-  const filteredHierarchy = useMemo(() => {
-    if (!searchText) return hierarchy;
-    const searchLower = searchText.toLowerCase();
+  useEffect(() => {
+    if (hierarchyState.data) {
+      const entries = (hierarchyState.data.businessUnits || []).map((entry) => ({
+        bu: entry.businessUnit,
+        depts: entry.departments || [],
+      }));
+      setAllBuDepts(entries);
+    } else {
+      setLoadingAll(true);
+      fetchHierarchy().finally(() => setLoadingAll(false));
+    }
+  }, [hierarchyState.data, fetchHierarchy]);
 
-    const filterNodes = (nodes: DepartmentNode[]): DepartmentNode[] => {
-      return nodes.reduce<DepartmentNode[]>((acc, node) => {
-        const matches =
-          node.deptCode.toLowerCase().includes(searchLower) ||
-          node.deptName.toLowerCase().includes(searchLower);
-        const filteredChildren = node.children
-          ? filterNodes(node.children)
-          : [];
+  // Build combined tree: BU → Departments grouped
+  const treeData = useMemo(() => {
+    const searchLower = searchText?.toLowerCase() || '';
 
-        if (matches || filteredChildren.length > 0) {
-          acc.push({
-            ...node,
-            children: filteredChildren.length > 0 ? filteredChildren : node.children,
-          });
-        }
-        return acc;
-      }, []);
-    };
+    return allBuDepts
+      .map(({ bu, depts }) => {
+        const filteredDepts = searchLower ? filterDeptNodes(depts, searchLower) : depts;
+        if (searchLower && filteredDepts.length === 0) return null;
 
-    return filterNodes(hierarchy);
-  }, [hierarchy, searchText]);
+        return {
+          key: `bu-${bu.handle}`,
+          title: (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <BankOutlined style={{ color: '#13c2c2', fontSize: 13 }} />
+              <strong>{bu.buName}</strong>
+              <Tag style={{ fontSize: 10, lineHeight: '16px', marginLeft: 4 }}>{bu.buCode}</Tag>
+              <span style={{ color: '#8c8c8c', fontSize: 11 }}>({filteredDepts.length} depts)</span>
+            </span>
+          ),
+          selectable: false,
+          children: buildDeptNodes(filteredDepts),
+        } as AntTreeNode;
+      })
+      .filter(Boolean) as AntTreeNode[];
+  }, [allBuDepts, searchText]);
 
-  const treeData = useMemo(() => buildTreeData(filteredHierarchy), [filteredHierarchy]);
+  // Collect all keys for expand-all when searching
+  const allKeys = useMemo(() => {
+    const keys: string[] = [];
+    allBuDepts.forEach(({ bu, depts }) => {
+      keys.push(`bu-${bu.handle}`);
+      keys.push(...getAllDeptKeys(depts));
+    });
+    return keys;
+  }, [allBuDepts]);
 
-  // Auto-expand all when searching
   const effectiveExpandedKeys = useMemo(() => {
-    if (searchText) return getAllKeys(filteredHierarchy);
+    if (searchText) return allKeys;
+    // Default: expand all BU-level nodes so departments are visible
+    if (expandedKeys.length === 0) return allBuDepts.map(({ bu }) => `bu-${bu.handle}`);
     return expandedKeys;
-  }, [searchText, filteredHierarchy, expandedKeys]);
+  }, [searchText, expandedKeys, allKeys, allBuDepts]);
 
-  const handleBuChange = useCallback(
-    (buHandle: string) => {
-      setDepartmentSelectedBu(buHandle);
-      fetchDepartments(buHandle);
-    },
-    [setDepartmentSelectedBu, fetchDepartments]
-  );
+  // Find all departments flat for selection lookup
+  const allDeptsList = useMemo(() => {
+    const list: Department[] = [];
+    const collect = (nodes: DepartmentNode[]) => {
+      nodes.forEach((n) => {
+        list.push(n);
+        if (n.children) collect(n.children);
+      });
+    };
+    allBuDepts.forEach(({ depts }) => collect(depts));
+    return list;
+  }, [allBuDepts]);
 
   const handleTreeSelect = useCallback(
     (selectedKeys: React.Key[]) => {
       if (selectedKeys.length === 0) return;
       const handle = selectedKeys[0] as string;
-      const dept = department.list.find((d) => d.handle === handle);
+      if (handle.startsWith('bu-')) return; // BU node — not selectable
+      const dept = allDeptsList.find((d) => d.handle === handle);
       if (dept) {
+        // Also set the BU context so save knows which BU
+        const parentBu = allBuDepts.find(({ depts }) => {
+          const findInDepts = (nodes: DepartmentNode[]): boolean =>
+            nodes.some((n) => n.handle === handle || (n.children && findInDepts(n.children)));
+          return findInDepts(depts);
+        });
+        if (parentBu) {
+          setDepartmentSelectedBu(parentBu.bu.handle);
+        }
         onSelect(dept);
       }
     },
-    [department.list, onSelect]
+    [allDeptsList, allBuDepts, onSelect, setDepartmentSelectedBu]
   );
 
   const handleExpand = useCallback(
@@ -127,50 +176,46 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     [setDepartmentExpandedKeys]
   );
 
+  const handleAdd = useCallback(() => {
+    // If only one BU, auto-select it for the new department
+    if (allBuDepts.length === 1) {
+      setDepartmentSelectedBu(allBuDepts[0].bu.handle);
+    }
+    onAdd();
+  }, [allBuDepts, setDepartmentSelectedBu, onAdd]);
+
+  const isLoadingAll = isLoading || loadingAll;
+
   return (
     <div className={mainStyles.treeContainer}>
       <div className={mainStyles.treeHeader}>
         <div className={mainStyles.treeHeaderLeft}>
           <ApartmentOutlined style={{ color: '#1890ff' }} />
           <span className={mainStyles.listTitle}>Departments</span>
+          {allBuDepts.length > 0 && (
+            <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+              {allBuDepts.length} BUs · {allDeptsList.length} Depts
+            </span>
+          )}
         </div>
-        <Button
-          type="primary"
-          onClick={onAdd}
-          disabled={!selectedBuHandle}
-          size="small"
-        >
-          +
+        <Button type="primary" onClick={handleAdd} size="small" icon={<PlusOutlined />}>
+          Add
         </Button>
-      </div>
-
-      <div className={mainStyles.buFilter}>
-        <Select
-          value={selectedBuHandle || undefined}
-          onChange={handleBuChange}
-          options={buOptions}
-          placeholder="Select Business Unit"
-          style={{ width: '100%', marginBottom: 12 }}
-          showSearch
-          optionFilterProp="label"
-        />
       </div>
 
       <OrgSearchBar
         value={searchText}
         onChange={setDepartmentSearch}
-        placeholder="Search departments..."
+        placeholder="Search departments across all BUs..."
       />
 
       <div style={{ marginTop: 12 }}>
-        {isLoading ? (
+        {isLoadingAll ? (
           <div className={mainStyles.loadingContainer}>
             <Spin size="default" />
           </div>
-        ) : !selectedBuHandle ? (
-          <Empty description="Select a Business Unit to view departments" />
         ) : treeData.length === 0 ? (
-          <Empty description="No departments found" />
+          <Empty description={searchText ? 'No departments match your search' : 'No departments found. Create business units first.'} />
         ) : (
           <Tree
             className={mainStyles.departmentTree}

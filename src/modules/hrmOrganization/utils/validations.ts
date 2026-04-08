@@ -44,24 +44,58 @@ export const validateCIN = (cin: string): string | null => {
   return null;
 };
 
-export const validateGSTIN = (gstin: string, pan?: string): string | null => {
-  // Only validate format if GSTIN has a value (not null or empty string)
+/** GSTIN state code → state name */
+const GSTIN_STATE_CODES: Record<string, string> = {
+  '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
+  '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana',
+  '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
+  '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
+  '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
+  '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam',
+  '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha',
+  '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+  '26': 'Dadra & Nagar Haveli', '27': 'Maharashtra', '29': 'Karnataka',
+  '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala',
+  '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman & Nicobar',
+  '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
+};
+
+const STATE_NAME_TO_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(GSTIN_STATE_CODES).map(([code, name]) => [name, code])
+);
+
+export const validateGSTIN = (gstin: string, pan?: string, state?: string): string | null => {
   if (!gstin || !gstin.trim()) {
-    return null; // Optional field - no error if empty
+    return null;
   }
-  if (!GSTIN_PATTERN.test(gstin.toUpperCase())) {
+  const g = gstin.toUpperCase();
+  if (!GSTIN_PATTERN.test(g)) {
     return 'GSTIN must be 15 characters (e.g., 33AABCA0633D1Z5)';
   }
-  
-  // If PAN is provided, validate that it matches the PAN embedded in GSTIN (positions 3-12)
+
+  // Validate state code (first 2 digits)
+  const stateCode = g.substring(0, 2);
+  if (!GSTIN_STATE_CODES[stateCode]) {
+    return `Invalid state code "${stateCode}" in GSTIN`;
+  }
+
+  // Cross-validate with selected state
+  if (state && state.trim()) {
+    const expectedCode = STATE_NAME_TO_CODE[state];
+    if (expectedCode && stateCode !== expectedCode) {
+      return `GSTIN state code (${stateCode} = ${GSTIN_STATE_CODES[stateCode]}) doesn't match selected state (${state})`;
+    }
+  }
+
+  // Cross-validate with PAN (characters 3-12)
   if (pan && pan.trim()) {
-    const gstinPan = gstin.substring(2, 12).toUpperCase(); // Extract PAN from GSTIN
+    const gstinPan = g.substring(2, 12);
     const enteredPan = pan.trim().toUpperCase();
     if (gstinPan !== enteredPan) {
       return `GSTIN contains PAN "${gstinPan}" which does not match entered PAN "${enteredPan}"`;
     }
   }
-  
+
   return null;
 };
 
@@ -96,8 +130,6 @@ export const validatePhone = (phone: string): string | null => {
 
 export const validateCompanyProfile = (data: any): Record<string, string> => {
   const errors: Record<string, string> = {};
-
-  console.log('Validating company profile:', data);
 
   // Required fields
   if (!data.legalName?.trim()) {
@@ -204,16 +236,17 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     errors.financialYearEndMonth = 'Financial Year End Month is required';
   }
 
-  console.log('Validation errors:', errors);
   return errors;
 };
 
-export const validateBusinessUnit = (data: any): Record<string, string> => {
+export const validateBusinessUnit = (data: any, existingCodes?: string[]): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   // Required fields
   if (!data.buCode?.trim()) {
     errors.buCode = 'BU Code is required';
+  } else if (existingCodes?.includes(data.buCode.trim().toUpperCase())) {
+    errors.buCode = 'A Business Unit with this code already exists';
   }
 
   if (!data.buName?.trim()) {
@@ -265,12 +298,14 @@ export const validateBusinessUnit = (data: any): Record<string, string> => {
   return errors;
 };
 
-export const validateLocation = (data: any): Record<string, string> => {
+export const validateLocation = (data: any, existingCodes?: string[]): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   // Required fields
   if (!data.code?.trim()) {
     errors.code = 'Location Code is required';
+  } else if (existingCodes?.includes(data.code.trim().toUpperCase())) {
+    errors.code = 'A Location with this code already exists';
   }
 
   if (!data.name?.trim()) {

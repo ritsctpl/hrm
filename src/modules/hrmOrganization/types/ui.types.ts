@@ -42,6 +42,12 @@ export interface CompanyListItem {
   officialPhone: string;
   active: number;
   createdDateTime?: string;
+  businessUnitCount?: number;
+  departmentCount?: number;
+  employeeCount?: number;
+  locationCount?: number;
+  logoUrl?: string;
+  logoBase64?: string;
 }
 
 // ============================================
@@ -90,7 +96,7 @@ export interface OrgStatusTagProps {
 }
 
 export interface OrgFieldLabelProps {
-  label: string;
+  label: React.ReactNode;
   required?: boolean;
 }
 
@@ -108,7 +114,7 @@ export interface OrgSearchBarProps {
 }
 
 export interface OrgFormFieldProps {
-  label: string;
+  label: React.ReactNode;
   required?: boolean;
   error?: string;
   children: React.ReactNode;

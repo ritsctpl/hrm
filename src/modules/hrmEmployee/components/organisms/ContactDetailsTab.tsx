@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Button, Input, Form, Divider, Select } from 'antd';
+import { Button, Input, Form, Divider, Select, message } from 'antd';
 import {
   EditOutlined,
   SaveOutlined,
@@ -104,8 +104,12 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
         emergencyContacts: values.emergencyContacts as EmergencyContact[],
       });
       setLocalEditing(false);
-    } catch {
-      // validation error
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error('Failed to save contact details. Please try again.');
+      }
     }
   };
 
@@ -330,7 +334,10 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
                         {...restField}
                         name={[name, 'phone']}
                         label="Phone"
-                        rules={[{ required: true, message: 'Phone required' }]}
+                        rules={[
+                          { required: true, message: 'Phone required' },
+                          { pattern: /^[\d\s\-\+\(\)]+$/, message: 'Invalid phone format' },
+                        ]}
                       >
                         <Input placeholder="Phone" />
                       </Form.Item>

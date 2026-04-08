@@ -26,7 +26,7 @@ export const useHrmPolicyData = () => {
   } = useHrmPolicyStore();
 
   const cookies = parseCookies();
-  const site = cookies.site ?? "RITS";
+  const site = cookies.site ?? "";
   const employeeId = cookies.userId ?? "";
 
   const loadCategories = useCallback(async () => {

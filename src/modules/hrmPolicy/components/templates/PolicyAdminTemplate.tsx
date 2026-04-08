@@ -23,8 +23,10 @@ interface PolicyAdminTemplateProps {
   onEdit: (policy: PolicyDocument) => void;
   onPublish: (policyId: string) => void;
   onArchive: (policyId: string) => void;
+  onDelete: (policyId: string) => void;
   onViewDetail: (policy: PolicyDocument) => void;
   onCreateNew: () => void;
+  onSupersede: () => void;
   onDrawerClose: () => void;
   onDrawerSaved: () => void;
   onSearch?: (text: string) => void;
@@ -48,8 +50,10 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   onEdit,
   onPublish,
   onArchive,
+  onDelete,
   onViewDetail,
   onCreateNew,
+  onSupersede,
   onDrawerClose,
   onDrawerSaved,
   onSearch,
@@ -147,9 +151,8 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       </Space>
       <Space>
         <Button onClick={onRefresh}>Go</Button>
-        <Button type="primary" onClick={onCreateNew}> 
-          New Policy
-        </Button>
+        <Button onClick={onSupersede}>Supersede Policy</Button>
+        <Button type="primary" onClick={onCreateNew}>New Policy</Button>
       </Space>
     </div>
     <PolicyAdminTable
@@ -158,6 +161,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       onEdit={onEdit}
       onPublish={onPublish}
       onArchive={onArchive}
+      onDelete={onDelete}
       onViewDetail={onViewDetail}
     />
     <PolicyFormDrawer

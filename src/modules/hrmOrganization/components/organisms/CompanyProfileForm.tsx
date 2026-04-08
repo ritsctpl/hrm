@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Button, Spin, message } from 'antd';
+import { Button, Spin, Skeleton, message } from 'antd';
 import { EditOutlined, CloseOutlined, CheckCircleOutlined, FileTextOutlined, BankOutlined, EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import CompanyIdentitySection from './CompanyIdentitySection';
 import CompanyStatutorySection from './CompanyStatutorySection';
@@ -47,13 +47,15 @@ const CompanyProfileForm: React.FC = () => {
     setCompanyEditing(false);
   }, [setCompanyEditing]);
 
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
   const handleSave = useCallback(async () => {
     try {
       await saveCompanyProfile();
-      
+
       const updatedState = get().companyProfile;
       const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
-      
+
       if (errorKeys.length > 0) {
         const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
         message.error(errorMessages);
@@ -61,6 +63,8 @@ const CompanyProfileForm: React.FC = () => {
         message.error(updatedState.errors._general);
       } else {
         message.success('Company profile saved successfully');
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 1500);
       }
     } catch {
       message.error('Failed to save company profile');
@@ -97,8 +101,13 @@ const CompanyProfileForm: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className={mainStyles.loadingContainer}>
-        <Spin size="large" tip="Loading company profile..." />
+      <div style={{ padding: 24 }}>
+        <Skeleton active title={{ width: '30%' }} paragraph={false} style={{ marginBottom: 16 }} />
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 8, padding: 16, marginBottom: 12, border: '1px solid #f0f0f0' }}>
+            <Skeleton active title={{ width: '20%' }} paragraph={{ rows: 3, width: ['60%', '80%', '40%'] }} />
+          </div>
+        ))}
       </div>
     );
   }
@@ -107,7 +116,23 @@ const CompanyProfileForm: React.FC = () => {
   const isDisabled = !isEditing && !isNew;
 
   return (
-    <div style={{ display: 'flex', gap: '0', height: '100%', minHeight: 0 }}>
+    <div style={{ display: 'flex', gap: '0', height: '100%', minHeight: 0, position: 'relative' }}>
+      {/* Save success flash */}
+      {showSaveSuccess && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(82, 196, 26, 0.08)',
+          zIndex: 50,
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeOut 1.5s ease forwards',
+        }}>
+          <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', opacity: 0.6 }} />
+        </div>
+      )}
       {/* Left Vertical Timeline - Fixed to content area */}
       <div style={{
         width: '220px',
@@ -122,8 +147,20 @@ const CompanyProfileForm: React.FC = () => {
         <div style={{ fontSize: '12px', fontWeight: '600', color: '#8c8c8c', marginBottom: '16px', textTransform: 'uppercase' }}>
           Sections
         </div>
-        
-        {SECTIONS.map((section, index) => (
+
+        {SECTIONS.map((section, index) => {
+          const d = companyProfile.draft || companyProfile.data;
+          const dr = d as Record<string, unknown> | null | undefined;
+          const sectionCompletion: Record<string, [number, number]> = {
+            identity: [['legalName', 'officialEmail', 'officialPhone'].filter(f => !!dr?.[f]).length, 3],
+            statutory: [['pan', 'tan', 'cin'].filter(f => !!dr?.[f]).length, 3],
+            addresses: [d?.registeredAddress?.line1 ? 1 : 0, 1],
+            bank: [Math.min(d?.bankAccounts?.length ?? 0, 1), 1],
+            financial: [['financialYearStartMonth', 'financialYearEndMonth'].filter(f => !!dr?.[f]).length, 2],
+          };
+          const [filled, total] = sectionCompletion[section.id] || [0, 1];
+          const pct = Math.round((filled / total) * 100);
+          return (
           <div key={section.id} style={{ position: 'relative', marginBottom: '4px' }}>
             {/* Timeline line */}
             {index < SECTIONS.length - 1 && (
@@ -183,20 +220,31 @@ const CompanyProfileForm: React.FC = () => {
                 {section.icon}
               </div>
 
-              {/* Title */}
-              <div style={{
-                fontSize: '12px',
-                fontWeight: activeSection === section.id ? '600' : '500',
-                color: activeSection === section.id ? '#1890ff' : '#666',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {section.title}
+              {/* Title + completion */}
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <div style={{
+                  fontSize: '12px',
+                  fontWeight: activeSection === section.id ? '600' : '500',
+                  color: activeSection === section.id ? '#1890ff' : '#666',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {section.title}
+                </div>
+                <div style={{
+                  fontSize: '10px',
+                  color: pct === 100 ? '#52c41a' : '#8c8c8c',
+                  fontWeight: pct === 100 ? 600 : 400,
+                  marginTop: 1,
+                }}>
+                  {pct}%
+                </div>
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Main Content - Offset by sidebar width */}
@@ -275,6 +323,31 @@ const CompanyProfileForm: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Save Button */}
+      {(isEditing || isNew) && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 100,
+        }}>
+          <Button
+            type="primary"
+            shape="circle"
+            size="large"
+            icon={<CheckCircleOutlined />}
+            loading={isSaving}
+            onClick={handleSave}
+            style={{
+              width: 48,
+              height: 48,
+              boxShadow: '0 4px 12px rgba(24, 144, 255, 0.4)',
+            }}
+            title={data ? 'Update' : 'Create'}
+          />
+        </div>
+      )}
     </div>
   );
 };
