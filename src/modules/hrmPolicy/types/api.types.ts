@@ -5,6 +5,8 @@ export interface GetPoliciesPayload {
   status?: PolicyStatus;
   documentType?: PolicyDocType;
   categoryHandle?: string;
+  sortBy?: string;
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface GetPolicyDetailPayload {

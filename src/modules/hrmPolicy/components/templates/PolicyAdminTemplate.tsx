@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Button, Space, Select, Input } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyAdminTable from "../organisms/PolicyAdminTable";
 import PolicyFormDrawer from "../organisms/PolicyFormDrawer";
@@ -32,6 +31,7 @@ interface PolicyAdminTemplateProps {
   onCategoryFilter?: (id: string) => void;
   onDocTypeFilter?: (type: string) => void;
   onStatusFilter?: (status: string) => void;
+  onRefresh?: () => void;
 }
 
 const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
@@ -56,19 +56,30 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   onCategoryFilter,
   onDocTypeFilter,
   onStatusFilter,
+  onRefresh,
 }) => {
-  // Client-side filtering by search text
+  // Client-side filtering and sorting
   const filteredPolicies = React.useMemo(() => {
-    if (!searchText || searchText.trim() === '') {
-      return policies;
+    let result = policies;
+    
+    // Apply search filter
+    if (searchText && searchText.trim() !== '') {
+      const searchLower = searchText.toLowerCase().trim();
+      result = result.filter(policy => 
+        policy.title?.toLowerCase().includes(searchLower) ||
+        policy.description?.toLowerCase().includes(searchLower) ||
+        policy.policyCode?.toLowerCase().includes(searchLower)
+      );
     }
     
-    const searchLower = searchText.toLowerCase().trim();
-    return policies.filter(policy => 
-      policy.title?.toLowerCase().includes(searchLower) ||
-      policy.description?.toLowerCase().includes(searchLower) ||
-      policy.policyCode?.toLowerCase().includes(searchLower)
-    );
+    // Sort by publishedDateTime (newest first)
+    result = [...result].sort((a, b) => {
+      const dateA = a.publishedDateTime ? new Date(a.publishedDateTime).getTime() : 0;
+      const dateB = b.publishedDateTime ? new Date(b.publishedDateTime).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    return result;
   }, [policies, searchText]);
 
   return (
@@ -134,9 +145,12 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
           </Select>
         )}
       </Space>
-      <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
-        New Policy
-      </Button>
+      <Space>
+        <Button onClick={onRefresh}>Go</Button>
+        <Button type="primary" onClick={onCreateNew}> 
+          New Policy
+        </Button>
+      </Space>
     </div>
     <PolicyAdminTable
       policies={filteredPolicies}

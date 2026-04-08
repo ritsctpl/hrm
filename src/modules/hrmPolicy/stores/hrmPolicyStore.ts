@@ -26,10 +26,17 @@ interface HrmPolicyState {
   showPolicyViewer: boolean;
   showFormDrawer: boolean;
   editPolicy: PolicyDocument | null;
-  searchText: string;
-  filterCategoryId: string;
-  filterDocType: string;
-  filterStatus: string;
+  
+  // Library tab filters
+  librarySearchText: string;
+  libraryFilterCategoryId: string;
+  libraryFilterDocType: string;
+  
+  // Admin tab filters
+  adminSearchText: string;
+  adminFilterCategoryId: string;
+  adminFilterDocType: string;
+  adminFilterStatus: string;
 
   // Loading/action states
   acknowledging: boolean;
@@ -56,10 +63,18 @@ interface HrmPolicyState {
   closePolicyViewer: () => void;
   openFormDrawer: (policy?: PolicyDocument | null) => void;
   closeFormDrawer: () => void;
-  setSearchText: (text: string) => void;
-  setFilterCategoryId: (id: string) => void;
-  setFilterDocType: (type: string) => void;
-  setFilterStatus: (status: string) => void;
+  
+  // Library tab filter actions
+  setLibrarySearchText: (text: string) => void;
+  setLibraryFilterCategoryId: (id: string) => void;
+  setLibraryFilterDocType: (type: string) => void;
+  
+  // Admin tab filter actions
+  setAdminSearchText: (text: string) => void;
+  setAdminFilterCategoryId: (id: string) => void;
+  setAdminFilterDocType: (type: string) => void;
+  setAdminFilterStatus: (status: string) => void;
+  
   setAcknowledging: (v: boolean) => void;
   setPublishing: (v: boolean) => void;
   setArchiving: (v: boolean) => void;
@@ -81,14 +96,22 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   ackReport: null,
   ackReportLoading: false,
   activeTab: "library",
-  viewMode: "grid",
+  viewMode: "list",
   showPolicyViewer: false,
   showFormDrawer: false,
   editPolicy: null,
-  searchText: "",
-  filterCategoryId: "",
-  filterDocType: "",
-  filterStatus: "PUBLISHED",
+  
+  // Library tab filters
+  librarySearchText: "",
+  libraryFilterCategoryId: "",
+  libraryFilterDocType: "",
+  
+  // Admin tab filters
+  adminSearchText: "",
+  adminFilterCategoryId: "",
+  adminFilterDocType: "",
+  adminFilterStatus: "",
+  
   acknowledging: false,
   publishing: false,
   archiving: false,
@@ -112,10 +135,18 @@ export const useHrmPolicyStore = create<HrmPolicyState>((set) => ({
   closePolicyViewer: () => set({ showPolicyViewer: false, selectedPolicy: null }),
   openFormDrawer: (policy = null) => set({ showFormDrawer: true, editPolicy: policy }),
   closeFormDrawer: () => set({ showFormDrawer: false, editPolicy: null }),
-  setSearchText: (searchText) => set({ searchText }),
-  setFilterCategoryId: (filterCategoryId) => set({ filterCategoryId }),
-  setFilterDocType: (filterDocType) => set({ filterDocType }),
-  setFilterStatus: (filterStatus) => set({ filterStatus }),
+  
+  // Library tab filter setters
+  setLibrarySearchText: (librarySearchText) => set({ librarySearchText }),
+  setLibraryFilterCategoryId: (libraryFilterCategoryId) => set({ libraryFilterCategoryId }),
+  setLibraryFilterDocType: (libraryFilterDocType) => set({ libraryFilterDocType }),
+  
+  // Admin tab filter setters
+  setAdminSearchText: (adminSearchText) => set({ adminSearchText }),
+  setAdminFilterCategoryId: (adminFilterCategoryId) => set({ adminFilterCategoryId }),
+  setAdminFilterDocType: (adminFilterDocType) => set({ adminFilterDocType }),
+  setAdminFilterStatus: (adminFilterStatus) => set({ adminFilterStatus }),
+  
   setAcknowledging: (acknowledging) => set({ acknowledging }),
   setPublishing: (publishing) => set({ publishing }),
   setArchiving: (archiving) => set({ archiving }),

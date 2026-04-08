@@ -8,10 +8,11 @@ import { useHrmPolicyStore } from "../stores/hrmPolicyStore";
 
 export const useHrmPolicyData = () => {
   const {
-    searchText,
-    filterCategoryId,
-    filterDocType,
-    filterStatus,
+    libraryFilterCategoryId,
+    libraryFilterDocType,
+    adminFilterCategoryId,
+    adminFilterDocType,
+    adminFilterStatus,
     setPolicies,
     setPoliciesLoading,
     setCategories,
@@ -45,9 +46,11 @@ export const useHrmPolicyData = () => {
     try {
       const data = await HrmPolicyService.getPolicies({
         site,
-        categoryHandle: filterCategoryId || undefined,
-        documentType: filterDocType as never || undefined,
-        status: filterStatus as never || undefined,
+        categoryHandle: libraryFilterCategoryId || undefined,
+        documentType: libraryFilterDocType as never || undefined,
+        status: "PUBLISHED" as never,  // Library always shows Published
+        sortBy: "publishedDateTime",
+        sortOrder: "DESC",
       });
       setPolicies(data);
     } catch {
@@ -55,16 +58,18 @@ export const useHrmPolicyData = () => {
     } finally {
       setPoliciesLoading(false);
     }
-  }, [site, filterCategoryId, filterDocType, filterStatus]);
+  }, [site, libraryFilterCategoryId, libraryFilterDocType]);
 
   const loadAdminPolicies = useCallback(async () => {
     setAdminPoliciesLoading(true);
     try {
       const data = await HrmPolicyService.getPolicies({ 
         site,
-        categoryHandle: filterCategoryId || undefined,
-        documentType: filterDocType as never || undefined,
-        status: filterStatus as never || undefined,
+        categoryHandle: adminFilterCategoryId || undefined,
+        documentType: adminFilterDocType as never || undefined,
+        status: adminFilterStatus as never || undefined,
+        sortBy: "publishedDateTime",
+        sortOrder: "DESC",
       });
       setAdminPolicies(data);
     } catch {
@@ -72,7 +77,7 @@ export const useHrmPolicyData = () => {
     } finally {
       setAdminPoliciesLoading(false);
     }
-  }, [site, filterCategoryId, filterDocType, filterStatus]);
+  }, [site, adminFilterCategoryId, adminFilterDocType, adminFilterStatus]);
 
   const loadVersionHistory = useCallback(async (policyHandle: string) => {
     setVersionHistoryLoading(true);

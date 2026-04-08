@@ -2,10 +2,10 @@
 
 import React from "react";
 import { Space, Select, Input, Button, Segmented } from "antd";
-import { AppstoreOutlined, BarsOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
-import PolicyLibraryGrid from "../organisms/PolicyLibraryGrid";
 import PolicyLibraryList from "../organisms/PolicyLibraryList";
+import PolicyLibraryGrid from "../organisms/PolicyLibraryGrid";
 import styles from "../../styles/PolicyLanding.module.css";
 
 const { Option } = Select;
@@ -17,7 +17,6 @@ interface PolicyLibraryTemplateProps {
   viewMode: "grid" | "list";
   filterCategoryId: string;
   filterDocType: string;
-  filterStatus: string;
   searchText: string;
   canAdmin: boolean;
   onPolicyClick: (policy: PolicyDocument) => void;
@@ -25,7 +24,6 @@ interface PolicyLibraryTemplateProps {
   onSearch: (text: string) => void;
   onCategoryFilter: (id: string) => void;
   onDocTypeFilter: (type: string) => void;
-  onStatusFilter: (status: string) => void;
   onCreatePolicy: () => void;
 }
 
@@ -36,7 +34,6 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
   viewMode,
   filterCategoryId,
   filterDocType,
-  filterStatus,
   searchText,
   canAdmin,
   onPolicyClick,
@@ -44,21 +41,30 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
   onSearch,
   onCategoryFilter,
   onDocTypeFilter,
-  onStatusFilter,
   onCreatePolicy,
 }) => {
   // Client-side filtering by search text
   const filteredPolicies = React.useMemo(() => {
-    if (!searchText || searchText.trim() === '') {
-      return policies;
+    let result = policies;
+    
+    // Apply search filter
+    if (searchText && searchText.trim() !== '') {
+      const searchLower = searchText.toLowerCase().trim();
+      result = result.filter(policy => 
+        policy.title?.toLowerCase().includes(searchLower) ||
+        policy.description?.toLowerCase().includes(searchLower) ||
+        policy.policyCode?.toLowerCase().includes(searchLower)
+      );
     }
     
-    const searchLower = searchText.toLowerCase().trim();
-    return policies.filter(policy => 
-      policy.title?.toLowerCase().includes(searchLower) ||
-      policy.description?.toLowerCase().includes(searchLower) ||
-      policy.policyCode?.toLowerCase().includes(searchLower)
-    );
+    // Sort by publishedDateTime (newest first)
+    result = [...result].sort((a, b) => {
+      const dateA = a.publishedDateTime ? new Date(a.publishedDateTime).getTime() : 0;
+      const dateB = b.publishedDateTime ? new Date(b.publishedDateTime).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    return result;
   }, [policies, searchText]);
 
   return (
@@ -100,30 +106,41 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
           <Option value="GUIDELINE">Guideline</Option>
           <Option value="CODE_OF_CONDUCT">Code of Conduct</Option>
         </Select>
-        <Select
-          placeholder="Status"
-          aria-label="Filter by policy status"
-          value={filterStatus || undefined}
-          allowClear
-          onChange={(v) => onStatusFilter(v || "")}
-          style={{ width: 130 }}
-        >
-          <Option value="PUBLISHED">Published</Option>
-          <Option value="DRAFT">Draft</Option>
-          <Option value="REVIEW">Under Review</Option>
-          <Option value="APPROVED">Approved</Option>
-          <Option value="RETIRED">Retired</Option>
-          <Option value="SUPERSEDED">Superseded</Option>
-        </Select>
       </Space>
       <Space>
         <Segmented
-          aria-label="Toggle between grid and list view"
           value={viewMode}
           onChange={(v) => onViewModeChange(v as "grid" | "list")}
+          size="middle"
           options={[
-            { value: "grid", icon: <AppstoreOutlined />, label: "Grid view" },
-            { value: "list", icon: <BarsOutlined />, label: "List view" },
+            { 
+              value: "list", 
+              icon: (
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  height: "100%",
+                  width: "100%"
+                }}>
+                  <p>List View</p>
+                </div>
+              )
+            },
+            { 
+              value: "grid", 
+              icon: (
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  height: "100%",
+                  width: "100%"
+                }}>
+                  <p>Grid View</p>
+                </div>
+              )
+            },
           ]}
         />
         {canAdmin && (

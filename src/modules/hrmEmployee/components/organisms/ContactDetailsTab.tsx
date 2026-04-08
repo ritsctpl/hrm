@@ -38,21 +38,39 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
   const { contactDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>(contactDetails.country || '');
+  const [presentCountry, setPresentCountry] = useState<string>('');
+  const [permanentCountry, setPermanentCountry] = useState<string>('');
 
   // Sync with parent isEditing state - enter edit mode when parent says to
   React.useEffect(() => {
     if (isEditing && editingSection === 'contact') {
       setLocalEditing(true);
+      // Initialize country states
+      const presentAddr = contactDetails.presentAddress;
+      const permAddr = contactDetails.permanentAddress;
+      
+      if (typeof presentAddr === 'object' && presentAddr) {
+        setPresentCountry(presentAddr.country || '');
+      } else {
+        setPresentCountry(contactDetails.country || '');
+      }
+      
+      if (typeof permAddr === 'object' && permAddr) {
+        setPermanentCountry(permAddr.country || '');
+      }
     } else {
       setLocalEditing(false);
     }
-  }, [isEditing, editingSection]);
+  }, [isEditing, editingSection, contactDetails]);
 
-  const handleCountryChange = (value: string) => {
-    setSelectedCountry(value);
-    // Reset state when country changes
-    form.setFieldValue('state', undefined);
+  const handlePresentCountryChange = (value: string) => {
+    setPresentCountry(value);
+    form.setFieldValue('presentState', undefined);
+  };
+
+  const handlePermanentCountryChange = (value: string) => {
+    setPermanentCountry(value);
+    form.setFieldValue('permanentState', undefined);
   };
 
   const handleSave = async () => {
@@ -60,23 +78,23 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
       const values = await form.validateFields();
       
       // Build nested address objects for API
-      const presentAddress = values.presentAddress || values.city || values.state || values.country || values.pinZip
+      const presentAddress = values.presentAddress || values.presentCity || values.presentState || values.presentCountry || values.presentPinZip
         ? {
             address: values.presentAddress || '',
-            city: values.city || '',
-            state: values.state || '',
-            country: values.country || '',
-            pinZip: values.pinZip || '',
+            city: values.presentCity || '',
+            state: values.presentState || '',
+            country: values.presentCountry || '',
+            pinZip: values.presentPinZip || '',
           }
         : undefined;
 
-      const permanentAddress = values.permanentAddress || values.permCity || values.permState || values.permCountry || values.permPinZip
+      const permanentAddress = values.permanentAddress || values.permanentCity || values.permanentState || values.permanentCountry || values.permanentPinZip
         ? {
             address: values.permanentAddress || '',
-            city: values.permCity || '',
-            state: values.permState || '',
-            country: values.permCountry || '',
-            pinZip: values.permPinZip || '',
+            city: values.permanentCity || '',
+            state: values.permanentState || '',
+            country: values.permanentCountry || '',
+            pinZip: values.permanentPinZip || '',
           }
         : undefined;
 
@@ -95,13 +113,15 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
     save: handleSave,
     cancel: () => {
       setLocalEditing(false);
-      setSelectedCountry(contactDetails.country || '');
+      setPresentCountry('');
+      setPermanentCountry('');
       form.resetFields();
     },
   }));
 
   const editing = localEditing;
-  const stateOptions = selectedCountry ? (COUNTRY_STATE_MAP[selectedCountry] || []) : [];
+  const presentStateOptions = presentCountry ? (COUNTRY_STATE_MAP[presentCountry] || []) : [];
+  const permanentStateOptions = permanentCountry ? (COUNTRY_STATE_MAP[permanentCountry] || []) : [];
 
   if (editing) {
     // Extract address strings from nested objects for form initialization
@@ -113,21 +133,37 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
       ? contactDetails.permanentAddress.address
       : contactDetails.permanentAddress || '';
 
-    const city = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    const presentCity = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
       ? contactDetails.presentAddress.city
       : contactDetails.city || '';
 
-    const state = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    const presentState = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
       ? contactDetails.presentAddress.state
       : contactDetails.state || '';
 
-    const country = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    const presentCountryVal = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
       ? contactDetails.presentAddress.country
       : contactDetails.country || '';
 
-    const pinZip = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
+    const presentPinZip = typeof contactDetails.presentAddress === 'object' && contactDetails.presentAddress
       ? contactDetails.presentAddress.pinZip
       : contactDetails.pinZip || '';
+
+    const permanentCity = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+      ? contactDetails.permanentAddress.city
+      : '';
+
+    const permanentState = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+      ? contactDetails.permanentAddress.state
+      : '';
+
+    const permanentCountryVal = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+      ? contactDetails.permanentAddress.country
+      : '';
+
+    const permanentPinZip = typeof contactDetails.permanentAddress === 'object' && contactDetails.permanentAddress
+      ? contactDetails.permanentAddress.pinZip
+      : '';
 
     return (
       <div className={styles.tabContent}>
@@ -136,43 +172,38 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
           layout="vertical"
           initialValues={{
             presentAddress: presentAddr,
+            presentCity: presentCity,
+            presentState: presentState,
+            presentCountry: presentCountryVal,
+            presentPinZip: presentPinZip,
             permanentAddress: permanentAddr,
-            city: city,
-            state: state,
-            country: country,
-            pinZip: pinZip,
+            permanentCity: permanentCity,
+            permanentState: permanentState,
+            permanentCountry: permanentCountryVal,
+            permanentPinZip: permanentPinZip,
             emergencyContacts: contactDetails.emergencyContacts || [],
           }}
         >
-          {/* Present Address */}
+          {/* Present Address Section */}
+          <Divider orientation="left" style={{ fontSize: 13, marginTop: 0 }}>
+            Present Address
+          </Divider>
           <div style={{ marginBottom: 16 }}>
             <Form.Item
               name="presentAddress"
-              label="Present Address"
+              label="Address"
               rules={[{ required: false }]}
             >
-              <Input.TextArea rows={3} placeholder="Enter present address" />
+              <Input.TextArea rows={2} placeholder="Enter present address" />
             </Form.Item>
           </div>
 
-          {/* Permanent Address */}
-          <div style={{ marginBottom: 16 }}>
-            <Form.Item
-              name="permanentAddress"
-              label="Permanent Address"
-              rules={[{ required: false }]}
-            >
-              <Input.TextArea rows={3} placeholder="Enter permanent address" />
-            </Form.Item>
-          </div>
-
-          {/* City, Country, State, PIN */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <Form.Item name="city" label="City">
+            <Form.Item name="presentCity" label="City">
               <Input placeholder="City" />
             </Form.Item>
             <Form.Item
-              name="country"
+              name="presentCountry"
               label="Country"
               rules={[{ required: false }]}
             >
@@ -182,26 +213,79 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
                   value: country,
                   label: country,
                 }))}
-                onChange={handleCountryChange}
+                onChange={handlePresentCountryChange}
                 allowClear
               />
             </Form.Item>
             <Form.Item
-              name="state"
+              name="presentState"
               label="State/Province"
               rules={[{ required: false }]}
             >
               <Select
-                placeholder={selectedCountry ? 'Select state' : 'Select country first'}
-                options={stateOptions.map((state) => ({
+                placeholder={presentCountry ? 'Select state' : 'Select country first'}
+                options={presentStateOptions.map((state) => ({
                   value: state,
                   label: state,
                 }))}
-                disabled={!selectedCountry}
+                disabled={!presentCountry}
                 allowClear
               />
             </Form.Item>
-            <Form.Item name="pinZip" label="PIN/ZIP Code">
+            <Form.Item name="presentPinZip" label="PIN/ZIP Code">
+              <Input placeholder="PIN/ZIP Code" />
+            </Form.Item>
+          </div>
+
+          {/* Permanent Address Section */}
+          <Divider orientation="left" style={{ fontSize: 13 }}>
+            Permanent Address
+          </Divider>
+          <div style={{ marginBottom: 16 }}>
+            <Form.Item
+              name="permanentAddress"
+              label="Address"
+              rules={[{ required: false }]}
+            >
+              <Input.TextArea rows={2} placeholder="Enter permanent address" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <Form.Item name="permanentCity" label="City">
+              <Input placeholder="City" />
+            </Form.Item>
+            <Form.Item
+              name="permanentCountry"
+              label="Country"
+              rules={[{ required: false }]}
+            >
+              <Select
+                placeholder="Select country"
+                options={COUNTRY_OPTIONS.map((country) => ({
+                  value: country,
+                  label: country,
+                }))}
+                onChange={handlePermanentCountryChange}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item
+              name="permanentState"
+              label="State/Province"
+              rules={[{ required: false }]}
+            >
+              <Select
+                placeholder={permanentCountry ? 'Select state' : 'Select country first'}
+                options={permanentStateOptions.map((state) => ({
+                  value: state,
+                  label: state,
+                }))}
+                disabled={!permanentCountry}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item name="permanentPinZip" label="PIN/ZIP Code">
               <Input placeholder="PIN/ZIP Code" />
             </Form.Item>
           </div>

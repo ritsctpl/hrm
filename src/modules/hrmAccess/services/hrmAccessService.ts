@@ -244,9 +244,14 @@ export class HrmAccessService {
 
   static async fetchEffectivePermissions(
     site: string,
-    userId: string
+    userId: string,
+    moduleCode?: string
   ): Promise<EffectivePermissionsResponse> {
-    const res = await api.post(`${BASE}/effectivePermissions`, { site, userId });
+    const payload: any = { site, userId };
+    if (moduleCode) {
+      payload.moduleCode = moduleCode;
+    }
+    const res = await api.post(`${BASE}/effectivePermissions`, payload);
     return res.data;
   }
 

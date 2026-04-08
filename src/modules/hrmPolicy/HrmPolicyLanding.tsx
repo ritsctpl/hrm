@@ -7,6 +7,8 @@ import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmPolicyStore } from "./stores/hrmPolicyStore";
 import { HrmPolicyService } from "./services/hrmPolicyService";
 import { useHrmPolicyData } from "./hooks/useHrmPolicyData";
+import { usePolicyPermissions } from "./hooks/usePolicyPermissions";
+import { usePermissionsStore } from "@/stores/permissionsStore";
 import PolicyLibraryTemplate from "./components/templates/PolicyLibraryTemplate";
 import PolicyAdminTemplate from "./components/templates/PolicyAdminTemplate";
 import PolicyFormDrawer from "./components/organisms/PolicyFormDrawer";
@@ -18,8 +20,12 @@ import styles from "./styles/PolicyLanding.module.css";
 const HrmPolicyLanding: React.FC = () => {
   const cookies = parseCookies();
   const site = cookies.site ?? "RITS";
+  const userId = cookies.rl_user_id ?? "system";  // ← Use rl_user_id instead of userId
   const role = cookies.userRole ?? "EMPLOYEE";
   const canAdmin = POLICY_HR_ROLES.includes(role);
+
+  const { fetchEffectivePermissions } = usePermissionsStore();
+  const permissions = usePolicyPermissions();
 
   const {
     policies,
@@ -34,10 +40,13 @@ const HrmPolicyLanding: React.FC = () => {
     editPolicy,
     activeTab,
     viewMode,
-    searchText,
-    filterCategoryId,
-    filterDocType,
-    filterStatus,
+    librarySearchText,
+    libraryFilterCategoryId,
+    libraryFilterDocType,
+    adminSearchText,
+    adminFilterCategoryId,
+    adminFilterDocType,
+    adminFilterStatus,
     publishing,
     archiving,
     setActiveTab,
@@ -46,10 +55,13 @@ const HrmPolicyLanding: React.FC = () => {
     closePolicyViewer,
     openFormDrawer,
     closeFormDrawer,
-    setSearchText,
-    setFilterCategoryId,
-    setFilterDocType,
-    setFilterStatus,
+    setLibrarySearchText,
+    setLibraryFilterCategoryId,
+    setLibraryFilterDocType,
+    setAdminSearchText,
+    setAdminFilterCategoryId,
+    setAdminFilterDocType,
+    setAdminFilterStatus,
     setPublishing,
     setArchiving,
     setSelectedPolicy,
@@ -57,6 +69,11 @@ const HrmPolicyLanding: React.FC = () => {
   } = useHrmPolicyStore();
 
   const { loadCategories, loadPolicies, loadAdminPolicies } = useHrmPolicyData();
+
+  // Fetch effective permissions when module loads
+  useEffect(() => {
+    fetchEffectivePermissions(site, userId, 'HRM_POLICY');
+  }, [site, userId]);
 
   // Fetch full policy details when opening viewer
   const handlePolicyClick = async (policy: PolicyDocument) => {
@@ -81,13 +98,13 @@ const HrmPolicyLanding: React.FC = () => {
 
   useEffect(() => {
     loadPolicies();
-  }, [filterCategoryId, filterDocType, filterStatus]);
+  }, [libraryFilterCategoryId, libraryFilterDocType]);
 
   useEffect(() => {
     if (activeTab === "admin" && canAdmin) {
       loadAdminPolicies();
     }
-  }, [activeTab, filterCategoryId, filterDocType, filterStatus]);
+  }, [activeTab, adminFilterCategoryId, adminFilterDocType, adminFilterStatus]);
 
   const handlePublish = async (policyHandle: string) => {
     setPublishing(true);
@@ -185,17 +202,15 @@ const HrmPolicyLanding: React.FC = () => {
           categories={categories}
           loading={policiesLoading}
           viewMode={viewMode}
-          filterCategoryId={filterCategoryId}
-          filterDocType={filterDocType}
-          filterStatus={filterStatus}
-          searchText={searchText}
-          canAdmin={canAdmin}
+          filterCategoryId={libraryFilterCategoryId}
+          filterDocType={libraryFilterDocType}
+          searchText={librarySearchText}
+          canAdmin={permissions.canCreatePolicy}
           onPolicyClick={handlePolicyClick}
           onViewModeChange={setViewMode}
-          onSearch={setSearchText}
-          onCategoryFilter={setFilterCategoryId}
-          onDocTypeFilter={setFilterDocType}
-          onStatusFilter={setFilterStatus}
+          onSearch={setLibrarySearchText}
+          onCategoryFilter={setLibraryFilterCategoryId}
+          onDocTypeFilter={setLibraryFilterDocType}
           onCreatePolicy={() => openFormDrawer()}
         />
       ),
@@ -214,10 +229,10 @@ const HrmPolicyLanding: React.FC = () => {
           showFormDrawer={showFormDrawer}
           editPolicy={editPolicy}
           site={site}
-          searchText={searchText}
-          filterCategoryId={filterCategoryId}
-          filterDocType={filterDocType}
-          filterStatus={filterStatus}
+          searchText={adminSearchText}
+          filterCategoryId={adminFilterCategoryId}
+          filterDocType={adminFilterDocType}
+          filterStatus={adminFilterStatus}
           onEdit={(policy: PolicyDocument) => openFormDrawer(policy)}
           onPublish={handlePublish}
           onArchive={handleArchive}
@@ -225,10 +240,11 @@ const HrmPolicyLanding: React.FC = () => {
           onCreateNew={() => openFormDrawer()}
           onDrawerClose={closeFormDrawer}
           onDrawerSaved={handleAdminDrawerSaved}
-          onSearch={setSearchText}
-          onCategoryFilter={setFilterCategoryId}
-          onDocTypeFilter={setFilterDocType}
-          onStatusFilter={setFilterStatus}
+          onSearch={setAdminSearchText}
+          onCategoryFilter={setAdminFilterCategoryId}
+          onDocTypeFilter={setAdminFilterDocType}
+          onStatusFilter={setAdminFilterStatus}
+          onRefresh={loadAdminPolicies}
         />
       ),
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Table, Space, Button, Popconfirm } from "antd";
+import { Table, Space, Button, Popconfirm, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined } from "@ant-design/icons";
 import { PolicyDocument } from "../../types/domain.types";
@@ -72,13 +72,28 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           : "-",
     },
     {
+      title: "Published",
+      dataIndex: "publishedDateTime",
+      key: "publishedDateTime",
+      width: 110,
+      defaultSortOrder: "descend",
+      render: (date) =>
+        date
+          ? new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+          : "-",
+    },
+    {
       title: "Actions",
       key: "actions",
       width: 140,
       render: (_, record) => (
         <Space size={4}>
-          <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
-          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+          <Tooltip title="View Details">
+            <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
+          </Tooltip>
+          <Tooltip title="Edit Policy">
+            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+          </Tooltip>
           {record.status === "DRAFT" && (
             <Popconfirm
               title="Submit for review?"
@@ -86,7 +101,9 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
               onConfirm={() => onPublish(record.handle)}
               okText="Submit"
             >
-              <Button size="small" icon={<CheckCircleOutlined />}  />
+              <Tooltip title="Submit for Review">
+                <Button size="small" icon={<CheckCircleOutlined />}  />
+              </Tooltip>
             </Popconfirm>
           )}
           {record.status === "REVIEW" && (
@@ -96,7 +113,9 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
               onConfirm={() => onPublish(record.handle)}
               okText="Approve"
             >
-              <Button size="small" icon={<CheckCircleOutlined />} />
+              <Tooltip title="Approve Policy">
+                <Button size="small" icon={<CheckCircleOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
           {record.status === "APPROVED" && (
@@ -106,17 +125,23 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
               onConfirm={() => onPublish(record.handle)}
               okText="Publish"
             >
-              <Button size="small" icon={<CheckCircleOutlined />} type="primary" />
+              <Tooltip title="Publish Policy">
+                <Button size="small" icon={<CheckCircleOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
           {record.status === "PUBLISHED" && (
             <Popconfirm
-              title="Archive this policy?"
+              title="Are you sure you want to retire this policy?"
+              description="This action will change the policy status to RETIRED."
               onConfirm={() => onArchive(record.handle)}
-              okText="Archive"
+              okText="Yes, Retire"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button size="small" icon={<StopOutlined />} danger />
+              <Tooltip title="Retire Policy">
+                <Button size="small" icon={<StopOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
