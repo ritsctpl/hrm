@@ -219,7 +219,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           moduleCategory: values.moduleCategory,
           description: values.description || '',
           defaultPermissionObjects: values.defaultPermissionObjects || [],
-          url: values.url || '',
+          appUrl: values.appUrl || '',
           type: values.type || 'CORE',
           isActive: values.isActive !== false,
           createdBy: user?.id ?? 'system',
@@ -299,9 +299,10 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       width: '10%',
     },
     {
-      title: 'URL',
-      dataIndex: 'url',
-      render: (url: string) => url || '-',
+      title: 'App URL',
+      dataIndex: 'appUrl',
+      key: 'appUrl',
+      render: (appUrl: string) => appUrl || '-',
       width: '18%',
       ellipsis: true,
     },
@@ -337,7 +338,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
                 moduleCategory: record.moduleCategory,
                 description: record.description || '',
                 defaultPermissionObjects: record.defaultPermissionObjects || [],
-                url: (record as any).url || '',
+                appUrl: (record as any).appUrl || '',
                 type: (record as any).type || 'CORE',
                 isActive: record.isActive,
               });
@@ -450,8 +451,8 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             <Input.TextArea rows={3} placeholder="Manages employee attendance and shifts" />
           </Form.Item>
           <Form.Item 
-            name="url" 
-            label="URL" 
+            name="appUrl" 
+            label="App URL" 
             rules={[
               {
                 pattern: /^(\/[\w\-\/]*|\w+:\/\/.+)$/,
