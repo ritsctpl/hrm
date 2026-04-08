@@ -6,6 +6,7 @@ import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import { assetFormRules } from '../../utils/assetValidations';
 import type { Asset } from '../../types/domain.types';
 
@@ -24,6 +25,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
     setAssets,
     updateAssetInList,
   } = useHrmAssetStore();
+  const { loadAssets } = useHrmAssetData();
   const [form] = Form.useForm();
 
   const isEdit = !!editAsset;
@@ -70,13 +72,10 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         updateAssetInList(res.assetId, res as Partial<Asset>);
         message.success('Asset updated');
       } else {
-        const newAsset: Asset = {
-          ...res,
-          attributes: res.attributes ?? [],
-          attachments: res.attachments ?? [],
-        };
-        setAssets([newAsset, ...assets]);
         message.success('Asset created');
+        handleClose();
+        await loadAssets();
+        return;
       }
       handleClose();
     } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { Input, Select, DatePicker } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
@@ -32,6 +32,13 @@ interface Props {
 const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
   const { searchTerm, statusFilter, typeFilter, setSearchTerm, setStatusFilter, setTypeFilter, setDateRange } =
     useHrmTravelStore();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onSearch?.(), 400);
+  };
 
   return (
     <div className={styles.toolbar}>
@@ -39,10 +46,11 @@ const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
         prefix={<SearchOutlined />}
         placeholder="Search by purpose / destination..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => handleSearchChange(e.target.value)}
         onPressEnter={onSearch}
         style={{ width: 280 }}
         allowClear
+        onClear={() => { setSearchTerm(""); onSearch?.(); }}
       />
       <Select
         value={statusFilter ?? ""}

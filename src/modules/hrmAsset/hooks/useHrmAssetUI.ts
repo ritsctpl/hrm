@@ -18,7 +18,10 @@ export function useHrmAssetUI() {
           a.assetName.toLowerCase().includes(q) ||
           a.categoryName.toLowerCase().includes(q) ||
           (a.currentHolderName ?? '').toLowerCase().includes(q) ||
-          (a.vendor ?? '').toLowerCase().includes(q),
+          (a.vendor ?? '').toLowerCase().includes(q) ||
+          (a.location ?? '').toLowerCase().includes(q) ||
+          (a.status ?? '').toLowerCase().includes(q) ||
+          (a.invoiceNo ?? '').toLowerCase().includes(q),
       );
     }
 

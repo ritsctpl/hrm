@@ -129,14 +129,14 @@ export default function AssetCategoryForm({ open, onClose, editCategory }: Asset
                   <Form.Item
                     name={[name, 'fieldName']}
                     rules={[{ required: true, message: 'Required' }]}
-                    style={{ flex: 1, margin: 0 }}
+                    style={{ width: 130, minWidth: 0, margin: 0 }}
                   >
                     <Input placeholder="fieldName" />
                   </Form.Item>
                   <Form.Item
                     name={[name, 'label']}
                     rules={[{ required: true, message: 'Required' }]}
-                    style={{ flex: 1, margin: 0 }}
+                    style={{ width: 130, minWidth: 0, margin: 0 }}
                   >
                     <Input placeholder="Label" />
                   </Form.Item>

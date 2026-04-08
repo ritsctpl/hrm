@@ -28,8 +28,7 @@ const HrmAssetLanding: React.FC = () => {
 
   useEffect(() => {
     data.initialLoad();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [data.initialLoad]);
 
   // Load requests and approvals when switching to that tab
   useEffect(() => {
@@ -37,16 +36,14 @@ const HrmAssetLanding: React.FC = () => {
       data.loadMyRequests();
       data.loadPendingApprovals();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.activeTab]);
+  }, [store.activeTab, data.loadMyRequests, data.loadPendingApprovals]);
 
   // Load asset detail data when selecting an asset
   useEffect(() => {
     if (store.selectedAsset) {
       data.loadAssetDetail(store.selectedAsset.assetId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.selectedAsset?.assetId]);
+  }, [store.selectedAsset?.assetId, data.loadAssetDetail]);
 
   // ── ASSETS TAB ───────────────────────────────────────────────────────────
 
@@ -98,21 +95,6 @@ const HrmAssetLanding: React.FC = () => {
           </Button>
         </div>
       </div>
-
-      {/* Category grid (collapsed into a quick-view section) */}
-      {store.categories.length > 0 && store.filterCategory === '' && (
-        <div className={styles.categoryChips}>
-          {store.categories.map((cat) => (
-            <button
-              key={cat.categoryCode}
-              className={styles.categoryChip}
-              onClick={() => store.setFilterCategory(cat.categoryCode)}
-            >
-              <span className={styles.categoryChipName}>{cat.categoryName}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
         <AssetMasterDetailTemplate

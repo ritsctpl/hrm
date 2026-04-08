@@ -1,5 +1,13 @@
 /* HRM Asset — List Panel */
 
+.masterList {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .listPanel {
   display: flex;
   flex-direction: column;

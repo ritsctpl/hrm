@@ -48,27 +48,22 @@ const HrmTravelLanding: React.FC = () => {
   const isSupervisor = SUPERVISOR_ROLES.includes(role);
   const isAdmin = ADMIN_ROLES.includes(role);
 
-  // Load data on mount
+  // Load data on mount and when filters change
   useEffect(() => {
     loadMyRequests();
-  }, [site]);
+  }, [loadMyRequests, statusFilter, typeFilter, dateRange]);
 
   useEffect(() => {
     if (isSupervisor || isAdmin) {
       loadApproverInbox();
     }
-  }, [site, role]);
+  }, [isSupervisor, isAdmin, loadApproverInbox]);
 
   useEffect(() => {
     if (isAdmin) {
       loadPolicies();
     }
-  }, [site, role]);
-
-  // Auto-trigger search when filters change
-  useEffect(() => {
-    loadMyRequests();
-  }, [statusFilter, typeFilter, dateRange]);
+  }, [isAdmin, loadPolicies]);
 
   const handleNewRequest = () => {
     setSelectedRequest(null);

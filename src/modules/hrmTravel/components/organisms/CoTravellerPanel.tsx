@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Input, Button, Typography } from "antd";
+import { Input, Typography, Spin } from "antd";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
 import { useCoTravellerSearch } from "../../hooks/useCoTravellerSearch";
 import CoTravellerRow from "../molecules/CoTravellerRow";
@@ -36,11 +36,12 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
               searchCoTravellers(e.target.value);
             }}
             style={{ flex: 1 }}
+            suffix={coTravellerSearchLoading ? <Spin size="small" /> : null}
           />
         </div>
       )}
 
-      {!readonly && query && eligibleCoTravellers.length > 0 && (
+      {!readonly && query.trim() && (
         <div
           style={{
             border: "1px solid #d9d9d9",
@@ -50,29 +51,37 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
             overflowY: "auto",
           }}
         >
-          {eligibleCoTravellers.map((t) => (
-            <div
-              key={t.employeeId}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "8px 12px",
-                cursor: addedIds.has(t.employeeId) ? "default" : "pointer",
-                borderBottom: "1px solid #f5f5f5",
-                background: addedIds.has(t.employeeId) ? "#fafafa" : "#fff",
-              }}
-              onClick={() => !addedIds.has(t.employeeId) && onAdd(t)}
-            >
-              <span style={{ flex: 1, fontSize: 13 }}>
-                {t.employeeName} ({t.employeeId}) — {t.department}
-              </span>
-              {addedIds.has(t.employeeId) && (
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Added
-                </Text>
-              )}
+          {coTravellerSearchLoading ? (
+            <div style={{ padding: 12, textAlign: "center" }}><Spin size="small" /></div>
+          ) : eligibleCoTravellers.length === 0 ? (
+            <div style={{ padding: "10px 12px", color: "#8c8c8c", fontSize: 13 }}>
+              No employees found for &quot;{query.trim()}&quot;
             </div>
-          ))}
+          ) : (
+            eligibleCoTravellers.map((t) => (
+              <div
+                key={t.employeeId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  cursor: addedIds.has(t.employeeId) ? "default" : "pointer",
+                  borderBottom: "1px solid #f5f5f5",
+                  background: addedIds.has(t.employeeId) ? "#fafafa" : "#fff",
+                }}
+                onClick={() => !addedIds.has(t.employeeId) && onAdd(t)}
+              >
+                <span style={{ flex: 1, fontSize: 13 }}>
+                  {t.employeeName} ({t.employeeId}) — {t.department}
+                </span>
+                {addedIds.has(t.employeeId) && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Added
+                  </Text>
+                )}
+              </div>
+            ))
+          )}
         </div>
       )}
 
