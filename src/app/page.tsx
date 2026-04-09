@@ -6,26 +6,52 @@ import { useAuth } from '../context/AuthContext';
 import { Tabs } from 'antd';
 import CommonAppBar from '../components/CommonAppBar';
 import ModuleCategoryGroup from '../components/molecules/ModuleCategoryGroup';
-import { CENTER_GRID_GROUPS } from '@/config/dashboardConfig';
+import { CATEGORY_ORDER } from '@/config/dashboardConfig';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import styles from './HomePage.module.css';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [site, setSite] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const modulesByCategory = useHrmRbacStore((s) => s.modulesByCategory);
+  const isRbacReady = useHrmRbacStore((s) => s.isReady);
 
-  // Build categories from frontend config
+  // Build categories from RBAC API data
   const allCategories = useMemo(() => {
-    return CENTER_GRID_GROUPS.map((group) => ({
-      category: group.label,
-      modules: (group.apps || []).map((app) => ({
-        moduleCode: app.key,
-        moduleName: app.label,
-        appUrl: app.route,
-        subLabel: app.subLabel,
-      })),
-    }));
-  }, []);
+    if (!isRbacReady) return [];
+    const categories: { category: string; modules: { moduleCode: string; moduleName: string; appUrl: string; subLabel?: string }[] }[] = [];
+    // Ordered categories first
+    for (const cat of CATEGORY_ORDER) {
+      const mods = modulesByCategory[cat];
+      if (mods && mods.length > 0) {
+        categories.push({
+          category: cat,
+          modules: mods.map((m) => ({
+            moduleCode: m.moduleCode,
+            moduleName: m.moduleName,
+            appUrl: m.appUrl,
+            subLabel: m.description || m.moduleCategory,
+          })),
+        });
+      }
+    }
+    // Any extra categories from API not in CATEGORY_ORDER
+    for (const [cat, mods] of Object.entries(modulesByCategory)) {
+      if (!CATEGORY_ORDER.includes(cat) && mods.length > 0) {
+        categories.push({
+          category: cat,
+          modules: mods.map((m) => ({
+            moduleCode: m.moduleCode,
+            moduleName: m.moduleName,
+            appUrl: m.appUrl,
+            subLabel: m.description || m.moduleCategory,
+          })),
+        });
+      }
+    }
+    return categories;
+  }, [isRbacReady, modulesByCategory]);
 
   const filteredCategories = useMemo(() => {
     if (!searchTerm) return allCategories;

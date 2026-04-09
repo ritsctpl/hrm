@@ -1,29 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { LayoutGrid } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
-import { SIDEBAR_ITEMS, SIDEBAR_BOTTOM_ITEMS } from '@/config/dashboardConfig';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import { getModuleIcon } from '@utils/moduleIconMap';
 
 const QuickSwitcher: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const router = useRouter();
-  const { t } = useTranslation();
+  const currentOrgModules = useHrmRbacStore((s) => s.currentOrgModules);
 
-  // Flatten all apps
-  const allApps: { label: string; route: string }[] = [];
-  [...SIDEBAR_ITEMS, ...SIDEBAR_BOTTOM_ITEMS].forEach((item) => {
-    if (item.type === 'direct-nav' && item.route) {
-      allApps.push({ label: item.label, route: item.route });
-    }
-    item.apps?.forEach((app) => {
-      allApps.push({ label: app.label, route: app.route });
-    });
-  });
-  allApps.sort((a, b) => a.label.localeCompare(b.label));
+  // Build flat sorted list from API modules
+  const allApps = useMemo(() => {
+    return currentOrgModules
+      .map((mod) => ({ label: mod.moduleName, route: mod.appUrl }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [currentOrgModules]);
 
   return (
     <>

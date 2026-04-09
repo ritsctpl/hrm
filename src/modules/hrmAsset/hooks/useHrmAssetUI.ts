@@ -16,7 +16,7 @@ export function useHrmAssetUI() {
         (a) =>
           a.assetId.toLowerCase().includes(q) ||
           a.assetName.toLowerCase().includes(q) ||
-          a.categoryName.toLowerCase().includes(q) ||
+          (a.categoryName ?? '').toLowerCase().includes(q) ||
           (a.currentHolderName ?? '').toLowerCase().includes(q) ||
           (a.vendor ?? '').toLowerCase().includes(q) ||
           (a.location ?? '').toLowerCase().includes(q) ||

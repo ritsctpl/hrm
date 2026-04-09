@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+
+const AUTH_FILE = path.join(__dirname, 'tests', '.auth', 'user.json');
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -8,9 +11,9 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://192.168.147.129:9110',
-    trace: 'off',
-    screenshot: 'off',
+    baseURL: 'http://localhost:8686',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
     video: 'off',
     viewport: { width: 1920, height: 1080 },
     actionTimeout: 20000,
@@ -18,11 +21,17 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         headless: false,
+        storageState: AUTH_FILE,
       },
+      dependencies: ['setup'],
     },
   ],
 });

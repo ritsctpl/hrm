@@ -1,84 +1,185 @@
+/* ================================================================
+   User Role Assignment — Modern Layout
+   ================================================================ */
+
 .userAssignmentTemplate {
   display: flex;
   height: 100%;
-  gap: 16px;
-  padding: 16px;
-  background: #f5f5f5;
-}
-
-.leftPanel {
-  flex: 0 0 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: white;
-  border-radius: 4px;
-  padding: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  max-height: calc(100vh - 200px);
-}
-
-.searchSection {
-  flex-shrink: 0;
-}
-
-.userListContainer {
-  flex: 1;
-  overflow-y: auto;
+  gap: 14px;
+  padding: 14px;
+  background: #f5f7fa;
+  overflow: hidden;
   min-height: 0;
 }
 
+/* ─── Left Panel ─── */
+.leftPanel {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eef0f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.leftHeader {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.leftTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.countTag {
+  margin-left: auto;
+  background: rgba(24, 144, 255, 0.1);
+  color: #1890ff;
+  border: none;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.filterSection {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  flex-shrink: 0;
+}
+
+/* ─── User List Container ─── */
+.userListContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 4px;
+}
+
+.userListContainer::-webkit-scrollbar {
+  width: 6px;
+}
+.userListContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.userListContainer::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+.userListContainer::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+.loadingWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.paginationWrap {
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+
+/* ─── User List Items (inside UserSearchPanel) ─── */
 .userSearchList {
-  overflow-y: visible;
+  padding: 0 !important;
+}
+
+.userSearchList :global(.ant-list-item) {
+  padding: 10px 12px !important;
+  border-bottom: 1px solid #f5f5f5 !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 6px;
+  margin: 2px 0;
+}
+
+.userSearchList :global(.ant-list-item:hover) {
+  background: #f8f9fb;
 }
 
 .userSearchItem {
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid #f5f5f5;
 }
 
 .userSearchItem:hover {
-  background-color: #f0f2f5;
+  background: #f8f9fb;
 }
 
 .userSearchItem.selected {
-  background-color: #e6f7ff;
+  background: linear-gradient(135deg, #e6f4ff 0%, #f0f8ff 100%);
   border-left: 3px solid #1890ff;
+  padding-left: 9px;
 }
 
+/* ─── Right Panel ─── */
 .rightPanel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 4px;
-  padding: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eef0f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   overflow: hidden;
+  min-height: 0;
 }
 
 .rightContent {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   height: 100%;
   overflow-y: auto;
+  min-height: 0;
+  padding: 16px 20px;
+}
+
+.rightContent::-webkit-scrollbar {
+  width: 6px;
+}
+.rightContent::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
 }
 
 .userHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 12px;
+  align-items: center;
+  padding-bottom: 14px;
   border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.userHeaderInfo {
+  flex: 1;
+  min-width: 0;
 }
 
 .userHeader h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  color: #1f1f1f;
 }
 
 .userHeader p {
@@ -88,21 +189,24 @@
 }
 
 .assignmentDetail {
-  padding: 12px;
+  padding: 14px 16px;
   background: #fafafa;
-  border-radius: 4px;
+  border-radius: 8px;
   border: 1px solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .assignmentDetail h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
+  color: #1f1f1f;
 }
 
 .assignmentTable {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
+  min-height: 0;
 }
 
 .assignmentTable h4 {
@@ -115,6 +219,7 @@
   background-color: #f0f7ff !important;
 }
 
+/* ─── Responsive ─── */
 @media (max-width: 1200px) {
   .userAssignmentTemplate {
     flex-direction: column;
@@ -122,10 +227,11 @@
 
   .leftPanel {
     flex: 0 0 auto;
-    max-height: 300px;
+    max-height: 320px;
   }
 
   .rightPanel {
     flex: 1;
+    min-height: 300px;
   }
 }

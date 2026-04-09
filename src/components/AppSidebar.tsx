@@ -2,25 +2,26 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import { Tooltip } from 'antd';
-import { SIDEBAR_ITEMS, SIDEBAR_BOTTOM_ITEMS } from '@/config/dashboardConfig';
-import type { SidebarItemConfig } from '@/config/dashboardConfig';
+import {
+  CATEGORY_ICON_MAP,
+  CATEGORY_ORDER,
+  SIDEBAR_TOP_ITEMS,
+  SIDEBAR_BOTTOM_ITEMS,
+} from '@/config/dashboardConfig';
+import type { SidebarFixedItem } from '@/config/dashboardConfig';
 import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
+import { Blocks } from 'lucide-react';
+import type { EnrichedModule } from '@modules/hrmAccess/types/rbac.types';
 import SidebarFlyout from './SidebarFlyout';
 import styles from './AppSidebar.module.css';
 
-/* ─── Helpers ─── */
+/* ─── Types ─── */
 
-/** Check whether the current pathname belongs to a sidebar group */
-function isGroupActive(item: SidebarItemConfig, pathname: string): boolean {
-  if (item.type === 'direct-nav' && item.route) {
-    return pathname.startsWith(item.route);
-  }
-  if (item.type === 'flyout' && item.apps) {
-    return item.apps.some((app) => pathname.startsWith(app.route));
-  }
-  return false;
+interface CategoryGroup {
+  key: string;
+  label: string;
+  modules: EnrichedModule[];
 }
 
 /* ─── Component ─── */
@@ -28,34 +29,40 @@ function isGroupActive(item: SidebarItemConfig, pathname: string): boolean {
 const AppSidebar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useTranslation();
+  const modulesByCategory = useHrmRbacStore((s) => s.modulesByCategory);
   const hasModuleAccess = useHrmRbacStore((s) => s.hasModuleAccess);
   const isRbacReady = useHrmRbacStore((s) => s.isReady);
 
-  /* Filter sidebar items based on RBAC access */
-  const filteredSidebarItems = useMemo(() => {
+  /* Build dynamic category groups from API data */
+  const categoryGroups = useMemo<CategoryGroup[]>(() => {
     if (!isRbacReady) return [];
-    return SIDEBAR_ITEMS.map((item) => {
-      if (item.type === 'direct-nav' && item.route) {
-        return hasModuleAccess(item.route) ? item : null;
+    const groups: CategoryGroup[] = [];
+    // First add categories in defined order
+    for (const cat of CATEGORY_ORDER) {
+      const modules = modulesByCategory[cat];
+      if (modules && modules.length > 0) {
+        groups.push({ key: cat, label: cat, modules });
       }
-      if (item.type === 'flyout' && item.apps) {
-        const accessibleApps = item.apps.filter((app) => hasModuleAccess(app.route));
-        if (accessibleApps.length === 0) return null;
-        return { ...item, apps: accessibleApps };
+    }
+    // Then add any categories from API not in CATEGORY_ORDER
+    for (const [cat, modules] of Object.entries(modulesByCategory)) {
+      if (!CATEGORY_ORDER.includes(cat) && modules.length > 0) {
+        groups.push({ key: cat, label: cat, modules });
       }
-      return item;
-    }).filter(Boolean) as SidebarItemConfig[];
+    }
+    return groups;
+  }, [isRbacReady, modulesByCategory]);
+
+  /* Filter fixed top items by RBAC */
+  const filteredTopItems = useMemo(() => {
+    if (!isRbacReady) return SIDEBAR_TOP_ITEMS;
+    return SIDEBAR_TOP_ITEMS.filter((item) => hasModuleAccess(item.route));
   }, [isRbacReady, hasModuleAccess]);
 
+  /* Filter fixed bottom items by RBAC */
   const filteredBottomItems = useMemo(() => {
-    if (!isRbacReady) return [];
-    return SIDEBAR_BOTTOM_ITEMS.filter((item) => {
-      if (item.type === 'direct-nav' && item.route) {
-        return hasModuleAccess(item.route);
-      }
-      return true;
-    });
+    if (!isRbacReady) return SIDEBAR_BOTTOM_ITEMS;
+    return SIDEBAR_BOTTOM_ITEMS.filter((item) => hasModuleAccess(item.route));
   }, [isRbacReady, hasModuleAccess]);
 
   /* Flyout state */
@@ -64,30 +71,15 @@ const AppSidebar: React.FC = () => {
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /** Clear both timers */
   const clearTimers = useCallback(() => {
-    if (showTimerRef.current) {
-      clearTimeout(showTimerRef.current);
-      showTimerRef.current = null;
-    }
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
+    if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null; }
+    if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
   }, []);
 
-  /** Open flyout with 200ms delay */
   const handleFlyoutEnter = useCallback(
     (key: string, iconEl: HTMLElement) => {
-      // Cancel any pending hide
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
-
-      // If already showing this flyout, do nothing
+      if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
       if (activeFlyout === key) return;
-
       showTimerRef.current = setTimeout(() => {
         const rect = iconEl.getBoundingClientRect();
         setFlyoutTop(rect.top);
@@ -97,154 +89,112 @@ const AppSidebar: React.FC = () => {
     [activeFlyout],
   );
 
-  /** Close flyout with 300ms delay */
   const handleFlyoutLeave = useCallback(() => {
-    if (showTimerRef.current) {
-      clearTimeout(showTimerRef.current);
-      showTimerRef.current = null;
-    }
-    hideTimerRef.current = setTimeout(() => {
-      setActiveFlyout(null);
-    }, 300);
+    if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null; }
+    hideTimerRef.current = setTimeout(() => { setActiveFlyout(null); }, 300);
   }, []);
 
-  /** Cancel hide when mouse enters the flyout panel */
   const handleFlyoutPanelEnter = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
+    if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
   }, []);
 
-  /** Restart hide when mouse leaves the flyout panel */
-  const handleFlyoutPanelLeave = useCallback(() => {
-    handleFlyoutLeave();
-  }, [handleFlyoutLeave]);
+  const handleFlyoutPanelLeave = useCallback(() => { handleFlyoutLeave(); }, [handleFlyoutLeave]);
 
-  /** Close flyout (used after navigation) */
-  const closeFlyout = useCallback(() => {
-    clearTimers();
-    setActiveFlyout(null);
-  }, [clearTimers]);
+  const closeFlyout = useCallback(() => { clearTimers(); setActiveFlyout(null); }, [clearTimers]);
 
-  /* Cleanup on unmount */
-  useEffect(() => {
-    return () => clearTimers();
-  }, [clearTimers]);
+  useEffect(() => { return () => clearTimers(); }, [clearTimers]);
 
-  /* ─── Render a single sidebar icon ─── */
-  const renderIcon = (item: SidebarItemConfig) => {
+  /* ─── Check if any module in a category is active ─── */
+  const isCategoryActive = (group: CategoryGroup): boolean => {
+    return group.modules.some((m) => pathname.startsWith(m.appUrl));
+  };
+
+  /* ─── Render a direct-nav icon ─── */
+  const renderDirectNav = (item: SidebarFixedItem) => {
     const Icon = item.icon;
-    const active = isGroupActive(item, pathname);
-    const isFlyout = item.type === 'flyout';
+    const active = pathname.startsWith(item.route);
+    const iconClassName = [styles.sidebarIcon, active ? styles.sidebarIconActive : ''].filter(Boolean).join(' ');
 
-    const iconClassName = [
-      styles.sidebarIcon,
-      active ? styles.sidebarIconActive : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    const handleClick = (e: React.MouseEvent) => {
-      if (item.type === 'direct-nav' && item.route) {
-        if (e.ctrlKey || e.metaKey) {
-          window.open(`/hrm${item.route}`, '_blank');
-        } else {
-          router.push(item.route);
-        }
-      }
-      if (item.type === 'flyout') {
-        // Toggle flyout on click
-        if (activeFlyout === item.key) {
-          closeFlyout();
-        } else {
-          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          setFlyoutTop(rect.top);
-          setActiveFlyout(item.key);
-        }
-      }
-    };
-
-    const iconButton = (
-      <button
-        className={iconClassName}
-        onClick={handleClick}
-        onMouseEnter={(e) => {
-          if (isFlyout) {
-            handleFlyoutEnter(item.key, e.currentTarget as HTMLElement);
-          }
-        }}
-        onMouseLeave={() => {
-          if (isFlyout) {
-            handleFlyoutLeave();
-          }
-        }}
-        aria-label={item.label}
-      >
-        <Icon size={20} strokeWidth={1.8} />
-      </button>
-    );
-
-    if (isFlyout) {
-      // Flyout items: wrap in anchor div for flyout positioning
-      const flyoutItem = filteredSidebarItems.find((si) => si.key === item.key) ?? item;
-      return (
-        <div key={item.key} className={styles.flyoutAnchor}>
-          {iconButton}
-          {activeFlyout === item.key && flyoutItem.apps && (
-            <div
-              onMouseEnter={handleFlyoutPanelEnter}
-              onMouseLeave={handleFlyoutPanelLeave}
-            >
-              <SidebarFlyout
-                title={item.label}
-                apps={flyoutItem.apps}
-                top={flyoutTop}
-                onClose={closeFlyout}
-              />
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Direct-nav items: wrap with Tooltip
     return (
       <Tooltip key={item.key} title={item.label} placement="right" mouseEnterDelay={0.3}>
-        {iconButton}
+        <button
+          className={iconClassName}
+          onClick={(e) => {
+            if (e.ctrlKey || e.metaKey) {
+              window.open(`/hrm${item.route}`, '_blank');
+            } else {
+              router.push(item.route);
+            }
+          }}
+          aria-label={item.label}
+        >
+          <Icon size={20} strokeWidth={1.8} />
+        </button>
       </Tooltip>
+    );
+  };
+
+  /* ─── Render a category flyout icon ─── */
+  const renderCategoryFlyout = (group: CategoryGroup) => {
+    const Icon = CATEGORY_ICON_MAP[group.key] || Blocks;
+    const active = isCategoryActive(group);
+    const iconClassName = [styles.sidebarIcon, active ? styles.sidebarIconActive : ''].filter(Boolean).join(' ');
+
+    return (
+      <div key={group.key} className={styles.flyoutAnchor}>
+        <button
+          className={iconClassName}
+          onClick={(e) => {
+            if (activeFlyout === group.key) {
+              closeFlyout();
+            } else {
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setFlyoutTop(rect.top);
+              setActiveFlyout(group.key);
+            }
+          }}
+          onMouseEnter={(e) => handleFlyoutEnter(group.key, e.currentTarget as HTMLElement)}
+          onMouseLeave={() => handleFlyoutLeave()}
+          aria-label={group.label}
+        >
+          <Icon size={20} strokeWidth={1.8} />
+        </button>
+        {activeFlyout === group.key && (
+          <div onMouseEnter={handleFlyoutPanelEnter} onMouseLeave={handleFlyoutPanelLeave}>
+            <SidebarFlyout
+              title={group.label}
+              modules={group.modules}
+              top={flyoutTop}
+              onClose={closeFlyout}
+            />
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
     <nav className={styles.sidebar} role="navigation" aria-label="Main sidebar">
-      {/* Brand Mark */}
       <div
         className={styles.brandMark}
         onClick={() => router.push('/')}
         role="button"
         tabIndex={0}
         aria-label="Go to homepage"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            router.push('/');
-          }
-        }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push('/'); } }}
       >
         <span className={styles.brandMarkText}>HR</span>
       </div>
 
-      {/* Main Nav Icons */}
       <div className={styles.navGroup}>
-        {filteredSidebarItems.map(renderIcon)}
+        {filteredTopItems.map(renderDirectNav)}
+        {categoryGroups.map(renderCategoryFlyout)}
       </div>
 
-      {/* Divider + Bottom Icons */}
       {filteredBottomItems.length > 0 && (
         <div className={styles.bottomSection}>
           <div className={styles.divider} />
-          {filteredBottomItems.map(renderIcon)}
+          {filteredBottomItems.map(renderDirectNav)}
         </div>
       )}
     </nav>

@@ -21,23 +21,27 @@ import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
 import styles from './styles/HrmAsset.module.css';
 
-const SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER', 'HR', 'HR_ADMIN'];
-const ADMIN_ROLES = ['ADMIN', 'HR_ADMIN', 'SUPER_ADMIN'];
+const SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER', 'HR', 'HR_ADMIN', 'NEXT_SUPERIOR'];
+const ADMIN_ROLES = ['ADMIN', 'HR_ADMIN', 'SUPER_ADMIN', 'IT_ADMIN'];
 
 const HrmAssetLanding: React.FC = () => {
   const store = useHrmAssetStore();
   const data = useHrmAssetData();
   const ui = useHrmAssetUI();
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<import('./types/domain.types').AssetCategory | null>(null);
 
   const cookies = parseCookies();
-  const userRole = cookies.userRole ?? cookies.role ?? 'EMPLOYEE';
+  const userRole = (cookies.userRole ?? cookies.role ?? 'EMPLOYEE').toUpperCase();
   const isSupervisor = useMemo(() => SUPERVISOR_ROLES.includes(userRole), [userRole]);
   const isAdmin = useMemo(() => ADMIN_ROLES.includes(userRole), [userRole]);
 
   // Load once on mount — no function refs in deps to avoid infinite loop
   useEffect(() => {
     data.initialLoad();
+    if (isSupervisor || isAdmin) {
+      data.loadPendingApprovals();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -239,7 +243,9 @@ const HrmAssetLanding: React.FC = () => {
 
       <AssetCategoryForm
         open={categoryFormOpen}
-        onClose={() => setCategoryFormOpen(false)}
+        onClose={() => { setCategoryFormOpen(false); setEditingCategory(null); }}
+        editCategory={editingCategory}
+        onEditCategory={(cat) => setEditingCategory(cat)}
       />
     </div>
   );

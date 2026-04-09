@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Autocomplete, TextField, InputAdornment } from '@mui/material';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { SIDEBAR_ITEMS, SIDEBAR_BOTTOM_ITEMS, TASK_SHORTCUTS } from '@/config/dashboardConfig';
+import { TASK_SHORTCUTS } from '@/config/dashboardConfig';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import { getModuleIcon } from '@utils/moduleIconMap';
 
 interface SearchOption {
@@ -20,41 +21,34 @@ const EnhancedSearch: React.FC = () => {
   const router = useRouter();
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const currentOrgModules = useHrmRbacStore((s) => s.currentOrgModules);
 
-  // Build options list
-  const options: SearchOption[] = [];
+  // Build options list from API modules
+  const options = useMemo<SearchOption[]>(() => {
+    const opts: SearchOption[] = [];
 
-  // Add all apps from sidebar groups
-  [...SIDEBAR_ITEMS, ...SIDEBAR_BOTTOM_ITEMS].forEach((item) => {
-    if (item.type === 'direct-nav' && item.route) {
-      options.push({
+    // Add all accessible modules from RBAC
+    currentOrgModules.forEach((mod) => {
+      opts.push({
         type: 'app',
-        label: item.label,
-        route: item.route,
-        iconRoute: item.route,
+        label: mod.moduleName,
+        subLabel: mod.description || mod.moduleCategory,
+        route: mod.appUrl,
+        iconRoute: mod.appUrl,
       });
-    }
-    if (item.apps) {
-      item.apps.forEach((app) => {
-        options.push({
-          type: 'app',
-          label: app.label,
-          subLabel: app.subLabel,
-          route: app.route,
-          iconRoute: app.route,
-        });
-      });
-    }
-  });
-
-  // Add task shortcuts
-  TASK_SHORTCUTS.forEach((task) => {
-    options.push({
-      type: 'task',
-      label: task.label,
-      route: task.route,
     });
-  });
+
+    // Add task shortcuts
+    TASK_SHORTCUTS.forEach((task) => {
+      opts.push({
+        type: 'task',
+        label: task.label,
+        route: task.route,
+      });
+    });
+
+    return opts;
+  }, [currentOrgModules]);
 
   // Ctrl+K shortcut
   useEffect(() => {

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Drawer, Form, Input, InputNumber, Button, Space, Switch, message, Divider, Select } from 'antd';
+import { Drawer, Form, Input, InputNumber, Button, Space, Switch, message, Divider, Select, List } from 'antd';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { parseCookies } from 'nookies';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
@@ -15,9 +16,10 @@ interface AssetCategoryFormProps {
   open: boolean;
   onClose: () => void;
   editCategory?: AssetCategory | null;
+  onEditCategory?: (cat: AssetCategory) => void;
 }
 
-export default function AssetCategoryForm({ open, onClose, editCategory }: AssetCategoryFormProps) {
+export default function AssetCategoryForm({ open, onClose, editCategory, onEditCategory }: AssetCategoryFormProps) {
   const { categories, setCategories } = useHrmAssetStore();
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
@@ -95,7 +97,38 @@ export default function AssetCategoryForm({ open, onClose, editCategory }: Asset
         </div>
       }
     >
+      {!isEdit && categories.length > 0 && (
+        <>
+          <Divider style={{ marginTop: 0 }}>Existing Categories</Divider>
+          <List
+            size="small"
+            dataSource={categories}
+            style={{ marginBottom: 16, maxHeight: 200, overflowY: 'auto' }}
+            renderItem={(cat) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="edit"
+                    type="text"
+                    size="small"
+                    icon={<EditIcon style={{ fontSize: 16 }} />}
+                    onClick={() => onEditCategory?.(cat)}
+                  />,
+                ]}
+              >
+                <List.Item.Meta
+                  title={<span style={{ fontSize: 13 }}>{cat.categoryName}</span>}
+                  description={<span style={{ fontSize: 11, color: '#8c8c8c' }}>{cat.categoryCode}</span>}
+                />
+              </List.Item>
+            )}
+          />
+          <Divider>New Category</Divider>
+        </>
+      )}
+
       <Form
+        key={editCategory?.categoryCode ?? 'new'}
         form={form}
         layout="vertical"
         initialValues={editCategory ?? { wdvRatePct: 15, attributeSchema: [] }}
