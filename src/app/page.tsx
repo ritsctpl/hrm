@@ -7,19 +7,36 @@ import { Tabs, Skeleton, Alert } from 'antd';
 import CommonAppBar from '../components/CommonAppBar';
 import ModuleCategoryGroup from '../components/molecules/ModuleCategoryGroup';
 import { SIDEBAR_ITEMS, filterDashboardByPermissions } from '@/config/dashboardConfig';
-import { useUserModules } from '@/modules/hrmAccess/hooks/useUserModules';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import styles from './HomePage.module.css';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [site, setSite] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const { modules, loading, error } = useUserModules();
+  
+  // Use RBAC store instead of separate hook
+  const isReady = useHrmRbacStore(s => s.isReady);
+  const isLoading = useHrmRbacStore(s => s.isLoading);
+  const error = useHrmRbacStore(s => s.error);
+  const organizations = useHrmRbacStore(s => s.organizations);
+  const currentSite = useHrmRbacStore(s => s.currentSite);
+
+  // Build user modules response format for filtering
+  const userModules = useMemo(() => {
+    if (!isReady || organizations.length === 0) return null;
+    
+    return {
+      userId: '',
+      organizations: organizations,
+      evaluatedAt: new Date().toISOString(),
+    };
+  }, [isReady, organizations]);
 
   // Filter all sidebar items based on user permissions
   const permissionFilteredItems = useMemo(() => {
-    return filterDashboardByPermissions(SIDEBAR_ITEMS, modules);
-  }, [modules]);
+    return filterDashboardByPermissions(SIDEBAR_ITEMS, userModules);
+  }, [userModules]);
 
   // Build categories from permission-filtered config
   const allCategories = useMemo(() => {
@@ -88,7 +105,7 @@ const HomePage: React.FC = () => {
   }));
 
   // Show loading state
-  if (loading) {
+  if (isLoading || !isReady) {
     return (
       <div className={styles.pageRoot}>
         <CommonAppBar
