@@ -55,7 +55,7 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
   };
 
   if (loadingDepreciation) {
-    return <div className={styles.spinWrapper}><Spin tip="Loading depreciation history..." /></div>;
+    return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
   return (

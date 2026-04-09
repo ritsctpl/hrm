@@ -25,7 +25,7 @@ export default function AssetRequestList({ canCreate, loading }: AssetRequestLis
   };
 
   if (loading) {
-    return <div className={styles.spinWrapper}><Spin tip="Loading requests..." /></div>;
+    return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
   return (

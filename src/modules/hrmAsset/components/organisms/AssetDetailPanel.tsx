@@ -171,7 +171,7 @@ export default function AssetDetailPanel({
         <div>
           <div className={styles.detailTitle}>{selectedAsset.assetName}</div>
           <div className={styles.detailSubtitle}>
-            {selectedAsset.assetId} · {selectedAsset.categoryName}
+            {selectedAsset.assetId}
           </div>
         </div>
         {canEdit && (

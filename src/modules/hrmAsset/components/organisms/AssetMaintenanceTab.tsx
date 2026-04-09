@@ -52,7 +52,7 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
   };
 
   if (loadingMaintenance) {
-    return <div className={styles.spinWrapper}><Spin tip="Loading maintenance history..." /></div>;
+    return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
   return (

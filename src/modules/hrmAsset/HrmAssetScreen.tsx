@@ -88,7 +88,7 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = ({
             {selectedAsset.assetName}
           </Typography.Text>
           <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-            {selectedAsset.assetId} · {selectedAsset.categoryName}
+            {selectedAsset.assetId}
           </div>
         </div>
         <Space>

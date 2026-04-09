@@ -30,7 +30,14 @@ export function useHrmAssetData() {
     try {
       const data = await HrmAssetService.getAllCategories(getSite());
       const categories = Array.isArray(data) ? data : [];
-      store.setCategories(categories as unknown as Parameters<typeof store.setCategories>[0]);
+      // Deduplicate by categoryCode (defensive against backend duplicates)
+      const seen = new Set<string>();
+      const unique = categories.filter((c: { categoryCode: string }) => {
+        if (seen.has(c.categoryCode)) return false;
+        seen.add(c.categoryCode);
+        return true;
+      });
+      store.setCategories(unique as unknown as Parameters<typeof store.setCategories>[0]);
     } catch {
       message.error('Failed to load categories');
     } finally {

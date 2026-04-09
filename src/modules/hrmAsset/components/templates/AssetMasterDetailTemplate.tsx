@@ -26,9 +26,12 @@ const AssetMasterDetailTemplate: React.FC<AssetMasterDetailTemplateProps> = ({
     >
       <div
         style={{
-          overflowY: 'auto',
+          overflow: 'hidden',
           borderRight: '1px solid #f0f0f0',
           background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
         }}
       >
         {leftPanel}

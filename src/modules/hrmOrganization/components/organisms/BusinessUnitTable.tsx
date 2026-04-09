@@ -19,17 +19,14 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
   } = useHrmOrganizationStore();
 
   const { list, searchText, isLoading, selected } = businessUnit;
-  const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 300px)');
+  const [tableHeight, setTableHeight] = useState<number>(500);
 
-  // Calculate table height based on screen resolution - use full viewport height
+  // Calculate table height based on screen resolution
   useEffect(() => {
     const calculateTableHeight = () => {
-      // Use full viewport height minus only the header and search bar
       const screenHeight = window.innerHeight;
-      // Reserve space for: top navbar (60px) + header (50px) + search bar (40px) + padding (8px)
-      const reservedHeight = 158;
-      const calculatedHeight = screenHeight - reservedHeight;
-      setTableHeight(`${calculatedHeight}px`);
+      const reservedHeight = 300;
+      setTableHeight(Math.max(screenHeight - reservedHeight, 300));
     };
 
     calculateTableHeight();
@@ -166,7 +163,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
               selected?.handle === record.handle ? '#e6f4ff' : undefined,
           },
         })}
-        scroll={{ y: tableHeight, x: 'max-content' }}
+        scroll={{ y: tableHeight, x: 800 }}
         virtual
       />
     </div>

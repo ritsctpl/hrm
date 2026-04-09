@@ -170,7 +170,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   );
 
   if (loading) {
-    return <div className={styles.spinWrapper}><Spin tip="Loading inbox..." /></div>;
+    return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
   const tabItems = [

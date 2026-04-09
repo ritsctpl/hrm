@@ -63,7 +63,7 @@ const HrmAssetLanding: React.FC = () => {
   // ── ASSETS TAB ───────────────────────────────────────────────────────────
 
   const assetsTabContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div
         style={{
           padding: '8px 16px',
@@ -104,7 +104,7 @@ const HrmAssetLanding: React.FC = () => {
             type="primary"
             size="small"
             icon={<PlusOutlined />}
-            onClick={store.openAssetForm}
+            onClick={() => { store.setSelectedAsset(null); store.openAssetForm(); }}
           >
             Add Asset
           </Button>
@@ -220,7 +220,7 @@ const HrmAssetLanding: React.FC = () => {
       {(store.dashboard || store.loadingDashboard) && (
         <AssetDashboardHeader dashboard={store.dashboard!} loading={store.loadingDashboard} />
       )}
-      <div className={styles.assetContent}>
+      <div className={`${styles.assetContent} ${styles.tabsWrapper}`}>
         <Tabs
           activeKey={store.activeTab}
           onChange={(k) => store.setActiveTab(k as 'assets' | 'requests')}

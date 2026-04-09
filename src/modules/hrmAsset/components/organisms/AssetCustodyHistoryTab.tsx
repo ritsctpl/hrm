@@ -9,7 +9,7 @@ export default function AssetCustodyHistoryTab() {
   const { custodyHistory, loadingCustody } = useHrmAssetStore();
 
   if (loadingCustody) {
-    return <div className={styles.spinWrapper}><Spin tip="Loading custody history..." /></div>;
+    return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
   return (

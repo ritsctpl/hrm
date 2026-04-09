@@ -19,17 +19,13 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
   } = useHrmOrganizationStore();
 
   const { list, searchText, isLoading, selected } = location;
-  const [tableHeight, setTableHeight] = useState<string>('calc(100vh - 300px)');
+  const [tableHeight, setTableHeight] = useState<number>(500);
 
-  // Calculate table height based on screen resolution - use full viewport height
   useEffect(() => {
     const calculateTableHeight = () => {
-      // Use full viewport height minus only the header and search bar
       const screenHeight = window.innerHeight;
-      // Reserve space for: top navbar (60px) + header (50px) + search bar (40px) + padding (8px)
-      const reservedHeight = 158;
-      const calculatedHeight = screenHeight - reservedHeight;
-      setTableHeight(`${calculatedHeight}px`);
+      const reservedHeight = 300;
+      setTableHeight(Math.max(screenHeight - reservedHeight, 300));
     };
 
     calculateTableHeight();
@@ -169,7 +165,7 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
               selected?.id === record.id ? 'var(--hrm-bg-active)' : undefined,
           },
         })}
-        scroll={{ y: tableHeight || 400, x: 800 }}
+        scroll={{ y: tableHeight, x: 800 }}
         virtual
       />
     </div>

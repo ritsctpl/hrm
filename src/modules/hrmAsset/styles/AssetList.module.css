@@ -3,9 +3,21 @@
 .masterList {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   overflow: hidden;
+  height: 100%;
+}
+
+.listBody::-webkit-scrollbar {
+  width: 8px;
+}
+.listBody::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+.listBody::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 4px;
 }
 
 .listPanel {
