@@ -35,7 +35,12 @@ export default function QrDownloadButton({ assetId, qrUrl }: QrDownloadButtonPro
         {qrUrl ? (
           <>
             <Button size="small" href={qrUrl} download={`${assetId}.png`}>PNG</Button>
-            <Button size="small">PDF</Button>
+            <Button size="small" onClick={() => {
+              const link = document.createElement('a');
+              link.href = qrUrl!;
+              link.download = `${assetId}-qr.pdf`;
+              link.click();
+            }}>PDF</Button>
           </>
         ) : (
           <Button size="small" onClick={handleGenerate} icon={<QrCodeIcon style={{ fontSize: 14 }} />}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Drawer, Form, Input, InputNumber, DatePicker, Select, Space, Button, message } from 'antd';
+import { Drawer, Form, Input, InputNumber, DatePicker, Select, Space, Button, message, Tooltip } from 'antd';
 import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
@@ -49,6 +49,13 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
     const { site, userId } = parseCookies();
     try {
       const values = await form.validateFields();
+
+      // Cross-field validation: invoice date >= purchase date
+      if (values.invoiceDate && values.purchaseDate && dayjs(values.invoiceDate).isBefore(dayjs(values.purchaseDate))) {
+        message.error('Invoice date cannot be before purchase date');
+        return;
+      }
+
       setSavingAsset(true);
       const payload = {
         site: site ?? '',
@@ -104,7 +111,17 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
       }
     >
       <Form form={form} layout="vertical">
-        <Form.Item label="Category" name="categoryCode" rules={assetFormRules.categoryCode}>
+        <Form.Item
+          label={
+            isEdit ? (
+              <Tooltip title="Category cannot be changed after creation">
+                <span>Category</span>
+              </Tooltip>
+            ) : 'Category'
+          }
+          name="categoryCode"
+          rules={assetFormRules.categoryCode}
+        >
           <Select
             disabled={isEdit}
             placeholder="Select category"

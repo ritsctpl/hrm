@@ -18,7 +18,9 @@ export default function AssetMasterList({ assets: rawAssets, loading, selectedAs
   }
 
   if (assets.length === 0) {
-    return <Empty description="No assets found" style={{ marginTop: 48 }} />;
+    return (
+      <Empty description="No assets found. Try adjusting your filters or create a new asset." style={{ marginTop: 48 }} />
+    );
   }
 
   return (

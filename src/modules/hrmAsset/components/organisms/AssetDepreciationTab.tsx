@@ -112,10 +112,9 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
         <>
           <div style={{ display: 'flex', gap: 12, padding: '6px 0', fontWeight: 600, fontSize: 12, color: '#595959', borderBottom: '1px solid #f0f0f0' }}>
             <span style={{ minWidth: 100 }}>As Of Date</span>
-            <span style={{ minWidth: 80 }}>Method</span>
+            <span style={{ minWidth: 110 }}>Prev Book Value</span>
             <span style={{ minWidth: 60 }}>Rate %</span>
-            <span style={{ minWidth: 120 }}>Prev Book Value</span>
-            <span style={{ minWidth: 120 }}>Present Value</span>
+            <span style={{ minWidth: 110 }}>Present Value</span>
             <span style={{ flex: 1 }}>Run By</span>
           </div>
           {depreciationHistory.map((snap) => (

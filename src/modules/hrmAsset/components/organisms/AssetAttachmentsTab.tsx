@@ -1,6 +1,6 @@
 'use client';
 
-import { Empty, Typography, Button } from 'antd';
+import { Empty, Typography, Button, message } from 'antd';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import { formatDate, formatFileSize } from '../../utils/assetHelpers';
@@ -18,7 +18,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
       <div className={styles.tabContent}>
         <Empty description="No attachments" style={{ marginTop: 32 }} />
         {canUpload && <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <Button icon={<AttachFileIcon style={{ fontSize: 16 }} />}>Upload File</Button>
+          <Button icon={<AttachFileIcon style={{ fontSize: 16 }} />} onClick={() => message.info('File upload will be available soon')}>Upload File</Button>
         </div>}
       </div>
     );

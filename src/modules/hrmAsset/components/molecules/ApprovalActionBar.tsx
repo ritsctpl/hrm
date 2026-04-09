@@ -38,6 +38,11 @@ export default function ApprovalActionBar({
         placeholder="Optional remarks for approval, required for rejection..."
         style={{ marginTop: 4, marginBottom: 8 }}
       />
+      {!remarks.trim() && (
+        <Typography.Text type="danger" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+          Remarks are required to reject a request
+        </Typography.Text>
+      )}
       <Space>
         <Button
           danger

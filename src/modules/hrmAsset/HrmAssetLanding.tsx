@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Badge, Spin } from 'antd';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import { useHrmAssetData } from './hooks/useHrmAssetData';
@@ -20,30 +21,44 @@ import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
 import styles from './styles/HrmAsset.module.css';
 
+const SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER', 'HR', 'HR_ADMIN'];
+const ADMIN_ROLES = ['ADMIN', 'HR_ADMIN', 'SUPER_ADMIN'];
+
 const HrmAssetLanding: React.FC = () => {
   const store = useHrmAssetStore();
   const data = useHrmAssetData();
   const ui = useHrmAssetUI();
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
 
+  const cookies = parseCookies();
+  const userRole = cookies.userRole ?? cookies.role ?? 'EMPLOYEE';
+  const isSupervisor = useMemo(() => SUPERVISOR_ROLES.includes(userRole), [userRole]);
+  const isAdmin = useMemo(() => ADMIN_ROLES.includes(userRole), [userRole]);
+
+  // Load once on mount — no function refs in deps to avoid infinite loop
   useEffect(() => {
     data.initialLoad();
-  }, [data.initialLoad]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load requests and approvals when switching to that tab
+  const activeTab = store.activeTab;
   useEffect(() => {
-    if (store.activeTab === 'requests') {
+    if (activeTab === 'requests') {
       data.loadMyRequests();
       data.loadPendingApprovals();
     }
-  }, [store.activeTab, data.loadMyRequests, data.loadPendingApprovals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   // Load asset detail data when selecting an asset
+  const selectedAssetId = store.selectedAsset?.assetId;
   useEffect(() => {
-    if (store.selectedAsset) {
-      data.loadAssetDetail(store.selectedAsset.assetId);
+    if (selectedAssetId) {
+      data.loadAssetDetail(selectedAssetId);
     }
-  }, [store.selectedAsset?.assetId, data.loadAssetDetail]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAssetId]);
 
   // ── ASSETS TAB ───────────────────────────────────────────────────────────
 
@@ -173,8 +188,8 @@ const HrmAssetLanding: React.FC = () => {
             )}
           </div>
           <ApprovalInbox
-            isSupervisor={true}
-            isAdmin={true}
+            isSupervisor={isSupervisor}
+            isAdmin={isAdmin}
             loading={store.loadingRequests}
           />
         </div>

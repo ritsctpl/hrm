@@ -60,6 +60,7 @@ export default function ReturnAssetModal() {
         <Form.Item
           label="Return Date"
           name="returnDate"
+          initialValue={dayjs()}
           rules={[{ required: true, message: 'Return date is required' }]}
         >
           <DatePicker style={{ width: '100%' }} format="DD-MMM-YYYY" />
