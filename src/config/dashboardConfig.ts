@@ -132,3 +132,58 @@ export const MOCK_RECENT_ACTIVITY: RecentActivityItem[] = [
   { id: '2', description: 'Expense report submitted', timeAgo: '1 day ago', status: 'info' },
   { id: '3', description: 'Timesheet saved as draft', timeAgo: '2 days ago', status: 'success' },
 ];
+
+// ---- Permission-Based Filtering ----
+
+import type { UserModulesByOrganizationResponse } from '@/modules/hrmAccess/types/rbac.types';
+
+/**
+ * Filter dashboard items based on user's accessible modules
+ */
+export function filterDashboardByPermissions(
+  items: SidebarItemConfig[],
+  userModules: UserModulesByOrganizationResponse | null
+): SidebarItemConfig[] {
+  if (!userModules || !userModules.organizations.length) {
+    return []; // No access
+  }
+
+  const accessibleModules = userModules.organizations[0].modules;
+  const accessibleRoutes = new Set(accessibleModules.map(m => m.appUrl));
+
+  return items
+    .map(item => {
+      if (item.type === 'direct-nav') {
+        // Direct navigation - check if route is accessible
+        return accessibleRoutes.has(item.route || '') ? item : null;
+      } else {
+        // Flyout - filter apps
+        const filteredApps = item.apps?.filter(app => 
+          accessibleRoutes.has(app.route)
+        ) || [];
+        
+        return filteredApps.length > 0 
+          ? { ...item, apps: filteredApps }
+          : null;
+      }
+    })
+    .filter((item): item is SidebarItemConfig => item !== null);
+}
+
+/**
+ * Get module actions for a specific route
+ */
+export function getModuleActions(
+  route: string,
+  userModules: UserModulesByOrganizationResponse | null
+): string[] {
+  if (!userModules || !userModules.organizations.length) {
+    return [];
+  }
+
+  const module = userModules.organizations[0].modules.find(
+    m => m.appUrl === route
+  );
+  
+  return module?.actions || [];
+}

@@ -159,9 +159,13 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
   const cinError = validateCIN(data.cin || '');
   if (cinError) errors.cin = cinError;
 
-  // GSTIN validation (optional field, but if provided must be valid format and match PAN)
+  // GSTIN validation (optional field, but if provided must be valid format and match PAN and state)
   if (data.gstIn && data.gstIn.trim()) {
-    const gstinError = validateGSTIN(data.gstIn, data.pan);
+    // Get registered address state for validation
+    const registeredAddress = data.registeredOfficeAddress || data.registeredAddress;
+    const registeredState = registeredAddress?.state;
+    
+    const gstinError = validateGSTIN(data.gstIn, data.pan, registeredState);
     if (gstinError) errors.gstIn = gstinError;
   }
 

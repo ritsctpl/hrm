@@ -328,7 +328,28 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
 
       const cookies = parseCookies();
       const createdBy = cookies.username || 'system';
-      const payload = buildCreateRequest(onboarding.draft, site, createdBy);
+      
+      // Fetch organization data to include in payload
+      let organizationHandle: string | undefined;
+      let organizationName: string | undefined;
+      
+      try {
+        // Import organization service dynamically to avoid circular dependencies
+        const { HrmOrganizationService } = await import('../../hrmOrganization/services/hrmOrganizationService');
+        const companyData = await HrmOrganizationService.fetchBySite(site);
+        
+        // Handle both single object and array responses
+        const company = Array.isArray(companyData) ? companyData[0] : companyData;
+        if (company) {
+          organizationHandle = company.handle;
+          organizationName = company.legalName || company.companyName;
+        }
+      } catch (orgError) {
+        console.warn('Could not fetch organization data:', orgError);
+        // Continue without organization data - backend may handle it
+      }
+      
+      const payload = buildCreateRequest(onboarding.draft, site, createdBy, organizationHandle, organizationName);
 
       await HrmEmployeeService.createEmployee(payload);
       message.success('Employee created successfully');
