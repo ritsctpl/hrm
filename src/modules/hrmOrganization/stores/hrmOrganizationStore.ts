@@ -362,7 +362,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       if (data.logoBase64 && data.logoBase64.startsWith('data:')) {
         processedData.logoUrl = data.logoBase64;
       }
-      // Normalize API field `gstin` → UI field `gstIn` for consistent form binding
+      // Normalize API field names for consistent form binding
+      // Backend may return 'gstin' or 'gstIn', normalize to 'gstIn' for UI
       if (processedData.gstin && !processedData.gstIn) {
         processedData.gstIn = processedData.gstin;
       }
@@ -467,7 +468,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       };
 
       // Create payload with all required fields
-      // NOTE: field names must match backend exactly (gstin not gstIn)
+      // NOTE: Backend expects 'gstIn' field name (camelCase)
       const payload: any = {
         site,
         legalName: companyProfile.draft.legalName || '',
@@ -476,7 +477,6 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         cin: companyProfile.draft.cin || '',
         pan: companyProfile.draft.pan || '',
         tan: companyProfile.draft.tan || '',
-        gstin: companyProfile.draft.gstIn || companyProfile.draft.gstin || undefined,
         foundedDate: companyProfile.draft.foundedDate || undefined,
         logoBase64: (companyProfile.draft.logoUrl && companyProfile.draft.logoUrl.startsWith('data:'))
           ? companyProfile.draft.logoUrl
@@ -491,6 +491,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         corporateOfficeAddress,
         bankAccounts,
       };
+      
+      // Add gstIn only if it has a value
+      const gstinValue = companyProfile.draft.gstIn || companyProfile.draft.gstin;
+      if (gstinValue && gstinValue.trim()) {
+        payload.gstIn = gstinValue.trim();
+      }
 
       let data: CompanyProfile;
       // Determine handle: from loaded data, selected handle, or draft handle
@@ -508,9 +514,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         data = await HrmOrganizationService.createCompany(payload);
       }
 
-      // Normalize gstin → gstIn after save so form binding stays consistent
+      // Normalize field names after save so form binding stays consistent
       const logoUrl = get().companyProfile.draft?.logoUrl;
       const savedData = { ...data, logoUrl };
+      // Backend may return 'gstin' or 'gstIn', normalize to 'gstIn' for UI
       if (savedData.gstin && !savedData.gstIn) {
         savedData.gstIn = savedData.gstin;
       }

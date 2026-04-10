@@ -79,7 +79,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
       store.clearAssignmentDraft();
       const refreshed = await HrmAccessService.fetchAssignmentsForUser(
         site,
-        userAssignment.selectedUserId!
+        userAssignment.selectedUserEmail!  // Use email
       );
       store.setUserAssignments(refreshed);
     } catch (err: unknown) {
@@ -106,7 +106,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
         notification.success({ message: 'Role revoked.' });
         const refreshed = await HrmAccessService.fetchAssignmentsForUser(
           site,
-          userAssignment.selectedUserId!
+          userAssignment.selectedUserEmail!  // Use email
         );
         store.setUserAssignments(refreshed);
       } catch (err: unknown) {

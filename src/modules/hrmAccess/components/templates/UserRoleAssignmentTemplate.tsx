@@ -98,11 +98,11 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
     store.selectUser(userId, userName, userEmail);
     setSelectedAssignmentHandle(null);
     
-    // Load assignments for selected user
+    // Load assignments for selected user - use email instead of userId
     store.setLoadingAssignments(true);
     try {
-      console.log('Calling fetchAssignmentsForUser with site:', site, 'userId:', userId);
-      const userAssignments = await HrmAccessService.fetchAssignmentsForUser(site, userId);
+      console.log('Calling fetchAssignmentsForUser with site:', site, 'userEmail:', userEmail);
+      const userAssignments = await HrmAccessService.fetchAssignmentsForUser(site, userEmail);  // Use email
       console.log('Assignments received:', userAssignments);
       store.setUserAssignments(userAssignments);
     } catch (err) {
@@ -128,7 +128,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
     try {
       const payload = {
         site,
-        userId: userAssignment.selectedUserId,
+        userId: userAssignment.selectedUserEmail,  // Backend expects email in userId field
         userDisplayName: userAssignment.selectedUserName,
         userEmail: userAssignment.selectedUserEmail,
         roleCode: userAssignment.assignmentDraft.roleCode!,
@@ -142,7 +142,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       store.clearAssignmentDraft();
       
       // Reload assignments for selected user
-      const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserId);
+      const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserEmail);  // Use email
       store.setUserAssignments(updated);
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to assign role.' });
@@ -158,8 +158,8 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       notification.success({ message: 'Role revoked successfully.' });
       
       // Reload assignments for selected user
-      if (userAssignment.selectedUserId) {
-        const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserId);
+      if (userAssignment.selectedUserEmail) {
+        const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserEmail);  // Use email
         store.setUserAssignments(updated);
       }
     } catch (err: unknown) {

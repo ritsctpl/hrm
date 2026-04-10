@@ -106,3 +106,4 @@ export const MOCK_RECENT_ACTIVITY: RecentActivityItem[] = [
   { id: '2', description: 'Expense report submitted', timeAgo: '1 day ago', status: 'info' },
   { id: '3', description: 'Timesheet saved as draft', timeAgo: '2 days ago', status: 'success' },
 ];
+

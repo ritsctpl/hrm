@@ -154,7 +154,10 @@ const CompanyProfileForm: React.FC = () => {
           const sectionCompletion: Record<string, [number, number]> = {
             identity: [['legalName', 'officialEmail', 'officialPhone'].filter(f => !!dr?.[f]).length, 3],
             statutory: [['pan', 'tan', 'cin'].filter(f => !!dr?.[f]).length, 3],
-            addresses: [d?.registeredAddress?.line1 ? 1 : 0, 1],
+            addresses: [
+              (d?.registeredOfficeAddress?.line1 || d?.registeredAddress?.line1) ? 1 : 0, 
+              1
+            ],
             bank: [Math.min(d?.bankAccounts?.length ?? 0, 1), 1],
             financial: [['financialYearStartMonth', 'financialYearEndMonth'].filter(f => !!dr?.[f]).length, 2],
           };

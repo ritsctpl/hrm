@@ -118,7 +118,9 @@ export function isValidPhone(phone: string): boolean {
 export function buildCreateRequest(
   draft: Partial<CreateEmployeeRequest>,
   site: string,
-  createdBy: string
+  createdBy: string,
+  organizationHandle?: string,
+  organizationName?: string
 ): CreateEmployeeRequest {
   return {
     site,
@@ -134,6 +136,8 @@ export function buildCreateRequest(
     businessUnits: draft.businessUnits || [],
     reportingManager: draft.reportingManager,
     designation: draft.designation,
+    organizationHandle,
+    organizationName,
     createdBy,
   };
 }
