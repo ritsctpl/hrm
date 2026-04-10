@@ -9,6 +9,10 @@ import { HrmPolicyService } from "./services/hrmPolicyService";
 import { useHrmPolicyData } from "./hooks/useHrmPolicyData";
 import { usePolicyPermissions } from "./hooks/usePolicyPermissions";
 import { usePermissionsStore } from "@/stores/permissionsStore";
+import { useModulePermissions } from "../hrmAccess/hooks/useModulePermissions";
+import { useHrmRbacStore } from "../hrmAccess/stores/hrmRbacStore";
+import { Result, Spin } from "antd";
+import { LockOutlined } from "@ant-design/icons";
 import PolicyLibraryTemplate from "./components/templates/PolicyLibraryTemplate";
 import PolicyAdminTemplate from "./components/templates/PolicyAdminTemplate";
 import PolicyFormDrawer from "./components/organisms/PolicyFormDrawer";
@@ -27,6 +31,8 @@ const HrmPolicyLanding: React.FC = () => {
 
   const { fetchEffectivePermissions } = usePermissionsStore();
   const permissions = usePolicyPermissions();
+  const modulePerms = useModulePermissions('HRM_POLICY');
+  const isRbacReady = useHrmRbacStore(s => s.isReady);
 
   const {
     policies,
@@ -228,6 +234,33 @@ const HrmPolicyLanding: React.FC = () => {
     loadAdminPolicies();
     loadPolicies();
   };
+
+  // Wait for RBAC to be ready before checking access
+  if (!isRbacReady) {
+    return (
+      <div className={`hrm-module-root ${styles.landing}`}>
+        <CommonAppBar appTitle="HR Policies & SOPs" />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+          <Spin />
+        </div>
+      </div>
+    );
+  }
+
+  // Module-level access gate — block users with no VIEW permission
+  if (!modulePerms.canView) {
+    return (
+      <div className={`hrm-module-root ${styles.landing}`}>
+        <CommonAppBar appTitle="HR Policies & SOPs" />
+        <Result
+          icon={<LockOutlined style={{ color: '#bfbfbf' }} />}
+          status="403"
+          title="Access Denied"
+          subTitle="You don't have permission to view the Policies module. Please contact your administrator."
+        />
+      </div>
+    );
+  }
 
   if (showPolicyViewer && selectedPolicy) {
     return (
