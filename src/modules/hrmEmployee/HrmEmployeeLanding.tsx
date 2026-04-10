@@ -12,6 +12,7 @@ import AlertsDashboard from './components/organisms/AlertsDashboard';
 import EmployeeAuditLogPanel from './components/organisms/EmployeeAuditLogPanel';
 import FieldSchemaConfigPanel from './components/organisms/FieldSchemaConfigPanel';
 import EmployeeExportPanel from './components/organisms/EmployeeExportPanel';
+import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
 import type { DirectoryFilters } from './types/ui.types';
 
 interface HrmEmployeeLandingProps {
@@ -45,6 +46,8 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   const [auditOpen, setAuditOpen] = useState(false);
   const [schemaConfigOpen, setSchemaConfigOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+
+  const perms = useModulePermissions('HRM_EMPLOYEE');
 
   // Derive unique departments from data for filter dropdowns
   const departments = useMemo(
@@ -98,6 +101,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
         onExport={() => setExportOpen(true)}
         onAuditLog={() => setAuditOpen(true)}
         onFieldConfig={() => setSchemaConfigOpen(true)}
+        canAdd={perms.canAdd}
+        canEdit={perms.canEdit}
+        canDelete={perms.canDelete}
       />
 
       {/* Onboarding Wizard */}

@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, Button, Badge, Spin } from 'antd';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import { useHrmAssetData } from './hooks/useHrmAssetData';
@@ -19,10 +18,8 @@ import AssetRequestForm from './components/organisms/AssetRequestForm';
 import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailTemplate';
 import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
+import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
 import styles from './styles/HrmAsset.module.css';
-
-const SUPERVISOR_ROLES = ['SUPERVISOR', 'MANAGER', 'HR', 'HR_ADMIN', 'NEXT_SUPERIOR'];
-const ADMIN_ROLES = ['ADMIN', 'HR_ADMIN', 'SUPER_ADMIN', 'IT_ADMIN'];
 
 const HrmAssetLanding: React.FC = () => {
   const store = useHrmAssetStore();
@@ -31,10 +28,13 @@ const HrmAssetLanding: React.FC = () => {
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<import('./types/domain.types').AssetCategory | null>(null);
 
-  const cookies = parseCookies();
-  const userRole = (cookies.userRole ?? cookies.role ?? 'EMPLOYEE').toUpperCase();
-  const isSupervisor = useMemo(() => SUPERVISOR_ROLES.includes(userRole), [userRole]);
-  const isAdmin = useMemo(() => ADMIN_ROLES.includes(userRole), [userRole]);
+  // RBAC permissions from backend (replaces hardcoded role arrays)
+  const perms = useModulePermissions('HRM_ASSET');
+  const canAdd = perms.canAdd;
+  const canEdit = perms.canEdit;
+  const canDelete = perms.canDelete;
+  const isSupervisor = canEdit; // Approval flows reuse edit permission
+  const isAdmin = canDelete; // Admin actions require delete permission
 
   // Load once on mount — no function refs in deps to avoid infinite loop
   useEffect(() => {

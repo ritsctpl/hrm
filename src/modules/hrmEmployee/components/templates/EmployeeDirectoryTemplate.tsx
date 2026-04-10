@@ -18,7 +18,6 @@ import {
   DownloadOutlined,
   AuditOutlined,
   SettingOutlined,
-  LogoutOutlined,
 } from '@ant-design/icons';
 import EmpSearchBar from '../molecules/EmpSearchBar';
 import EmpFilterBar from '../molecules/EmpFilterBar';
@@ -53,6 +52,9 @@ interface EmployeeDirectoryTemplateProps {
   onExport?: () => void;
   onAuditLog?: () => void;
   onFieldConfig?: () => void;
+  canAdd?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
@@ -80,6 +82,9 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
   onExport,
   onAuditLog,
   onFieldConfig,
+  canAdd = true,
+  canEdit = true,
+  canDelete = true,
 }) => {
   const activeCount = useMemo(
     () => employees.filter((e) => e.status === 'ACTIVE').length,
@@ -101,12 +106,14 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
           </div>
         </div>
         <div className={styles.headerRight}>
-          <Tooltip title="Bulk Import">
-            <Button icon={<UploadOutlined />} onClick={onBulkImport}>
-              Import
-            </Button>
-          </Tooltip>
-          {onBulkOps && (
+          {canAdd && (
+            <Tooltip title="Bulk Import">
+              <Button icon={<UploadOutlined />} onClick={onBulkImport}>
+                Import
+              </Button>
+            </Tooltip>
+          )}
+          {canEdit && onBulkOps && (
             <Tooltip title="Bulk Operations">
               <Button icon={<TeamOutlined />} onClick={onBulkOps}>
                 Bulk Ops
@@ -132,14 +139,16 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
               <Button icon={<AuditOutlined />} onClick={onAuditLog} />
             </Tooltip>
           )}
-          {onFieldConfig && (
+          {canDelete && onFieldConfig && (
             <Tooltip title="Field Schema Config">
               <Button icon={<SettingOutlined />} onClick={onFieldConfig} />
             </Tooltip>
           )}
-          <Button type="primary" onClick={onAddEmployee}>
-            +
-          </Button>
+          {canAdd && (
+            <Tooltip title="Add Employee">
+              <Button type="primary" icon={<PlusOutlined />} onClick={onAddEmployee} />
+            </Tooltip>
+          )}
         </div>
       </div>
 

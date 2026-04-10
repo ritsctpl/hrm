@@ -12,16 +12,17 @@ import AssetMaintenanceTab from './components/organisms/AssetMaintenanceTab';
 import AssetDepreciationTab from './components/organisms/AssetDepreciationTab';
 import AllocationPanel from './components/organisms/AllocationPanel';
 import ReturnAssetModal from './components/organisms/ReturnAssetModal';
+import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
 
 interface HrmAssetScreenProps {
   canEdit?: boolean;
   canAssign?: boolean;
 }
 
-const HrmAssetScreen: React.FC<HrmAssetScreenProps> = ({
-  canEdit = true,
-  canAssign = true,
-}) => {
+const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
+  const perms = useModulePermissions('HRM_ASSET');
+  const canEdit = props.canEdit ?? perms.canEdit;
+  const canAssign = props.canAssign ?? perms.canEdit;
   const store = useHrmAssetStore();
   const { selectedAsset, activeDetailTab, setActiveDetailTab, setSelectedAsset, openAssetForm } = store;
 

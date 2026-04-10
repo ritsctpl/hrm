@@ -18,6 +18,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useModulePermissions } from '../../../hrmAccess/hooks/useModulePermissions';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -28,6 +29,8 @@ const OrganizationListTemplate: React.FC = () => {
     navigateToDetail,
     deleteCompany,
   } = useHrmOrganizationStore();
+
+  const perms = useModulePermissions('HRM_ORGANIZATION');
 
   useEffect(() => {
     fetchCompanyList();
@@ -112,9 +115,11 @@ const OrganizationListTemplate: React.FC = () => {
           className={styles.searchInput}
           allowClear
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
-          Add Company
-        </Button>
+        {perms.canAdd && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
+            Add Company
+          </Button>
+        )}
       </div>
 
       {/* ───── Content ───── */}
@@ -139,7 +144,7 @@ const OrganizationListTemplate: React.FC = () => {
               ? 'Try a different search term'
               : 'Set up your first company to get started with organization management'}
           </p>
-          {!companyList.searchText && (
+          {!companyList.searchText && perms.canAdd && (
             <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
               Create First Company
             </Button>
@@ -233,24 +238,28 @@ const OrganizationListTemplate: React.FC = () => {
                       onClick={() => navigateToDetail(company.handle)}
                     />
                   </Tooltip>
-                  <Tooltip title="Edit">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => navigateToDetail(company.handle)}
-                    />
-                  </Tooltip>
-                  <Popconfirm
-                    title="Delete this company?"
-                    description="This action cannot be undone."
-                    onConfirm={(e) => handleDeleteCompany(company.handle, e as unknown as React.MouseEvent)}
-                    onCancel={(e) => e?.stopPropagation()}
-                  >
-                    <Tooltip title="Delete">
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                  {perms.canEdit && (
+                    <Tooltip title="Edit">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => navigateToDetail(company.handle)}
+                      />
                     </Tooltip>
-                  </Popconfirm>
+                  )}
+                  {perms.canDelete && (
+                    <Popconfirm
+                      title="Delete this company?"
+                      description="This action cannot be undone."
+                      onConfirm={(e) => handleDeleteCompany(company.handle, e as unknown as React.MouseEvent)}
+                      onCancel={(e) => e?.stopPropagation()}
+                    >
+                      <Tooltip title="Delete">
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                      </Tooltip>
+                    </Popconfirm>
+                  )}
                 </div>
               </div>
             );

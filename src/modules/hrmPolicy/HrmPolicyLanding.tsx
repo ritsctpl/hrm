@@ -263,7 +263,8 @@ const HrmPolicyLanding: React.FC = () => {
     },
   ];
 
-  if (canAdmin) {
+  // Use RBAC permissions from backend (not hardcoded role check)
+  if (permissions.canCreatePolicy || permissions.canEditPolicy || canAdmin) {
     tabItems.push({
       key: "admin",
       label: "Admin",
