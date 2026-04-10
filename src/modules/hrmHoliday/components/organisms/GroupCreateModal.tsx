@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, Select, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { GroupCreateModalProps } from '../../types/ui.types';
@@ -9,6 +9,7 @@ import type { HolidayGroup } from '../../types/domain.types';
 import type { HolidayGroupResponse } from '../../types/api.types';
 import { groupFormRules } from '../../utils/validations';
 import { getYearOptions } from '../../utils/formatters';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function GroupCreateModal({ open, onClose, onCreated }: GroupCreateModalProps) {
   const [form] = Form.useForm();
@@ -55,11 +56,18 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
     <Modal
       open={open}
       title="Create Holiday Group"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={saving}
       destroyOnHidden
-      okText="Create Group"
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="create" I="add">
+          <Button type="primary" loading={saving} onClick={handleOk}>
+            Create Group
+          </Button>
+        </Can>,
+      ]}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item label="Group Name" name="groupName" rules={groupFormRules.groupName}>

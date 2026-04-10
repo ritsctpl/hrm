@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import type { AssetListResponse } from '../../types/api.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetForm.module.css';
 
 export default function AllocationPanel() {
@@ -80,9 +81,11 @@ export default function AllocationPanel() {
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="primary" loading={allocatingAsset} onClick={handleAllocate}>
-              Allocate
-            </Button>
+            <Can I="edit">
+              <Button type="primary" loading={allocatingAsset} onClick={handleAllocate}>
+                Allocate
+              </Button>
+            </Can>
           </Space>
         </div>
       }

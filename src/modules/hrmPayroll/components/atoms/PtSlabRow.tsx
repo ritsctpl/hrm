@@ -5,6 +5,7 @@ import { InputNumber, Button, Space } from 'antd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { PtSlabRowProps } from '../../types/ui.types';
 import type { ProfessionalTaxSlab } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 
 const PtSlabRow: React.FC<PtSlabRowProps> = ({ slab, index, onChange, onDelete }) => {
   const update = (patch: Partial<ProfessionalTaxSlab>) => onChange(index, { ...slab, ...patch });
@@ -32,12 +33,14 @@ const PtSlabRow: React.FC<PtSlabRowProps> = ({ slab, index, onChange, onDelete }
         onChange={(v) => update({ monthlyPT: v ?? 0 })}
         style={{ width: 130 }}
       />
-      <Button
-        type="text"
-        danger
-        icon={<DeleteOutlineIcon fontSize="small" />}
-        onClick={() => onDelete(index)}
-      />
+      <Can I="delete">
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlineIcon fontSize="small" />}
+          onClick={() => onDelete(index)}
+        />
+      </Can>
     </Space>
   );
 };

@@ -3,6 +3,7 @@
 import React from "react";
 import { Button, Card, Tag, Typography } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 import type { FeedbackEntry } from "../../types/domain.types";
 
 const FEEDBACK_COLORS: Record<string, string> = {
@@ -38,14 +39,16 @@ const FeedbackItemCard: React.FC<Props> = ({ entry, onAcknowledge }) => (
       <div style={{ marginTop: 4, fontSize: 13 }}>{entry.content}</div>
     </div>
     {!entry.acknowledged && onAcknowledge && (
-      <Button
-        size="small"
-        icon={<CheckOutlined />}
-        onClick={() => onAcknowledge(entry.feedbackId)}
-        style={{ marginLeft: 12 }}
-      >
-        Ack
-      </Button>
+      <Can I="edit">
+        <Button
+          size="small"
+          icon={<CheckOutlined />}
+          onClick={() => onAcknowledge(entry.feedbackId)}
+          style={{ marginLeft: 12 }}
+        >
+          Ack
+        </Button>
+      </Can>
     )}
   </div>
 );

@@ -7,6 +7,7 @@ import { AnnouncementComposeDrawerProps } from "../../types/ui.types";
 import { HrmAnnouncementService } from "../../services/hrmAnnouncementService";
 import { CATEGORY_LABELS } from "../../utils/constants";
 import { useHrmAnnouncementStore } from "../../stores/hrmAnnouncementStore";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -76,9 +77,11 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       extra={
         <Space>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" onClick={handleSubmit} loading={saving}>
-            {editAnnouncement ? "Update" : "Create"}
-          </Button>
+          <Can I={editAnnouncement ? "edit" : "add"}>
+            <Button type="primary" onClick={handleSubmit} loading={saving}>
+              {editAnnouncement ? "Update" : "Create"}
+            </Button>
+          </Can>
         </Space>
       }
     >

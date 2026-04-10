@@ -8,6 +8,7 @@ import HolidayFormFields from '../molecules/HolidayFormFields';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayFormPanelProps } from '../../types/ui.types';
 import type { Holiday } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function HolidayFormPanel({
@@ -151,14 +152,16 @@ export default function HolidayFormPanel({
         <div className={styles.drawerFooter}>
           <Space>
             <Button onClick={onClose}>Cancel</Button>
-            <Button
-              type="primary"
-              loading={saving}
-              onClick={handleSubmit}
-              disabled={groupStatus === 'LOCKED'}
-            >
-              Save Holiday
-            </Button>
+            <Can I={isEdit ? 'edit' : 'add'}>
+              <Button
+                type="primary"
+                loading={saving}
+                onClick={handleSubmit}
+                disabled={groupStatus === 'LOCKED'}
+              >
+                Save Holiday
+              </Button>
+            </Can>
           </Space>
         </div>
       }

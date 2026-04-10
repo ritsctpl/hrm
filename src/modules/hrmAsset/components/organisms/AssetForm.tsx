@@ -9,6 +9,7 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import { assetFormRules } from '../../utils/assetValidations';
+import Can from '../../../hrmAccess/components/Can';
 import { COUNTRY_STATES } from '../../../hrmOrganization/utils/constants';
 import { STATE_CITIES } from '../../../hrmOrganization/utils/locationSearch';
 import type { Asset } from '../../types/domain.types';
@@ -125,9 +126,11 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button type="primary" loading={savingAsset} onClick={handleSave}>
-            {isEdit ? 'Update' : 'Create'}
-          </Button>
+          <Can I={isEdit ? 'edit' : 'add'}>
+            <Button type="primary" loading={savingAsset} onClick={handleSave}>
+              {isEdit ? 'Update' : 'Create'}
+            </Button>
+          </Can>
         </div>
       }
       styles={{ body: { padding: '16px 20px' } }}

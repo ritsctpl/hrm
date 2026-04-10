@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button, Divider, Form, Input, Typography } from "antd";
+import Can from "../../../hrmAccess/components/Can";
 import RatingStarInput from "../atoms/RatingStarInput";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import { RATING_LABELS } from "../../utils/appraisalConstants";
@@ -112,10 +113,14 @@ const SelfAssessmentForm: React.FC = () => {
       </div>
 
       <div className={styles.submitBar}>
-        <Button>Save Draft</Button>
-        <Button type="primary" loading={submittingAssessment} onClick={handleSubmit}>
-          Submit Self Assessment
-        </Button>
+        <Can I="edit">
+          <Button>Save Draft</Button>
+        </Can>
+        <Can I="edit">
+          <Button type="primary" loading={submittingAssessment} onClick={handleSubmit}>
+            Submit Self Assessment
+          </Button>
+        </Can>
       </div>
     </div>
   );

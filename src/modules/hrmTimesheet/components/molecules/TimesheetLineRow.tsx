@@ -2,6 +2,7 @@
 import { InputNumber, Select, Input, Button, Tooltip } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { LINE_TYPE_LABELS, HOURS_STEP } from '../../utils/timesheetConstants';
+import Can from '../../../hrmAccess/components/Can';
 import type { TimesheetLine, UnplannedCategory } from '../../types/domain.types';
 import type { AllocationForDay } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
@@ -76,7 +77,9 @@ export default function TimesheetLineRow({ line, allocations, categories, readOn
       )}
 
       {!readOnly && onRemove && (
-        <Button size="small" icon={<DeleteOutlined />} danger onClick={() => onRemove(line.lineId)} />
+        <Can I="delete">
+          <Button size="small" icon={<DeleteOutlined />} danger onClick={() => onRemove(line.lineId)} />
+        </Can>
       )}
     </div>
   );

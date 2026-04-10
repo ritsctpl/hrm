@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Button, Input, InputNumber, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ExpandableConfig } from "antd/es/table/interface";
+import Can from "../../../hrmAccess/components/Can";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import type { AppraisalReview } from "../../types/domain.types";
 import styles from "../../styles/Calibration.module.css";
@@ -70,20 +71,22 @@ const CalibrationTable: React.FC = () => {
             style={{ marginTop: 4 }}
           />
         </div>
-        <Button
-          type="primary"
-          size="small"
-          loading={savingCalibration}
-          onClick={() =>
-            calibrateRating(
-              record.reviewId,
-              calibratedValues[record.reviewId] ?? 0,
-              calibrationNotes[record.reviewId] ?? ""
-            )
-          }
-        >
-          Save Calibration for {record.employeeName}
-        </Button>
+        <Can I="edit">
+          <Button
+            type="primary"
+            size="small"
+            loading={savingCalibration}
+            onClick={() =>
+              calibrateRating(
+                record.reviewId,
+                calibratedValues[record.reviewId] ?? 0,
+                calibrationNotes[record.reviewId] ?? ""
+              )
+            }
+          >
+            Save Calibration for {record.employeeName}
+          </Button>
+        </Can>
       </div>
     ),
   };

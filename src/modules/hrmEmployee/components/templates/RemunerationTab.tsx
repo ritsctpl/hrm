@@ -5,6 +5,7 @@ import { Card, Descriptions, Button, Spin, Empty, message, InputNumber, Form, In
 import { EditOutlined, SaveOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 import type { EmployeeProfile, Remuneration } from '../../types/domain.types';
 
 interface Props {
@@ -62,9 +63,11 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
     return (
       <div style={{ padding: 24 }}>
         <Empty description="No remuneration data available">
-          <Button type="primary" onClick={() => { setEditing(true); form.resetFields(); }}>
-            Set Remuneration
-          </Button>
+          <Can I="add">
+            <Button type="primary" onClick={() => { setEditing(true); form.resetFields(); }}>
+              Set Remuneration
+            </Button>
+          </Can>
         </Empty>
       </div>
     );
@@ -130,9 +133,11 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
             <Input placeholder="Approver name" />
           </Form.Item>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
-              Save
-            </Button>
+            <Can I={remuneration ? 'edit' : 'add'}>
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
+                Save
+              </Button>
+            </Can>
             <Button onClick={() => setEditing(false)}>Cancel</Button>
           </div>
         </Form>
@@ -149,9 +154,11 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
         size="small"
         title="Salary Breakdown"
         extra={
-          <Button size="small" icon={<EditOutlined />} onClick={() => { setEditing(true); form.setFieldsValue(remuneration); }}>
-            Update
-          </Button>
+          <Can I="edit">
+            <Button size="small" icon={<EditOutlined />} onClick={() => { setEditing(true); form.setFieldsValue(remuneration); }}>
+              Update
+            </Button>
+          </Can>
         }
       >
         <Descriptions column={2} size="small" bordered>

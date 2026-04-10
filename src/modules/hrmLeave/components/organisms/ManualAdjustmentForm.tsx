@@ -5,6 +5,7 @@ import { Button, DatePicker, Form, Input, Radio, Select, Typography, message } f
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title } = Typography;
@@ -79,9 +80,11 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
         <Form.Item name="notes" label="Notes">
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Button type="primary" onClick={handleSubmit} loading={loading}>
-          Post Adjustment
-        </Button>
+        <Can I="add">
+          <Button type="primary" onClick={handleSubmit} loading={loading}>
+            Post Adjustment
+          </Button>
+        </Can>
       </Form>
     </div>
   );

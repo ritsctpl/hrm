@@ -11,6 +11,7 @@ import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { categoryFormRules } from '../../utils/assetValidations';
 import { CATEGORY_DATA_TYPES } from '../../utils/assetConstants';
 import type { AssetCategory } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 
 interface AssetCategoryFormProps {
   open: boolean;
@@ -90,9 +91,11 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="primary" loading={saving} onClick={handleSave}>
-              {isEdit ? 'Update' : 'Create'}
-            </Button>
+            <Can I={isEdit ? 'edit' : 'add'}>
+              <Button type="primary" loading={saving} onClick={handleSave}>
+                {isEdit ? 'Update' : 'Create'}
+              </Button>
+            </Can>
           </Space>
         </div>
       }
@@ -107,13 +110,14 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
             renderItem={(cat) => (
               <List.Item
                 actions={[
-                  <Button
-                    key="edit"
-                    type="text"
-                    size="small"
-                    icon={<EditIcon style={{ fontSize: 16 }} />}
-                    onClick={() => onEditCategory?.(cat)}
-                  />,
+                  <Can I="edit" key="edit">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditIcon style={{ fontSize: 16 }} />}
+                      onClick={() => onEditCategory?.(cat)}
+                    />
+                  </Can>,
                 ]}
               >
                 <List.Item.Meta

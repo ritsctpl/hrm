@@ -29,6 +29,7 @@ import GenerationResultsCard from "../molecules/GenerationResultsCard";
 import type { PayslipListItem } from "../../types/domain.types";
 import { MONTHS, YEAR_OPTIONS } from "../../utils/payslipConstants";
 import { formatDate } from "../../utils/payslipFormatters";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/Payslip.module.css";
 
 const { Text } = Typography;
@@ -88,11 +89,13 @@ const PayslipGenerationPanel: React.FC = () => {
             }
           />
           {record.status === "FAILED" && (
-            <Button
-              size="small"
-              icon={<SyncOutlined />}
-              onClick={() => store.regenerateOne(record.employeeId)}
-            />
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<SyncOutlined />}
+                onClick={() => store.regenerateOne(record.employeeId)}
+              />
+            </Can>
           )}
         </Space>
       ),
@@ -176,17 +179,19 @@ const PayslipGenerationPanel: React.FC = () => {
         )}
       </Card>
 
-      <Button
-        type="primary"
-        size="large"
-        icon={<FileProtectOutlined />}
-        loading={store.generating}
-        onClick={store.runGeneration}
-        style={{ marginBottom: 16 }}
-        block
-      >
-        Generate Payslips
-      </Button>
+      <Can I="add">
+        <Button
+          type="primary"
+          size="large"
+          icon={<FileProtectOutlined />}
+          loading={store.generating}
+          onClick={store.runGeneration}
+          style={{ marginBottom: 16 }}
+          block
+        >
+          Generate Payslips
+        </Button>
+      </Can>
 
       {store.generating && <GenerationProgress />}
 

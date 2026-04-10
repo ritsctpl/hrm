@@ -9,6 +9,7 @@ import { Announcement } from "../../types/domain.types";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
 import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
 import AnnouncementComposeDrawer from "../organisms/AnnouncementComposeDrawer";
+import Can from "../../../hrmAccess/components/Can";
 import { STATUS_COLORS } from "../../utils/constants";
 import styles from "../../styles/HrmAnnouncement.module.css";
 
@@ -82,17 +83,23 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       width: 160,
       render: (_, record) => (
         <Space size={4}>
-          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+          <Can I="edit">
+            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+          </Can>
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
-            <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
-              <Button size="small" icon={<SendOutlined />} type="primary" />
-            </Popconfirm>
+            <Can I="edit">
+              <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
+                <Button size="small" icon={<SendOutlined />} type="primary" />
+              </Popconfirm>
+            </Can>
           )}
           {record.status === "PUBLISHED" && (
-            <Popconfirm title="Withdraw?" onConfirm={() => onWithdraw(record.handle)} okText="Withdraw" okButtonProps={{ danger: true }}>
-              <Button size="small" icon={<StopOutlined />} danger />
-            </Popconfirm>
+            <Can I="edit">
+              <Popconfirm title="Withdraw?" onConfirm={() => onWithdraw(record.handle)} okText="Withdraw" okButtonProps={{ danger: true }}>
+                <Button size="small" icon={<StopOutlined />} danger />
+              </Popconfirm>
+            </Can>
           )}
         </Space>
       ),
@@ -102,9 +109,11 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
   return (
     <div className={styles.adminTemplate}>
       <div className={styles.adminToolbar}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
-          New Announcement
-        </Button>
+        <Can I="add">
+          <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
+            New Announcement
+          </Button>
+        </Can>
       </div>
       <Table
         columns={columns}

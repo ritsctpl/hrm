@@ -9,6 +9,7 @@ import ExpenseStatusChip from "../atoms/ExpenseStatusChip";
 import ExpenseTypeTag from "../atoms/ExpenseTypeTag";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import { formatExpenseDateRange } from "../../utils/expenseTransformations";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseList.module.css";
 
 interface Props {
@@ -98,9 +99,11 @@ const ExpenseListTable: React.FC<Props> = ({
               description="No expense reports yet"
             >
               {onNewExpense && (
-                <Button type="primary" onClick={onNewExpense}>
-                  + New Expense
-                </Button>
+                <Can I="add">
+                  <Button type="primary" onClick={onNewExpense}>
+                    + New Expense
+                  </Button>
+                </Can>
               )}
             </Empty>
           ),

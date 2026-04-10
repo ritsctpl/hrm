@@ -5,6 +5,7 @@ import { Button, DatePicker, Form, Input, Typography, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { CompOffCreditFormProps } from "../../types/ui.types";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title } = Typography;
@@ -61,9 +62,11 @@ const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited 
         <Form.Item name="notes" label="Notes">
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Button type="primary" onClick={handleSubmit} loading={loading}>
-          Credit Comp Off
-        </Button>
+        <Can I="add">
+          <Button type="primary" onClick={handleSubmit} loading={loading}>
+            Credit Comp Off
+          </Button>
+        </Can>
       </Form>
     </div>
   );

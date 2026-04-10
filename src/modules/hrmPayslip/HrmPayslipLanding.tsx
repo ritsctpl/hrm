@@ -6,6 +6,7 @@ import { Tabs } from "antd";
 import { parseCookies } from "nookies";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmPayslipStore } from "./stores/payslipStore";
+import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import styles from "./styles/Payslip.module.css";
 
 const PayslipGenerationPanel = dynamic(
@@ -71,20 +72,22 @@ const HrmPayslipLanding: React.FC = () => {
   const defaultTab = isAdminOrHr ? "generate" : "myPayslips";
 
   return (
-    <div className={`hrm-module-root ${styles.payslipPage}`}>
-      <CommonAppBar appTitle="Payslip Management" />
-      <div className={styles.tabsWrapper}>
-        <Tabs
-          activeKey={activeTab}
-          defaultActiveKey={defaultTab}
-          onChange={(key) => setActiveTab(key as typeof activeTab)}
-          items={tabItems}
-          className={styles.mainTabs}
-          size="small"
-          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-        />
+    <ModuleAccessGate moduleCode="HRM_PAYSLIP" appTitle="Payslip Management">
+      <div className={`hrm-module-root ${styles.payslipPage}`}>
+        <CommonAppBar appTitle="Payslip Management" />
+        <div className={styles.tabsWrapper}>
+          <Tabs
+            activeKey={activeTab}
+            defaultActiveKey={defaultTab}
+            onChange={(key) => setActiveTab(key as typeof activeTab)}
+            items={tabItems}
+            className={styles.mainTabs}
+            size="small"
+            tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          />
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

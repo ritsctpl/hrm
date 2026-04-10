@@ -6,6 +6,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useHrmPayrollStore } from '../../stores/payrollStore';
 import { formatPayrollPeriod } from '../../utils/payrollFormatters';
 import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const { Text } = Typography;
@@ -53,16 +54,18 @@ const WizardStepProcess: React.FC = () => {
 
       <Card title="Payroll Calculation" className={styles.stepCard}>
         <Space direction="vertical" style={{ width: '100%' }} size={16}>
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlayArrowIcon fontSize="small" />}
-            onClick={handleRun}
-            disabled={processing || isComplete}
-            loading={processing}
-          >
-            {processing ? 'Processing...' : isComplete ? 'Calculation Complete' : 'Run Calculation'}
-          </Button>
+          <Can I="edit">
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlayArrowIcon fontSize="small" />}
+              onClick={handleRun}
+              disabled={processing || isComplete}
+              loading={processing}
+            >
+              {processing ? 'Processing...' : isComplete ? 'Calculation Complete' : 'Run Calculation'}
+            </Button>
+          </Can>
 
           {error && (
             <Alert type="error" message={error} showIcon />

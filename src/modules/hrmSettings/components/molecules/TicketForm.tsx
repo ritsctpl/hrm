@@ -5,6 +5,7 @@ import { Input, Select, Radio, Button, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ticketFormSchema } from '../../types/domain.types';
 import { TICKET_CATEGORIES } from '../../utils/constants';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmSettings.module.css';
 import type { TicketFormProps } from '../../types/ui.types';
 
@@ -61,9 +62,11 @@ const TicketForm: React.FC<TicketFormProps> = ({ onSubmit }) => {
           <Radio value="high">High</Radio>
         </Radio.Group>
       </div>
-      <Button type="primary" onClick={handleSubmit} className={styles.saveButton}>
-        {t('settings.support.submit')}
-      </Button>
+      <Can I="add">
+        <Button type="primary" onClick={handleSubmit} className={styles.saveButton}>
+          {t('settings.support.submit')}
+        </Button>
+      </Can>
     </div>
   );
 };

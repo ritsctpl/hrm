@@ -13,6 +13,7 @@ import AssetDepreciationTab from './components/organisms/AssetDepreciationTab';
 import AllocationPanel from './components/organisms/AllocationPanel';
 import ReturnAssetModal from './components/organisms/ReturnAssetModal';
 import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
+import Can from '../hrmAccess/components/Can';
 
 interface HrmAssetScreenProps {
   canEdit?: boolean;
@@ -94,13 +95,15 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
         </div>
         <Space>
           {canEdit && (
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={openAssetForm}
-            >
-              Edit
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={openAssetForm}
+              >
+                Edit
+              </Button>
+            </Can>
           )}
           <Button
             size="small"

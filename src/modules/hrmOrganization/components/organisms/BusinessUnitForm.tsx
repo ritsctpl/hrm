@@ -6,6 +6,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgAddressFields from '../molecules/OrgAddressFields';
 import OrgSaveButton from '../atoms/OrgSaveButton';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { COUNTRY_STATES, EMPTY_ADDRESS } from '../../utils/constants';
 import type { BusinessUnitFormProps } from '../../types/ui.types';
@@ -174,11 +175,13 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
       <div className={mainStyles.formActions}>
         <Button onClick={onClose}>Cancel</Button>
-        <OrgSaveButton
-          loading={isSaving}
-          onClick={handleSave}
-          label={isNew ? 'Create' : 'Update'}
-        />
+        <Can I={isNew ? 'add' : 'edit'}>
+          <OrgSaveButton
+            loading={isSaving}
+            onClick={handleSave}
+            label={isNew ? 'Create' : 'Update'}
+          />
+        </Can>
       </div>
     </div>
   );

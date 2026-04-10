@@ -5,6 +5,7 @@ import { Button, Divider, Form, Input, Switch } from "antd";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
 import TemplateSectionConfig from "./TemplateSectionConfig";
 import type { PayslipTemplate } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/TemplateDesigner.module.css";
 
 const PayslipTemplateForm: React.FC = () => {
@@ -96,9 +97,11 @@ const PayslipTemplateForm: React.FC = () => {
         <div className={styles.formActions}>
           <Button onClick={handlePreview}>Preview Template</Button>
           <Button onClick={() => selectTemplate(null)}>Cancel</Button>
-          <Button type="primary" onClick={handleSave}>
-            Save
-          </Button>
+          <Can I={selectedTemplate.handle ? "edit" : "add"}>
+            <Button type="primary" onClick={handleSave}>
+              Save
+            </Button>
+          </Can>
         </div>
       </Form>
     </div>

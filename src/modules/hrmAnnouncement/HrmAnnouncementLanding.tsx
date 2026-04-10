@@ -10,6 +10,7 @@ import { useHrmAnnouncementData } from './hooks/useHrmAnnouncementData';
 import AnnouncementFeedTemplate from './components/templates/AnnouncementFeedTemplate';
 import AnnouncementAdminTemplate from './components/templates/AnnouncementAdminTemplate';
 import AnnouncementDetailPanel from './components/organisms/AnnouncementDetailPanel';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { Announcement } from './types/domain.types';
 import { ANNOUNCEMENT_HR_ROLES } from './utils/constants';
 import styles from './styles/HrmAnnouncement.module.css';
@@ -132,16 +133,18 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   if (showDetailPanel && selectedAnnouncement) {
     return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar
-          appTitle={`Announcements > ${selectedAnnouncement.title}`}
-        />
-        <AnnouncementDetailPanel
-          announcement={selectedAnnouncement}
-          onClose={closeDetailPanel}
-          onMarkRead={handleMarkRead}
-        />
-      </div>
+      <ModuleAccessGate moduleCode="HRM_ANNOUNCEMENT" appTitle="Announcements">
+        <div className={`hrm-module-root ${styles.landing}`}>
+          <CommonAppBar
+            appTitle={`Announcements > ${selectedAnnouncement.title}`}
+          />
+          <AnnouncementDetailPanel
+            announcement={selectedAnnouncement}
+            onClose={closeDetailPanel}
+            onMarkRead={handleMarkRead}
+          />
+        </div>
+      </ModuleAccessGate>
     );
   }
 
@@ -191,17 +194,19 @@ const HrmAnnouncementLanding: React.FC = () => {
   }
 
   return (
-    <div className={`hrm-module-root ${styles.landing}`}>
-      <CommonAppBar appTitle="Announcements" />
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as 'feed' | 'admin')}
-        items={tabItems}
-        size="small"
-        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-        style={{ flex: 1, overflow: 'hidden' }}
-      />
-    </div>
+    <ModuleAccessGate moduleCode="HRM_ANNOUNCEMENT" appTitle="Announcements">
+      <div className={`hrm-module-root ${styles.landing}`}>
+        <CommonAppBar appTitle="Announcements" />
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as 'feed' | 'admin')}
+          items={tabItems}
+          size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          style={{ flex: 1, overflow: 'hidden' }}
+        />
+      </div>
+    </ModuleAccessGate>
   );
 };
 

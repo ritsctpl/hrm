@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Drawer, Switch } from 'antd';
 import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import WelcomeBanner from './components/molecules/WelcomeBanner';
 import EmployeeDashboardTemplate from './components/templates/EmployeeDashboardTemplate';
 import ManagerDashboardTemplate from './components/templates/ManagerDashboardTemplate';
@@ -100,6 +101,7 @@ export default function HrmDashboardLanding() {
   };
 
   return (
+    <ModuleAccessGate moduleCode="HRM_DASHBOARD" appTitle="HR Dashboard">
     <div className={`hrm-module-root ${styles.dashboardRoot}`}>
       <CommonAppBar appTitle={APP_BAR_TITLES[dashboardRole] ?? 'FENTA HRM'} />
 
@@ -134,5 +136,6 @@ export default function HrmDashboardLanding() {
         ))}
       </Drawer>
     </div>
+    </ModuleAccessGate>
   );
 }

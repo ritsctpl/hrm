@@ -5,6 +5,7 @@ import { Button, Input, Space, Typography } from 'antd';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelIcon from '@mui/icons-material/Cancel';
 import type { ApprovalActionBarProps } from '../../types/ui.types';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function ApprovalActionBar({
   request,
@@ -44,23 +45,27 @@ export default function ApprovalActionBar({
         </Typography.Text>
       )}
       <Space>
-        <Button
-          danger
-          icon={<CancelIcon style={{ fontSize: 16 }} />}
-          loading={rejecting}
-          onClick={handleReject}
-          disabled={!remarks.trim()}
-        >
-          Reject
-        </Button>
-        <Button
-          type="primary"
-          icon={<CheckCircleOutlineIcon style={{ fontSize: 16 }} />}
-          loading={approving}
-          onClick={handleApprove}
-        >
-          Approve
-        </Button>
+        <Can I="edit">
+          <Button
+            danger
+            icon={<CancelIcon style={{ fontSize: 16 }} />}
+            loading={rejecting}
+            onClick={handleReject}
+            disabled={!remarks.trim()}
+          >
+            Reject
+          </Button>
+        </Can>
+        <Can I="edit">
+          <Button
+            type="primary"
+            icon={<CheckCircleOutlineIcon style={{ fontSize: 16 }} />}
+            loading={approving}
+            onClick={handleApprove}
+          >
+            Approve
+          </Button>
+        </Can>
       </Space>
     </div>
   );

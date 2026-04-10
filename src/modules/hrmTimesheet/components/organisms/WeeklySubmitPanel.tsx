@@ -2,6 +2,7 @@
 import { Button, Space, Statistic, Typography } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text } = Typography;
@@ -61,14 +62,16 @@ export default function WeeklySubmitPanel({ onSubmitWeek }: Props) {
           <Text type="secondary">
             {pendingDays} day{pendingDays > 1 ? 's' : ''} not yet submitted
           </Text>
-          <Button
-            type="primary"
-            icon={<CheckCircleOutlined />}
-            onClick={onSubmitWeek}
-            loading={submittingWeek}
-          >
-            Submit Entire Week
-          </Button>
+          <Can I="edit">
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={onSubmitWeek}
+              loading={submittingWeek}
+            >
+              Submit Entire Week
+            </Button>
+          </Can>
         </Space>
       )}
 

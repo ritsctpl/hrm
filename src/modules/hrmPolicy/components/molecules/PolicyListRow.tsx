@@ -6,6 +6,7 @@ import { EditOutlined, CalendarOutlined } from "@ant-design/icons";
 import { PolicyListRowProps } from "../../types/ui.types";
 import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
 import PolicyStatusTag from "../atoms/PolicyStatusTag";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyLanding.module.css";
 
 const { Text } = Typography;
@@ -60,18 +61,20 @@ const PolicyListRow: React.FC<PolicyListRowProps> = ({
       <PolicyStatusTag status={policy.status} />
 
       {onEdit && (
-        <Button
-          size="small"
-          type="text"
-          icon={<EditOutlined />}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(policy);
-          }}
-          style={{ opacity: 0.5 }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.5'; }}
-        />
+        <Can I="edit">
+          <Button
+            size="small"
+            type="text"
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(policy);
+            }}
+            style={{ opacity: 0.5 }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.5'; }}
+          />
+        </Can>
       )}
     </div>
   );

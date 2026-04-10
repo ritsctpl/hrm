@@ -5,6 +5,7 @@ import { Drawer, Select, Table, Switch, Button, Spin, Empty, message, Tag } from
 import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 
 interface Props {
   open: boolean;
@@ -141,9 +142,11 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
               options={GROUP_OPTIONS}
               style={{ width: 220 }}
             />
-            <Button type="primary" onClick={handleSave} loading={saving} style={{ marginLeft: 'auto' }}>
-              Save Schema
-            </Button>
+            <Can I="edit">
+              <Button type="primary" onClick={handleSave} loading={saving} style={{ marginLeft: 'auto' }}>
+                Save Schema
+              </Button>
+            </Can>
           </div>
 
           {currentGroup ? (

@@ -19,6 +19,7 @@ import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useHrmLeaveStore, AccrualPreviewData } from "../../stores/hrmLeaveStore";
 import { AccrualRunPanelProps } from "../../types/ui.types";
 import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
@@ -140,14 +141,16 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
           </div>
 
           {accrualPreview.canPost && (
-            <Button
-              type="primary"
-              onClick={handlePost}
-              loading={posting}
-              style={{ marginTop: 12 }}
-            >
-              Post Accrual
-            </Button>
+            <Can I="add">
+              <Button
+                type="primary"
+                onClick={handlePost}
+                loading={posting}
+                style={{ marginTop: 12 }}
+              >
+                Post Accrual
+              </Button>
+            </Can>
           )}
         </Card>
       )}

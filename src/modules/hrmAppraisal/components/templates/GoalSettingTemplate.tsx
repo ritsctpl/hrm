@@ -3,6 +3,7 @@
 import React from "react";
 import { Button, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 import GoalCardList from "../organisms/GoalCardList";
 import GoalFormModal from "../organisms/GoalFormModal";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
@@ -46,9 +47,11 @@ const GoalSettingTemplate: React.FC = () => {
             Total Weight: {weight}/100%
           </div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
-          Add Goal
-        </Button>
+        <Can I="add">
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
+            Add Goal
+          </Button>
+        </Can>
       </div>
 
       <GoalCardList
@@ -60,13 +63,15 @@ const GoalSettingTemplate: React.FC = () => {
       />
 
       <div className={styles.submitBar}>
-        <Button
-          type="primary"
-          disabled={weight !== 100}
-          onClick={() => activeCycle && submitGoals(activeCycle.cycleId)}
-        >
-          Submit All Goals for Approval
-        </Button>
+        <Can I="edit">
+          <Button
+            type="primary"
+            disabled={weight !== 100}
+            onClick={() => activeCycle && submitGoals(activeCycle.cycleId)}
+          >
+            Submit All Goals for Approval
+          </Button>
+        </Can>
       </div>
 
       <GoalFormModal />

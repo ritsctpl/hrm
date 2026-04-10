@@ -5,6 +5,7 @@ import type { ResourceAllocation } from '../../types/domain.types';
 import AllocationStatusBadge from '../atoms/AllocationStatusBadge';
 import HoursDisplay from '../atoms/HoursDisplay';
 import { formatDate } from '../../utils/projectHelpers';
+import Can from '../../../hrmAccess/components/Can';
 
 const { Text } = Typography;
 
@@ -31,35 +32,41 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSub
       {/* DRAFT: Edit, Submit, Cancel */}
       {allocation.status === 'DRAFT' && (
         <>
-          {onEdit && <Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button>}
-          {onSubmit && <Button size="small" type="link" onClick={() => onSubmit(allocation)}>Submit</Button>}
+          {onEdit && <Can I="edit"><Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button></Can>}
+          {onSubmit && <Can I="edit"><Button size="small" type="link" onClick={() => onSubmit(allocation)}>Submit</Button></Can>}
           {onCancel && (
-            <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
-              <Button size="small" type="link" danger>Cancel</Button>
-            </Popconfirm>
+            <Can I="delete">
+              <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
+                <Button size="small" type="link" danger>Cancel</Button>
+              </Popconfirm>
+            </Can>
           )}
         </>
       )}
 
       {/* SUBMITTED: Cancel only */}
       {allocation.status === 'SUBMITTED' && onCancel && (
-        <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
-          <Button size="small" type="link" danger>Cancel</Button>
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm title="Cancel this allocation?" onConfirm={() => onCancel(allocation)}>
+            <Button size="small" type="link" danger>Cancel</Button>
+          </Popconfirm>
+        </Can>
       )}
 
       {/* APPROVED: Cancel (reverses hours) */}
       {allocation.status === 'APPROVED' && onCancel && (
-        <Popconfirm title="Cancel this approved allocation?" onConfirm={() => onCancel(allocation)}>
-          <Button size="small" type="link" danger>Cancel</Button>
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm title="Cancel this approved allocation?" onConfirm={() => onCancel(allocation)}>
+            <Button size="small" type="link" danger>Cancel</Button>
+          </Popconfirm>
+        </Can>
       )}
 
       {/* REJECTED: Edit + Resubmit */}
       {allocation.status === 'REJECTED' && (
         <>
-          {onEdit && <Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button>}
-          {onSubmit && <Button size="small" type="link" onClick={() => onSubmit(allocation)}>Resubmit</Button>}
+          {onEdit && <Can I="edit"><Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button></Can>}
+          {onSubmit && <Can I="edit"><Button size="small" type="link" onClick={() => onSubmit(allocation)}>Resubmit</Button></Can>}
         </>
       )}
     </Space>

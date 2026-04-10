@@ -3,6 +3,7 @@
 import React from "react";
 import { Button, Card, Progress, Space, Tag } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 import GoalStatusTag from "../atoms/GoalStatusTag";
 import type { GoalCardProps } from "../../types/ui.types";
 import { GOAL_CATEGORY_COLORS } from "../../utils/appraisalConstants";
@@ -14,10 +15,14 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, onEdit, onDelete }) => (
     size="small"
     extra={
       <Space>
-        <Button size="small" icon={<EditOutlined />} onClick={onEdit}>
-          Edit
-        </Button>
-        <Button size="small" icon={<DeleteOutlined />} danger onClick={onDelete} />
+        <Can I="edit">
+          <Button size="small" icon={<EditOutlined />} onClick={onEdit}>
+            Edit
+          </Button>
+        </Can>
+        <Can I="delete">
+          <Button size="small" icon={<DeleteOutlined />} danger onClick={onDelete} />
+        </Can>
       </Space>
     }
     title={

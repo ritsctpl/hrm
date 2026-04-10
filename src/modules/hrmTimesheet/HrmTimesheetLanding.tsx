@@ -11,6 +11,7 @@ import TimesheetSupervisorTemplate from './components/templates/TimesheetSupervi
 import TeamTimesheetGrid from './components/organisms/TeamTimesheetGrid';
 import WeekNavigator from './components/molecules/WeekNavigator';
 import TimesheetReportsTemplate from './components/templates/TimesheetReportsTemplate';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import styles from './styles/HrmTimesheet.module.css';
 
 export default function HrmTimesheetLanding() {
@@ -78,16 +79,18 @@ export default function HrmTimesheetLanding() {
   ];
 
   return (
-    <div className="hrm-module-root">
-      <CommonAppBar appTitle={`Timesheets \u2014 ${weekLabel}`} />
-      <Tabs
-        activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as typeof activeTab)}
-        items={mainTabs}
-        size="small"
-        tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-        style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
-      />
-    </div>
+    <ModuleAccessGate moduleCode="HRM_TIMESHEET" appTitle="Timesheets">
+      <div className="hrm-module-root">
+        <CommonAppBar appTitle={`Timesheets \u2014 ${weekLabel}`} />
+        <Tabs
+          activeKey={activeTab}
+          onChange={(k) => setActiveTab(k as typeof activeTab)}
+          items={mainTabs}
+          size="small"
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+        />
+      </div>
+    </ModuleAccessGate>
   );
 }

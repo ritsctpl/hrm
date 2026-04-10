@@ -5,6 +5,7 @@ import { Button, Input, Modal, Space, Typography } from "antd";
 import { CheckOutlined, CloseOutlined, SwapOutlined } from "@ant-design/icons";
 import { LeavePermissions } from "../../types/ui.types";
 import { LeaveRequest } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Text } = Typography;
@@ -54,52 +55,62 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
     <div className={styles.approvalPanel}>
       <Space wrap>
         {permissions.canApprove && (
-          <Button
-            type="primary"
-            icon={<CheckOutlined />}
-            onClick={onApprove}
-            loading={loading}
-          >
-            Approve
-          </Button>
+          <Can I="edit">
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              onClick={onApprove}
+              loading={loading}
+            >
+              Approve
+            </Button>
+          </Can>
         )}
 
         {permissions.canReject && (
-          <Button
-            danger
-            icon={<CloseOutlined />}
-            onClick={() => setRejectVisible(true)}
-          >
-            Reject with Reason
-          </Button>
+          <Can I="edit">
+            <Button
+              danger
+              icon={<CloseOutlined />}
+              onClick={() => setRejectVisible(true)}
+            >
+              Reject with Reason
+            </Button>
+          </Can>
         )}
 
         {permissions.canEscalate && onEscalate && (
-          <Button onClick={onEscalate}>Escalate</Button>
+          <Can I="edit">
+            <Button onClick={onEscalate}>Escalate</Button>
+          </Can>
         )}
 
         {permissions.canReassign && onReassign && (
-          <Button icon={<SwapOutlined />} onClick={() => setReassignVisible(true)}>
-            Reassign
-          </Button>
+          <Can I="edit">
+            <Button icon={<SwapOutlined />} onClick={() => setReassignVisible(true)}>
+              Reassign
+            </Button>
+          </Can>
         )}
 
         {permissions.canOverride && onOverride && (
-          <>
-            <Button
-              type="dashed"
-              onClick={() => onOverride(true, "HR Override Approve")}
-            >
-              Override Approve
-            </Button>
-            <Button
-              type="dashed"
-              danger
-              onClick={() => onOverride(false, "HR Override Reject")}
-            >
-              Override Reject
-            </Button>
-          </>
+          <Can I="edit">
+            <>
+              <Button
+                type="dashed"
+                onClick={() => onOverride(true, "HR Override Approve")}
+              >
+                Override Approve
+              </Button>
+              <Button
+                type="dashed"
+                danger
+                onClick={() => onOverride(false, "HR Override Reject")}
+              >
+                Override Reject
+              </Button>
+            </>
+          </Can>
         )}
       </Space>
 

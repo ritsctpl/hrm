@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { Button, Select, Typography } from "antd";
+import Can from "../../../hrmAccess/components/Can";
 import BellCurveChart from "../organisms/BellCurveChart";
 import CalibrationTable from "../organisms/CalibrationTable";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
@@ -48,17 +49,19 @@ const CalibrationTemplate: React.FC = () => {
               label: d,
             }))}
           />
-          <Button
-            type="primary"
-            onClick={() =>
-              finalizeCalibration(
-                activeCycle?.cycleId ?? "",
-                calibrationFilters.department
-              )
-            }
-          >
-            Finalize Calibration
-          </Button>
+          <Can I="edit">
+            <Button
+              type="primary"
+              onClick={() =>
+                finalizeCalibration(
+                  activeCycle?.cycleId ?? "",
+                  calibrationFilters.department
+                )
+              }
+            >
+              Finalize Calibration
+            </Button>
+          </Can>
         </div>
       </div>
 

@@ -4,8 +4,9 @@ import React from 'react';
 import { Result, Spin } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
-import { useModulePermissions } from '../hooks/useModulePermissions';
+import { useCan } from '../hooks/useCan';
 import { useHrmRbacStore } from '../stores/hrmRbacStore';
+import { ModulePermissionProvider } from '../context/ModulePermissionContext';
 
 interface ModuleAccessGateProps {
   moduleCode: string;
@@ -28,7 +29,7 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
   children,
 }) => {
   const isRbacReady = useHrmRbacStore(s => s.isReady);
-  const perms = useModulePermissions(moduleCode);
+  const perms = useCan(moduleCode);
 
   // Wait for RBAC initialization
   if (!isRbacReady) {
@@ -58,7 +59,13 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
     );
   }
 
-  return <>{children}</>;
+  // Publish the module's permissions to any descendant via context so they
+  // can use <Can I="..."> / useCan() without passing props or knowing the code.
+  return (
+    <ModulePermissionProvider moduleCode={moduleCode}>
+      {children}
+    </ModulePermissionProvider>
+  );
 };
 
 export default ModuleAccessGate;

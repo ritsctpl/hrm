@@ -21,6 +21,7 @@ import { HrmHolidayService } from './services/hrmHolidayService';
 import type { Holiday } from './types/domain.types';
 import { useHolidayDetail } from './hooks/useHolidayDetail';
 import type { HrmHolidayScreenProps } from './types/ui.types';
+import Can from '../hrmAccess/components/Can';
 import styles from './styles/HolidayDetail.module.css';
 
 export default function HrmHolidayScreen({ group, site, permissions }: HrmHolidayScreenProps) {
@@ -183,40 +184,48 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
       <div className={styles.actionBar}>
         <Space wrap>
           {permissions.canPublish && group.status === 'DRAFT' && (
-            <Button
-              size="small"
-              type="primary"
-              onClick={openPublishModal}
-            >
-              Publish
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                type="primary"
+                onClick={openPublishModal}
+              >
+                Publish
+              </Button>
+            </Can>
           )}
           {permissions.canLock && group.status === 'PUBLISHED' && (
-            <Button
-              size="small"
-              icon={<LockOutlined />}
-              onClick={openLockModal}
-            >
-              Lock
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<LockOutlined />}
+                onClick={openLockModal}
+              >
+                Lock
+              </Button>
+            </Can>
           )}
           {permissions.canUnlock && group.status === 'LOCKED' && (
-            <Button
-              size="small"
-              icon={<UnlockOutlined />}
-              onClick={openUnlockModal}
-            >
-              Unlock
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<UnlockOutlined />}
+                onClick={openUnlockModal}
+              >
+                Unlock
+              </Button>
+            </Can>
           )}
           {permissions.canMapBu && (
-            <Button
-              size="small"
-              icon={<ApartmentOutlined />}
-              onClick={openBuMapping}
-            >
-              Map BU
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<ApartmentOutlined />}
+                onClick={openBuMapping}
+              >
+                Map BU
+              </Button>
+            </Can>
           )}
           {/* {permissions.canImport && ( */}
             {/* <Button

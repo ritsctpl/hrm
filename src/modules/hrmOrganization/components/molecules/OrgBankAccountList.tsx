@@ -4,6 +4,7 @@ import React from 'react';
 import { Button, Empty } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import OrgBankAccountCard from './OrgBankAccountCard';
+import Can from '../../../hrmAccess/components/Can';
 import type { OrgBankAccountListProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
 
@@ -20,9 +21,11 @@ const OrgBankAccountList: React.FC<OrgBankAccountListProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#1f1f1f' }}>Bank Accounts</span>
         {!disabled && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
-            Add Account
-          </Button>
+          <Can I="add">
+            <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} size="small">
+              Add Account
+            </Button>
+          </Can>
         )}
       </div>
       {accounts.length === 0 ? (

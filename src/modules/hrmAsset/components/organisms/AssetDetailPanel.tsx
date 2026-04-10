@@ -15,6 +15,7 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { DETAIL_TABS } from '../../utils/assetConstants';
 import type { AssetDetailTab, AssetCategory } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
 
 interface AssetDetailPanelProps {
@@ -176,24 +177,28 @@ export default function AssetDetailPanel({
         </div>
         {canEdit && (
           <Space>
-            <Button
-              size="small"
-              icon={<EditIcon style={{ fontSize: 16 }} />}
-              onClick={onEditAsset}
-            >
-              Edit
-            </Button>
-            <Popconfirm
-              title="Retire this asset?"
-              description="This will move the asset to RETIRED status."
-              onConfirm={handleDeleteAsset}
-              okText="Retire"
-              okButtonProps={{ danger: true }}
-            >
-              <Button size="small" danger icon={<DeleteIcon style={{ fontSize: 16 }} />}>
-                Retire
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<EditIcon style={{ fontSize: 16 }} />}
+                onClick={onEditAsset}
+              >
+                Edit
               </Button>
-            </Popconfirm>
+            </Can>
+            <Can I="delete">
+              <Popconfirm
+                title="Retire this asset?"
+                description="This will move the asset to RETIRED status."
+                onConfirm={handleDeleteAsset}
+                okText="Retire"
+                okButtonProps={{ danger: true }}
+              >
+                <Button size="small" danger icon={<DeleteIcon style={{ fontSize: 16 }} />}>
+                  Retire
+                </Button>
+              </Popconfirm>
+            </Can>
           </Space>
         )}
       </div>

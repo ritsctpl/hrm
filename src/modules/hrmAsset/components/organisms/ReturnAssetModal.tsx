@@ -1,10 +1,11 @@
 'use client';
 
-import { Modal, Form, Input, DatePicker, message } from 'antd';
+import { Modal, Form, Input, DatePicker, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function ReturnAssetModal() {
   const {
@@ -46,9 +47,15 @@ export default function ReturnAssetModal() {
       open={isReturnModalOpen}
       title="Return / Unassign Asset"
       onCancel={() => { form.resetFields(); closeReturnModal(); }}
-      onOk={handleOk}
-      okText="Confirm Return"
       destroyOnHidden
+      footer={[
+        <Space key="return-footer">
+          <Button onClick={() => { form.resetFields(); closeReturnModal(); }}>Cancel</Button>
+          <Can I="edit">
+            <Button type="primary" onClick={handleOk}>Confirm Return</Button>
+          </Can>
+        </Space>,
+      ]}
     >
       {selectedAsset && (
         <p style={{ marginBottom: 16, color: '#595959' }}>

@@ -9,6 +9,7 @@ import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { EmployeeCompensationResponse } from '../../types/domain.types';
 import { formatINRPlain } from '../../utils/compensationFormatters';
 import CompensationStatusTag from '../atoms/CompensationStatusTag';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 
 const ApprovalInbox: React.FC = () => {
@@ -134,24 +135,28 @@ const ApprovalInbox: React.FC = () => {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <Button
-                size="small"
-                type="primary"
-                icon={<CheckCircleIcon style={{ fontSize: 13 }} />}
-                loading={actionLoading === item.handle}
-                onClick={() => handleApprove(item)}
-              >
-                Approve
-              </Button>
-              <Button
-                size="small"
-                danger
-                icon={<CancelIcon style={{ fontSize: 13 }} />}
-                onClick={() => setRejectTarget(item)}
-                disabled={actionLoading === item.handle}
-              >
-                Reject
-              </Button>
+              <Can I="edit">
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<CheckCircleIcon style={{ fontSize: 13 }} />}
+                  loading={actionLoading === item.handle}
+                  onClick={() => handleApprove(item)}
+                >
+                  Approve
+                </Button>
+              </Can>
+              <Can I="edit">
+                <Button
+                  size="small"
+                  danger
+                  icon={<CancelIcon style={{ fontSize: 13 }} />}
+                  onClick={() => setRejectTarget(item)}
+                  disabled={actionLoading === item.handle}
+                >
+                  Reject
+                </Button>
+              </Can>
             </div>
           </div>
         ))

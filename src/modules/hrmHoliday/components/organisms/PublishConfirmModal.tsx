@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Input, Typography, Space } from 'antd';
+import { Modal, Input, Typography, Space, Button } from 'antd';
 import type { PublishConfirmModalProps } from '../../types/ui.types';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function PublishConfirmModal({
   open,
@@ -27,12 +28,18 @@ export default function PublishConfirmModal({
     <Modal
       open={open}
       title="Publish Holiday Group"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={loading}
-      okText="Publish"
-      okButtonProps={{ type: 'primary' }}
       destroyOnHidden
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="publish" I="edit">
+          <Button type="primary" loading={loading} onClick={handleOk}>
+            Publish
+          </Button>
+        </Can>,
+      ]}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text>

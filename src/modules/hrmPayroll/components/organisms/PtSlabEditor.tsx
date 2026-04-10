@@ -9,6 +9,7 @@ import { useHrmPayrollStore } from '../../stores/payrollStore';
 import type { ProfessionalTaxSlab } from '../../types/domain.types';
 import { validatePtSlabs } from '../../utils/taxSlabValidator';
 import { INDIAN_STATES } from '../../utils/payrollConstants';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/TaxConfig.module.css';
 
 const PtSlabEditor: React.FC = () => {
@@ -112,13 +113,15 @@ const PtSlabEditor: React.FC = () => {
       key: 'actions',
       width: 70,
       render: (_: unknown, __: ProfessionalTaxSlab, idx: number) => (
-        <Popconfirm
-          title="Delete this slab?"
-          onConfirm={() => handleDeleteSlab(idx)}
-          okText="Delete"
-        >
-          <Button type="text" danger icon={<DeleteOutlineIcon fontSize="small" />} />
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm
+            title="Delete this slab?"
+            onConfirm={() => handleDeleteSlab(idx)}
+            okText="Delete"
+          >
+            <Button type="text" danger icon={<DeleteOutlineIcon fontSize="small" />} />
+          </Popconfirm>
+        </Can>
       ),
     },
   ];
@@ -142,9 +145,11 @@ const PtSlabEditor: React.FC = () => {
         title="Professional Tax Slabs"
         className={styles.slabCard}
         extra={
-          <Button size="small" icon={<AddIcon fontSize="small" />} onClick={handleAddSlab}>
-            Add Slab
-          </Button>
+          <Can I="add">
+            <Button size="small" icon={<AddIcon fontSize="small" />} onClick={handleAddSlab}>
+              Add Slab
+            </Button>
+          </Can>
         }
       >
         {slabError && (
@@ -160,9 +165,11 @@ const PtSlabEditor: React.FC = () => {
       </Card>
 
       <div style={{ marginTop: 16 }}>
-        <Button type="primary" onClick={handleSave}>
-          Save Professional Tax
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSave}>
+            Save Professional Tax
+          </Button>
+        </Can>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { useHrmPayrollStore } from '../../stores/payrollStore';
 import type { TaxSlab } from '../../types/domain.types';
 import { getCurrentFinancialYear } from '../../utils/payrollFormatters';
 import { validateTaxSlabs } from '../../utils/taxSlabValidator';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/TaxConfig.module.css';
 
 const TaxConfigForm: React.FC = () => {
@@ -135,17 +136,19 @@ const TaxConfigForm: React.FC = () => {
       key: 'actions',
       width: 80,
       render: (_: unknown, __: TaxSlab, idx: number) => (
-        <Popconfirm
-          title="Delete this slab?"
-          onConfirm={() => handleDeleteSlab(idx)}
-          okText="Delete"
-        >
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlineIcon fontSize="small" />}
-          />
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm
+            title="Delete this slab?"
+            onConfirm={() => handleDeleteSlab(idx)}
+            okText="Delete"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlineIcon fontSize="small" />}
+            />
+          </Popconfirm>
+        </Can>
       ),
     },
   ];
@@ -173,9 +176,11 @@ const TaxConfigForm: React.FC = () => {
         title="Tax Slabs"
         className={styles.slabCard}
         extra={
-          <Button size="small" icon={<AddIcon fontSize="small" />} onClick={handleAddSlab}>
-            Add Slab
-          </Button>
+          <Can I="add">
+            <Button size="small" icon={<AddIcon fontSize="small" />} onClick={handleAddSlab}>
+              Add Slab
+            </Button>
+          </Can>
         }
       >
         {slabError && (
@@ -222,9 +227,11 @@ const TaxConfigForm: React.FC = () => {
       </Card>
 
       <div style={{ marginTop: 16 }}>
-        <Button type="primary" onClick={handleSave}>
-          Save Configuration
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSave}>
+            Save Configuration
+          </Button>
+        </Can>
       </div>
     </div>
   );

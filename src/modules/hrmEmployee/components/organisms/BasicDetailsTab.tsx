@@ -11,6 +11,7 @@ import type { UploadFile } from 'antd';
 import EmpAvatar from '../atoms/EmpAvatar';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
+import Can from '../../../hrmAccess/components/Can';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EmployeeStatus } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -204,17 +205,19 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <Upload
-                  maxCount={1}
-                  fileList={fileList}
-                  beforeUpload={handlePhotoUpload}
-                  accept="image/*"
-                  listType="picture"
-                >
-                  <Button icon={<CameraOutlined />}>
-                    Upload Photo
-                  </Button>
-                </Upload>
+                <Can I="edit">
+                  <Upload
+                    maxCount={1}
+                    fileList={fileList}
+                    beforeUpload={handlePhotoUpload}
+                    accept="image/*"
+                    listType="picture"
+                  >
+                    <Button icon={<CameraOutlined />}>
+                      Upload Photo
+                    </Button>
+                  </Upload>
+                </Can>
                 <p style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
                   Supported formats: JPG, PNG, GIF. Max size: 5MB
                 </p>
@@ -290,15 +293,17 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                     placeholder="Enter phone number"
                     disabled={isSaving}
                   />
-                  <Button
-                    type="primary"
-                    size="small"
-                    onClick={handlePhoneUpdate}
-                    loading={isSaving}
-                    icon={<SaveOutlined />}
-                  >
-                    Save
-                  </Button>
+                  <Can I="edit">
+                    <Button
+                      type="primary"
+                      size="small"
+                      onClick={handlePhoneUpdate}
+                      loading={isSaving}
+                      icon={<SaveOutlined />}
+                    >
+                      Save
+                    </Button>
+                  </Can>
                   <Button
                     size="small"
                     onClick={handlePhoneCancelEdit}
@@ -311,14 +316,16 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               ) : (
                 <>
                   <span style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.phone}</span>
-                  <Button
-                    type="text"
-                    size="small"
-                    style={{ padding: 0, height: 'auto' }}
-                    onClick={() => setIsEditingPhone(true)}
-                  >
-                    Update
-                  </Button>
+                  <Can I="edit">
+                    <Button
+                      type="text"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => setIsEditingPhone(true)}
+                    >
+                      Update
+                    </Button>
+                  </Can>
                 </>
               )}
             </div>

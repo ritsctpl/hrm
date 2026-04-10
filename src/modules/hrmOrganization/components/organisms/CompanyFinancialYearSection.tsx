@@ -5,6 +5,7 @@ import { Select, Button, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import { parseCookies } from 'nookies';
@@ -115,15 +116,17 @@ const CompanyFinancialYearSection: React.FC = () => {
           </OrgFormField>
 
           <div>
-            <Button
-              type="primary"
-              onClick={handleSave}
-              loading={saving}
-              disabled={isCreating}
-              title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
-            >
-              {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
-            </Button>
+            <Can I={isCreating ? 'add' : 'edit'}>
+              <Button
+                type="primary"
+                onClick={handleSave}
+                loading={saving}
+                disabled={isCreating}
+                title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
+              >
+                {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
+              </Button>
+            </Can>
           </div>
         </>
       ) : (

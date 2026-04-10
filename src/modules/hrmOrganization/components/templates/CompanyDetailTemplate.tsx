@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import Can from '../../../hrmAccess/components/Can';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import CompanyProfileTemplate from './CompanyProfileTemplate';
 import BusinessUnitTemplate from './BusinessUnitTemplate';
@@ -244,13 +245,15 @@ const CompanyDetailTemplate: React.FC = () => {
         tabBarExtraContent={
           <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             {activeDetailTab === 'profile' && !isEditing && data && (
-              <Button
-                icon={<EditOutlined />}
-                onClick={handleEdit}
-                size="small"
-              >
-                Edit
-              </Button>
+              <Can I="edit">
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                  size="small"
+                >
+                  Edit
+                </Button>
+              </Can>
             )}
             {isEditing && data && (
               <Button
@@ -262,11 +265,13 @@ const CompanyDetailTemplate: React.FC = () => {
               </Button>
             )}
             {(isEditing || isNew) && (
-              <OrgSaveButton
-                loading={isSaving}
-                onClick={handleSave}
-                label={data ? 'Update' : 'Create'}
-              />
+              <Can I={isNew ? 'add' : 'edit'}>
+                <OrgSaveButton
+                  loading={isSaving}
+                  onClick={handleSave}
+                  label={data ? 'Update' : 'Create'}
+                />
+              </Can>
             )}
           </div>
         }

@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { Button, DatePicker, Divider, Drawer, Form, Input, InputNumber, Select, Space } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import type { AppraisalGoal } from "../../types/domain.types";
 import dayjs from "dayjs";
@@ -64,12 +65,16 @@ const GoalFormModal: React.FC = () => {
       footer={
         <Space style={{ justifyContent: "flex-end", width: "100%" }}>
           <Button onClick={() => setGoalFormOpen(false)}>Cancel</Button>
-          <Button loading={savingGoal} onClick={() => handleSubmit()}>
-            Save as Draft
-          </Button>
-          <Button type="primary" loading={savingGoal} onClick={handleSubmit}>
-            Submit
-          </Button>
+          <Can I={goalFormState === "EDIT" ? "edit" : "add"}>
+            <Button loading={savingGoal} onClick={() => handleSubmit()}>
+              Save as Draft
+            </Button>
+          </Can>
+          <Can I={goalFormState === "EDIT" ? "edit" : "add"}>
+            <Button type="primary" loading={savingGoal} onClick={handleSubmit}>
+              Submit
+            </Button>
+          </Can>
         </Space>
       }
     >

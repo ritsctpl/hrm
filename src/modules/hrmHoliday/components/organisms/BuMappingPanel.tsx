@@ -9,6 +9,7 @@ import { HrmOrganizationService } from '../../../hrmOrganization/services/hrmOrg
 import { useHrmHolidayStore } from '../../stores/hrmHolidayStore';
 import type { BuMappingPanelProps } from '../../types/ui.types';
 import type { BusinessUnit, Department } from '../../../hrmOrganization/types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function BuMappingPanel({
@@ -344,9 +345,11 @@ export default function BuMappingPanel({
           Set as Primary
         </Checkbox>
         <div>
-          <Button type="primary" onClick={handleAdd} loading={adding} block>
-            Add Mapping
-          </Button>
+          <Can I="add">
+            <Button type="primary" onClick={handleAdd} loading={adding} block>
+              Add Mapping
+            </Button>
+          </Can>
         </div>
       </div>
 

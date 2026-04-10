@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { HOURS_STEP } from '../../utils/timesheetConstants';
 import TimesheetLineRow from '../molecules/TimesheetLineRow';
+import Can from '../../../hrmAccess/components/Can';
 import type { TimesheetLine, UnplannedCategory, AllocationForDay } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
 
@@ -63,15 +64,17 @@ export default function TimesheetLinesTable({
             Total: <strong>{totalHours.toFixed(1)} h</strong>
           </Text>
           {!readOnly && (
-            <Select
-              size="small"
-              placeholder="+ Add line"
-              style={{ width: 160 }}
-              options={ADD_TYPE_OPTIONS}
-              value={null}
-              onSelect={(v) => handleAddLine(v as TimesheetLine['lineType'])}
-              suffixIcon={<PlusOutlined />}
-            />
+            <Can I="add">
+              <Select
+                size="small"
+                placeholder="+ Add line"
+                style={{ width: 160 }}
+                options={ADD_TYPE_OPTIONS}
+                value={null}
+                onSelect={(v) => handleAddLine(v as TimesheetLine['lineType'])}
+                suffixIcon={<PlusOutlined />}
+              />
+            </Can>
           )}
         </div>
       </div>

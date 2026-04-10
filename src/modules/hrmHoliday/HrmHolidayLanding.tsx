@@ -15,6 +15,7 @@ import DuplicateGroupModal from './components/organisms/DuplicateGroupModal';
 import { useHrmHolidayStore } from './stores/hrmHolidayStore';
 import { HrmHolidayService } from './services/hrmHolidayService';
 import { useHolidayPermissions } from './hooks/useHolidayPermissions';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import type { HolidayGroup } from './types/domain.types';
 import styles from './styles/HrmHoliday.module.css';
 
@@ -147,6 +148,7 @@ export default function HrmHolidayLanding() {
   };
 
   return (
+    <ModuleAccessGate moduleCode="HRM_HOLIDAY" appTitle="Holiday Management">
     <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="Holiday Management" />
       <HolidayGroupSearchBar
@@ -220,5 +222,6 @@ export default function HrmHolidayLanding() {
         />
       )}
     </div>
+    </ModuleAccessGate>
   );
 }

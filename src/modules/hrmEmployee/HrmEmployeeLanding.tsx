@@ -12,7 +12,8 @@ import AlertsDashboard from './components/organisms/AlertsDashboard';
 import EmployeeAuditLogPanel from './components/organisms/EmployeeAuditLogPanel';
 import FieldSchemaConfigPanel from './components/organisms/FieldSchemaConfigPanel';
 import EmployeeExportPanel from './components/organisms/EmployeeExportPanel';
-import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
+import { useCan } from '../hrmAccess/hooks/useCan';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import type { DirectoryFilters } from './types/ui.types';
 
 interface HrmEmployeeLandingProps {
@@ -47,7 +48,7 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   const [schemaConfigOpen, setSchemaConfigOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
-  const perms = useModulePermissions('HRM_EMPLOYEE');
+  const perms = useCan('HRM_EMPLOYEE');
 
   // Derive unique departments from data for filter dropdowns
   const departments = useMemo(
@@ -73,6 +74,7 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   );
 
   return (
+    <ModuleAccessGate moduleCode="HRM_EMPLOYEE" appTitle="Employee Directory">
     <div className="hrm-module-root">
       <CommonAppBar appTitle="Employee Directory" />
       <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -152,6 +154,7 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
       />
       </div>
     </div>
+    </ModuleAccessGate>
   );
 };
 

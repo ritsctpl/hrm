@@ -3,6 +3,7 @@
 import React from "react";
 import { Button, Card, Col, Empty, Row, Spin, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 import CycleBanner from "../molecules/CycleBanner";
 import AppraisalLandingTable from "../organisms/AppraisalLandingTable";
 import FeedbackItemCard from "../molecules/FeedbackItemCard";
@@ -49,7 +50,7 @@ const AppraisalLandingTemplate: React.FC = () => {
             className={styles.summaryCard}
             size="small"
             title="My Goals"
-            extra={<Button size="small" icon={<PlusOutlined />} onClick={() => setGoalFormOpen(true)}>Add</Button>}
+            extra={<Can I="add"><Button size="small" icon={<PlusOutlined />} onClick={() => setGoalFormOpen(true)}>Add</Button></Can>}
             onClick={() => setCurrentView("GOAL_SETTING")}
           >
             <div style={{ textAlign: "center" }}>

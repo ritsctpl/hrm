@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { Button } from 'antd';
 import { Camera, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmSettings.module.css';
 import type { ProfilePhotoUploadProps } from '../../types/ui.types';
 
@@ -37,9 +38,11 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({ photoUrl, onPho
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
-      <Button icon={<Camera size={14} />} onClick={() => fileRef.current?.click()}>
-        {t('settings.profile.uploadPhoto')}
-      </Button>
+      <Can I="edit">
+        <Button icon={<Camera size={14} />} onClick={() => fileRef.current?.click()}>
+          {t('settings.profile.uploadPhoto')}
+        </Button>
+      </Can>
     </div>
   );
 };

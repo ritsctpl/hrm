@@ -6,6 +6,7 @@ import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ExpenseItem } from "../../types/domain.types";
 import { useMileageCalculator } from "../../hooks/useMileageCalculator";
+import Can from "../../../hrmAccess/components/Can";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -86,9 +87,11 @@ const MileageLineItemsTable: React.FC<Props> = ({
       key: "action",
       width: 40,
       render: (_, r) => (
-        <Popconfirm title="Remove entry?" onConfirm={() => onRemoveItem?.(r.handle)}>
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm title="Remove entry?" onConfirm={() => onRemoveItem?.(r.handle)}>
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Can>
       ),
     },
   ].filter(Boolean) as ColumnsType<ExpenseItem>;
@@ -124,9 +127,11 @@ const MileageLineItemsTable: React.FC<Props> = ({
         footer={() => (
           <div>
             {!readonly && !adding && (
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-                Add Mileage Entry
-              </Button>
+              <Can I="add">
+                <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
+                  Add Mileage Entry
+                </Button>
+              </Can>
             )}
             {!readonly && adding && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>

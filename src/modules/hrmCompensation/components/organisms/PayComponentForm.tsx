@@ -25,6 +25,7 @@ import {
 } from '../../utils/compensationConstants';
 import type { PayComponentFormState } from '../../types/ui.types';
 import FormulaEditor from '../molecules/FormulaEditor';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 import formStyles from '../../styles/PayComponent.module.css';
 
@@ -214,18 +215,22 @@ const PayComponentForm: React.FC = () => {
         <div className={styles.formActions}>
           <Button onClick={handleCancel}>Cancel</Button>
           {selectedComponent && (
-            <Popconfirm
-              title="Deactivate this component?"
-              onConfirm={handleDelete}
-              okText="Yes"
-              okType="danger"
-            >
-              <Button danger>Deactivate</Button>
-            </Popconfirm>
+            <Can I="delete">
+              <Popconfirm
+                title="Deactivate this component?"
+                onConfirm={handleDelete}
+                okText="Yes"
+                okType="danger"
+              >
+                <Button danger>Deactivate</Button>
+              </Popconfirm>
+            </Can>
           )}
-          <Button type="primary" loading={saving} onClick={handleSave}>
-            Save
-          </Button>
+          <Can I={selectedComponent ? 'edit' : 'add'}>
+            <Button type="primary" loading={saving} onClick={handleSave}>
+              Save
+            </Button>
+          </Can>
         </div>
       </Form>
     </div>

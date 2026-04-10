@@ -7,6 +7,7 @@ import { CloudUploadOutlined, ShopOutlined, MoreOutlined, DeleteOutlined } from 
 import dayjs from 'dayjs';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { INDUSTRY_OPTIONS } from '../../utils/constants';
 import type { CompanyIdentitySectionProps } from '../../types/ui.types';
@@ -76,6 +77,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
             <>
               <img src={draft.logoUrl} alt="Company Logo" className={mainStyles.logoPreview} />
               {!disabled && (
+                <Can I="delete">
                 <Dropdown
                   menu={{
                     items: [
@@ -108,6 +110,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
                     }}
                   />
                 </Dropdown>
+                </Can>
               )}
             </>
           ) : (
@@ -118,7 +121,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
         </div>
         <div className={mainStyles.logoInfo}>
           {!disabled && (
-            <>
+            <Can I="edit">
               <Upload
                 showUploadList={false}
                 beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}
@@ -132,7 +135,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
               <div className={mainStyles.logoInfoText}>
                 Recommended: 200x200px, PNG or JPG, max 2MB
               </div>
-            </>
+            </Can>
           )}
         </div>
       </div>

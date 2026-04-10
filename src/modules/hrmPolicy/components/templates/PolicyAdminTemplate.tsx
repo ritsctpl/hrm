@@ -5,6 +5,7 @@ import { Button, Space, Select, Input } from "antd";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyAdminTable from "../organisms/PolicyAdminTable";
 import PolicyFormDrawer from "../organisms/PolicyFormDrawer";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyAdmin.module.css";
 
 const { Option } = Select;
@@ -151,8 +152,8 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       </Space>
       <Space>
         <Button onClick={onRefresh}>Go</Button>
-        <Button onClick={onSupersede}>Supersede Policy</Button>
-        <Button type="primary" onClick={onCreateNew}>New Policy</Button>
+        <Can I="edit"><Button onClick={onSupersede}>Supersede Policy</Button></Can>
+        <Can I="add"><Button type="primary" onClick={onCreateNew}>New Policy</Button></Can>
       </Space>
     </div>
     <PolicyAdminTable

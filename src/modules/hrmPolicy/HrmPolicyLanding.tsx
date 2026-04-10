@@ -7,32 +7,28 @@ import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmPolicyStore } from "./stores/hrmPolicyStore";
 import { HrmPolicyService } from "./services/hrmPolicyService";
 import { useHrmPolicyData } from "./hooks/useHrmPolicyData";
-import { usePolicyPermissions } from "./hooks/usePolicyPermissions";
 import { usePermissionsStore } from "@/stores/permissionsStore";
-import { useModulePermissions } from "../hrmAccess/hooks/useModulePermissions";
-import { useHrmRbacStore } from "../hrmAccess/stores/hrmRbacStore";
-import { Result, Spin } from "antd";
-import { LockOutlined } from "@ant-design/icons";
+import { useCan } from "../hrmAccess/hooks/useCan";
+import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import PolicyLibraryTemplate from "./components/templates/PolicyLibraryTemplate";
 import PolicyAdminTemplate from "./components/templates/PolicyAdminTemplate";
 import PolicyFormDrawer from "./components/organisms/PolicyFormDrawer";
 import SupersedePolicyModal from "./components/organisms/SupersedePolicyModal";
 import HrmPolicyScreen from "./HrmPolicyScreen";
 import { PolicyDocument } from "./types/domain.types";
-import { POLICY_HR_ROLES } from "./utils/constants";
 import styles from "./styles/PolicyLanding.module.css";
 
 const HrmPolicyLanding: React.FC = () => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
   const userId = cookies.rl_user_id ?? "system";  // ← Use rl_user_id instead of userId
-  const role = cookies.userRole ?? "EMPLOYEE";
-  const canAdmin = POLICY_HR_ROLES.includes(role);
 
   const { fetchEffectivePermissions } = usePermissionsStore();
-  const permissions = usePolicyPermissions();
-  const modulePerms = useModulePermissions('HRM_POLICY');
-  const isRbacReady = useHrmRbacStore(s => s.isReady);
+  const modulePerms = useCan('HRM_POLICY');
+
+  // RBAC is the single source of truth — any CUD requires ADD/EDIT/DELETE
+  // action on HRM_POLICY module. No hardcoded-role fallback.
+  const canAdminPolicies = modulePerms.canAdd || modulePerms.canEdit || modulePerms.canDelete;
 
   const {
     policies,
@@ -111,10 +107,10 @@ const HrmPolicyLanding: React.FC = () => {
   }, [libraryFilterCategoryId, libraryFilterDocType]);
 
   useEffect(() => {
-    if (activeTab === "admin" && canAdmin) {
+    if (activeTab === "admin" && canAdminPolicies) {
       loadAdminPolicies();
     }
-  }, [activeTab, adminFilterCategoryId, adminFilterDocType, adminFilterStatus]);
+  }, [activeTab, adminFilterCategoryId, adminFilterDocType, adminFilterStatus, canAdminPolicies]);
 
   const handlePublish = async (policyHandle: string) => {
     setPublishing(true);
@@ -235,39 +231,17 @@ const HrmPolicyLanding: React.FC = () => {
     loadPolicies();
   };
 
-  // Wait for RBAC to be ready before checking access
-  if (!isRbacReady) {
-    return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle="HR Policies & SOPs" />
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-          <Spin />
-        </div>
-      </div>
-    );
-  }
-
-  // Module-level access gate — block users with no VIEW permission
-  if (!modulePerms.canView) {
-    return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle="HR Policies & SOPs" />
-        <Result
-          icon={<LockOutlined style={{ color: '#bfbfbf' }} />}
-          status="403"
-          title="Access Denied"
-          subTitle="You don't have permission to view the Policies module. Please contact your administrator."
-        />
-      </div>
-    );
-  }
+  // Route-level access gate (VIEW + RBAC ready) is handled by <ModuleAccessGate>
+  // wrapping every return path below.
 
   if (showPolicyViewer && selectedPolicy) {
     return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`}  />
-        <HrmPolicyScreen policy={selectedPolicy} loading={selectedPolicyLoading} onBack={closePolicyViewer} />
-      </div>
+      <ModuleAccessGate moduleCode="HRM_POLICY" appTitle="HR Policies & SOPs">
+        <div className={`hrm-module-root ${styles.landing}`}>
+          <CommonAppBar appTitle={`HR Policies > ${selectedPolicy.title}`}  />
+          <HrmPolicyScreen policy={selectedPolicy} loading={selectedPolicyLoading} onBack={closePolicyViewer} />
+        </div>
+      </ModuleAccessGate>
     );
   }
 
@@ -284,7 +258,7 @@ const HrmPolicyLanding: React.FC = () => {
           filterCategoryId={libraryFilterCategoryId}
           filterDocType={libraryFilterDocType}
           searchText={librarySearchText}
-          canAdmin={permissions.canCreatePolicy}
+          canAdmin={modulePerms.canAdd}
           onPolicyClick={handlePolicyClick}
           onViewModeChange={setViewMode}
           onSearch={setLibrarySearchText}
@@ -296,8 +270,9 @@ const HrmPolicyLanding: React.FC = () => {
     },
   ];
 
-  // Use RBAC permissions from backend (not hardcoded role check)
-  if (permissions.canCreatePolicy || permissions.canEditPolicy || canAdmin) {
+  // Use RBAC permissions from backend as the ONLY source of truth.
+  // Admin tab is only available when user has at least one CUD action.
+  if (canAdminPolicies) {
     tabItems.push({
       key: "admin",
       label: "Admin",
@@ -333,6 +308,7 @@ const HrmPolicyLanding: React.FC = () => {
   }
 
   return (
+    <ModuleAccessGate moduleCode="HRM_POLICY" appTitle="HR Policies & SOPs">
     <div className={`hrm-module-root ${styles.landing}`}>
       <CommonAppBar appTitle="HR Policies & SOPs"  />
       <Tabs
@@ -374,6 +350,7 @@ const HrmPolicyLanding: React.FC = () => {
         onSupersede={handleSupersede}
       />
     </div>
+    </ModuleAccessGate>
   );
 };
 

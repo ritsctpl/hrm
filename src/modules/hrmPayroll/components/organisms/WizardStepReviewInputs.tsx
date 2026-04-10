@@ -8,6 +8,7 @@ import type { PayrollAdjustmentDraft } from '../../stores/payrollStore';
 import AdjustmentRow from '../molecules/AdjustmentRow';
 import { ADJUSTMENT_TYPES } from '../../utils/payrollConstants';
 import type { AdjustmentType } from '../../types/api.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const { Text } = Typography;
@@ -116,13 +117,15 @@ const WizardStepReviewInputs: React.FC = () => {
         title="Manual Adjustments"
         className={styles.stepCard}
         extra={
-          <Button
-            size="small"
-            icon={<AddIcon fontSize="small" />}
-            onClick={() => setAdjModalOpen(true)}
-          >
-            Add Adjustment
-          </Button>
+          <Can I="add">
+            <Button
+              size="small"
+              icon={<AddIcon fontSize="small" />}
+              onClick={() => setAdjModalOpen(true)}
+            >
+              Add Adjustment
+            </Button>
+          </Can>
         }
       >
         {store.adjustments.length === 0 ? (

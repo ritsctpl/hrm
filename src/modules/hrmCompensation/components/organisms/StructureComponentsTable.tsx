@@ -8,6 +8,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import type { SalaryStructureComponent } from '../../types/domain.types';
 import { CALC_METHOD_OPTIONS } from '../../utils/compensationConstants';
 import CalcMethodBadge from '../atoms/CalcMethodBadge';
+import Can from '../../../hrmAccess/components/Can';
 import structureStyles from '../../styles/SalaryStructure.module.css';
 
 interface StructureComponentsTableProps {
@@ -119,15 +120,17 @@ const StructureComponentsTable: React.FC<StructureComponentsTableProps> = ({
       key: 'remove',
       width: 40,
       render: (_: unknown, record) => (
-        <Tooltip title="Remove">
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteIcon style={{ fontSize: 14 }} />}
-            onClick={() => handleRemove(record.componentCode)}
-          />
-        </Tooltip>
+        <Can I="edit">
+          <Tooltip title="Remove">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteIcon style={{ fontSize: 14 }} />}
+              onClick={() => handleRemove(record.componentCode)}
+            />
+          </Tooltip>
+        </Can>
       ),
     },
   ];

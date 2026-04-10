@@ -5,6 +5,7 @@ import { parseCookies } from 'nookies';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { requestFormRules } from '../../utils/assetValidations';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function AssetRequestForm() {
   const {
@@ -65,9 +66,11 @@ export default function AssetRequestForm() {
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="primary" loading={savingRequest} onClick={handleSubmit}>
-              Submit Request
-            </Button>
+            <Can I="add">
+              <Button type="primary" loading={savingRequest} onClick={handleSubmit}>
+                Submit Request
+              </Button>
+            </Can>
           </Space>
         </div>
       }

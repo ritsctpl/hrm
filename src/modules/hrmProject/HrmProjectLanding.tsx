@@ -15,6 +15,8 @@ import ResourceCalendarView from './components/organisms/ResourceCalendarView';
 import ProjectReportPanel from './components/organisms/ProjectReportPanel';
 import ProjectForm from './components/organisms/ProjectForm';
 import AllocationForm from './components/organisms/AllocationForm';
+import Can from '../hrmAccess/components/Can';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import styles from './styles/HrmProject.module.css';
 
 /* ── Client Management Drawer ─────────────────────────────────────── */
@@ -83,10 +85,12 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
       title: 'Actions', key: 'actions', width: 160,
       render: (_: unknown, record: ClientRecord) => (
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button size="small" onClick={() => openEdit(record)}>Edit</Button>
-          <Popconfirm title="Delete this client?" onConfirm={() => handleDelete(record)}>
-            <Button size="small" danger>Delete</Button>
-          </Popconfirm>
+          <Can I="edit"><Button size="small" onClick={() => openEdit(record)}>Edit</Button></Can>
+          <Can I="delete">
+            <Popconfirm title="Delete this client?" onConfirm={() => handleDelete(record)}>
+              <Button size="small" danger>Delete</Button>
+            </Popconfirm>
+          </Can>
         </div>
       ),
     },
@@ -98,7 +102,7 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
       open={open}
       onClose={onClose}
       width={640}
-      extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openNew}>New Client</Button>}
+      extra={<Can I="add"><Button type="primary" size="small" icon={<PlusOutlined />} onClick={openNew}>New Client</Button></Can>}
     >
       <Table
         dataSource={clients}
@@ -112,8 +116,13 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
         title={editingClient ? 'Edit Client' : 'New Client'}
         open={formOpen}
         onCancel={() => setFormOpen(false)}
-        onOk={handleSave}
         destroyOnHidden
+        footer={[
+          <Button key="cancel" onClick={() => setFormOpen(false)}>Cancel</Button>,
+          <Can key="save" I={editingClient ? 'edit' : 'add'}>
+            <Button type="primary" onClick={handleSave}>OK</Button>
+          </Can>,
+        ]}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="clientCode" label="Code" rules={[{ required: true }]}>
@@ -197,9 +206,11 @@ export default function HrmProjectLanding() {
           <div className={`${styles.masterPane} ${selectedProject ? styles.shrink : ''}`}>
             <div className={styles.masterHeader}>
               <span className={styles.masterTitle}>Projects ({filteredProjects.length})</span>
-              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
-                New Project
-              </Button>
+              <Can I="add">
+                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
+                  New Project
+                </Button>
+              </Can>
             </div>
             <ProjectMasterList
               projects={filteredProjects}
@@ -248,6 +259,7 @@ export default function HrmProjectLanding() {
   ];
 
   return (
+    <ModuleAccessGate moduleCode="HRM_PROJECT" appTitle="Projects & Resource Allocation">
     <div className={`hrm-module-root ${styles.hrmProjectLanding}`}>
       <CommonAppBar appTitle="Projects & Resource Allocation" />
       <div className={styles.content}>
@@ -291,5 +303,6 @@ export default function HrmProjectLanding() {
 
       <ClientManagementDrawer open={isClientDrawerOpen} onClose={closeClientDrawer} />
     </div>
+    </ModuleAccessGate>
   );
 }

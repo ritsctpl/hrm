@@ -20,6 +20,7 @@ import AttachmentsPanel from "./components/organisms/AttachmentsPanel";
 import ApprovalTimeline from "./components/organisms/ApprovalTimeline";
 import ApprovalActionBar from "./components/molecules/ApprovalActionBar";
 import TravelStatusChip from "./components/atoms/TravelStatusChip";
+import Can from "../hrmAccess/components/Can";
 import type { TravelRequest } from "./types/domain.types";
 import type { CoTravellerDto } from "./types/domain.types";
 import type { TravelAdvance } from "./types/api.types";
@@ -165,35 +166,45 @@ const HrmTravelScreen: React.FC<Props> = ({
   const barActions = isReadonly ? (
     <Space>
       {canRecall && (
-        <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
-          Recall
-        </Button>
+        <Can I="edit">
+          <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
+            Recall
+          </Button>
+        </Can>
       )}
       {canCancel && (
-        <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
-          Cancel Request
-        </Button>
+        <Can I="delete">
+          <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
+            Cancel Request
+          </Button>
+        </Can>
       )}
       {canDelete && (
-        <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
-          Delete
-        </Button>
+        <Can I="delete">
+          <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
+            Delete
+          </Button>
+        </Can>
       )}
     </Space>
   ) : (
     <Space>
-      <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
-        Save Draft
-      </Button>
-      <Button
-        type="primary"
-        icon={<SendOutlined />}
-        onClick={handleSubmit}
-        loading={saving}
-        disabled={!formValid}
-      >
-        Submit
-      </Button>
+      <Can I={isNew ? "add" : "edit"}>
+        <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
+          Save Draft
+        </Button>
+      </Can>
+      <Can I={isNew ? "add" : "edit"}>
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          onClick={handleSubmit}
+          loading={saving}
+          disabled={!formValid}
+        >
+          Submit
+        </Button>
+      </Can>
     </Space>
   );
 
@@ -211,14 +222,16 @@ const HrmTravelScreen: React.FC<Props> = ({
       style={{ margin: "12px 16px 0" }}
       extra={
         canRequestAdvance ? (
-          <Button
-            type="primary"
-            size="small"
-            icon={<DollarOutlined />}
-            onClick={() => setAdvanceModalOpen(true)}
-          >
-            Request Advance
-          </Button>
+          <Can I="add">
+            <Button
+              type="primary"
+              size="small"
+              icon={<DollarOutlined />}
+              onClick={() => setAdvanceModalOpen(true)}
+            >
+              Request Advance
+            </Button>
+          </Can>
         ) : null
       }
     >
@@ -347,12 +360,14 @@ const HrmTravelScreen: React.FC<Props> = ({
       />
 
       {isApprover && request && (
-        <ApprovalActionBar
-          requestId={request.requestId}
-          loading={approving}
-          onApprove={(remarks) => approveRequest(request.handle, remarks).then(onActionComplete)}
-          onReject={(remarks) => rejectRequest(request.handle, remarks).then(onActionComplete)}
-        />
+        <Can I="edit">
+          <ApprovalActionBar
+            requestId={request.requestId}
+            loading={approving}
+            onApprove={(remarks) => approveRequest(request.handle, remarks).then(onActionComplete)}
+            onReject={(remarks) => rejectRequest(request.handle, remarks).then(onActionComplete)}
+          />
+        </Can>
       )}
 
       {advanceSection}

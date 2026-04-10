@@ -6,6 +6,7 @@ import { parseCookies } from "nookies";
 import LeaveBalanceCard from "../molecules/LeaveBalanceCard";
 import DateRangePicker from "../molecules/DateRangePicker";
 import ValidationSummaryPanel from "../molecules/ValidationSummaryPanel";
+import Can from "../../../hrmAccess/components/Can";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { LeaveBalance } from "../../types/domain.types";
@@ -243,14 +244,16 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
               Next
             </Button>
           ) : (
-            <Button
-              type="primary"
-              onClick={handleSubmit}
-              loading={submitting}
-              disabled={!leaveFormState.reason.trim()}
-            >
-              Submit Request
-            </Button>
+            <Can I="add">
+              <Button
+                type="primary"
+                onClick={handleSubmit}
+                loading={submitting}
+                disabled={!leaveFormState.reason.trim()}
+              >
+                Submit Request
+              </Button>
+            </Can>
           )}
         </div>
       }

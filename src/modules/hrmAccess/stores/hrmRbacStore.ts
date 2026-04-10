@@ -8,6 +8,33 @@ import type {
   SectionPermissions,
 } from '../types/rbac.types';
 
+// Precomputed module-level permissions: moduleCode → flags.
+// Built once during initialize/switchOrganization so lookups are O(1)
+// with no per-render array scans.
+export type ModulePermissions = SectionPermissions;
+export type ModulePermissionsMap = Record<string, ModulePermissions>;
+
+const EMPTY_PERMS: ModulePermissions = Object.freeze({
+  canView: false,
+  canAdd: false,
+  canEdit: false,
+  canDelete: false,
+});
+
+function buildPermissionsMap(modules: EnrichedModule[]): ModulePermissionsMap {
+  const map: ModulePermissionsMap = {};
+  for (const mod of modules) {
+    const actions = mod.actions || [];
+    map[mod.moduleCode] = {
+      canView: actions.includes('VIEW'),
+      canAdd: actions.includes('ADD'),
+      canEdit: actions.includes('EDIT'),
+      canDelete: actions.includes('DELETE'),
+    };
+  }
+  return map;
+}
+
 interface HrmRbacState {
   isLoading: boolean;
   isReady: boolean;
@@ -17,6 +44,7 @@ interface HrmRbacState {
   organizations: OrganizationModules[];
   currentOrgModules: EnrichedModule[];
   modulesByCategory: Record<string, EnrichedModule[]>;
+  permissionsByModule: ModulePermissionsMap;
   sectionPermissionCache: Record<string, ModuleSectionPermissions>;
 }
 
@@ -26,6 +54,7 @@ interface HrmRbacActions {
   loadSectionPermissions: (moduleCode: string) => Promise<void>;
   hasModuleAccess: (appUrl: string) => boolean;
   getModuleActions: (moduleCode: string) => PermissionAction[];
+  getModulePermissions: (moduleCode: string) => ModulePermissions;
   getSectionPermissions: (moduleCode: string) => ModuleSectionPermissions | null;
   clearSectionCache: () => void;
   reset: () => void;
@@ -40,6 +69,7 @@ const initialState: HrmRbacState = {
   organizations: [],
   currentOrgModules: [],
   modulesByCategory: {},
+  permissionsByModule: {},
   sectionPermissionCache: {},
 };
 
@@ -110,6 +140,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         organizations,
         currentOrgModules: enrichedModules,
         modulesByCategory: groupByCategory(enrichedModules),
+        permissionsByModule: buildPermissionsMap(enrichedModules),
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to initialize RBAC';
@@ -128,6 +159,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       currentSite: site,
       currentOrgModules: enrichedModules,
       modulesByCategory: groupByCategory(enrichedModules),
+      permissionsByModule: buildPermissionsMap(enrichedModules),
       sectionPermissionCache: {},
     });
 
@@ -179,6 +211,10 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     const { currentOrgModules } = get();
     const mod = currentOrgModules.find(m => m.moduleCode === moduleCode);
     return mod?.actions || [];
+  },
+
+  getModulePermissions: (moduleCode: string) => {
+    return get().permissionsByModule[moduleCode] || EMPTY_PERMS;
   },
 
   getSectionPermissions: (moduleCode: string) => {

@@ -22,6 +22,7 @@ import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { SalaryRevisionRow } from '../../types/domain.types';
 import { formatINRPlain } from '../../utils/compensationFormatters';
 import CompensationPreview from './CompensationPreview';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/SalaryRevision.module.css';
 import compensationStyles from '../../styles/Compensation.module.css';
 
@@ -277,14 +278,16 @@ const SalaryRevisionTable: React.FC = () => {
             >
               Preview
             </Button>
-            <Button
-              type="primary"
-              loading={submittingIndiv}
-              onClick={handleSubmitIndiv}
-              disabled={!currentCompensation?.handle || currentCompensation.status !== 'DRAFT'}
-            >
-              Submit for Approval
-            </Button>
+            <Can I="edit">
+              <Button
+                type="primary"
+                loading={submittingIndiv}
+                onClick={handleSubmitIndiv}
+                disabled={!currentCompensation?.handle || currentCompensation.status !== 'DRAFT'}
+              >
+                Submit for Approval
+              </Button>
+            </Can>
           </div>
 
           {previewCompensation && (
@@ -325,9 +328,11 @@ const SalaryRevisionTable: React.FC = () => {
               format="DD-MMM-YYYY"
               size="small"
             />
-            <Button size="small" type="primary" disabled={revisionRows.length === 0}>
-              Process
-            </Button>
+            <Can I="edit">
+              <Button size="small" type="primary" disabled={revisionRows.length === 0}>
+                Process
+              </Button>
+            </Can>
           </div>
 
           {revisionLoading ? (
@@ -401,15 +406,17 @@ const SalaryRevisionTable: React.FC = () => {
                   >
                     Preview Selected
                   </Button>
-                  <Button
-                    size="small"
-                    type="primary"
-                    loading={revisionLoading}
-                    disabled={selectedRevisionIds.length === 0}
-                    onClick={submitBulkRevision}
-                  >
-                    Submit All for Approval
-                  </Button>
+                  <Can I="edit">
+                    <Button
+                      size="small"
+                      type="primary"
+                      loading={revisionLoading}
+                      disabled={selectedRevisionIds.length === 0}
+                      onClick={submitBulkRevision}
+                    >
+                      Submit All for Approval
+                    </Button>
+                  </Can>
                 </Space>
               </div>
             </>

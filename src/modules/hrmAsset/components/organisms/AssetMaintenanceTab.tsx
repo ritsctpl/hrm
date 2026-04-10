@@ -10,6 +10,7 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { maintenanceFormRules } from '../../utils/assetValidations';
 import type { Asset } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
 
 interface AssetMaintenanceTabProps {
@@ -59,14 +60,16 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
     <div className={styles.tabContent}>
       {canAdd && (
         <div style={{ marginBottom: 12 }}>
-          <Button
-            size="small"
-            type="primary"
-            icon={<AddIcon style={{ fontSize: 16 }} />}
-            onClick={() => setDrawerOpen(true)}
-          >
-            Add Maintenance Event
-          </Button>
+          <Can I="add">
+            <Button
+              size="small"
+              type="primary"
+              icon={<AddIcon style={{ fontSize: 16 }} />}
+              onClick={() => setDrawerOpen(true)}
+            >
+              Add Maintenance Event
+            </Button>
+          </Can>
         </div>
       )}
 
@@ -86,7 +89,9 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Space>
               <Button onClick={() => setDrawerOpen(false)}>Cancel</Button>
-              <Button type="primary" loading={saving} onClick={handleSave}>Save</Button>
+              <Can I="add">
+                <Button type="primary" loading={saving} onClick={handleSave}>Save</Button>
+              </Can>
             </Space>
           </div>
         }

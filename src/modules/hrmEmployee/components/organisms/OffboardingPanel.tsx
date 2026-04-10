@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Drawer, Form, Input, DatePicker, Button, message, Alert, Empty } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 
 interface Props {
   open: boolean;
@@ -66,9 +67,11 @@ const OffboardingPanel: React.FC<Props> = ({ open, onClose, employeeHandle, empl
             <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Reason is required' }]}>
               <Input.TextArea rows={3} placeholder="e.g., Voluntary Resignation" />
             </Form.Item>
-            <Button type="primary" onClick={handleInitiate} loading={initiating}>
-              Initiate Offboarding
-            </Button>
+            <Can I="delete">
+              <Button type="primary" onClick={handleInitiate} loading={initiating}>
+                Initiate Offboarding
+              </Button>
+            </Can>
           </Form>
         </>
       )}

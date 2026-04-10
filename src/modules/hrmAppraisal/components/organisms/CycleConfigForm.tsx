@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button, DatePicker, Form, Input, InputNumber, Select } from "antd";
+import Can from "../../../hrmAccess/components/Can";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import { HrmAppraisalService } from "../../services/hrmAppraisalService";
 import { parseCookies } from "nookies";
@@ -55,9 +56,11 @@ const CycleConfigForm: React.FC = () => {
       >
         <InputNumber min={0} max={100} style={{ width: "100%" }} />
       </Form.Item>
-      <Button type="primary" onClick={handleCreate}>
-        Create Cycle
-      </Button>
+      <Can I="add">
+        <Button type="primary" onClick={handleCreate}>
+          Create Cycle
+        </Button>
+      </Can>
     </Form>
   );
 };

@@ -7,6 +7,7 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import HoursDisplay from '../atoms/HoursDisplay';
 import TimesheetLinesTable from './TimesheetLinesTable';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text, Title } = Typography;
@@ -91,23 +92,27 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
             style={{ flex: 1 }}
           />
           <Space direction="vertical">
-            <Button
-              type="primary"
-              size="small"
-              loading={approvingTimesheet}
-              onClick={() => onApprove(ts.handle, 'APPROVED', remarks)}
-            >
-              Approve
-            </Button>
-            <Button
-              danger
-              size="small"
-              loading={approvingTimesheet}
-              disabled={!remarks.trim()}
-              onClick={() => onApprove(ts.handle, 'REJECTED', remarks)}
-            >
-              Reject
-            </Button>
+            <Can I="edit">
+              <Button
+                type="primary"
+                size="small"
+                loading={approvingTimesheet}
+                onClick={() => onApprove(ts.handle, 'APPROVED', remarks)}
+              >
+                Approve
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                danger
+                size="small"
+                loading={approvingTimesheet}
+                disabled={!remarks.trim()}
+                onClick={() => onApprove(ts.handle, 'REJECTED', remarks)}
+              >
+                Reject
+              </Button>
+            </Can>
           </Space>
         </div>
       )}
@@ -116,13 +121,15 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
       {canReopen && (
         <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, marginTop: 4 }}>
           {!showReopenForm ? (
-            <Button
-              icon={<UndoOutlined />}
-              size="small"
-              onClick={() => setShowReopenForm(true)}
-            >
-              Reopen Timesheet
-            </Button>
+            <Can I="edit">
+              <Button
+                icon={<UndoOutlined />}
+                size="small"
+                onClick={() => setShowReopenForm(true)}
+              >
+                Reopen Timesheet
+              </Button>
+            </Can>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -135,19 +142,21 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
                 onChange={(e) => setReopenReason(e.target.value)}
               />
               <Space>
-                <Button
-                  type="primary"
-                  size="small"
-                  loading={approvingTimesheet}
-                  disabled={!reopenReason.trim()}
-                  onClick={async () => {
-                    await onReopen(ts.handle, reopenReason);
-                    setShowReopenForm(false);
-                    setReopenReason('');
-                  }}
-                >
-                  Confirm Reopen
-                </Button>
+                <Can I="edit">
+                  <Button
+                    type="primary"
+                    size="small"
+                    loading={approvingTimesheet}
+                    disabled={!reopenReason.trim()}
+                    onClick={async () => {
+                      await onReopen(ts.handle, reopenReason);
+                      setShowReopenForm(false);
+                      setReopenReason('');
+                    }}
+                  >
+                    Confirm Reopen
+                  </Button>
+                </Can>
                 <Button
                   size="small"
                   onClick={() => {

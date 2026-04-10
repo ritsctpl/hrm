@@ -9,6 +9,7 @@ import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { formatDate, formatDateTime } from '../../utils/assetHelpers';
 import { APPROVAL_TABS } from '../../utils/assetConstants';
 import type { AssetRequest } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetList.module.css';
 
 interface ApprovalInboxProps {
@@ -224,15 +225,17 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
                   <Descriptions.Item label="Purpose" span={2}>{req.purpose}</Descriptions.Item>
                 </Descriptions>
                 <div style={{ marginTop: 8 }}>
-                  <button
-                    style={{
-                      background: '#1890ff', color: '#fff', border: 'none',
-                      padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12,
-                    }}
-                    onClick={() => handleAllocate(req)}
-                  >
-                    Allocate Asset
-                  </button>
+                  <Can I="edit">
+                    <button
+                      style={{
+                        background: '#1890ff', color: '#fff', border: 'none',
+                        padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12,
+                      }}
+                      onClick={() => handleAllocate(req)}
+                    >
+                      Allocate Asset
+                    </button>
+                  </Can>
                 </div>
               </div>
             ))

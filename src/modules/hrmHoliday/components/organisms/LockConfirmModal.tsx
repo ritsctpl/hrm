@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Form, Input, Typography } from 'antd';
+import { Modal, Form, Input, Typography, Button } from 'antd';
 import type { LockConfirmModalProps } from '../../types/ui.types';
 import { lockFormRules } from '../../utils/validations';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function LockConfirmModal({
   open,
@@ -29,12 +30,18 @@ export default function LockConfirmModal({
     <Modal
       open={open}
       title="Lock Holiday Group"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={loading}
-      okText="Lock"
-      okButtonProps={{ danger: true }}
       destroyOnHidden
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="lock" I="edit">
+          <Button danger type="primary" loading={loading} onClick={handleOk}>
+            Lock
+          </Button>
+        </Can>,
+      ]}
     >
       <Typography.Text>
         Locking <strong>{groupName}</strong> will prevent further edits.

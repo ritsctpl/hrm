@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Tabs } from "antd";
 import CommonAppBar from "@/components/CommonAppBar";
+import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import { useHrmAppraisalStore } from "./stores/hrmAppraisalStore";
 import { useAppraisalAuth } from "./hooks/useAppraisalAuth";
 import styles from "./styles/AppraisalLanding.module.css";
@@ -63,7 +64,11 @@ const HrmAppraisalLanding: React.FC = () => {
 
   // If a detail screen is active, render it instead of the landing
   if (currentView !== "LANDING") {
-    return <HrmAppraisalScreen />;
+    return (
+      <ModuleAccessGate moduleCode="HRM_APPRAISAL" appTitle="Performance Appraisal">
+        <HrmAppraisalScreen />
+      </ModuleAccessGate>
+    );
   }
 
   const tabItems = useMemo(() => {
@@ -100,19 +105,21 @@ const HrmAppraisalLanding: React.FC = () => {
   }, [isManager, isHr, isAdmin]);
 
   return (
-    <div className={`hrm-module-root ${styles.landingRoot}`}>
-      <CommonAppBar appTitle="Performance Appraisal" />
-      <div className={styles.content}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          className={styles.mainTabs}
-          size="small"
-          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-        />
+    <ModuleAccessGate moduleCode="HRM_APPRAISAL" appTitle="Performance Appraisal">
+      <div className={`hrm-module-root ${styles.landingRoot}`}>
+        <CommonAppBar appTitle="Performance Appraisal" />
+        <div className={styles.content}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            className={styles.mainTabs}
+            size="small"
+            tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          />
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

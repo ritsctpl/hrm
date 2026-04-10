@@ -5,6 +5,7 @@ import { Button, message } from "antd";
 import { parseCookies } from "nookies";
 import LeaveRequestDetail from "./components/organisms/LeaveRequestDetail";
 import LeaveRequestApprovalPanel from "./components/organisms/LeaveRequestApprovalPanel";
+import Can from "../hrmAccess/components/Can";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { HrmLeaveService } from "./services/hrmLeaveService";
 import { LeaveRequest } from "./types/domain.types";
@@ -173,14 +174,16 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         request.status === "PENDING_SUPERVISOR" &&
         request.createdBy === actorId && (
           <div style={{ padding: "12px 0" }}>
-            <Button
-              danger
-              size="small"
-              onClick={handleCancel}
-              loading={loading}
-            >
-              Cancel Request
-            </Button>
+            <Can I="delete">
+              <Button
+                danger
+                size="small"
+                onClick={handleCancel}
+                loading={loading}
+              >
+                Cancel Request
+              </Button>
+            </Can>
           </div>
         )}
     </div>

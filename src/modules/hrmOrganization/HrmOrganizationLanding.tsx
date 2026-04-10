@@ -6,6 +6,7 @@ import OrganizationListTemplate from './components/templates/OrganizationListTem
 import CompanyDetailTemplate from './components/templates/CompanyDetailTemplate';
 import { useHrmOrganizationStore } from './stores/hrmOrganizationStore';
 import { useUnsavedChanges } from './hooks/useUnsavedChanges';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import styles from './styles/HrmOrganization.module.css';
 
 const HrmOrganizationLanding: React.FC = () => {
@@ -19,12 +20,14 @@ const HrmOrganizationLanding: React.FC = () => {
   }, [reset]);
 
   return (
-    <div className={`hrm-module-root ${styles.container}`}>
-      <CommonAppBar appTitle="Organization Setup" />
-      <div className={styles.content}>
-        {view === 'list' ? <OrganizationListTemplate /> : <CompanyDetailTemplate />}
+    <ModuleAccessGate moduleCode="HRM_ORGANIZATION" appTitle="Organization Setup">
+      <div className={`hrm-module-root ${styles.container}`}>
+        <CommonAppBar appTitle="Organization Setup" />
+        <div className={styles.content}>
+          {view === 'list' ? <OrganizationListTemplate /> : <CompanyDetailTemplate />}
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

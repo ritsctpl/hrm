@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
+import Can from '../../../hrmAccess/components/Can';
 import { ONBOARDING_STEPS } from '../../utils/constants';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
@@ -974,14 +975,15 @@ const OnboardingWizard: React.FC = () => {
           </Button>
         ),
         isLastStep && (
-          <Button
-            key="submit"
-            type="primary"
-            loading={isSaving}
-            onClick={handleSubmitWithKeycloak}
-          >
-            Submit
-          </Button>
+          <Can key="submit" I="add">
+            <Button
+              type="primary"
+              loading={isSaving}
+              onClick={handleSubmitWithKeycloak}
+            >
+              Submit
+            </Button>
+          </Can>
         ),
       ].filter(Boolean)}
     >

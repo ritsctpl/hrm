@@ -24,6 +24,7 @@ import DeductionsGrid from './DeductionsGrid';
 import CompensationSummaryBar from '../molecules/CompensationSummaryBar';
 import RevisionHistoryTimeline from '../molecules/RevisionHistoryTimeline';
 import CompensationStatusTag from '../atoms/CompensationStatusTag';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 
 const EmployeeCompensationForm: React.FC = () => {
@@ -298,17 +299,21 @@ const EmployeeCompensationForm: React.FC = () => {
           <Button onClick={handlePreview} disabled={!structureCode}>
             Preview
           </Button>
-          <Button loading={savingDraft} onClick={handleSaveDraft} disabled={!structureCode}>
-            Save as Draft
-          </Button>
-          <Button
-            type="primary"
-            loading={submitting}
-            onClick={handleSubmit}
-            disabled={!currentCompensation?.handle || currentCompensation.status !== 'DRAFT'}
-          >
-            Submit for Approval
-          </Button>
+          <Can I={currentCompensation ? 'edit' : 'add'}>
+            <Button loading={savingDraft} onClick={handleSaveDraft} disabled={!structureCode}>
+              Save as Draft
+            </Button>
+          </Can>
+          <Can I="edit">
+            <Button
+              type="primary"
+              loading={submitting}
+              onClick={handleSubmit}
+              disabled={!currentCompensation?.handle || currentCompensation.status !== 'DRAFT'}
+            >
+              Submit for Approval
+            </Button>
+          </Can>
         </Space>
       </div>
 

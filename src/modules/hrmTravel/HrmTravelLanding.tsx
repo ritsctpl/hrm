@@ -15,6 +15,8 @@ import TravelMasterDetailTemplate from "./components/templates/TravelMasterDetai
 import TravelApproverTemplate from "./components/templates/TravelApproverTemplate";
 import TravelScreenHeader from "./components/organisms/TravelScreenHeader";
 import HrmTravelScreen from "./HrmTravelScreen";
+import Can from "../hrmAccess/components/Can";
+import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import styles from "./styles/Travel.module.css";
 
 const { Text } = Typography;
@@ -127,9 +129,11 @@ const HrmTravelLanding: React.FC = () => {
             <Button icon={<DownloadOutlined />} onClick={exportRequests}>
               Export CSV
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleNewRequest}>
-              New Request
-            </Button>
+            <Can I="add">
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleNewRequest}>
+                New Request
+              </Button>
+            </Can>
           </Space>
         }
       />
@@ -152,10 +156,12 @@ const HrmTravelLanding: React.FC = () => {
   // Employee only sees their requests
   if (!isSupervisor && !isAdmin) {
     return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle="Travel Requests" />
-        {myRequestsTab}
-      </div>
+      <ModuleAccessGate moduleCode="HRM_TRAVEL" appTitle="Travel Requests">
+        <div className={`hrm-module-root ${styles.landing}`}>
+          <CommonAppBar appTitle="Travel Requests" />
+          {myRequestsTab}
+        </div>
+      </ModuleAccessGate>
     );
   }
 
@@ -209,10 +215,12 @@ const HrmTravelLanding: React.FC = () => {
   }
 
   return (
-    <div className={`hrm-module-root ${styles.landing}`}>
-      <CommonAppBar appTitle="Travel Requests" />
-      <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
-    </div>
+    <ModuleAccessGate moduleCode="HRM_TRAVEL" appTitle="Travel Requests">
+      <div className={`hrm-module-root ${styles.landing}`}>
+        <CommonAppBar appTitle="Travel Requests" />
+        <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
+      </div>
+    </ModuleAccessGate>
   );
 };
 

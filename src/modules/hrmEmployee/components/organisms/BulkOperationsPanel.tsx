@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Drawer, Tabs, Select, Button, message, Alert, Input } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmEmployeeStore } from '../../stores/hrmEmployeeStore';
 
 interface Props {
@@ -160,9 +161,11 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     }
                   />
                 </div>
-                <Button type="primary" onClick={handleBulkAssignManager} loading={processing}>
-                  Assign Manager to Selected
-                </Button>
+                <Can I="edit">
+                  <Button type="primary" onClick={handleBulkAssignManager} loading={processing}>
+                    Assign Manager to Selected
+                  </Button>
+                </Can>
               </div>
             ),
           },
@@ -182,9 +185,11 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     placeholder="Enter department name"
                   />
                 </div>
-                <Button type="primary" onClick={handleBulkChangeDept} loading={processing}>
-                  Change Department for Selected
-                </Button>
+                <Can I="edit">
+                  <Button type="primary" onClick={handleBulkChangeDept} loading={processing}>
+                    Change Department for Selected
+                  </Button>
+                </Can>
               </div>
             ),
           },
@@ -204,9 +209,11 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     placeholder="Enter business unit code"
                   />
                 </div>
-                <Button type="primary" onClick={handleBulkAssignBu} loading={processing}>
-                  Assign BU to Selected
-                </Button>
+                <Can I="edit">
+                  <Button type="primary" onClick={handleBulkAssignBu} loading={processing}>
+                    Assign BU to Selected
+                  </Button>
+                </Can>
               </div>
             ),
           },

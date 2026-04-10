@@ -6,6 +6,7 @@ import { CheckCircleOutlined, CloseCircleOutlined, DollarOutlined } from "@ant-d
 import type { FinancePanelState } from "../../types/ui.types";
 import type { EmployeeBankDetails } from "../../types/domain.types";
 import { PAYMENT_MODE_OPTIONS } from "../../utils/expenseConstants";
+import Can from "../../../hrmAccess/components/Can";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -124,32 +125,38 @@ const FinanceApprovalPanel: React.FC<Props> = ({
           </Form.Item>
 
           <Space style={{ width: "100%", justifyContent: "flex-end", display: "flex" }}>
-            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModal(true)} loading={loading}>
-              Reject
-            </Button>
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={() => Modal.confirm({
-                title: `Approve & Sanction ${reportId}?`,
-                onOk: onApprove,
-              })}
-              loading={loading}
-              disabled={!panel.sanctionedAmount}
-            >
-              Approve & Save
-            </Button>
-            <Button
-              icon={<DollarOutlined />}
-              onClick={() => Modal.confirm({
-                title: `Mark ${reportId} as Paid?`,
-                onOk: onMarkPaid,
-              })}
-              loading={loading}
-              disabled={!panel.paymentReference || !panel.paymentDate || !panel.paymentMode}
-            >
-              Mark as Paid
-            </Button>
+            <Can I="edit">
+              <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModal(true)} loading={loading}>
+                Reject
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => Modal.confirm({
+                  title: `Approve & Sanction ${reportId}?`,
+                  onOk: onApprove,
+                })}
+                loading={loading}
+                disabled={!panel.sanctionedAmount}
+              >
+                Approve & Save
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                icon={<DollarOutlined />}
+                onClick={() => Modal.confirm({
+                  title: `Mark ${reportId} as Paid?`,
+                  onOk: onMarkPaid,
+                })}
+                loading={loading}
+                disabled={!panel.paymentReference || !panel.paymentDate || !panel.paymentMode}
+              >
+                Mark as Paid
+              </Button>
+            </Can>
           </Space>
         </Form>
       </Card>

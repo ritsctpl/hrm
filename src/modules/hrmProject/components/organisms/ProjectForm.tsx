@@ -7,6 +7,7 @@ import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import type { ProjectFormValues } from '../../types/ui.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmProject.module.css';
 
 let milestoneKey = 0;
@@ -139,9 +140,11 @@ export default function ProjectForm() {
 
       <div className={styles.formActions}>
         <Button onClick={closeProjectForm}>Cancel</Button>
-        <Button type="primary" htmlType="submit" loading={savingProject}>
-          {editingProject ? 'Update Project' : 'Save Project'}
-        </Button>
+        <Can I={editingProject ? 'edit' : 'add'}>
+          <Button type="primary" htmlType="submit" loading={savingProject}>
+            {editingProject ? 'Update Project' : 'Save Project'}
+          </Button>
+        </Can>
       </div>
     </Form>
   );

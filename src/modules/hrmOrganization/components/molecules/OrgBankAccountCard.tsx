@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Tag, Tooltip, Modal } from 'antd';
 import { EditOutlined, DeleteOutlined, StarFilled, StarOutlined, EyeOutlined } from '@ant-design/icons';
+import Can from '../../../hrmAccess/components/Can';
 import type { OrgBankAccountCardProps } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
 
@@ -47,14 +48,16 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
               />
             </Tooltip>
             {!isPrimary && !disabled && (
-              <Tooltip title="Set as primary">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<StarOutlined />}
-                  onClick={onSetPrimary}
-                />
-              </Tooltip>
+              <Can I="edit">
+                <Tooltip title="Set as primary">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<StarOutlined />}
+                    onClick={onSetPrimary}
+                  />
+                </Tooltip>
+              </Can>
             )}
             {isPrimary && (
               <Tooltip title="Primary account">
@@ -63,23 +66,27 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
             )}
             {!disabled && (
               <>
-                <Tooltip title="Edit">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={onEdit}
-                  />
-                </Tooltip>
-                <Tooltip title="Delete">
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={onDelete}
-                  />
-                </Tooltip>
+                <Can I="edit">
+                  <Tooltip title="Edit">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={onEdit}
+                    />
+                  </Tooltip>
+                </Can>
+                <Can I="delete">
+                  <Tooltip title="Delete">
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={onDelete}
+                    />
+                  </Tooltip>
+                </Can>
               </>
             )}
           </div>

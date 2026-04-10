@@ -9,6 +9,7 @@ import { useProjectMutations } from '../../hooks/useProjectMutations';
 import CapacityColorDot from '../atoms/CapacityColorDot';
 import { RECURRENCE_PATTERNS, WEEKDAYS, MAX_HOURS_PER_DAY, HOURS_STEP } from '../../utils/projectConstants';
 import type { AllocationFormValues } from '../../types/ui.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AllocationForm.module.css';
 
 interface Props {
@@ -106,9 +107,11 @@ export default function AllocationForm({ projectHandle }: Props) {
 
       <div className={styles.formActions}>
         <Button onClick={closeAllocationForm}>Cancel</Button>
-        <Button type="primary" htmlType="submit" loading={savingAllocation || loadingCapacity}>
-          Submit for Approval
-        </Button>
+        <Can I="add">
+          <Button type="primary" htmlType="submit" loading={savingAllocation || loadingCapacity}>
+            Submit for Approval
+          </Button>
+        </Can>
       </div>
     </Form>
   );

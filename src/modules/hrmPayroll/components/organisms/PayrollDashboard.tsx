@@ -9,6 +9,7 @@ import StatusPipeline from './StatusPipeline';
 import AlertsPanel from './AlertsPanel';
 import PayrollRunsTable from './PayrollRunsTable';
 import PayrollStatusTag from '../atoms/PayrollStatusTag';
+import Can from '../../../hrmAccess/components/Can';
 import { formatINR, formatPayrollPeriod, computeVariancePct } from '../../utils/payrollFormatters';
 import type { PayrollRunSummary } from '../../types/domain.types';
 import styles from '../../styles/PayrollDashboard.module.css';
@@ -61,13 +62,15 @@ const PayrollDashboard: React.FC = () => {
                 </Text>
               )}
             </div>
-            <Button
-              type="primary"
-              icon={<ArrowForwardIcon fontSize="small" />}
-              onClick={() => handleResumeWizard(current)}
-            >
-              Run Payroll Wizard
-            </Button>
+            <Can I="edit">
+              <Button
+                type="primary"
+                icon={<ArrowForwardIcon fontSize="small" />}
+                onClick={() => handleResumeWizard(current)}
+              >
+                Run Payroll Wizard
+              </Button>
+            </Can>
           </div>
         </Card>
       )}

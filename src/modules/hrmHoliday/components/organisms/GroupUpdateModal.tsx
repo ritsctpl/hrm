@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, Select, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
 import { groupFormRules } from '../../utils/validations';
+import Can from '../../../hrmAccess/components/Can';
 
 interface GroupUpdateModalProps {
   open: boolean;
@@ -67,11 +68,18 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
     <Modal
       open={open}
       title="Update Holiday Group"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={saving}
       destroyOnClose
-      okText="Update Group"
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="update" I="edit">
+          <Button type="primary" loading={saving} onClick={handleOk}>
+            Update Group
+          </Button>
+        </Can>,
+      ]}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item label="Group Name" name="groupName" rules={groupFormRules.groupName}>

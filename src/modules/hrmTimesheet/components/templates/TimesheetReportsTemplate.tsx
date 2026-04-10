@@ -11,6 +11,7 @@ import ComplianceReportPanel from '../organisms/ComplianceReportPanel';
 import UnplannedWorkReportPanel from '../organisms/UnplannedWorkReportPanel';
 import HolidayWorkingReportPanel from '../organisms/HolidayWorkingReportPanel';
 import UnplannedCategoryManager from '../organisms/UnplannedCategoryManager';
+import Can from '../../../hrmAccess/components/Can';
 import type { ReportTab } from '../../types/ui.types';
 
 /* ── Lock Period Manager (inline) ────────────────────────────── */
@@ -83,9 +84,11 @@ function LockPeriodManager() {
       key: 'actions',
       width: 100,
       render: (_: unknown, record: LockPeriodRecord) => (
-        <Popconfirm title="Delete this lock period?" onConfirm={() => handleDelete(record)}>
-          <Button size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm title="Delete this lock period?" onConfirm={() => handleDelete(record)}>
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Can>
       ),
     },
   ];
@@ -96,9 +99,11 @@ function LockPeriodManager() {
         <h3 style={{ margin: 0 }}>Lock Periods</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <DatePicker value={newDate} onChange={setNewDate} />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} disabled={!newDate}>
-            New Lock
-          </Button>
+          <Can I="add">
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} disabled={!newDate}>
+              New Lock
+            </Button>
+          </Can>
         </div>
       </div>
       <Table

@@ -9,6 +9,7 @@ import TravelStatusChip from "../atoms/TravelStatusChip";
 import TravelTypeTag from "../atoms/TravelTypeTag";
 import SlaIndicator from "../atoms/SlaIndicator";
 import { formatDateRange, formatDestination, computeSlaInfo } from "../../utils/travelTransformations";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/TravelList.module.css";
 
 interface Props {
@@ -106,9 +107,11 @@ const TravelListTable: React.FC<Props> = ({
               description="No travel requests yet"
             >
               {onNewRequest && (
-                <Button type="primary" onClick={onNewRequest}>
-                  + Create Travel Request
-                </Button>
+                <Can I="add">
+                  <Button type="primary" onClick={onNewRequest}>
+                    + Create Travel Request
+                  </Button>
+                </Can>
               )}
             </Empty>
           ),

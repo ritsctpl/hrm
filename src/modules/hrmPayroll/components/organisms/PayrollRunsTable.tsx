@@ -5,6 +5,7 @@ import { Table, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { PayrollRunSummary } from '../../types/domain.types';
 import PayrollStatusTag from '../atoms/PayrollStatusTag';
+import Can from '../../../hrmAccess/components/Can';
 import { formatINR, formatPayrollPeriod } from '../../utils/payrollFormatters';
 
 interface PayrollRunsTableProps {
@@ -58,14 +59,16 @@ const PayrollRunsTable: React.FC<PayrollRunsTableProps> = ({
       render: (_: unknown, record: PayrollRunSummary) => (
         <>
           {record.status !== 'LOCKED' && record.status !== 'PAID' && onResumeWizard && (
-            <Button
-              size="small"
-              type="link"
-              onClick={() => onResumeWizard(record)}
-              style={{ padding: '0 4px' }}
-            >
-              Resume
-            </Button>
+            <Can I="edit">
+              <Button
+                size="small"
+                type="link"
+                onClick={() => onResumeWizard(record)}
+                style={{ padding: '0 4px' }}
+              >
+                Resume
+              </Button>
+            </Can>
           )}
           {onViewReview && (
             <Button

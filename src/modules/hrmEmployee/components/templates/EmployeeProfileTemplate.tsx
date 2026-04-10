@@ -31,6 +31,7 @@ import DocumentsTab from '../organisms/DocumentsTab';
 import AssetsTab from '../organisms/AssetsTab';
 import RemunerationTab from './RemunerationTab';
 import LeaveSummaryTab from './LeaveSummaryTab';
+import Can from '../../../hrmAccess/components/Can';
 import { PROFILE_TABS } from '../../utils/constants';
 import type { EmployeeProfile } from '../../types/domain.types';
 import type { EmployeeStatus } from '../../types/domain.types';
@@ -79,22 +80,24 @@ const ProfileSection: React.FC<{
       <div style={{ marginLeft: 12, display: 'flex', gap: 8 }}>
         {isEditing ? (
           <>
-            <Button
-              type="primary"
-              size="small"
-              loading={isSaving}
-              onClick={() => {
-                // Call the ref's save method if available
-                if (tabRef?.current?.save) {
-                  tabRef.current.save();
-                } else {
-                  // Fallback: call onSave directly
-                  sectionKey && onSave?.(sectionKey);
-                }
-              }}
-            >
-              Save
-            </Button>
+            <Can I="edit">
+              <Button
+                type="primary"
+                size="small"
+                loading={isSaving}
+                onClick={() => {
+                  // Call the ref's save method if available
+                  if (tabRef?.current?.save) {
+                    tabRef.current.save();
+                  } else {
+                    // Fallback: call onSave directly
+                    sectionKey && onSave?.(sectionKey);
+                  }
+                }}
+              >
+                Save
+              </Button>
+            </Can>
             <Button
               size="small"
               onClick={() => {
@@ -211,16 +214,18 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={basicDetailsRef}
               action={
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    onEdit();
-                    setEditingSection('basic');
-                  }}
-                >
-                  Edit
-                </Button>
+                <Can I="edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      onEdit();
+                      setEditingSection('basic');
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Can>
               }
             >
               <BasicDetailsTab ref={basicDetailsRef} {...tabProps} onEdit={onEdit} />
@@ -235,16 +240,18 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
               action={
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    onEdit();
-                    setEditingSection('official');
-                  }}
-                >
-                  Edit
-                </Button>
+                <Can I="edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      onEdit();
+                      setEditingSection('official');
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Can>
               }
             >
               <OfficialDetailsTab ref={officialDetailsRef} {...tabProps} onEdit={onEdit} />
@@ -259,16 +266,18 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
               action={
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    onEdit();
-                    setEditingSection('personal');
-                  }}
-                >
-                  Edit
-                </Button>
+                <Can I="edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      onEdit();
+                      setEditingSection('personal');
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Can>
               }
             >
               <PersonalDetailsTab ref={personalDetailsRef} {...tabProps} onEdit={onEdit} />
@@ -291,16 +300,18 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
               action={
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    onEdit();
-                    setEditingSection('contact');
-                  }}
-                >
-                  Edit
-                </Button>
+                <Can I="edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      onEdit();
+                      setEditingSection('contact');
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Can>
               }
             >
               <ContactDetailsTab ref={contactDetailsRef} {...tabProps} onEdit={onEdit} />

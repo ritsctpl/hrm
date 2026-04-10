@@ -8,6 +8,7 @@ import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { formatDate } from '../../utils/projectHelpers';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 interface ProjectOverviewTabProps {
@@ -81,20 +82,25 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
 
         <Card size="small" title="Actions">
           <Space wrap>
-            <Button size="small" icon={<EditOutlined />} onClick={handleEdit}>Edit Project</Button>
+            <Can I="edit">
+              <Button size="small" icon={<EditOutlined />} onClick={handleEdit}>Edit Project</Button>
+            </Can>
             {STATUS_TRANSITIONS[project.status]?.map((nextStatus) => (
-              <Popconfirm
-                key={nextStatus}
-                title={`Change status to ${nextStatus}?`}
-                onConfirm={() => handleStatusChange(nextStatus)}
-                okText="Confirm"
-              >
-                <Button size="small">{nextStatus.replace('_', ' ')}</Button>
-              </Popconfirm>
+              <Can key={nextStatus} I="edit">
+                <Popconfirm
+                  title={`Change status to ${nextStatus}?`}
+                  onConfirm={() => handleStatusChange(nextStatus)}
+                  okText="Confirm"
+                >
+                  <Button size="small">{nextStatus.replace('_', ' ')}</Button>
+                </Popconfirm>
+              </Can>
             ))}
-            <Popconfirm title="Delete this project?" onConfirm={handleDelete} okText="Delete" okType="danger">
-              <Button size="small" danger icon={<DeleteOutlined />}>Delete</Button>
-            </Popconfirm>
+            <Can I="delete">
+              <Popconfirm title="Delete this project?" onConfirm={handleDelete} okText="Delete" okType="danger">
+                <Button size="small" danger icon={<DeleteOutlined />}>Delete</Button>
+              </Popconfirm>
+            </Can>
           </Space>
         </Card>
       </div>

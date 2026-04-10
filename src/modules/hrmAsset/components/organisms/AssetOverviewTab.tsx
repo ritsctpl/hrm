@@ -9,6 +9,7 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { formatDate, formatCurrency } from '../../utils/assetHelpers';
 import type { Asset, AssetStatus } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
 
 interface AssetOverviewTabProps {
@@ -75,12 +76,14 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
             <AssetStatusBadge status={asset.status} />
           </div>
           {canEdit && STATUS_TRANSITIONS[asset.status].length > 0 && (
-            <Select
-              placeholder="Change status..."
-              style={{ width: '100%', marginBottom: 8 }}
-              onChange={handleStatusChange}
-              options={STATUS_TRANSITIONS[asset.status].map((s) => ({ value: s, label: s.replace('_', ' ') }))}
-            />
+            <Can I="edit">
+              <Select
+                placeholder="Change status..."
+                style={{ width: '100%', marginBottom: 8 }}
+                onChange={handleStatusChange}
+                options={STATUS_TRANSITIONS[asset.status].map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+              />
+            </Can>
           )}
         </div>
 
@@ -91,9 +94,11 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
               <div>{asset.currentHolderName}</div>
               <div style={{ color: '#8c8c8c', fontSize: 12 }}>{asset.currentHolderEmployeeId}</div>
               {canAssign && (
-                <Button size="small" danger onClick={openReturnModal} style={{ marginTop: 8 }}>
-                  Unassign / Return
-                </Button>
+                <Can I="edit">
+                  <Button size="small" danger onClick={openReturnModal} style={{ marginTop: 8 }}>
+                    Unassign / Return
+                  </Button>
+                </Can>
               )}
             </>
           ) : (

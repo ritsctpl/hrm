@@ -7,6 +7,7 @@ import { MdDelete } from 'react-icons/md';
 import { parseCookies } from 'nookies';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmEmployeeService } from '../../../hrmEmployee/services/hrmEmployeeService';
 import type { DepartmentFormProps } from '../../types/ui.types';
@@ -127,12 +128,14 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
         <span className={mainStyles.formPanelTitle}>{title}</span>
         <div style={{ display: 'flex', gap: 8 }}>
           {!isNew && selected && (
-            <Button
-              type="text"
-              danger
-              icon={<MdDelete />}
-              onClick={handleDelete}
-            />
+            <Can I="delete">
+              <Button
+                type="text"
+                danger
+                icon={<MdDelete />}
+                onClick={handleDelete}
+              />
+            </Can>
           )}
           <Button
             type="text"
@@ -226,11 +229,13 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       <div className={mainStyles.formActions}>
         <div style={{ flex: 1 }} />
         <Button onClick={onClose}>Cancel</Button>
-        <OrgSaveButton
-          loading={isSaving}
-          onClick={handleSave}
-          label={isNew ? 'Create' : 'Update'}
-        />
+        <Can I={isNew ? 'add' : 'edit'}>
+          <OrgSaveButton
+            loading={isSaving}
+            onClick={handleSave}
+            label={isNew ? 'Create' : 'Update'}
+          />
+        </Can>
       </div>
     </div>
   );

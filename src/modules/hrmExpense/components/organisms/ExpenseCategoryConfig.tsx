@@ -7,6 +7,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../../services/hrmExpenseService";
 import type { ExpenseCategory } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 
 interface Props {
   categories: ExpenseCategory[];
@@ -86,10 +87,14 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
       width: 80,
       render: (_, r) => (
         <>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openModal(r)} />
-          <Popconfirm title="Delete category?" onConfirm={() => handleDelete(r.handle)}>
-            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-          </Popconfirm>
+          <Can I="edit">
+            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openModal(r)} />
+          </Can>
+          <Can I="delete">
+            <Popconfirm title="Delete category?" onConfirm={() => handleDelete(r.handle)}>
+              <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Can>
         </>
       ),
     },
@@ -98,9 +103,11 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-          Add Category
-        </Button>
+        <Can I="add">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+            Add Category
+          </Button>
+        </Can>
       </div>
 
       <Table rowKey="handle" columns={columns} dataSource={categories} size="small" pagination={false} />

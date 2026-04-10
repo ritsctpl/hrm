@@ -5,6 +5,7 @@ import { Input, Select, Button, Divider, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
 import { STATE_CITIES } from '../../utils/locationSearch';
@@ -182,11 +183,13 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
 
       <div className={mainStyles.formActions}>
         <Button onClick={onClose}>Cancel</Button>
-        <OrgSaveButton
-          loading={isSaving}
-          onClick={handleSave}
-          label={isNew ? 'Create' : 'Update'}
-        />
+        <Can I={isNew ? 'add' : 'edit'}>
+          <OrgSaveButton
+            loading={isSaving}
+            onClick={handleSave}
+            label={isNew ? 'Create' : 'Update'}
+          />
+        </Can>
       </div>
     </div>
   );

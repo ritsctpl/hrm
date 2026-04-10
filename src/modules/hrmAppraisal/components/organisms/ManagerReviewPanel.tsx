@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button, Divider, Input, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import Can from "../../../hrmAccess/components/Can";
 import RatingStarDisplay from "../atoms/RatingStarDisplay";
 import RatingStarInput from "../atoms/RatingStarInput";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
@@ -42,16 +43,18 @@ const TeamReviewTable: React.FC = () => {
       key: "actions",
       width: 100,
       render: (_, record) => (
-        <Button
-          size="small"
-          type="primary"
-          onClick={() => {
-            setSelectedReview(record);
-            setCurrentView("MANAGER_REVIEW");
-          }}
-        >
-          Review
-        </Button>
+        <Can I="edit">
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => {
+              setSelectedReview(record);
+              setCurrentView("MANAGER_REVIEW");
+            }}
+          >
+            Review
+          </Button>
+        </Can>
       ),
     },
   ];
@@ -163,10 +166,14 @@ const ManagerReviewPanel: React.FC = () => {
       </div>
 
       <div className={styles.submitBar}>
-        <Button>Save Draft</Button>
-        <Button type="primary" loading={submittingAssessment} onClick={handleSubmit}>
-          Submit Manager Assessment
-        </Button>
+        <Can I="edit">
+          <Button>Save Draft</Button>
+        </Can>
+        <Can I="edit">
+          <Button type="primary" loading={submittingAssessment} onClick={handleSubmit}>
+            Submit Manager Assessment
+          </Button>
+        </Can>
       </div>
     </div>
   );

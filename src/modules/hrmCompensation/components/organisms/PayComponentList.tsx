@@ -7,6 +7,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import type { PayComponent } from '../../types/domain.types';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import PayComponentListRow from '../molecules/PayComponentListRow';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 
 const PayComponentList: React.FC = () => {
@@ -50,14 +51,16 @@ const PayComponentList: React.FC = () => {
             icon={<RefreshIcon style={{ fontSize: 14 }} />}
             onClick={() => fetchPayComponents()}
           />
-          <Button
-            type="primary"
-            size="small"
-            icon={<AddIcon style={{ fontSize: 14 }} />}
-            onClick={handleNew}
-          >
-            New
-          </Button>
+          <Can I="add">
+            <Button
+              type="primary"
+              size="small"
+              icon={<AddIcon style={{ fontSize: 14 }} />}
+              onClick={handleNew}
+            >
+              New
+            </Button>
+          </Can>
         </div>
       </div>
 

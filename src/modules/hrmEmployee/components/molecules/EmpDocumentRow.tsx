@@ -14,6 +14,7 @@ import {
   WarningOutlined,
 } from '@ant-design/icons';
 import { formatDate, isExpiringSoon, isExpired } from '../../utils/transformations';
+import Can from '../../../hrmAccess/components/Can';
 import type { EmpDocumentRowProps } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
@@ -74,15 +75,17 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
             onClick={() => onDownload(docId)}
           />
         </Tooltip>
-        <Tooltip title="Delete">
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => onDelete(docId)}
-          />
-        </Tooltip>
+        <Can I="delete">
+          <Tooltip title="Delete">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => onDelete(docId)}
+            />
+          </Tooltip>
+        </Can>
       </div>
     </div>
   );

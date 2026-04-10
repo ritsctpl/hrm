@@ -4,6 +4,7 @@ import { useEffect, useCallback } from 'react';
 import { Select, Radio, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import NotificationList from './components/organisms/NotificationList';
 import NotificationCentreTemplate from './components/templates/NotificationCentreTemplate';
 import NotificationEmptyState from './components/molecules/NotificationEmptyState';
@@ -55,6 +56,7 @@ export default function HrmNotificationCentre() {
   const isEmpty = !loadingNotifications && notifications.length === 0;
 
   return (
+    <ModuleAccessGate moduleCode="HRM_NOTIFICATION" appTitle="Notifications">
     <div className={`hrm-module-root ${styles.centreRoot}`}>
       <CommonAppBar appTitle="Notifications" />
 
@@ -110,5 +112,6 @@ export default function HrmNotificationCentre() {
         }
       />
     </div>
+    </ModuleAccessGate>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Form, Input, Typography, Alert } from 'antd';
+import { Modal, Form, Input, Typography, Alert, Button } from 'antd';
 import type { UnlockConfirmModalProps } from '../../types/ui.types';
 import { lockFormRules } from '../../utils/validations';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function UnlockConfirmModal({
   open,
@@ -29,12 +30,18 @@ export default function UnlockConfirmModal({
     <Modal
       open={open}
       title="Unlock Holiday Group (Superadmin Override)"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={loading}
-      okText="Unlock"
-      okButtonProps={{ danger: true }}
       destroyOnHidden
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="unlock" I="edit">
+          <Button danger type="primary" loading={loading} onClick={handleOk}>
+            Unlock
+          </Button>
+        </Can>,
+      ]}
     >
       <Alert
         message="This is a Superadmin action"

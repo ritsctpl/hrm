@@ -5,6 +5,7 @@ import AddIcon from '@mui/icons-material/Add';
 import AssetRequestCard from '../molecules/AssetRequestCard';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import type { AssetRequest } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetList.module.css';
 
 interface AssetRequestListProps {
@@ -33,14 +34,16 @@ export default function AssetRequestList({ canCreate, loading }: AssetRequestLis
       <div className={styles.listHeader}>
         <span className={styles.listTitle}>My Requests</span>
         {canCreate && (
-          <Button
-            size="small"
-            type="primary"
-            icon={<AddIcon style={{ fontSize: 16 }} />}
-            onClick={openRequestForm}
-          >
-            New Request
-          </Button>
+          <Can I="add">
+            <Button
+              size="small"
+              type="primary"
+              icon={<AddIcon style={{ fontSize: 16 }} />}
+              onClick={openRequestForm}
+            >
+              New Request
+            </Button>
+          </Can>
         )}
       </div>
 

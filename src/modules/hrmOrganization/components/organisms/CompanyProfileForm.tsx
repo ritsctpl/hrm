@@ -9,6 +9,7 @@ import CompanyBankSection from './CompanyBankSection';
 import CompanyAddressSection from './CompanyAddressSection';
 import CompanyFinancialYearSection from './CompanyFinancialYearSection';
 import OrgSaveButton from '../atoms/OrgSaveButton';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
@@ -318,38 +319,42 @@ const CompanyProfileForm: React.FC = () => {
                 Cancel
               </Button>
             )}
-            <OrgSaveButton
-              loading={isSaving}
-              onClick={handleSave}
-              label={data ? 'Update' : 'Create'}
-            />
+            <Can I={isNew ? 'add' : 'edit'}>
+              <OrgSaveButton
+                loading={isSaving}
+                onClick={handleSave}
+                label={data ? 'Update' : 'Create'}
+              />
+            </Can>
           </div>
         )}
       </div>
 
       {/* Floating Save Button */}
       {(isEditing || isNew) && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 100,
-        }}>
-          <Button
-            type="primary"
-            shape="circle"
-            size="large"
-            icon={<CheckCircleOutlined />}
-            loading={isSaving}
-            onClick={handleSave}
-            style={{
-              width: 48,
-              height: 48,
-              boxShadow: '0 4px 12px rgba(24, 144, 255, 0.4)',
-            }}
-            title={data ? 'Update' : 'Create'}
-          />
-        </div>
+        <Can I={isNew ? 'add' : 'edit'}>
+          <div style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 100,
+          }}>
+            <Button
+              type="primary"
+              shape="circle"
+              size="large"
+              icon={<CheckCircleOutlined />}
+              loading={isSaving}
+              onClick={handleSave}
+              style={{
+                width: 48,
+                height: 48,
+                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.4)',
+              }}
+              title={data ? 'Update' : 'Create'}
+            />
+          </div>
+        </Can>
       )}
     </div>
   );

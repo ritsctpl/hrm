@@ -4,6 +4,7 @@ import React from "react";
 import { Tag, Button, Tooltip } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import type { CoTravellerDto } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 
 interface Props {
   traveller: CoTravellerDto;
@@ -35,13 +36,15 @@ const CoTravellerRow: React.FC<Props> = ({ traveller, readonly, onRemove }) => {
         )}
       </span>
       {!readonly && onRemove && (
-        <Button
-          type="text"
-          danger
-          size="small"
-          icon={<DeleteOutlined />}
-          onClick={() => onRemove(traveller.employeeId)}
-        />
+        <Can I="delete">
+          <Button
+            type="text"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => onRemove(traveller.employeeId)}
+          />
+        </Can>
       )}
     </div>
   );

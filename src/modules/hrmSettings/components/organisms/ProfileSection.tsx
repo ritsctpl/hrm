@@ -9,6 +9,7 @@ import ProfilePhotoUpload from '../molecules/ProfilePhotoUpload';
 import EmergencyContactForm from '../molecules/EmergencyContactForm';
 import { useHrmSettingsStore } from '../../stores/hrmSettingsStore';
 import { useSettingsData } from '../../hooks/useSettingsData';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmSettings.module.css';
 
 const ProfileSection: React.FC = () => {
@@ -85,9 +86,11 @@ const ProfileSection: React.FC = () => {
           <EmergencyContactForm data={emergencyContact} onChange={setEmergencyContact} errors={ecErrors} />
         </div>
 
-        <Button type="primary" onClick={handleSave} className={styles.saveButton}>
-          {t('settings.profile.saveChanges')}
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSave} className={styles.saveButton}>
+            {t('settings.profile.saveChanges')}
+          </Button>
+        </Can>
       </div>
     </div>
   );

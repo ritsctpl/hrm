@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Card, Input, Button, Space, Modal, Typography } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Text } = Typography;
 
@@ -33,22 +34,26 @@ const SupervisorApprovalBar: React.FC<Props> = ({ reportId, loading, onApprove, 
             rows={2}
           />
           <Space style={{ justifyContent: "flex-end", width: "100%", display: "flex" }}>
-            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModal(true)} loading={loading}>
-              Reject
-            </Button>
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={() => Modal.confirm({
-                title: `Approve ${reportId}?`,
-                content: "Expense will be forwarded to Finance.",
-                okText: "Approve",
-                onOk: () => onApprove(remarks || undefined),
-              })}
-              loading={loading}
-            >
-              Approve
-            </Button>
+            <Can I="edit">
+              <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModal(true)} loading={loading}>
+                Reject
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => Modal.confirm({
+                  title: `Approve ${reportId}?`,
+                  content: "Expense will be forwarded to Finance.",
+                  okText: "Approve",
+                  onOk: () => onApprove(remarks || undefined),
+                })}
+                loading={loading}
+              >
+                Approve
+              </Button>
+            </Can>
           </Space>
         </Space>
       </Card>

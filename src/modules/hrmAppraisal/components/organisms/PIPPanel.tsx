@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Alert, Button, Empty, Space, Tag, Typography } from "antd";
+import Can from "../../../hrmAccess/components/Can";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import PIPObjectiveRow from "../molecules/PIPObjectiveRow";
 
@@ -61,10 +62,14 @@ const PIPPanel: React.FC = () => {
       ))}
 
       <Space style={{ marginTop: 12 }}>
-        <Button size="small">Update Progress</Button>
-        <Button size="small" danger>
-          Close PIP
-        </Button>
+        <Can I="edit">
+          <Button size="small">Update Progress</Button>
+        </Can>
+        <Can I="delete">
+          <Button size="small" danger>
+            Close PIP
+          </Button>
+        </Can>
       </Space>
     </div>
   );

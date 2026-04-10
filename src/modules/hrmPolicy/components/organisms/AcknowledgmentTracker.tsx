@@ -4,6 +4,7 @@ import React from "react";
 import { Progress, Space, Typography, Button, Statistic, Row, Col } from "antd";
 import { BellOutlined, EyeOutlined } from "@ant-design/icons";
 import { AcknowledgmentTrackerProps } from "../../types/ui.types";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyViewer.module.css";
 
 const AcknowledgmentTracker: React.FC<AcknowledgmentTrackerProps> = ({
@@ -40,9 +41,11 @@ const AcknowledgmentTracker: React.FC<AcknowledgmentTrackerProps> = ({
           </Button>
         )}
         {onSendReminder && (
-          <Button size="small" icon={<BellOutlined />} onClick={onSendReminder} disabled={loading}>
-            Send Reminder to Pending
-          </Button>
+          <Can I="edit">
+            <Button size="small" icon={<BellOutlined />} onClick={onSendReminder} disabled={loading}>
+              Send Reminder to Pending
+            </Button>
+          </Can>
         )}
       </Space>
     </div>

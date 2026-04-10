@@ -10,6 +10,7 @@ import { PolicyFormDrawerProps } from "../../types/ui.types";
 import { HrmPolicyService } from "../../services/hrmPolicyService";
 import { POLICY_DOC_TYPE_LABELS } from "../../utils/constants";
 import { useHrmPolicyStore } from "../../stores/hrmPolicyStore";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -173,9 +174,11 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       extra={
         <Space>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" onClick={handleSubmit} loading={saving}>
-            {editPolicy ? "Update" : "Create"}
-          </Button>
+          <Can I={editPolicy ? "edit" : "add"}>
+            <Button type="primary" onClick={handleSubmit} loading={saving}>
+              {editPolicy ? "Update" : "Create"}
+            </Button>
+          </Can>
         </Space>
       }
     >

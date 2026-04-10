@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Form, Input, Select, Checkbox, message } from 'antd';
+import { Modal, Form, Input, Select, Checkbox, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { DuplicateGroupModalProps } from '../../types/ui.types';
 import type { DuplicateGroupResponse } from '../../types/api.types';
 import { getYearOptions } from '../../utils/formatters';
+import Can from '../../../hrmAccess/components/Can';
 
 export default function DuplicateGroupModal({
   open,
@@ -55,11 +56,18 @@ export default function DuplicateGroupModal({
     <Modal
       open={open}
       title={`Duplicate — ${sourceGroup.groupName}`}
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={saving}
       destroyOnHidden
-      okText="Duplicate"
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="duplicate" I="add">
+          <Button type="primary" loading={saving} onClick={handleOk}>
+            Duplicate
+          </Button>
+        </Can>,
+      ]}
     >
       <Form
         form={form}

@@ -4,6 +4,7 @@ import React from "react";
 import { Button, Empty, Spin, Tag, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/TemplateDesigner.module.css";
 
 const PayslipTemplateList: React.FC = () => {
@@ -40,13 +41,15 @@ const PayslipTemplateList: React.FC = () => {
     <div className={styles.templateList}>
       <div className={styles.templateListHeader}>
         <Typography.Text strong>Templates</Typography.Text>
-        <Button
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={() => selectTemplate(emptyTemplate)}
-        >
-          New
-        </Button>
+        <Can I="add">
+          <Button
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={() => selectTemplate(emptyTemplate)}
+          >
+            New
+          </Button>
+        </Can>
       </div>
 
       {templatesLoading && <Spin style={{ display: "block", textAlign: "center" }} />}

@@ -10,6 +10,7 @@ import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 import { formatDate } from '../../utils/transformations';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { PreviousExperience } from '../../types/domain.types';
@@ -141,13 +142,15 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddOpen(true)}
-        >
-          Add Experience
-        </Button>
+        <Can I="add">
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => setAddOpen(true)}
+          >
+            Add Experience
+          </Button>
+        </Can>
       </div>
 
       {previousExperience.length === 0 ? (
@@ -171,27 +174,31 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                 icon={<EyeOutlined />}
                 onClick={() => handleView(exp)}
               />
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(exp)}
-              />
-              <Popconfirm
-                title="Delete Experience"
-                description="Are you sure you want to delete this experience?"
-                onConfirm={() => handleDelete(exp)}
-                okText="Yes"
-                cancelText="No"
-              >
+              <Can I="edit">
                 <Button
                   type="text"
                   size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={loading}
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(exp)}
                 />
-              </Popconfirm>
+              </Can>
+              <Can I="delete">
+                <Popconfirm
+                  title="Delete Experience"
+                  description="Are you sure you want to delete this experience?"
+                  onConfirm={() => handleDelete(exp)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={loading}
+                  />
+                </Popconfirm>
+              </Can>
             </div>
           </div>
         ))

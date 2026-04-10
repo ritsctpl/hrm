@@ -15,6 +15,7 @@ import SupervisorApprovalBar from "./components/molecules/SupervisorApprovalBar"
 import FinanceApprovalPanel from "./components/organisms/FinanceApprovalPanel";
 import ExpenseStatusChip from "./components/atoms/ExpenseStatusChip";
 import ExpenseScreenHeader from "./components/organisms/ExpenseScreenHeader";
+import Can from "../hrmAccess/components/Can";
 import type { ExpenseReport } from "./types/domain.types";
 import type { ExpenseDetailTab } from "./types/ui.types";
 import { CANCELLABLE_STATUSES, RECALLABLE_STATUSES } from "./utils/expenseConstants";
@@ -125,35 +126,45 @@ const HrmExpenseScreen: React.FC<Props> = ({
   const barActions = isReadonly ? (
     <Space>
       {canRecall && (
-        <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
-          Recall
-        </Button>
+        <Can I="edit">
+          <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
+            Recall
+          </Button>
+        </Can>
       )}
       {canCancel && (
-        <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
-          Cancel
-        </Button>
+        <Can I="edit">
+          <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
+            Cancel
+          </Button>
+        </Can>
       )}
       {canDelete && (
-        <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
-          Delete
-        </Button>
+        <Can I="delete">
+          <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
+            Delete
+          </Button>
+        </Can>
       )}
     </Space>
   ) : (
     <Space>
-      <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
-        Save Draft
-      </Button>
-      <Button
-        type="primary"
-        icon={<SendOutlined />}
-        onClick={handleSubmit}
-        loading={saving}
-        disabled={!formValid}
-      >
-        Submit
-      </Button>
+      <Can I={isNew ? "add" : "edit"}>
+        <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
+          Save Draft
+        </Button>
+      </Can>
+      <Can I={isNew ? "add" : "edit"}>
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          onClick={handleSubmit}
+          loading={saving}
+          disabled={!formValid}
+        >
+          Submit
+        </Button>
+      </Can>
     </Space>
   );
 

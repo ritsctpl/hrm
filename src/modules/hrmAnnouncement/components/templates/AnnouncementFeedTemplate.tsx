@@ -5,6 +5,7 @@ import { Select, Space, Button, Input } from "antd";
 import { PlusOutlined, CheckOutlined } from "@ant-design/icons";
 import { Announcement } from "../../types/domain.types";
 import AnnouncementFeed from "../organisms/AnnouncementFeed";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmAnnouncement.module.css";
 
 const { Option } = Select;
@@ -82,14 +83,16 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
           )}
         </Space>
         {canAdmin && onCreateNew && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={onCreateNew}
-            style={{ marginLeft: "auto" }}
-          >
-            New Announcement
-          </Button>
+          <Can I="add">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={onCreateNew}
+              style={{ marginLeft: "auto" }}
+            >
+              New Announcement
+            </Button>
+          </Can>
         )}
       </div>
       <AnnouncementFeed

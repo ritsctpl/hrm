@@ -4,6 +4,7 @@ import React from "react";
 import { Button, Select, Skeleton, Typography, Space } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import LeaveBalanceCard from "../molecules/LeaveBalanceCard";
+import Can from "../../../hrmAccess/components/Can";
 import { EmployeeDashboardProps } from "../../types/ui.types";
 import { buildYearOptions } from "../../utils/transformations";
 import styles from "../../styles/HrmLeave.module.css";
@@ -34,9 +35,11 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
           />
         </Space>
         {onApplyLeave && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onApplyLeave}>
-            Apply for Leave
-          </Button>
+          <Can I="add">
+            <Button type="primary" icon={<PlusOutlined />} onClick={onApplyLeave}>
+              Apply for Leave
+            </Button>
+          </Can>
         )}
       </div>
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { Empty, Spin, Typography, Button } from "antd";
 import ApproverRequestRow from "../molecules/ApproverRequestRow";
+import Can from "../../../hrmAccess/components/Can";
 import { HrGlobalQueueTableProps } from "../../types/ui.types";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -37,9 +38,11 @@ const HrGlobalQueueTable: React.FC<HrGlobalQueueTableProps> = ({
       <div className={styles.requestsListHeader}>
         <Text strong>Global Queue ({requests.length})</Text>
         {wfhCount > 0 && (
-          <Button size="small" type="link">
-            Batch Approve WFH ({wfhCount})
-          </Button>
+          <Can I="edit">
+            <Button size="small" type="link">
+              Batch Approve WFH ({wfhCount})
+            </Button>
+          </Can>
         )}
       </div>
       {requests.map((req) => (

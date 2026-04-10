@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import WarrantyReminderBanner from '../molecules/WarrantyReminderBanner';
 import { formatDate, isWarrantyExpiringSoon } from '../../utils/assetHelpers';
 import type { Asset, AssetCategory } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
 
 interface AssetAttributesTabProps {
@@ -46,9 +47,11 @@ export default function AssetAttributesTab({ asset, category, canEdit, onEditAtt
 
       {canEdit && onEditAttributes && (
         <div style={{ marginTop: 12 }}>
-          <Button icon={<EditIcon style={{ fontSize: 16 }} />} size="small" onClick={onEditAttributes}>
-            Edit Attributes
-          </Button>
+          <Can I="edit">
+            <Button icon={<EditIcon style={{ fontSize: 16 }} />} size="small" onClick={onEditAttributes}>
+              Edit Attributes
+            </Button>
+          </Can>
         </div>
       )}
     </div>

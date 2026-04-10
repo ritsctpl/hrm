@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import CommonAppBar from '@/components/CommonAppBar';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import CompensationTabLayout from './components/templates/CompensationTabLayout';
 import { useHrmCompensationStore } from './stores/compensationStore';
 import styles from './styles/Compensation.module.css';
@@ -23,12 +24,14 @@ const HrmCompensationLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className={`hrm-module-root ${styles.compensationPage}`}>
-      <CommonAppBar appTitle="Compensation Management" />
-      <div className={styles.tabsWrapper}>
-        <CompensationTabLayout />
+    <ModuleAccessGate moduleCode="HRM_COMPENSATION" appTitle="Compensation Management">
+      <div className={`hrm-module-root ${styles.compensationPage}`}>
+        <CommonAppBar appTitle="Compensation Management" />
+        <div className={styles.tabsWrapper}>
+          <CompensationTabLayout />
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

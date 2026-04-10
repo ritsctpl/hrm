@@ -9,6 +9,7 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { formatCurrency, formatDate } from '../../utils/assetHelpers';
 import type { Asset, AssetCategory } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
 
 interface AssetDepreciationTabProps {
@@ -87,22 +88,24 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
         </Descriptions>
 
         {canRunDepreciation && (
-          <Popconfirm
-            title="Run depreciation for this asset?"
-            description="This will create a new depreciation snapshot as of today."
-            onConfirm={handleRunDepreciation}
-            okText="Run"
-            cancelText="Cancel"
-          >
-            <Button
-              type="primary"
-              size="small"
-              icon={<PlayArrowIcon style={{ fontSize: 16 }} />}
-              loading={runningDepreciation}
+          <Can I="edit">
+            <Popconfirm
+              title="Run depreciation for this asset?"
+              description="This will create a new depreciation snapshot as of today."
+              onConfirm={handleRunDepreciation}
+              okText="Run"
+              cancelText="Cancel"
             >
-              Run Depreciation
-            </Button>
-          </Popconfirm>
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlayArrowIcon style={{ fontSize: 16 }} />}
+                loading={runningDepreciation}
+              >
+                Run Depreciation
+              </Button>
+            </Popconfirm>
+          </Can>
         )}
       </div>
 

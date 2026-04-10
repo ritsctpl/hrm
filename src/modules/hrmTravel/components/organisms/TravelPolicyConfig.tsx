@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Tabs, Form, Checkbox, InputNumber, Input, Button, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmTravelService } from "../../services/hrmTravelService";
+import Can from "../../../hrmAccess/components/Can";
 import type { TravelPolicy, TravelType, TravelMode } from "../../types/domain.types";
 
 const ALL_MODES: TravelMode[] = ["CAB", "AUTO", "BUS", "TRAIN", "FLIGHT", "AIR"];
@@ -84,9 +85,11 @@ const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
         }))}
       />
       <div style={{ textAlign: "right", marginTop: 16 }}>
-        <Button type="primary" loading={saving} onClick={handleSave}>
-          Save Changes
-        </Button>
+        <Can I="edit">
+          <Button type="primary" loading={saving} onClick={handleSave}>
+            Save Changes
+          </Button>
+        </Can>
       </div>
     </div>
   );

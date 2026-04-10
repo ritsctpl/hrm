@@ -8,6 +8,7 @@ import { GRADE_OPTIONS } from '../../utils/compensationConstants';
 import type { SalaryStructure, SalaryStructureComponent } from '../../types/domain.types';
 import StructureComponentsTable from './StructureComponentsTable';
 import CompensationPreview from './CompensationPreview';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 import structureStyles from '../../styles/SalaryStructure.module.css';
 
@@ -207,9 +208,11 @@ const SalaryStructureBuilder: React.FC = () => {
         <Button onClick={handlePreview} disabled={components.length === 0}>
           Preview
         </Button>
-        <Button type="primary" loading={saving} onClick={handleSave}>
-          Save Structure
-        </Button>
+        <Can I={selectedStructure ? 'edit' : 'add'}>
+          <Button type="primary" loading={saving} onClick={handleSave}>
+            Save Structure
+          </Button>
+        </Can>
       </div>
     </div>
   );

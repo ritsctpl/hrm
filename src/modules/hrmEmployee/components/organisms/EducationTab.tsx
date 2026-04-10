@@ -9,6 +9,7 @@ import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } f
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EducationEntry } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -141,13 +142,15 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddOpen(true)}
-        >
-          Add Education
-        </Button>
+        <Can I="add">
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => setAddOpen(true)}
+          >
+            Add Education
+          </Button>
+        </Can>
       </div>
 
       {education.length === 0 ? (
@@ -171,27 +174,31 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                 icon={<EyeOutlined />}
                 onClick={() => handleView(edu)}
               />
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(edu)}
-              />
-              <Popconfirm
-                title="Delete Education"
-                description="Are you sure you want to delete this education entry?"
-                onConfirm={() => handleDelete(edu)}
-                okText="Yes"
-                cancelText="No"
-              >
+              <Can I="edit">
                 <Button
                   type="text"
                   size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={loading}
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(edu)}
                 />
-              </Popconfirm>
+              </Can>
+              <Can I="delete">
+                <Popconfirm
+                  title="Delete Education"
+                  description="Are you sure you want to delete this education entry?"
+                  onConfirm={() => handleDelete(edu)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={loading}
+                  />
+                </Popconfirm>
+              </Can>
             </div>
           </div>
         ))

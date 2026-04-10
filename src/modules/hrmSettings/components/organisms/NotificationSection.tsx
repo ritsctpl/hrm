@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import NotificationToggleGroup from '../molecules/NotificationToggleGroup';
 import DndSchedule from '../molecules/DndSchedule';
 import { useHrmSettingsStore } from '../../stores/hrmSettingsStore';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmSettings.module.css';
 
 const NotificationSection: React.FC = () => {
@@ -63,9 +64,11 @@ const NotificationSection: React.FC = () => {
           />
         </div>
 
-        <Button type="primary" onClick={handleSave} className={styles.saveButton}>
-          {t('settings.notifications.savePreferences')}
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSave} className={styles.saveButton}>
+            {t('settings.notifications.savePreferences')}
+          </Button>
+        </Can>
       </div>
     </div>
   );

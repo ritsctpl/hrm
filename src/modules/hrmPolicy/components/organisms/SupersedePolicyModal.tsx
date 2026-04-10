@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal, Form, Select, message, Space, Typography, Alert } from "antd";
+import { Modal, Form, Select, message, Space, Typography, Alert, Button } from "antd";
 import { SwapOutlined } from "@ant-design/icons";
 import { PolicyDocument } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Option } = Select;
 
@@ -64,13 +65,16 @@ const SupersedePolicyModal: React.FC<SupersedePolicyModalProps> = ({
         </Space>
       }
       open={open}
-      onOk={handleSubmit}
       onCancel={onClose}
-      confirmLoading={loading}
-      okText="Supersede Policy"
-      cancelText="Cancel"
       width={600}
-      okButtonProps={{ danger: true }}
+      footer={[
+        <Button key="cancel" onClick={onClose}>Cancel</Button>,
+        <Can key="ok" I="edit">
+          <Button type="primary" danger loading={loading} onClick={handleSubmit}>
+            Supersede Policy
+          </Button>
+        </Can>,
+      ]}
     >
       <Alert
         message="What is Policy Supersession?"

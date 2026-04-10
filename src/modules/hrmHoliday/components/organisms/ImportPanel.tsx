@@ -11,6 +11,7 @@ import { useHrmHolidayStore } from '../../stores/hrmHolidayStore';
 import type { ImportPanelProps } from '../../types/ui.types';
 import type { HolidayImportRow } from '../../types/api.types';
 import type { ImportError } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function ImportPanel({
@@ -138,18 +139,20 @@ export default function ImportPanel({
         <div className={styles.drawerFooter}>
           <Space>
             <Button onClick={onClose}>Cancel</Button>
-            <Button
-              type="primary"
-              onClick={handleCommit}
-              loading={committing}
-              disabled={
-                !importResult ||
-                importResult.failureCount > 0 ||
-                !importResult.successCount
-              }
-            >
-              Commit Import
-            </Button>
+            <Can I="add">
+              <Button
+                type="primary"
+                onClick={handleCommit}
+                loading={committing}
+                disabled={
+                  !importResult ||
+                  importResult.failureCount > 0 ||
+                  !importResult.successCount
+                }
+              >
+                Commit Import
+              </Button>
+            </Can>
           </Space>
         </div>
       }

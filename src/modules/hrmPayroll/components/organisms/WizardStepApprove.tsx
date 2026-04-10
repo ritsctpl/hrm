@@ -7,6 +7,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import PublishIcon from '@mui/icons-material/Publish';
 import { useHrmPayrollStore } from '../../stores/payrollStore';
 import { formatINR, formatPayrollPeriod } from '../../utils/payrollFormatters';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const { Text } = Typography;
@@ -79,21 +80,23 @@ const WizardStepApprove: React.FC = () => {
                     style={{ width: 360 }}
                     disabled={isApproved}
                   />
-                  <Popconfirm
-                    title="Approve Payroll"
-                    description="Confirm approval of this payroll run?"
-                    onConfirm={() => store.approveRun(remarks)}
-                    okText="Approve"
-                    cancelText="Cancel"
-                  >
-                    <Button
-                      type="primary"
-                      icon={<CheckCircleOutlineIcon fontSize="small" />}
-                      disabled={isApproved}
+                  <Can I="edit">
+                    <Popconfirm
+                      title="Approve Payroll"
+                      description="Confirm approval of this payroll run?"
+                      onConfirm={() => store.approveRun(remarks)}
+                      okText="Approve"
+                      cancelText="Cancel"
                     >
-                      Approve Payroll
-                    </Button>
-                  </Popconfirm>
+                      <Button
+                        type="primary"
+                        icon={<CheckCircleOutlineIcon fontSize="small" />}
+                        disabled={isApproved}
+                      >
+                        Approve Payroll
+                      </Button>
+                    </Popconfirm>
+                  </Can>
                 </Space>
               )
             }
@@ -108,23 +111,25 @@ const WizardStepApprove: React.FC = () => {
               isFinalized ? (
                 <Text type="success">Payroll finalized and locked</Text>
               ) : (
-                <Popconfirm
-                  title="Finalize Payroll"
-                  description="This will lock the payroll run and prevent further modifications."
-                  onConfirm={() => store.finalizeRun()}
-                  okText="Finalize"
-                  cancelText="Cancel"
-                  disabled={!isApproved || isFinalized}
-                >
-                  <Button
-                    type="primary"
-                    icon={<LockIcon fontSize="small" />}
+                <Can I="edit">
+                  <Popconfirm
+                    title="Finalize Payroll"
+                    description="This will lock the payroll run and prevent further modifications."
+                    onConfirm={() => store.finalizeRun()}
+                    okText="Finalize"
+                    cancelText="Cancel"
                     disabled={!isApproved || isFinalized}
-                    style={{ marginTop: 8 }}
                   >
-                    Finalize (Lock)
-                  </Button>
-                </Popconfirm>
+                    <Button
+                      type="primary"
+                      icon={<LockIcon fontSize="small" />}
+                      disabled={!isApproved || isFinalized}
+                      style={{ marginTop: 8 }}
+                    >
+                      Finalize (Lock)
+                    </Button>
+                  </Popconfirm>
+                </Can>
               )
             }
           />
@@ -138,23 +143,25 @@ const WizardStepApprove: React.FC = () => {
               isPublished ? (
                 <Text type="success">Payroll published to employees</Text>
               ) : (
-                <Popconfirm
-                  title="Publish Payroll"
-                  description="This will transfer payroll data to payslip generation. Cannot be undone."
-                  onConfirm={() => store.publishRun()}
-                  okText="Publish"
-                  cancelText="Cancel"
-                  disabled={!isFinalized || isPublished}
-                >
-                  <Button
-                    type="primary"
-                    icon={<PublishIcon fontSize="small" />}
+                <Can I="edit">
+                  <Popconfirm
+                    title="Publish Payroll"
+                    description="This will transfer payroll data to payslip generation. Cannot be undone."
+                    onConfirm={() => store.publishRun()}
+                    okText="Publish"
+                    cancelText="Cancel"
                     disabled={!isFinalized || isPublished}
-                    style={{ marginTop: 8 }}
                   >
-                    Publish to Employees
-                  </Button>
-                </Popconfirm>
+                    <Button
+                      type="primary"
+                      icon={<PublishIcon fontSize="small" />}
+                      disabled={!isFinalized || isPublished}
+                      style={{ marginTop: 8 }}
+                    >
+                      Publish to Employees
+                    </Button>
+                  </Popconfirm>
+                </Can>
               )
             }
           />

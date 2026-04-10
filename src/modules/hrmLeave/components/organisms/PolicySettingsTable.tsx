@@ -8,6 +8,7 @@ import { LeaveType } from "../../types/domain.types";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { parseCookies } from "nookies";
 import { LEAVE_CATEGORIES } from "../../utils/constants";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
@@ -74,17 +75,19 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       key: "actions",
       width: 120,
       render: (_, row) => (
-        <Button
-          size="small"
-          type="link"
-          onClick={() => {
-            setEditingType(row);
-            typeForm.setFieldsValue(row);
-            setTypeModalOpen(true);
-          }}
-        >
-          Edit
-        </Button>
+        <Can I="edit">
+          <Button
+            size="small"
+            type="link"
+            onClick={() => {
+              setEditingType(row);
+              typeForm.setFieldsValue(row);
+              setTypeModalOpen(true);
+            }}
+          >
+            Edit
+          </Button>
+        </Can>
       ),
     },
   ];
@@ -93,17 +96,19 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     <div className={styles.policySettings}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <Title level={5} style={{ margin: 0 }}>Leave Types</Title>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => {
-            setEditingType(null);
-            typeForm.resetFields();
-            setTypeModalOpen(true);
-          }}
-        >
-          + Add Leave Type
-        </Button>
+        <Can I="add">
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => {
+              setEditingType(null);
+              typeForm.resetFields();
+              setTypeModalOpen(true);
+            }}
+          >
+            + Add Leave Type
+          </Button>
+        </Can>
       </div>
 
       <Table
@@ -121,9 +126,17 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       <Modal
         title={editingType ? "Edit Leave Type" : "Add Leave Type"}
         open={typeModalOpen}
-        onOk={handleSaveType}
         onCancel={() => setTypeModalOpen(false)}
-        confirmLoading={saving}
+        footer={[
+          <Button key="cancel" onClick={() => setTypeModalOpen(false)}>
+            Cancel
+          </Button>,
+          <Can key="save" I={editingType ? "edit" : "add"}>
+            <Button type="primary" loading={saving} onClick={handleSaveType}>
+              OK
+            </Button>
+          </Can>,
+        ]}
       >
         <Form form={typeForm} layout="vertical">
           <Form.Item name="code" label="Code" rules={[{ required: true }]}>

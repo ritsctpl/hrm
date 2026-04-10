@@ -5,6 +5,7 @@ import { Select, Input, InputNumber, Button, Space } from 'antd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { PayrollAdjustmentDraft } from '../../stores/payrollStore';
 import { ADJUSTMENT_TYPES } from '../../utils/payrollConstants';
+import Can from '../../../hrmAccess/components/Can';
 
 interface AdjustmentRowProps {
   adjustment: PayrollAdjustmentDraft;
@@ -29,12 +30,14 @@ const AdjustmentRow: React.FC<AdjustmentRowProps> = ({ adjustment, index, onDele
         style={{ width: 120 }}
         disabled
       />
-      <Button
-        type="text"
-        danger
-        icon={<DeleteOutlineIcon fontSize="small" />}
-        onClick={() => onDelete(index)}
-      />
+      <Can I="delete">
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlineIcon fontSize="small" />}
+          onClick={() => onDelete(index)}
+        />
+      </Can>
     </Space>
   );
 };

@@ -9,6 +9,7 @@ import PayslipStatusTag from "../atoms/PayslipStatusTag";
 import RepositoryFilterBar from "./RepositoryFilterBar";
 import type { PayslipListItem } from "../../types/domain.types";
 import { formatDate, formatPeriodLabel } from "../../utils/payslipFormatters";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PayslipRepository.module.css";
 
 const PayslipRepository: React.FC = () => {
@@ -62,12 +63,14 @@ const PayslipRepository: React.FC = () => {
             }
           />
           {record.status === "FAILED" && (
-            <Button
-              size="small"
-              icon={<SyncOutlined />}
-              title="Regenerate"
-              onClick={() => store.regenerateOne(record.employeeId)}
-            />
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<SyncOutlined />}
+                title="Regenerate"
+                onClick={() => store.regenerateOne(record.employeeId)}
+              />
+            </Can>
           )}
         </Space>
       ),

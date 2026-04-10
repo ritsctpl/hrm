@@ -3,6 +3,7 @@
 import { Button, Typography, Tag } from 'antd';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { HolidayBuMapping } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 
 interface BuMappingRowProps {
   mapping: HolidayBuMapping;
@@ -19,13 +20,15 @@ export default function BuMappingRow({ mapping, onRemove, canRemove }: BuMapping
       </Typography.Text>
       {mapping.primaryFlag && <Tag color="blue">Primary</Tag>}
       {canRemove && (
-        <Button
-          type="text"
-          danger
-          size="small"
-          icon={<DeleteOutlineIcon style={{ fontSize: 16 }} />}
-          onClick={() => onRemove(mapping.handle)}
-        />
+        <Can I="delete">
+          <Button
+            type="text"
+            danger
+            size="small"
+            icon={<DeleteOutlineIcon style={{ fontSize: 16 }} />}
+            onClick={() => onRemove(mapping.handle)}
+          />
+        </Can>
       )}
     </div>
   );

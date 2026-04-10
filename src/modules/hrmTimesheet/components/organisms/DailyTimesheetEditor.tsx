@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
+import Can from '../../../hrmAccess/components/Can';
 import type { TimesheetLine } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
 
@@ -63,35 +64,41 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
 
         {!isReadOnly && !isHolidayOrLeave && (
           <div className={styles.dayEditorActions}>
-            <Tooltip title="Copy lines from previous working day">
+            <Can I="add">
+              <Tooltip title="Copy lines from previous working day">
+                <Button
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={onCopyFromPrev}
+                  loading={savingTimesheet}
+                  disabled={lines.length > 0}
+                >
+                  Copy prev day
+                </Button>
+              </Tooltip>
+            </Can>
+            <Can I={currentDayTimesheet?.handle ? 'edit' : 'add'}>
               <Button
                 size="small"
-                icon={<CopyOutlined />}
-                onClick={onCopyFromPrev}
+                icon={<SaveOutlined />}
+                onClick={() => onSave()}
                 loading={savingTimesheet}
-                disabled={lines.length > 0}
               >
-                Copy prev day
+                Save
               </Button>
-            </Tooltip>
-            <Button
-              size="small"
-              icon={<SaveOutlined />}
-              onClick={() => onSave()}
-              loading={savingTimesheet}
-            >
-              Save
-            </Button>
-            <Button
-              size="small"
-              type="primary"
-              icon={<SendOutlined />}
-              onClick={onSubmit}
-              loading={submittingTimesheet}
-              disabled={lines.length === 0}
-            >
-              Submit
-            </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                size="small"
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={onSubmit}
+                loading={submittingTimesheet}
+                disabled={lines.length === 0}
+              >
+                Submit
+              </Button>
+            </Can>
           </div>
         )}
       </div>

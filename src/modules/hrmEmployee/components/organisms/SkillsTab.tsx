@@ -10,6 +10,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import EmpSkillTag from '../molecules/EmpSkillTag';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
+import { useCan } from '../../../hrmAccess/hooks/useCan';
 import { PROFICIENCY_LABELS } from '../../utils/constants';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { Skill, SkillProficiency } from '../../types/domain.types';
@@ -20,6 +22,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   onRefresh,
 }) => {
   const { skills } = profile;
+  const { canDelete } = useCan();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [skillName, setSkillName] = useState('');
   const [proficiency, setProficiency] = useState<SkillProficiency>('INTERMEDIATE');
@@ -77,13 +80,15 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button
-          type="primary"
-          size="small"
-          onClick={() => setAddModalOpen(true)}
-        >
-          Add Skill
-        </Button>
+        <Can I="add">
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => setAddModalOpen(true)}
+          >
+            Add Skill
+          </Button>
+        </Can>
       </div>
 
       {skills.length === 0 ? (
@@ -94,7 +99,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             <EmpSkillTag
               key={skill.skillId}
               skill={skill}
-              removable
+              removable={canDelete}
               onRemove={handleRemove}
             />
           ))}

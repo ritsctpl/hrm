@@ -18,7 +18,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { useModulePermissions } from '../../../hrmAccess/hooks/useModulePermissions';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -29,8 +29,6 @@ const OrganizationListTemplate: React.FC = () => {
     navigateToDetail,
     deleteCompany,
   } = useHrmOrganizationStore();
-
-  const perms = useModulePermissions('HRM_ORGANIZATION');
 
   useEffect(() => {
     fetchCompanyList();
@@ -115,11 +113,11 @@ const OrganizationListTemplate: React.FC = () => {
           className={styles.searchInput}
           allowClear
         />
-        {perms.canAdd && (
+        <Can I="add">
           <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
             Add Company
           </Button>
-        )}
+        </Can>
       </div>
 
       {/* ───── Content ───── */}
@@ -144,10 +142,12 @@ const OrganizationListTemplate: React.FC = () => {
               ? 'Try a different search term'
               : 'Set up your first company to get started with organization management'}
           </p>
-          {!companyList.searchText && perms.canAdd && (
-            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
-              Create First Company
-            </Button>
+          {!companyList.searchText && (
+            <Can I="add">
+              <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
+                Create First Company
+              </Button>
+            </Can>
           )}
         </div>
       ) : (
@@ -238,7 +238,7 @@ const OrganizationListTemplate: React.FC = () => {
                       onClick={() => navigateToDetail(company.handle)}
                     />
                   </Tooltip>
-                  {perms.canEdit && (
+                  <Can I="edit">
                     <Tooltip title="Edit">
                       <Button
                         type="text"
@@ -247,8 +247,8 @@ const OrganizationListTemplate: React.FC = () => {
                         onClick={() => navigateToDetail(company.handle)}
                       />
                     </Tooltip>
-                  )}
-                  {perms.canDelete && (
+                  </Can>
+                  <Can I="delete">
                     <Popconfirm
                       title="Delete this company?"
                       description="This action cannot be undone."
@@ -259,7 +259,7 @@ const OrganizationListTemplate: React.FC = () => {
                         <Button type="text" size="small" danger icon={<DeleteOutlined />} />
                       </Tooltip>
                     </Popconfirm>
-                  )}
+                  </Can>
                 </div>
               </div>
             );

@@ -5,6 +5,7 @@ import { Card, Form, Select, DatePicker, Alert, Button, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useHrmPayrollStore } from '../../stores/payrollStore';
 import { PAYROLL_MONTHS } from '../../utils/payrollConstants';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const WizardStepSelectMonth: React.FC = () => {
@@ -76,22 +77,26 @@ const WizardStepSelectMonth: React.FC = () => {
             type="warning"
             message={`A run for ${PAYROLL_MONTHS.find((m) => m.value === month)?.label} ${year} already exists: ${existingRun.runId}`}
             action={
-              <Button size="small" onClick={handleResume}>
-                Resume Run
-              </Button>
+              <Can I="edit">
+                <Button size="small" onClick={handleResume}>
+                  Resume Run
+                </Button>
+              </Can>
             }
             style={{ marginBottom: 12 }}
           />
         )}
 
         <Space>
-          <Button
-            type="primary"
-            onClick={handleCreate}
-            disabled={!payDate || !!existingRun}
-          >
-            Create New Run
-          </Button>
+          <Can I="add">
+            <Button
+              type="primary"
+              onClick={handleCreate}
+              disabled={!payDate || !!existingRun}
+            >
+              Create New Run
+            </Button>
+          </Can>
         </Space>
       </Card>
     </div>

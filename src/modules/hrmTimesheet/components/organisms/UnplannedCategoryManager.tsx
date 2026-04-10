@@ -6,6 +6,7 @@ import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
+import Can from '../../../hrmAccess/components/Can';
 import type { UnplannedCategory } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
 
@@ -113,10 +114,14 @@ export default function UnplannedCategoryManager() {
       width: 100,
       render: (_: unknown, cat: UnplannedCategory) => (
         <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(cat)} />
-          <Popconfirm title="Delete this category?" onConfirm={() => handleDelete(cat.handle)}>
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          <Can I="edit">
+            <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(cat)} />
+          </Can>
+          <Can I="delete">
+            <Popconfirm title="Delete this category?" onConfirm={() => handleDelete(cat.handle)}>
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },
@@ -126,9 +131,11 @@ export default function UnplannedCategoryManager() {
     <div className={styles.categoryManager}>
       <div className={styles.categoryManagerHeader}>
         <Title level={5} style={{ margin: 0 }}>Unplanned Work Categories</Title>
-        <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
-          Add Category
-        </Button>
+        <Can I="add">
+          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
+            Add Category
+          </Button>
+        </Can>
       </div>
 
       <Table

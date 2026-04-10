@@ -4,6 +4,7 @@ import React from "react";
 import { Upload, List, Button, Typography, message, Checkbox } from "antd";
 import { UploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import type { ExpenseAttachment } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Text } = Typography;
 
@@ -38,25 +39,27 @@ const ExpenseAttachmentsPanel: React.FC<Props> = ({
       </Text>
 
       {!readonly && onUpload && (
-        <Upload.Dragger
-          accept=".pdf"
-          showUploadList={false}
-          beforeUpload={(file) => {
-            if (file.size > 5 * 1024 * 1024) {
-              message.error("File size must be under 5 MB.");
+        <Can I="add">
+          <Upload.Dragger
+            accept=".pdf"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              if (file.size > 5 * 1024 * 1024) {
+                message.error("File size must be under 5 MB.");
+                return false;
+              }
+              onUpload(file);
               return false;
-            }
-            onUpload(file);
-            return false;
-          }}
-          style={{ marginBottom: 16 }}
-        >
-          <p className="ant-upload-drag-icon">
-            <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-          </p>
-          <p>Drag and drop PDF files here, or click to choose</p>
-          <p style={{ fontSize: 12, color: "#8c8c8c" }}>PDF only — Max 5 MB per file</p>
-        </Upload.Dragger>
+            }}
+            style={{ marginBottom: 16 }}
+          >
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+            </p>
+            <p>Drag and drop PDF files here, or click to choose</p>
+            <p style={{ fontSize: 12, color: "#8c8c8c" }}>PDF only — Max 5 MB per file</p>
+          </Upload.Dragger>
+        </Can>
       )}
 
       {attachments.length === 0 ? (
@@ -73,14 +76,15 @@ const ExpenseAttachmentsPanel: React.FC<Props> = ({
               actions={[
                 <Button key="view" type="link" size="small" icon={<EyeOutlined />}>View</Button>,
                 !readonly && onDelete && (
-                  <Button
-                    key="del"
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => onDelete(att.attachmentId)}
-                  />
+                  <Can key="del" I="delete">
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => onDelete(att.attachmentId)}
+                    />
+                  </Can>
                 ),
               ].filter(Boolean)}
             >

@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined } from '@ant-design/icons';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { Location } from '../../types/domain.types';
 import type { LocationTableProps } from '../../types/ui.types';
@@ -103,24 +104,26 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         key: 'actions',
         width: 50,
         render: (_: unknown, record: Location) => (
-          <Popconfirm
-            title="Delete Location"
-            description="Are you sure you want to delete this location?"
-            onConfirm={(e) => handleDelete(record.id, e as unknown as React.MouseEvent)}
-            onCancel={(e) => e?.stopPropagation()}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Tooltip>
-          </Popconfirm>
+          <Can I="delete">
+            <Popconfirm
+              title="Delete Location"
+              description="Are you sure you want to delete this location?"
+              onConfirm={(e) => handleDelete(record.id, e as unknown as React.MouseEvent)}
+              onCancel={(e) => e?.stopPropagation()}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Can>
         ),
       },
     ],
@@ -146,9 +149,11 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
             placeholder="Search by code, name, or city..."
           />
         </div>
-        <Button type="primary" onClick={onAdd}>
-          +
-        </Button>
+        <Can I="add">
+          <Button type="primary" onClick={onAdd}>
+            +
+          </Button>
+        </Can>
       </div>
 
       <Table<Location>

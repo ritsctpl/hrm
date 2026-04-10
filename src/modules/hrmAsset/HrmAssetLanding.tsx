@@ -18,7 +18,9 @@ import AssetRequestForm from './components/organisms/AssetRequestForm';
 import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailTemplate';
 import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
-import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
+import { useCan } from '../hrmAccess/hooks/useCan';
+import Can from '../hrmAccess/components/Can';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import styles from './styles/HrmAsset.module.css';
 
 const HrmAssetLanding: React.FC = () => {
@@ -28,13 +30,12 @@ const HrmAssetLanding: React.FC = () => {
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<import('./types/domain.types').AssetCategory | null>(null);
 
-  // RBAC permissions from backend (replaces hardcoded role arrays)
-  const perms = useModulePermissions('HRM_ASSET');
-  const canAdd = perms.canAdd;
-  const canEdit = perms.canEdit;
-  const canDelete = perms.canDelete;
-  const isSupervisor = canEdit; // Approval flows reuse edit permission
-  const isAdmin = canDelete; // Admin actions require delete permission
+  // RBAC — read once for hook logic (effect deps, approval flow branching).
+  // UI-level gating uses <Can> so permissions flow automatically from the
+  // enclosing ModuleAccessGate context.
+  const perms = useCan('HRM_ASSET');
+  const isSupervisor = perms.canEdit; // Approval flows reuse edit permission
+  const isAdmin = perms.canDelete;    // Admin actions require delete permission
 
   // Load once on mount — no function refs in deps to avoid infinite loop
   useEffect(() => {
@@ -92,26 +93,30 @@ const HrmAssetLanding: React.FC = () => {
           onClear={store.clearFilters}
         />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <Button
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={() => setCategoryFormOpen(true)}
-          >
-            Categories
-          </Button>
+          <Can I="edit">
+            <Button
+              size="small"
+              icon={<SettingOutlined />}
+              onClick={() => setCategoryFormOpen(true)}
+            >
+              Categories
+            </Button>
+          </Can>
           <Button
             size="small"
             icon={<ReloadOutlined />}
             onClick={data.loadAssets}
           />
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() => { store.setSelectedAsset(null); store.openAssetForm(); }}
-          >
-            Add Asset
-          </Button>
+          <Can I="add">
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() => { store.setSelectedAsset(null); store.openAssetForm(); }}
+            >
+              Add Asset
+            </Button>
+          </Can>
         </div>
       </div>
 
@@ -144,14 +149,16 @@ const HrmAssetLanding: React.FC = () => {
           justifyContent: 'flex-end',
         }}
       >
-        <Button
-          type="primary"
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={store.openRequestForm}
-        >
-          New Request
-        </Button>
+        <Can I="add">
+          <Button
+            type="primary"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={store.openRequestForm}
+          >
+            New Request
+          </Button>
+        </Can>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
         {/* My Requests Section */}
@@ -219,6 +226,7 @@ const HrmAssetLanding: React.FC = () => {
   ];
 
   return (
+    <ModuleAccessGate moduleCode="HRM_ASSET" appTitle="Asset Management">
     <div className={`hrm-module-root ${styles.assetRoot}`}>
       <CommonAppBar appTitle="Asset Management" />
       {(store.dashboard || store.loadingDashboard) && (
@@ -248,6 +256,7 @@ const HrmAssetLanding: React.FC = () => {
         onEditCategory={(cat) => setEditingCategory(cat)}
       />
     </div>
+    </ModuleAccessGate>
   );
 };
 

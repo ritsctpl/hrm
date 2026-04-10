@@ -5,6 +5,7 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { MilestoneRowProps } from '../../types/ui.types';
 import type { MilestoneStatus } from '../../types/domain.types';
 import { formatDate } from '../../utils/projectHelpers';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 const { Text } = Typography;
@@ -30,9 +31,11 @@ const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, onStatusChange, 
       <Text type="secondary" style={{ fontSize: 11, flex: 1 }}>{milestone.description}</Text>
     )}
     {onRemove && (
-      <Popconfirm title="Remove this milestone?" onConfirm={() => onRemove(milestone.milestoneId)}>
-        <Button size="small" type="link" danger icon={<DeleteOutlined />} />
-      </Popconfirm>
+      <Can I="delete">
+        <Popconfirm title="Remove this milestone?" onConfirm={() => onRemove(milestone.milestoneId)}>
+          <Button size="small" type="link" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Can>
     )}
   </div>
 );

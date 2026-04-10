@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Modal, Input, Select, Switch, message, Button, AutoComplete, Spin } from 'antd';
+import Can from '../../../hrmAccess/components/Can';
 import { SearchOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgBankAccountList from '../molecules/OrgBankAccountList';
@@ -229,9 +230,11 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
           }}>
             Cancel
           </Button>,
-          <Button key="submit" type="primary" onClick={handleSave}>
-            {editingIndex !== null ? 'Update' : 'Save'}
-          </Button>,
+          <Can key="submit" I={editingIndex !== null ? 'edit' : 'add'}>
+            <Button type="primary" onClick={handleSave}>
+              {editingIndex !== null ? 'Update' : 'Save'}
+            </Button>
+          </Can>,
         ]}
       >
         <div className={formStyles.bankFormGrid}>

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmPayrollStore } from './stores/payrollStore';
 import PayrollTabLayout from './components/templates/PayrollTabLayout';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import styles from './styles/Payroll.module.css';
 
 const PayrollDashboard = dynamic(
@@ -33,19 +34,21 @@ const HrmPayrollLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className={`hrm-module-root ${styles.payrollRoot}`}>
-      <CommonAppBar appTitle="Payroll Processing" />
-      <div className={styles.payrollContent}>
-        <PayrollTabLayout
-          activeTab={store.activeTab}
-          onTabChange={store.setActiveTab}
-          dashboardContent={<PayrollDashboard />}
-          wizardContent={<PayrollWizard />}
-          reviewContent={<PayrollReviewPanel />}
-          taxConfigContent={<TaxConfigPanel />}
-        />
+    <ModuleAccessGate moduleCode="HRM_PAYROLL" appTitle="Payroll Processing">
+      <div className={`hrm-module-root ${styles.payrollRoot}`}>
+        <CommonAppBar appTitle="Payroll Processing" />
+        <div className={styles.payrollContent}>
+          <PayrollTabLayout
+            activeTab={store.activeTab}
+            onTabChange={store.setActiveTab}
+            dashboardContent={<PayrollDashboard />}
+            wizardContent={<PayrollWizard />}
+            reviewContent={<PayrollReviewPanel />}
+            taxConfigContent={<TaxConfigPanel />}
+          />
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

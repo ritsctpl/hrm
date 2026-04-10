@@ -8,6 +8,7 @@ import type { ExpenseItem, ExpenseCategory } from "../../types/domain.types";
 import ReceiptThumbnail from "../molecules/ReceiptThumbnail";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseLineItems.module.css";
 import dayjs from "dayjs";
 
@@ -97,9 +98,11 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       key: "action",
       width: 40,
       render: (_, r) => (
-        <Popconfirm title="Remove item?" onConfirm={() => onRemoveItem?.(r.handle)}>
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <Can I="delete">
+          <Popconfirm title="Remove item?" onConfirm={() => onRemoveItem?.(r.handle)}>
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Can>
       ),
     },
   ].filter(Boolean) as ColumnsType<ExpenseItem>;
@@ -138,13 +141,15 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
         footer={() => (
           <div className={styles.addRowButton}>
             {!readonly && !adding && (
-              <Button
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={() => setAdding(true)}
-              >
-                Add Line Item
-              </Button>
+              <Can I="add">
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  onClick={() => setAdding(true)}
+                >
+                  Add Line Item
+                </Button>
+              </Can>
             )}
             {!readonly && adding && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>

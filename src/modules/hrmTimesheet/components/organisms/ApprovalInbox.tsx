@@ -7,6 +7,7 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import DayColorIndicator from '../atoms/DayColorIndicator';
 import TimesheetApprovalDetail from './TimesheetApprovalDetail';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text } = Typography;
@@ -88,25 +89,29 @@ export default function ApprovalInbox({ onApprove, onBulkApprove, onReopen }: Pr
                 size="small"
               />
               <Space size={4}>
-                <Button
-                  size="small"
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  loading={approvingTimesheet}
-                  onClick={handleBulkApprove}
-                >
-                  Bulk Approve
-                </Button>
-                <Button
-                  size="small"
-                  danger
-                  icon={<CloseOutlined />}
-                  loading={approvingTimesheet}
-                  disabled={!bulkRemarks.trim()}
-                  onClick={handleBulkReject}
-                >
-                  Bulk Reject
-                </Button>
+                <Can I="edit">
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    loading={approvingTimesheet}
+                    onClick={handleBulkApprove}
+                  >
+                    Bulk Approve
+                  </Button>
+                </Can>
+                <Can I="edit">
+                  <Button
+                    size="small"
+                    danger
+                    icon={<CloseOutlined />}
+                    loading={approvingTimesheet}
+                    disabled={!bulkRemarks.trim()}
+                    onClick={handleBulkReject}
+                  >
+                    Bulk Reject
+                  </Button>
+                </Can>
               </Space>
             </div>
           )}

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tree, Button, Spin, Empty, Tag } from 'antd';
 import { PlusOutlined, ApartmentOutlined, BankOutlined } from '@ant-design/icons';
 import OrgSearchBar from '../molecules/OrgSearchBar';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { Department, DepartmentNode, BusinessUnit } from '../../types/domain.types';
 import type { DepartmentTreeProps } from '../../types/ui.types';
@@ -198,9 +199,11 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
             </span>
           )}
         </div>
-        <Button type="primary" onClick={handleAdd} size="small" icon={<PlusOutlined />}>
-          Add
-        </Button>
+        <Can I="add">
+          <Button type="primary" onClick={handleAdd} size="small" icon={<PlusOutlined />}>
+            Add
+          </Button>
+        </Can>
       </div>
 
       <OrgSearchBar

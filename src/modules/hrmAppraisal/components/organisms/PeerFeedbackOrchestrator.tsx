@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button, Checkbox, Space, Table, Tabs, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import Can from "../../../hrmAccess/components/Can";
 import RatingStarDisplay from "../atoms/RatingStarDisplay";
 import RadarChartPanel from "./RadarChartPanel";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
@@ -93,10 +94,14 @@ const PeerFeedbackOrchestrator: React.FC = () => {
             </Checkbox>
           </div>
           <Space style={{ marginTop: 12 }}>
-            <Button type="primary" onClick={handleSendRequests}>
-              Send Feedback Requests
-            </Button>
-            <Button>Send Reminder to Pending</Button>
+            <Can I="add">
+              <Button type="primary" onClick={handleSendRequests}>
+                Send Feedback Requests
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button>Send Reminder to Pending</Button>
+            </Can>
           </Space>
         </div>
       ),

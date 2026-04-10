@@ -4,6 +4,7 @@ import React from "react";
 import { Upload, Button, List, Typography, message } from "antd";
 import { UploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import type { TravelAttachment } from "../../types/domain.types";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Text } = Typography;
 
@@ -24,38 +25,40 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
   return (
     <div>
       {!readonly && onUpload && (
-        <Upload
-          accept=".pdf,.jpg,.jpeg,.png"
-          showUploadList={false}
-          beforeUpload={(file) => {
-            const sizeMb = file.size / (1024 * 1024);
-            if (sizeMb > 5) {
-              message.error("File size must be under 5 MB.");
-              return false;
-            }
-            if (attachments.length >= 5) {
-              message.error("Maximum 5 files allowed.");
-              return false;
-            }
-            onUpload(file);
-            return false;
-          }}
-        >
-          <Upload.Dragger
-            style={{ marginBottom: 16 }}
+        <Can I="add">
+          <Upload
             accept=".pdf,.jpg,.jpeg,.png"
             showUploadList={false}
-            beforeUpload={() => false}
+            beforeUpload={(file) => {
+              const sizeMb = file.size / (1024 * 1024);
+              if (sizeMb > 5) {
+                message.error("File size must be under 5 MB.");
+                return false;
+              }
+              if (attachments.length >= 5) {
+                message.error("Maximum 5 files allowed.");
+                return false;
+              }
+              onUpload(file);
+              return false;
+            }}
           >
-            <p className="ant-upload-drag-icon">
-              <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-            </p>
-            <p>Drag and drop files here, or click to choose</p>
-            <p style={{ fontSize: 12, color: "#8c8c8c" }}>
-              Allowed: PDF, JPG, PNG — Max 5 MB each — Up to 5 files
-            </p>
-          </Upload.Dragger>
-        </Upload>
+            <Upload.Dragger
+              style={{ marginBottom: 16 }}
+              accept=".pdf,.jpg,.jpeg,.png"
+              showUploadList={false}
+              beforeUpload={() => false}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+              </p>
+              <p>Drag and drop files here, or click to choose</p>
+              <p style={{ fontSize: 12, color: "#8c8c8c" }}>
+                Allowed: PDF, JPG, PNG — Max 5 MB each — Up to 5 files
+              </p>
+            </Upload.Dragger>
+          </Upload>
+        </Can>
       )}
 
       {attachments.length === 0 ? (
@@ -79,14 +82,15 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
                   View
                 </Button>,
                 !readonly && onDelete && (
-                  <Button
-                    key="del"
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => onDelete(att.attachmentId)}
-                  />
+                  <Can I="delete" key="del">
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => onDelete(att.attachmentId)}
+                    />
+                  </Can>
                 ),
               ].filter(Boolean)}
             >

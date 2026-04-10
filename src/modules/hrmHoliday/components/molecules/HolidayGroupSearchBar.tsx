@@ -9,6 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import type { HolidayGroupSearchBarProps } from '../../types/ui.types';
 import { HOLIDAY_GROUP_STATUSES } from '../../utils/constants';
 import { getYearOptions } from '../../utils/formatters';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HrmHoliday.module.css';
 
 const { Search } = Input;
@@ -60,29 +61,39 @@ export default function HolidayGroupSearchBar({
       </Space>
       <Space wrap>
         {onNewHoliday && (
-          <Button type="primary" onClick={onNewHoliday}>
-            Create Holiday
-          </Button>
+          <Can I="add">
+            <Button type="primary" onClick={onNewHoliday}>
+              Create Holiday
+            </Button>
+          </Can>
         )}
         {onNewGroup && (
-          <Button onClick={onNewGroup}>
-            New Group
-          </Button>
+          <Can I="add">
+            <Button onClick={onNewGroup}>
+              New Group
+            </Button>
+          </Can>
         )}
         {onEditGroup && hasSelectedGroup && (
-          <Button onClick={onEditGroup}>
-            Edit Group
-          </Button>
+          <Can I="edit">
+            <Button onClick={onEditGroup}>
+              Edit Group
+            </Button>
+          </Can>
         )}
         {onDeleteGroup && hasSelectedGroup && (
-          <Button danger  onClick={onDeleteGroup}>
-            Delete Group
-          </Button>
+          <Can I="delete">
+            <Button danger  onClick={onDeleteGroup}>
+              Delete Group
+            </Button>
+          </Can>
         )}
         {onDuplicateYear && (
-          <Button icon={<ContentCopyIcon style={{ fontSize: 16 }} />} onClick={onDuplicateYear}>
-            Dup Year
-          </Button>
+          <Can I="add">
+            <Button icon={<ContentCopyIcon style={{ fontSize: 16 }} />} onClick={onDuplicateYear}>
+              Dup Year
+            </Button>
+          </Can>
         )}
       </Space>
     </div>

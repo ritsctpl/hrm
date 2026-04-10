@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Card, Input, Button, Space, Modal, Typography } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import Can from "../../../hrmAccess/components/Can";
 
 const { Text } = Typography;
 
@@ -50,22 +51,26 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
             rows={2}
           />
           <Space style={{ justifyContent: "flex-end", width: "100%", display: "flex" }}>
-            <Button
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => setRejectModal(true)}
-              loading={loading}
-            >
-              Reject
-            </Button>
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={handleApprove}
-              loading={loading}
-            >
-              Approve
-            </Button>
+            <Can I="edit">
+              <Button
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => setRejectModal(true)}
+                loading={loading}
+              >
+                Reject
+              </Button>
+            </Can>
+            <Can I="edit">
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={handleApprove}
+                loading={loading}
+              >
+                Approve
+              </Button>
+            </Can>
           </Space>
         </Space>
       </Card>
@@ -74,9 +79,21 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
         title="Reject Request"
         open={rejectModal}
         onCancel={() => setRejectModal(false)}
-        onOk={handleRejectSubmit}
-        okText="Confirm Rejection"
-        okButtonProps={{ danger: true, disabled: !rejectRemarks.trim() }}
+        footer={[
+          <Button key="cancel" onClick={() => setRejectModal(false)}>
+            Cancel
+          </Button>,
+          <Can I="edit" key="ok">
+            <Button
+              type="primary"
+              danger
+              disabled={!rejectRemarks.trim()}
+              onClick={handleRejectSubmit}
+            >
+              Confirm Rejection
+            </Button>
+          </Can>,
+        ]}
       >
         <Input.TextArea
           placeholder="Enter rejection reason (required)"

@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Card, Form, InputNumber, Switch, Button } from 'antd';
 import { useHrmPayrollStore } from '../../stores/payrollStore';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/TaxConfig.module.css';
 
 const StatutoryConfigForm: React.FC = () => {
@@ -81,9 +82,11 @@ const StatutoryConfigForm: React.FC = () => {
             </Form.Item>
           </div>
         </Form>
-        <Button type="primary" onClick={handleSavePF} style={{ marginTop: 8 }}>
-          Save PF Settings
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSavePF} style={{ marginTop: 8 }}>
+            Save PF Settings
+          </Button>
+        </Can>
       </Card>
 
       {/* ESI */}
@@ -101,9 +104,11 @@ const StatutoryConfigForm: React.FC = () => {
             </Form.Item>
           </div>
         </Form>
-        <Button type="primary" onClick={handleSaveESI} style={{ marginTop: 8 }}>
-          Save ESI Settings
-        </Button>
+        <Can I="edit">
+          <Button type="primary" onClick={handleSaveESI} style={{ marginTop: 8 }}>
+            Save ESI Settings
+          </Button>
+        </Can>
       </Card>
     </div>
   );

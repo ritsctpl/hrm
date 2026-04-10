@@ -2,6 +2,7 @@
 import { Upload, Button, List, Space } from 'antd';
 import { UploadOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 export default function ProjectAttachmentsTab() {
@@ -11,9 +12,11 @@ export default function ProjectAttachmentsTab() {
 
   return (
     <div className={styles.attachmentsTab}>
-      <Upload>
-        <Button icon={<UploadOutlined />}>Upload File</Button>
-      </Upload>
+      <Can I="add">
+        <Upload>
+          <Button icon={<UploadOutlined />}>Upload File</Button>
+        </Upload>
+      </Can>
       <List
         style={{ marginTop: 16 }}
         dataSource={selectedProject.attachments}
@@ -21,7 +24,9 @@ export default function ProjectAttachmentsTab() {
           <List.Item
             actions={[
               <Button key="dl" size="small" icon={<DownloadOutlined />}>Download</Button>,
-              <Button key="del" size="small" icon={<DeleteOutlined />} danger>Delete</Button>,
+              <Can key="del" I="delete">
+                <Button size="small" icon={<DeleteOutlined />} danger>Delete</Button>
+              </Can>,
             ]}
           >
             <List.Item.Meta

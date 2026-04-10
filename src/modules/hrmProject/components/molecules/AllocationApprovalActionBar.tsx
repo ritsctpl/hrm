@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button, Input, Space } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AllocationForm.module.css';
 
 interface Props {
@@ -23,23 +24,27 @@ export default function AllocationApprovalActionBar({ onApprove, onReject, loadi
         style={{ marginBottom: 8 }}
       />
       <Space>
-        <Button
-          danger
-          icon={<CloseOutlined />}
-          onClick={() => onReject(remarks)}
-          loading={loading}
-          disabled={!remarks.trim()}
-        >
-          Reject
-        </Button>
-        <Button
-          type="primary"
-          icon={<CheckOutlined />}
-          onClick={() => onApprove(remarks)}
-          loading={loading}
-        >
-          Approve
-        </Button>
+        <Can I="edit">
+          <Button
+            danger
+            icon={<CloseOutlined />}
+            onClick={() => onReject(remarks)}
+            loading={loading}
+            disabled={!remarks.trim()}
+          >
+            Reject
+          </Button>
+        </Can>
+        <Can I="edit">
+          <Button
+            type="primary"
+            icon={<CheckOutlined />}
+            onClick={() => onApprove(remarks)}
+            loading={loading}
+          >
+            Approve
+          </Button>
+        </Can>
       </Space>
     </div>
   );

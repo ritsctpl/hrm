@@ -21,6 +21,7 @@ import LeaveFilterBar from "./components/molecules/LeaveFilterBar";
 import LeaveMasterDetail from "./components/templates/LeaveMasterDetail";
 import HrLeaveLayout from "./components/templates/HrLeaveLayout";
 import HrmLeaveScreen from "./HrmLeaveScreen";
+import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
@@ -178,36 +179,38 @@ const HrmLeaveLanding: React.FC = () => {
     ];
 
     return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle="Leave Management" />
-        <EmployeeDashboard
-          balances={balances}
-          year={balancesYear}
-          onYearChange={setBalancesYear}
-          onApplyLeave={openLeaveForm}
-          loading={balancesLoading}
-        />
-        <LeaveFilterBar role={role} permissions={permissions} />
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          size="small"
-          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-          style={{ flex: 1, overflow: "hidden" }}
-        />
-        {showLeaveForm && (
-          <LeaveRequestFormDrawer
-            site={site}
-            employeeId={employeeId}
+      <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management">
+        <div className={`hrm-module-root ${styles.landing}`}>
+          <CommonAppBar appTitle="Leave Management" />
+          <EmployeeDashboard
             balances={balances}
-            onSubmitted={() => {
-              loadMyRequests();
-              loadBalances();
-            }}
+            year={balancesYear}
+            onYearChange={setBalancesYear}
+            onApplyLeave={openLeaveForm}
+            loading={balancesLoading}
           />
-        )}
-      </div>
+          <LeaveFilterBar role={role} permissions={permissions} />
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            size="small"
+            tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+            style={{ flex: 1, overflow: "hidden" }}
+          />
+          {showLeaveForm && (
+            <LeaveRequestFormDrawer
+              site={site}
+              employeeId={employeeId}
+              balances={balances}
+              onSubmitted={() => {
+                loadMyRequests();
+                loadBalances();
+              }}
+            />
+          )}
+        </div>
+      </ModuleAccessGate>
     );
   }
 
@@ -236,29 +239,31 @@ const HrmLeaveLanding: React.FC = () => {
     ];
 
     return (
-      <div className={`hrm-module-root ${styles.landing}`}>
-        <CommonAppBar appTitle="Leave Management — Approvals" />
-        <EmployeeDashboard
-          balances={balances}
-          year={balancesYear}
-          onYearChange={setBalancesYear}
-          onApplyLeave={openLeaveForm}
-          loading={balancesLoading}
-        />
-        <LeaveFilterBar role={role} permissions={permissions} />
-        <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
-        {showLeaveForm && (
-          <LeaveRequestFormDrawer
-            site={site}
-            employeeId={employeeId}
+      <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — Approvals">
+        <div className={`hrm-module-root ${styles.landing}`}>
+          <CommonAppBar appTitle="Leave Management — Approvals" />
+          <EmployeeDashboard
             balances={balances}
-            onSubmitted={() => {
-              loadMyRequests();
-              loadBalances();
-            }}
+            year={balancesYear}
+            onYearChange={setBalancesYear}
+            onApplyLeave={openLeaveForm}
+            loading={balancesLoading}
           />
-        )}
-      </div>
+          <LeaveFilterBar role={role} permissions={permissions} />
+          <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
+          {showLeaveForm && (
+            <LeaveRequestFormDrawer
+              site={site}
+              employeeId={employeeId}
+              balances={balances}
+              onSubmitted={() => {
+                loadMyRequests();
+                loadBalances();
+              }}
+            />
+          )}
+        </div>
+      </ModuleAccessGate>
     );
   }
 
@@ -306,20 +311,22 @@ const HrmLeaveLanding: React.FC = () => {
   );
 
   return (
-    <div className={`hrm-module-root ${styles.landing}`}>
-      <CommonAppBar appTitle="Leave Management — HR Console" />
-      <LeaveFilterBar
-        role={role}
-        permissions={permissions}
-        onFilterChange={handleFilterChange}
-      />
-      <HrLeaveLayout
-        queuePanel={queuePanel}
-        ledgerPanel={ledgerPanel}
-        accrualPanel={accrualPanel}
-        policyPanel={policyPanel}
-      />
-    </div>
+    <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
+      <div className={`hrm-module-root ${styles.landing}`}>
+        <CommonAppBar appTitle="Leave Management — HR Console" />
+        <LeaveFilterBar
+          role={role}
+          permissions={permissions}
+          onFilterChange={handleFilterChange}
+        />
+        <HrLeaveLayout
+          queuePanel={queuePanel}
+          ledgerPanel={ledgerPanel}
+          accrualPanel={accrualPanel}
+          policyPanel={policyPanel}
+        />
+      </div>
+    </ModuleAccessGate>
   );
 };
 

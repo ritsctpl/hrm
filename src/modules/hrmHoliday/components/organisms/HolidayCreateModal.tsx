@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Form, Input, Select, DatePicker, message } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
 import type { HolidayResponse } from '../../types/api.types';
+import Can from '../../../hrmAccess/components/Can';
 
 interface HolidayCreateModalProps {
   open: boolean;
@@ -72,12 +73,19 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
     <Modal
       open={open}
       title="Create Holiday"
-      onOk={handleOk}
       onCancel={onClose}
-      confirmLoading={saving}
       destroyOnClose
-      okText="Create Holiday"
       width={500}
+      footer={[
+        <Button key="cancel" onClick={onClose}>
+          Cancel
+        </Button>,
+        <Can key="create" I="add">
+          <Button type="primary" loading={saving} onClick={handleOk}>
+            Create Holiday
+          </Button>
+        </Can>,
+      ]}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item

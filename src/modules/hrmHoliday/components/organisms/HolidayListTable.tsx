@@ -10,6 +10,7 @@ import CompWindowDisplay from '../atoms/CompWindowDisplay';
 import type { HolidayListTableProps } from '../../types/ui.types';
 import type { Holiday } from '../../types/domain.types';
 import { formatDate, isDatePast } from '../../utils/formatters';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/HolidayDetail.module.css';
 
 export default function HolidayListTable({
@@ -88,33 +89,37 @@ export default function HolidayListTable({
             render: (_: unknown, record: Holiday) => (
               <Space size="small">
                 {canEdit && (
-                  <Tooltip title="Edit">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditIcon style={{ fontSize: 16 }} />}
-                      onClick={() => onEdit!(record)}
-                    />
-                  </Tooltip>
-                )}
-                {canDelete && (
-                  <Popconfirm
-                    title="Delete Holiday"
-                    description={`Are you sure you want to delete "${record.name}"?`}
-                    onConfirm={() => handleDelete(record)}
-                    okText="Yes"
-                    cancelText="No"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Tooltip title="Delete">
+                  <Can I="edit">
+                    <Tooltip title="Edit">
                       <Button
                         type="text"
                         size="small"
-                        danger
-                        icon={<DeleteIcon style={{ fontSize: 16 }} />}
+                        icon={<EditIcon style={{ fontSize: 16 }} />}
+                        onClick={() => onEdit!(record)}
                       />
                     </Tooltip>
-                  </Popconfirm>
+                  </Can>
+                )}
+                {canDelete && (
+                  <Can I="delete">
+                    <Popconfirm
+                      title="Delete Holiday"
+                      description={`Are you sure you want to delete "${record.name}"?`}
+                      onConfirm={() => handleDelete(record)}
+                      okText="Yes"
+                      cancelText="No"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Tooltip title="Delete">
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteIcon style={{ fontSize: 16 }} />}
+                        />
+                      </Tooltip>
+                    </Popconfirm>
+                  </Can>
                 )}
               </Space>
             ),

@@ -7,6 +7,7 @@ import MilestoneRow from '../molecules/MilestoneRow';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import type { MilestoneStatus } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 export default function ProjectMilestonesTab() {
@@ -42,9 +43,11 @@ export default function ProjectMilestonesTab() {
   return (
     <div className={styles.milestonesTab}>
       <div className={styles.tabHeader}>
-        <Button type="primary" ghost icon={<PlusOutlined />} size="small" onClick={() => setAddModalOpen(true)}>
-          Add Milestone
-        </Button>
+        <Can I="add">
+          <Button type="primary" ghost icon={<PlusOutlined />} size="small" onClick={() => setAddModalOpen(true)}>
+            Add Milestone
+          </Button>
+        </Can>
       </div>
       <div className={styles.milestonesList}>
         <div className={styles.milestoneHeader}>
@@ -72,8 +75,13 @@ export default function ProjectMilestonesTab() {
         title="Add Milestone"
         open={addModalOpen}
         onCancel={() => setAddModalOpen(false)}
-        onOk={handleAdd}
         destroyOnHidden
+        footer={[
+          <Button key="cancel" onClick={() => setAddModalOpen(false)}>Cancel</Button>,
+          <Can key="ok" I="add">
+            <Button type="primary" onClick={handleAdd}>OK</Button>
+          </Can>,
+        ]}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="milestoneName" label="Name" rules={[{ required: true }]}>

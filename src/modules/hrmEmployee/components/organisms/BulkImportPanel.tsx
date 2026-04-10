@@ -10,6 +10,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import Can from '../../../hrmAccess/components/Can';
 import type { BulkImportPanelProps } from '../../types/ui.types';
 import type { BulkImportResponse, BulkImportError } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
@@ -82,15 +83,16 @@ const BulkImportPanel: React.FC<BulkImportPanelProps> = ({ open, onClose }) => {
               <Button key="cancel" onClick={handleClose}>
                 Cancel
               </Button>,
-              <Button
-                key="import"
-                type="primary"
-                loading={importing}
-                onClick={handleImport}
-                disabled={!file}
-              >
-                Import
-              </Button>,
+              <Can key="import" I="add">
+                <Button
+                  type="primary"
+                  loading={importing}
+                  onClick={handleImport}
+                  disabled={!file}
+                >
+                  Import
+                </Button>
+              </Can>,
             ]
       }
     >

@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { MdDelete } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
+import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import type { BusinessUnit } from '../../types/domain.types';
 import type { BusinessUnitTableProps } from '../../types/ui.types';
@@ -99,24 +100,26 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         title: 'Action',
         key: 'actions',
         render: (_: unknown, record: BusinessUnit) => (
-          <Popconfirm
-            title="Delete Business Unit"
-            description="Are you sure you want to delete this business unit?"
-            onConfirm={(e) => handleDelete(record.handle, e as unknown as React.MouseEvent)}
-            onCancel={(e) => e?.stopPropagation()}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<MdDelete />}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Tooltip>
-          </Popconfirm>
+          <Can I="delete">
+            <Popconfirm
+              title="Delete Business Unit"
+              description="Are you sure you want to delete this business unit?"
+              onConfirm={(e) => handleDelete(record.handle, e as unknown as React.MouseEvent)}
+              onCancel={(e) => e?.stopPropagation()}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Tooltip title="Delete">
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<MdDelete />}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Can>
         ),
       },
     ],
@@ -144,9 +147,11 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
             placeholder="Search by code, name, or type..."
           />
         </div>
-        <Button type="primary" onClick={onAdd}>
-          +
-        </Button>
+        <Can I="add">
+          <Button type="primary" onClick={onAdd}>
+            +
+          </Button>
+        </Can>
       </div>
 
       <Table<BusinessUnit>

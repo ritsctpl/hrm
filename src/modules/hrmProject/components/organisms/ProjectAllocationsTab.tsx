@@ -7,6 +7,7 @@ import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { ALLOCATION_STATUS_OPTIONS } from '../../utils/projectConstants';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 export default function ProjectAllocationsTab() {
@@ -52,9 +53,11 @@ export default function ProjectAllocationsTab() {
             options={ALLOCATION_STATUS_OPTIONS}
           />
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAllocationForm}>
-          Add Allocation
-        </Button>
+        <Can I="add">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAllocationForm}>
+            Add Allocation
+          </Button>
+        </Can>
       </div>
 
       {loadingAllocations ? (
