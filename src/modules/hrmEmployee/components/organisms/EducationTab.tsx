@@ -142,7 +142,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Can I="add">
+        <Can I="add" object="employee_education">
           <Button
             type="primary"
             size="small"
@@ -174,7 +174,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                 icon={<EyeOutlined />}
                 onClick={() => handleView(edu)}
               />
-              <Can I="edit">
+              <Can I="edit" object="employee_education">
                 <Button
                   type="text"
                   size="small"
@@ -182,7 +182,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                   onClick={() => handleEdit(edu)}
                 />
               </Can>
-              <Can I="delete">
+              <Can I="delete" object="employee_education">
                 <Popconfirm
                   title="Delete Education"
                   description="Are you sure you want to delete this education entry?"

@@ -67,7 +67,7 @@ const OffboardingPanel: React.FC<Props> = ({ open, onClose, employeeHandle, empl
             <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Reason is required' }]}>
               <Input.TextArea rows={3} placeholder="e.g., Voluntary Resignation" />
             </Form.Item>
-            <Can I="delete">
+            <Can I="edit" object="employee_offboarding">
               <Button type="primary" onClick={handleInitiate} loading={initiating}>
                 Initiate Offboarding
               </Button>

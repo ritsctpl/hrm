@@ -214,7 +214,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Documents</h3>
-        <Can I="add">
+        <Can I="add" object="employee_document">
           <Button
             type="primary"
             size="small"

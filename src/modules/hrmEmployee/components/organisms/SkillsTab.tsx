@@ -22,7 +22,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   onRefresh,
 }) => {
   const { skills } = profile;
-  const { canDelete } = useCan();
+  const { canDelete } = useCan(undefined, 'employee_skill');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [skillName, setSkillName] = useState('');
   const [proficiency, setProficiency] = useState<SkillProficiency>('INTERMEDIATE');
@@ -80,7 +80,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Can I="add">
+        <Can I="add" object="employee_skill">
           <Button
             type="primary"
             size="small"

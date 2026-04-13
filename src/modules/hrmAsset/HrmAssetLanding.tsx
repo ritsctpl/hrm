@@ -93,7 +93,7 @@ const HrmAssetLanding: React.FC = () => {
           onClear={store.clearFilters}
         />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <Can I="edit">
+          <Can I="add">
             <Button
               size="small"
               icon={<SettingOutlined />}

@@ -19,6 +19,8 @@ import {
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import Can from '../../../hrmAccess/components/Can';
+import { useCan } from '../../../hrmAccess/hooks/useCan';
+import { useHrmRbacStore } from '../../../hrmAccess/stores/hrmRbacStore';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -29,6 +31,33 @@ const OrganizationListTemplate: React.FC = () => {
     navigateToDetail,
     deleteCompany,
   } = useHrmOrganizationStore();
+
+  // RBAC scoping: regular users only see the organizations they're explicitly
+  // assigned to (from `userModulesByOrganization`). Admins (anyone with
+  // module ADD or DELETE) see every company in the site.
+  const perms = useCan('HRM_ORGANIZATION');
+  const isAdmin = perms.canAdd || perms.canDelete;
+  const assignedOrganizations = useHrmRbacStore(s => s.organizations);
+
+  const allowedOrgNames = useMemo(() => {
+    return new Set(
+      assignedOrganizations
+        .map(o => (o.organizationName || '').toLowerCase().trim())
+        .filter(Boolean),
+    );
+  }, [assignedOrganizations]);
+
+  // Header label: single org → its name; multiple → "Admin".
+  // Anyone with module ADD/DELETE is treated as admin too, regardless of
+  // how many organizations they're explicitly assigned to.
+  const headerOrgLabel = useMemo(() => {
+    if (isAdmin) return 'Admin';
+    if (assignedOrganizations.length > 1) return 'Admin';
+    if (assignedOrganizations.length === 1) {
+      return assignedOrganizations[0].organizationName || '';
+    }
+    return '';
+  }, [assignedOrganizations, isAdmin]);
 
   useEffect(() => {
     fetchCompanyList();
@@ -45,8 +74,19 @@ const OrganizationListTemplate: React.FC = () => {
     }
   };
 
+  // Step 1 — RBAC scope: non-admins only see companies whose legalName
+  // matches one of their assigned organizations.
+  const scopedItems = useMemo(() => {
+    if (isAdmin) return companyList.items;
+    return companyList.items.filter((c) => {
+      const name = (c.legalName || '').toLowerCase().trim();
+      return allowedOrgNames.has(name);
+    });
+  }, [companyList.items, isAdmin, allowedOrgNames]);
+
+  // Step 2 — search filter and sort.
   const filteredItems = useMemo(() => {
-    let items = companyList.items;
+    let items = scopedItems;
     if (companyList.searchText) {
       const q = companyList.searchText.toLowerCase();
       items = items.filter(
@@ -61,10 +101,11 @@ const OrganizationListTemplate: React.FC = () => {
       const dateB = new Date(b.createdDateTime || 0).getTime();
       return dateB - dateA;
     });
-  }, [companyList.items, companyList.searchText]);
+  }, [scopedItems, companyList.searchText]);
 
-  const totalCount = companyList.items.length;
-  const activeCount = companyList.items.filter((c) => c.active === 1).length;
+  // Stats reflect the scoped set, not the raw list.
+  const totalCount = scopedItems.length;
+  const activeCount = scopedItems.filter((c) => c.active === 1).length;
   const inactiveCount = totalCount - activeCount;
 
   return (
@@ -104,6 +145,23 @@ const OrganizationListTemplate: React.FC = () => {
       <div className={styles.listHeader}>
         <div className={styles.listHeaderLeft}>
           <span className={styles.listTitle}>Companies ({filteredItems.length})</span>
+          {headerOrgLabel && (
+            <span
+              style={{
+                marginLeft: 12,
+                padding: '2px 10px',
+                borderRadius: 12,
+                background: headerOrgLabel === 'Admin' ? 'rgba(82,196,26,0.12)' : 'rgba(24,144,255,0.1)',
+                color: headerOrgLabel === 'Admin' ? '#52c41a' : '#1890ff',
+                fontSize: 12,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+              title={headerOrgLabel === 'Admin' ? 'You have access to multiple organizations' : `Scoped to ${headerOrgLabel}`}
+            >
+              {headerOrgLabel}
+            </span>
+          )}
         </div>
         <Input
           placeholder="Search by name, industry..."

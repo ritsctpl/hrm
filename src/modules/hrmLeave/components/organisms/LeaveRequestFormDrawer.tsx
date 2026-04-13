@@ -244,7 +244,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
               Next
             </Button>
           ) : (
-            <Can I="add">
+            <Can I="add" object="leave_request">
               <Button
                 type="primary"
                 onClick={handleSubmit}

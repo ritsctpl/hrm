@@ -133,7 +133,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
         </Can>
       )}
       {canCancel && (
-        <Can I="edit">
+        <Can I="delete">
           <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
             Cancel
           </Button>

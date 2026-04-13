@@ -9,6 +9,7 @@
 import React from 'react';
 import { useEmployeeProfile } from './hooks/useHrmEmployeeData';
 import EmployeeProfileTemplate from './components/templates/EmployeeProfileTemplate';
+import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import type { ProfileTabKey } from './types/ui.types';
 
 interface HrmEmployeeScreenProps {
@@ -47,26 +48,30 @@ const HrmEmployeeScreen: React.FC<HrmEmployeeScreenProps> = ({ handle, onBack })
 
   if (!data && !isLoading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
-        Employee profile not found.
-      </div>
+      <ModuleAccessGate moduleCode="HRM_EMPLOYEE" appTitle="Employee Directory">
+        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+          Employee profile not found.
+        </div>
+      </ModuleAccessGate>
     );
   }
 
   return (
-    <EmployeeProfileTemplate
-      profile={data!}
-      isLoading={isLoading}
-      isEditing={isEditing}
-      isSaving={isSaving}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
-      onEdit={handleEdit}
-      onCancel={handleCancel}
-      onSave={handleSave}
-      onBack={onBack}
-      onRefresh={refresh}
-    />
+    <ModuleAccessGate moduleCode="HRM_EMPLOYEE" appTitle="Employee Directory">
+      <EmployeeProfileTemplate
+        profile={data!}
+        isLoading={isLoading}
+        isEditing={isEditing}
+        isSaving={isSaving}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onEdit={handleEdit}
+        onCancel={handleCancel}
+        onSave={handleSave}
+        onBack={onBack}
+        onRefresh={refresh}
+      />
+    </ModuleAccessGate>
   );
 };
 

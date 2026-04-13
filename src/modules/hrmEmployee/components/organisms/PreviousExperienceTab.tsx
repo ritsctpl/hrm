@@ -142,7 +142,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Can I="add">
+        <Can I="add" object="employee_experience">
           <Button
             type="primary"
             size="small"
@@ -174,7 +174,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                 icon={<EyeOutlined />}
                 onClick={() => handleView(exp)}
               />
-              <Can I="edit">
+              <Can I="edit" object="employee_experience">
                 <Button
                   type="text"
                   size="small"
@@ -182,7 +182,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                   onClick={() => handleEdit(exp)}
                 />
               </Can>
-              <Can I="delete">
+              <Can I="delete" object="employee_experience">
                 <Popconfirm
                   title="Delete Experience"
                   description="Are you sure you want to delete this experience?"

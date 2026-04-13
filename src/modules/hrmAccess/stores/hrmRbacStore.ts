@@ -55,6 +55,13 @@ interface HrmRbacActions {
   hasModuleAccess: (appUrl: string) => boolean;
   getModuleActions: (moduleCode: string) => PermissionAction[];
   getModulePermissions: (moduleCode: string) => ModulePermissions;
+  /**
+   * Object-level permissions with fallback semantics:
+   * 1. If section perms are loaded AND the object has explicit perms, return them.
+   * 2. Otherwise fall back to module-level perms (so callers using `object`
+   *    work immediately, and refine once section perms arrive).
+   */
+  getObjectPermissions: (moduleCode: string, objectName: string) => ModulePermissions;
   getSectionPermissions: (moduleCode: string) => ModuleSectionPermissions | null;
   clearSectionCache: () => void;
   reset: () => void;
@@ -215,6 +222,23 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
 
   getModulePermissions: (moduleCode: string) => {
     return get().permissionsByModule[moduleCode] || EMPTY_PERMS;
+  },
+
+  getObjectPermissions: (moduleCode: string, objectName: string) => {
+    const state = get();
+    const sectionPerms = state.sectionPermissionCache[moduleCode];
+    // Resolution rules:
+    //   - Cache loaded WITH object entries → strict lookup. Missing object
+    //     means the user has no permission for that object. (This is the
+    //     correct behavior once backend exposes object-level perms.)
+    //   - Cache loaded but empty → backend hasn't migrated this module to
+    //     object-level perms; fall back to module-level grants.
+    //   - Cache not yet loaded → transient; fall back to module-level so
+    //     the UI doesn't flicker buttons in/out during the initial load.
+    if (sectionPerms && Object.keys(sectionPerms).length > 0) {
+      return sectionPerms[objectName] || EMPTY_PERMS;
+    }
+    return state.permissionsByModule[moduleCode] || EMPTY_PERMS;
   },
 
   getSectionPermissions: (moduleCode: string) => {

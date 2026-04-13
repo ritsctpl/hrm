@@ -32,6 +32,8 @@ import AssetsTab from '../organisms/AssetsTab';
 import RemunerationTab from './RemunerationTab';
 import LeaveSummaryTab from './LeaveSummaryTab';
 import Can from '../../../hrmAccess/components/Can';
+import { useCan } from '../../../hrmAccess/hooks/useCan';
+import { useIsSelf } from '../../../hrmAccess/hooks/useIsSelf';
 import { PROFILE_TABS } from '../../utils/constants';
 import type { EmployeeProfile } from '../../types/domain.types';
 import type { EmployeeStatus } from '../../types/domain.types';
@@ -42,18 +44,22 @@ import styles from '../../styles/HrmEmployee.module.css';
 const { Text } = Typography;
 
 /** Shared card-style section wrapper used inside consolidated tabs */
-const ProfileSection: React.FC<{ 
-  title: string; 
-  children: React.ReactNode; 
-  action?: React.ReactNode; 
-  sectionKey?: string; 
+const ProfileSection: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  sectionKey?: string;
   onEditSection?: (section: string) => void;
   isEditing?: boolean;
   isSaving?: boolean;
   onSave?: (section: string, data?: Record<string, unknown>) => Promise<void>;
   onCancel?: () => void;
   tabRef?: React.RefObject<BasicDetailsTabHandle>;
-}> = ({ title, children, action, sectionKey, onEditSection, isEditing, isSaving, onSave, onCancel, tabRef }) => (
+  /** Object-level RBAC name controlling who can save this section. */
+  editObject?: string;
+  /** Self-service bypass: when true the user can save even without the RBAC grant. */
+  editPassIf?: boolean;
+}> = ({ title, children, action, sectionKey, onEditSection, isEditing, isSaving, onSave, onCancel, tabRef, editObject, editPassIf }) => (
   <div
     style={{
       background: '#fff',
@@ -80,7 +86,7 @@ const ProfileSection: React.FC<{
       <div style={{ marginLeft: 12, display: 'flex', gap: 8 }}>
         {isEditing ? (
           <>
-            <Can I="edit">
+            <Can I="edit" object={editObject} passIf={editPassIf}>
               <Button
                 type="primary"
                 size="small"
@@ -156,12 +162,55 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 }) => {
   // Track which section within a tab is being edited (for Overview tab with multiple sections)
   const [editingSection, setEditingSection] = useState<string | null>(null);
-  
+
   // Refs for tab components to call their save methods
   const basicDetailsRef = useRef<BasicDetailsTabHandle>(null);
   const officialDetailsRef = useRef<BasicDetailsTabHandle>(null);
   const personalDetailsRef = useRef<BasicDetailsTabHandle>(null);
   const contactDetailsRef = useRef<BasicDetailsTabHandle>(null);
+
+  // Self-service: a regular employee viewing their OWN profile sees the
+  // Contact / Career / Documents / Compensation tabs even without the
+  // corresponding object permissions, but can only EDIT their own contact.
+  const isSelf = useIsSelf(
+    profile?.basicDetails?.workEmail,
+    profile?.employeeCode,
+    profile?.handle,
+  );
+
+  // Module-level perms — used as the "admin" bypass: anyone with ADD or
+  // DELETE on the module is treated as an admin and can see every tab,
+  // matching the rule "yaruku ellamey iruko avanga ellamey pannulam".
+  const modulePerms = useCan('HRM_EMPLOYEE');
+  const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
+
+  // Self-service edit requires BOTH being yourself AND having module-level
+  // EDIT. A VIEW-only user must NOT be able to edit anything, not even
+  // their own contact.
+  const canSelfEdit = isSelf && modulePerms.canEdit;
+
+  // Object-level perms for each tab (backend-driven granular control).
+  const contactPerms = useCan('HRM_EMPLOYEE', 'employee_contact');
+  const docPerms = useCan('HRM_EMPLOYEE', 'employee_document');
+  const assetPerms = useCan('HRM_EMPLOYEE', 'employee_asset');
+  const skillPerms = useCan('HRM_EMPLOYEE', 'employee_skill');
+  const compModulePerms = useCan('HRM_COMPENSATION');
+
+  // Tab visibility:
+  //   - Overview is ALWAYS shown to anyone past the access gate (module VIEW).
+  //   - Other tabs need: admin OR object grant OR self-service.
+  const canSeeOverview = true;
+  const canSeeContact = isAdmin || contactPerms.canView || isSelf;
+  const canSeeCareer = isAdmin || skillPerms.canView || isSelf;
+  const canSeeDocs = isAdmin || docPerms.canView || assetPerms.canView || isSelf;
+  const canSeeComp = isAdmin || compModulePerms.canView || isSelf;
+
+  const visibleTabKeys = new Set<string>();
+  if (canSeeOverview) visibleTabKeys.add('overview');
+  if (canSeeContact) visibleTabKeys.add('contactFamily');
+  if (canSeeCareer) visibleTabKeys.add('career');
+  if (canSeeDocs) visibleTabKeys.add('documentsAssets');
+  if (canSeeComp) visibleTabKeys.add('compensation');
 
   const handleCancelSection = () => {
     setEditingSection(null);
@@ -204,7 +253,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'overview':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection 
+            <ProfileSection
               title="Basic Details"
               sectionKey="basic"
               onEditSection={setEditingSection}
@@ -213,8 +262,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={basicDetailsRef}
+              editObject="employee_record"
+              editPassIf={isAdmin}
               action={
-                <Can I="edit">
+                <Can I="edit" object="employee_record" passIf={isAdmin}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -230,7 +281,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             >
               <BasicDetailsTab ref={basicDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection 
+            <ProfileSection
               title="Official Details"
               sectionKey="official"
               onEditSection={setEditingSection}
@@ -239,8 +290,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
+              editObject="employee_official"
+              editPassIf={isAdmin}
               action={
-                <Can I="edit">
+                <Can I="edit" object="employee_official" passIf={isAdmin}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -256,7 +309,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             >
               <OfficialDetailsTab ref={officialDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection 
+            <ProfileSection
               title="Personal Details"
               sectionKey="personal"
               onEditSection={setEditingSection}
@@ -265,8 +318,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
+              editObject="employee_personal"
+              editPassIf={isAdmin}
               action={
-                <Can I="edit">
+                <Can I="edit" object="employee_personal" passIf={isAdmin}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -290,7 +345,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       case 'contactFamily':
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection 
+            <ProfileSection
               title="Contact Details"
               sectionKey="contact"
               onEditSection={setEditingSection}
@@ -299,8 +354,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
+              editObject="employee_contact"
+              editPassIf={isAdmin || canSelfEdit}
               action={
-                <Can I="edit">
+                <Can I="edit" object="employee_contact" passIf={isAdmin || canSelfEdit}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -377,7 +434,12 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       label: tab.label,
       children: content,
     };
-  });
+  }).filter(item => visibleTabKeys.has(item.key));
+
+  // If the active tab was hidden by RBAC, fall back to the first visible tab.
+  const safeActiveTab = visibleTabKeys.has(activeTab)
+    ? activeTab
+    : (tabItems[0]?.key as ProfileTabKey | undefined);
 
   return (
     <div className={styles.profileWrapper}>
@@ -429,7 +491,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       {/* Tabs */}
       <div className={styles.profileTabsWrapper}>
         <Tabs
-          activeKey={activeTab}
+          activeKey={safeActiveTab}
           onChange={(key) => onTabChange(key as ProfileTabKey)}
           items={tabItems}
           size="small"

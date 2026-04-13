@@ -186,7 +186,7 @@ export default function AssetDetailPanel({
                 Edit
               </Button>
             </Can>
-            <Can I="delete">
+            <Can I="edit">
               <Popconfirm
                 title="Retire this asset?"
                 description="This will move the asset to RETIRED status."

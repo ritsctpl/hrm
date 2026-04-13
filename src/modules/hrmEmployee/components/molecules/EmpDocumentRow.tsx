@@ -75,7 +75,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
             onClick={() => onDownload(docId)}
           />
         </Tooltip>
-        <Can I="delete">
+        <Can I="delete" object="employee_document">
           <Tooltip title="Delete">
             <Button
               type="text"

@@ -215,7 +215,7 @@ const PayComponentForm: React.FC = () => {
         <div className={styles.formActions}>
           <Button onClick={handleCancel}>Cancel</Button>
           {selectedComponent && (
-            <Can I="delete">
+            <Can I="edit">
               <Popconfirm
                 title="Deactivate this component?"
                 onConfirm={handleDelete}

@@ -142,7 +142,7 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
               options={GROUP_OPTIONS}
               style={{ width: 220 }}
             />
-            <Can I="edit">
+            <Can I="edit" object="employee_field_schema">
               <Button type="primary" onClick={handleSave} loading={saving} style={{ marginLeft: 'auto' }}>
                 Save Schema
               </Button>

@@ -65,7 +65,7 @@ const PIPPanel: React.FC = () => {
         <Can I="edit">
           <Button size="small">Update Progress</Button>
         </Can>
-        <Can I="delete">
+        <Can I="edit">
           <Button size="small" danger>
             Close PIP
           </Button>

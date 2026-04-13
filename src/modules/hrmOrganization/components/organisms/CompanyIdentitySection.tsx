@@ -121,7 +121,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
         </div>
         <div className={mainStyles.logoInfo}>
           {!disabled && (
-            <Can I="edit">
+            <Can I="add">
               <Upload
                 showUploadList={false}
                 beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}

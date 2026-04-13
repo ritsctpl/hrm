@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Result, Spin } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
@@ -29,7 +29,17 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
   children,
 }) => {
   const isRbacReady = useHrmRbacStore(s => s.isReady);
+  const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
   const perms = useCan(moduleCode);
+
+  // Eagerly load object-level (section) permissions for this module so any
+  // <Can object="..."> wrapper inside the subtree resolves to precise perms.
+  // The store de-duplicates calls — repeat mounts are no-ops.
+  useEffect(() => {
+    if (isRbacReady && perms.canView && moduleCode) {
+      loadSectionPermissions(moduleCode);
+    }
+  }, [isRbacReady, perms.canView, moduleCode, loadSectionPermissions]);
 
   // Wait for RBAC initialization
   if (!isRbacReady) {

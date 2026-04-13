@@ -161,7 +161,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     }
                   />
                 </div>
-                <Can I="edit">
+                <Can I="edit" object="employee_official">
                   <Button type="primary" onClick={handleBulkAssignManager} loading={processing}>
                     Assign Manager to Selected
                   </Button>
@@ -185,7 +185,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     placeholder="Enter department name"
                   />
                 </div>
-                <Can I="edit">
+                <Can I="edit" object="employee_official">
                   <Button type="primary" onClick={handleBulkChangeDept} loading={processing}>
                     Change Department for Selected
                   </Button>
@@ -209,7 +209,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
                     placeholder="Enter business unit code"
                   />
                 </div>
-                <Can I="edit">
+                <Can I="edit" object="employee_official">
                   <Button type="primary" onClick={handleBulkAssignBu} loading={processing}>
                     Assign BU to Selected
                   </Button>

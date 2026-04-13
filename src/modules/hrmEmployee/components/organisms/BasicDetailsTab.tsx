@@ -12,6 +12,8 @@ import EmpAvatar from '../atoms/EmpAvatar';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
 import Can from '../../../hrmAccess/components/Can';
+import { useCan } from '../../../hrmAccess/hooks/useCan';
+import { useIsSelf } from '../../../hrmAccess/hooks/useIsSelf';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EmployeeStatus } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -31,6 +33,11 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
   editingSection,
 }, ref) => {
   const { basicDetails, employeeCode } = profile;
+  const isSelf = useIsSelf(basicDetails?.workEmail, employeeCode, profile?.handle);
+  // Self-edit requires module EDIT — VIEW-only users cannot update their
+  // own phone or photo.
+  const modulePerms = useCan('HRM_EMPLOYEE');
+  const canSelfEdit = isSelf && modulePerms.canEdit;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -205,7 +212,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <Can I="edit">
+                <Can I="edit" object="employee_record" passIf={canSelfEdit}>
                   <Upload
                     maxCount={1}
                     fileList={fileList}
@@ -293,7 +300,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                     placeholder="Enter phone number"
                     disabled={isSaving}
                   />
-                  <Can I="edit">
+                  <Can I="edit" object="employee_record" passIf={canSelfEdit}>
                     <Button
                       type="primary"
                       size="small"
@@ -316,7 +323,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               ) : (
                 <>
                   <span style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.phone}</span>
-                  <Can I="edit">
+                  <Can I="edit" object="employee_record" passIf={canSelfEdit}>
                     <Button
                       type="text"
                       size="small"

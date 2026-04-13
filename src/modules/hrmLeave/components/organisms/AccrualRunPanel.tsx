@@ -141,7 +141,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
           </div>
 
           {accrualPreview.canPost && (
-            <Can I="add">
+            <Can I="add" object="leave_accrual">
               <Button
                 type="primary"
                 onClick={handlePost}

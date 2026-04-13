@@ -75,7 +75,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       key: "actions",
       width: 120,
       render: (_, row) => (
-        <Can I="edit">
+        <Can I="edit" object="leave_policy">
           <Button
             size="small"
             type="link"
@@ -96,7 +96,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     <div className={styles.policySettings}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <Title level={5} style={{ margin: 0 }}>Leave Types</Title>
-        <Can I="add">
+        <Can I="add" object="leave_policy">
           <Button
             type="primary"
             size="small"
@@ -131,7 +131,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           <Button key="cancel" onClick={() => setTypeModalOpen(false)}>
             Cancel
           </Button>,
-          <Can key="save" I={editingType ? "edit" : "add"}>
+          <Can key="save" I={editingType ? "edit" : "add"} object="leave_policy">
             <Button type="primary" loading={saving} onClick={handleSaveType}>
               OK
             </Button>
