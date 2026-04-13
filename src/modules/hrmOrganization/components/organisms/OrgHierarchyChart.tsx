@@ -21,6 +21,105 @@ import mainStyles from '../../styles/HrmOrganization.module.css';
 import styles from '../../styles/OrgChart.module.css';
 
 /* ------------------------------------------------------------------ */
+/*  Reporting tree — pure data layer                                   */
+/* ------------------------------------------------------------------ */
+
+interface ReportingNodeData {
+  emp: EmployeeDirectoryRow;
+  reports: ReportingNodeData[];
+}
+
+interface ReportingTree {
+  head: ReportingNodeData;
+  orphans: EmployeeDirectoryRow[];
+}
+
+const norm = (s: string | undefined | null): string =>
+  (s || '').toLowerCase().trim();
+
+/**
+ * Build a reporting tree rooted at the dept head from a flat list of
+ * employees in a single department.
+ *
+ * Returns null when:
+ *   - headId is falsy, OR
+ *   - no employee in `employees` matches headId (by handle or employeeCode).
+ *
+ * Caller falls back to flat rendering when null is returned.
+ */
+const buildReportingTree = (
+  employees: EmployeeDirectoryRow[],
+  headId: string | undefined,
+): ReportingTree | null => {
+  const headKey = norm(headId);
+  if (!headKey) return null;
+
+  const head = employees.find(
+    (e) => norm(e.handle) === headKey || norm(e.employeeCode) === headKey,
+  );
+  if (!head) return null;
+
+  // Handles of every employee in this dept — used to decide whether a
+  // given manager reference points inside or outside the dept.
+  const inDept = new Set(employees.map((e) => norm(e.handle)));
+
+  // Group by lowercased manager handle. Only keep groupings where the
+  // manager is in this dept; everyone else becomes an orphan.
+  const childrenByManager: Record<string, EmployeeDirectoryRow[]> = {};
+  const orphans: EmployeeDirectoryRow[] = [];
+
+  for (const emp of employees) {
+    if (norm(emp.handle) === headKey) continue; // head is not its own orphan
+    const mgr = norm(emp.reportingManager);
+    if (!mgr || mgr === norm(emp.handle) || !inDept.has(mgr)) {
+      orphans.push(emp);
+      continue;
+    }
+    if (!childrenByManager[mgr]) childrenByManager[mgr] = [];
+    childrenByManager[mgr].push(emp);
+  }
+
+  // Sort direct reports / orphans by fullName for stable rendering.
+  const byName = (a: EmployeeDirectoryRow, b: EmployeeDirectoryRow) =>
+    (a.fullName || '').localeCompare(b.fullName || '', undefined, {
+      sensitivity: 'base',
+    });
+  Object.values(childrenByManager).forEach((list) => list.sort(byName));
+  orphans.sort(byName);
+
+  // Recurse from head with a visited guard for cycles.
+  const visited = new Set<string>();
+  const buildNode = (emp: EmployeeDirectoryRow): ReportingNodeData => {
+    visited.add(norm(emp.handle));
+    const directs = childrenByManager[norm(emp.handle)] || [];
+    const reports: ReportingNodeData[] = [];
+    for (const child of directs) {
+      if (visited.has(norm(child.handle))) continue; // cycle — drop
+      reports.push(buildNode(child));
+    }
+    return { emp, reports };
+  };
+
+  const headNode = buildNode(head);
+
+  // Safety net: any dept employee not reached via the recursion AND not
+  // already classified as an orphan goes to orphans. This catches
+  // subtrees hanging off a cycle or other weird shapes.
+  const reachable = visited;
+  const orphanHandles = new Set(orphans.map((o) => norm(o.handle)));
+  for (const emp of employees) {
+    const h = norm(emp.handle);
+    if (h === headKey) continue;
+    if (reachable.has(h)) continue;
+    if (orphanHandles.has(h)) continue;
+    orphans.push(emp);
+  }
+  orphans.sort(byName);
+
+  return { head: headNode, orphans };
+};
+
+/* ------------------------------------------------------------------ */
 /*  Employee leaf card                                                 */
 /* ------------------------------------------------------------------ */
 const EmployeeCard: React.FC<{ emp: EmployeeDirectoryRow }> = ({ emp }) => {
