@@ -49,6 +49,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
   const [selectedBU, setSelectedBU] = useState<string | undefined>();
   const [selectedBUName, setSelectedBUName] = useState<string | undefined>();
   const [selectedDepartmentName, setSelectedDepartmentName] = useState<string | undefined>();
+  const [selectedLocationName, setSelectedLocationName] = useState<string | undefined>();
 
   // Initialize state from existing data when entering edit mode
   useEffect(() => {
@@ -57,6 +58,11 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
       if (officialDetails.organizationHandle) {
         setSelectedCompany(officialDetails.organizationHandle);
         setSelectedCompanyName(officialDetails.organizationName || '');
+      }
+      
+      // Set initial location name if exists
+      if (officialDetails.locationName) {
+        setSelectedLocationName(officialDetails.locationName);
       }
       
       fetchDropdownOptions();
@@ -227,6 +233,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         reportingManager: values.reportingManager,
         reportingManagerName: officialDetails.reportingManagerName, // Preserve existing name
         location: values.location,
+        locationName: selectedLocationName || '', // Add location name
         businessUnits: selectedBUName ? [selectedBUName] : [], // Send as array with full label (e.g., ["BU983383 - BUPAY Updated"])
         organizationName: selectedCompanyName || '', // Newly added
         organizationHandle: selectedCompany || '', // Newly added
@@ -438,6 +445,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
                 placeholder="Select location"
                 loading={loadingOptions}
                 options={locations}
+                onChange={(value, option: any) => {
+                  setSelectedLocationName(option?.label || '');
+                }}
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
@@ -466,7 +476,10 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           label="Reporting Manager" 
           value={officialDetails.reportingManagerName || officialDetails.reportingManager || '--'} 
         />
-        <EmpFieldLabel label="Location" value={officialDetails.location} />
+        <EmpFieldLabel 
+          label="Location" 
+          value={officialDetails.locationName || officialDetails.location || '--'} 
+        />
         <EmpFieldLabel
           label="Business Units"
           value={officialDetails.businessUnits?.join(', ') || '--'}
