@@ -11,9 +11,21 @@ import { EyeOutlined } from '@ant-design/icons';
 import EmpAvatar from '../atoms/EmpAvatar';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
 import type { EmployeeSummary } from '../../types/domain.types';
-import type { EmployeeTableProps } from '../../types/ui.types';
 import { PAGE_SIZE_OPTIONS } from '../../utils/constants';
 import styles from '../../styles/HrmEmployeeTable.module.css';
+
+interface EmployeeTableProps {
+  data: EmployeeSummary[];
+  loading: boolean;
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  onPageChange: (page: number, pageSize: number) => void;
+  onRowClick: (handle: string) => void;
+  canView?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
 
 const EmployeeTable: React.FC<EmployeeTableProps> = ({
   data,
@@ -23,6 +35,9 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
   pageSize,
   onPageChange,
   onRowClick,
+  canView = true,
+  canEdit = false,
+  canDelete = false,
 }) => {
   const columns: ColumnsType<EmployeeSummary> = useMemo(
     () => [
@@ -71,26 +86,79 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
       {
         title: 'Actions',
         key: 'actions',
-        width: 80,
+        width: 120,
         align: 'center',
         render: (_: unknown, record: EmployeeSummary) => (
           <div className={styles.actionBtnGroup}>
-            <Tooltip title="View Profile">
-              <Button
-                type="text"
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRowClick(record.handle);
-                }}
-              />
-            </Tooltip>
+            {/* Show View button if user has VIEW-only (no EDIT) */}
+            {canView && !canEdit && (
+              <Tooltip title="View Profile">
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick(record.handle);
+                  }}
+                >
+                  View
+                </Button>
+              </Tooltip>
+            )}
+            
+            {/* Show Edit button if user has EDIT permission */}
+            {canEdit && (
+              <Tooltip title="Edit Profile">
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick(record.handle);
+                  }}
+                >
+                  Edit
+                </Button>
+              </Tooltip>
+            )}
+            
+            {/* Show Delete button if user has DELETE permission */}
+            {canDelete && (
+              <Tooltip title="Delete Employee">
+                <Button
+                  type="link"
+                  danger
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO: Implement delete functionality
+                    console.log('Delete employee:', record.handle);
+                  }}
+                >
+                  Delete
+                </Button>
+              </Tooltip>
+            )}
+            
+            {/* Fallback: Show eye icon if only VIEW permission */}
+            {canView && !canEdit && !canDelete && (
+              <Tooltip title="View Profile">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick(record.handle);
+                  }}
+                />
+              </Tooltip>
+            )}
           </div>
         ),
       },
     ],
-    [onRowClick]
+    [onRowClick, canView, canEdit, canDelete]
   );
 
   return (
@@ -111,8 +179,13 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
           onChange: onPageChange,
         }}
         onRow={(record) => ({
-          onClick: () => onRowClick(record.handle),
-          style: { cursor: 'pointer' },
+          onClick: () => {
+            // Allow row click for all VIEW users
+            if (canView) {
+              onRowClick(record.handle);
+            }
+          },
+          style: { cursor: canView ? 'pointer' : 'default' },
         })}
         scroll={{ x: 900 }}
       />

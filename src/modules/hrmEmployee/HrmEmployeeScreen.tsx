@@ -6,8 +6,9 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEmployeeProfile } from './hooks/useHrmEmployeeData';
+import { useHrmRbacStore } from '../hrmAccess/stores/hrmRbacStore';
 import EmployeeProfileTemplate from './components/templates/EmployeeProfileTemplate';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import type { ProfileTabKey } from './types/ui.types';
@@ -29,6 +30,16 @@ const HrmEmployeeScreen: React.FC<HrmEmployeeScreenProps> = ({ handle, onBack })
     updateProfile,
     refresh,
   } = useEmployeeProfile(handle);
+
+  // Load section-level permissions on mount
+  const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
+  const isReady = useHrmRbacStore(s => s.isReady);
+
+  useEffect(() => {
+    if (isReady) {
+      loadSectionPermissions('HRM_EMPLOYEE');
+    }
+  }, [isReady, loadSectionPermissions]);
 
   const handleSave = async (section: string, payload: Record<string, unknown>) => {
     await updateProfile(section, payload);
