@@ -11,6 +11,7 @@ import {
 } from '@/config/dashboardConfig';
 import type { SidebarFixedItem } from '@/config/dashboardConfig';
 import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
+import { useCurrentEmployeeStore } from '@/modules/hrmAccess/stores/currentEmployeeStore';
 import { Blocks } from 'lucide-react';
 import type { EnrichedModule } from '@modules/hrmAccess/types/rbac.types';
 import SidebarFlyout from './SidebarFlyout';
@@ -32,6 +33,26 @@ const AppSidebar: React.FC = () => {
   const modulesByCategory = useHrmRbacStore((s) => s.modulesByCategory);
   const hasModuleAccess = useHrmRbacStore((s) => s.hasModuleAccess);
   const isRbacReady = useHrmRbacStore((s) => s.isReady);
+  const orgCard = useCurrentEmployeeStore((s) => s.org);
+  const loadCurrent = useCurrentEmployeeStore((s) => s.load);
+
+  // Trigger the company-profile fetch (idempotent — the store de-dupes).
+  useEffect(() => {
+    if (isRbacReady) loadCurrent();
+  }, [isRbacReady, loadCurrent]);
+
+  const orgLogoSrc = orgCard?.logoBase64?.startsWith('data:')
+    ? orgCard.logoBase64
+    : orgCard?.logoBase64
+      ? `data:image/png;base64,${orgCard.logoBase64}`
+      : orgCard?.logoUrl || null;
+
+  // Home URL is built from env vars so it follows whatever host/port the
+  // app is deployed at — never hardcoded to localhost or any single env.
+  const envHost = process.env.NEXT_PUBLIC_HOST;
+  const envPort = process.env.NEXT_PUBLIC_REDIRECT_PORT;
+  const homeHref =
+    envHost && envPort ? `http://${envHost}:${envPort}/hrm` : '/hrm';
 
   /* Build dynamic category groups from API data */
   const categoryGroups = useMemo<CategoryGroup[]>(() => {
@@ -175,16 +196,23 @@ const AppSidebar: React.FC = () => {
 
   return (
     <nav className={styles.sidebar} role="navigation" aria-label="Main sidebar">
-      <div
+      <a
+        href={homeHref}
+        onClick={(e) => { e.preventDefault(); router.push('/'); }}
         className={styles.brandMark}
-        onClick={() => router.push('/')}
-        role="button"
-        tabIndex={0}
         aria-label="Go to homepage"
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push('/'); } }}
+        title={orgCard?.legalName || 'Home'}
       >
-        <span className={styles.brandMarkText}>HR</span>
-      </div>
+        {orgLogoSrc ? (
+          <img
+            src={orgLogoSrc}
+            alt={orgCard?.legalName || 'Home'}
+            className={styles.brandMarkLogo}
+          />
+        ) : (
+          <span className={styles.brandMarkText}>HR</span>
+        )}
+      </a>
 
       <div className={styles.navGroup}>
         {filteredTopItems.map(renderDirectNav)}

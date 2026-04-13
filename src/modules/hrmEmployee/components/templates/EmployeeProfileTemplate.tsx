@@ -189,21 +189,18 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   // their own contact.
   const canSelfEdit = isSelf && modulePerms.canEdit;
 
-  // Object-level perms for each tab (backend-driven granular control).
-  const contactPerms = useCan('HRM_EMPLOYEE', 'employee_contact');
-  const docPerms = useCan('HRM_EMPLOYEE', 'employee_document');
-  const assetPerms = useCan('HRM_EMPLOYEE', 'employee_asset');
-  const skillPerms = useCan('HRM_EMPLOYEE', 'employee_skill');
-  const compModulePerms = useCan('HRM_COMPENSATION');
-
-  // Tab visibility:
-  //   - Overview is ALWAYS shown to anyone past the access gate (module VIEW).
-  //   - Other tabs need: admin OR object grant OR self-service.
+  // Tab visibility — strict rule per user requirement:
+  //   - Overview: always visible to anyone past the access gate.
+  //   - All other tabs (Contact, Career, Documents, Compensation): only
+  //     ADMINS (canAdd/canDelete) or the user themselves (isSelf).
+  // VIEW-only or VIEW+EDIT users viewing OTHER employees see ONLY Overview.
+  // Compensation specifically must NOT leak via module-level VIEW fallback,
+  // so we don't reference HRM_COMPENSATION here either.
   const canSeeOverview = true;
-  const canSeeContact = isAdmin || contactPerms.canView || isSelf;
-  const canSeeCareer = isAdmin || skillPerms.canView || isSelf;
-  const canSeeDocs = isAdmin || docPerms.canView || assetPerms.canView || isSelf;
-  const canSeeComp = isAdmin || compModulePerms.canView || isSelf;
+  const canSeeContact = isAdmin || isSelf;
+  const canSeeCareer = isAdmin || isSelf;
+  const canSeeDocs = isAdmin || isSelf;
+  const canSeeComp = isAdmin || isSelf;
 
   const visibleTabKeys = new Set<string>();
   if (canSeeOverview) visibleTabKeys.add('overview');
@@ -263,9 +260,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={basicDetailsRef}
               editObject="employee_record"
-              editPassIf={isAdmin}
+              editPassIf={isAdmin || canSelfEdit}
               action={
-                <Can I="edit" object="employee_record" passIf={isAdmin}>
+                <Can I="edit" object="employee_record" passIf={isAdmin || canSelfEdit}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}

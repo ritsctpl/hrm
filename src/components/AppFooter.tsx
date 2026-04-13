@@ -2,13 +2,24 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHrmRbacStore } from '@modules/hrmAccess/stores/hrmRbacStore';
 import styles from './AppFooter.module.css';
 
 const AppFooter: React.FC = () => {
   const { t } = useTranslation();
+  const currentSite = useHrmRbacStore(s => s.currentSite);
+  const organizations = useHrmRbacStore(s => s.organizations);
+  const orgDisplayName =
+    organizations.find(o => o.site === currentSite)?.organizationName || currentSite || '';
 
   return (
     <footer className={styles.footer}>
+      {orgDisplayName && (
+        <>
+          <span title={orgDisplayName}>{orgDisplayName}</span>
+          <span className={styles.separator}>|</span>
+        </>
+      )}
       <span>{t('nav.footer.version')}</span>
       <span className={styles.separator}>|</span>
       <span>{t('nav.footer.copyright')}</span>

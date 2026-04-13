@@ -35,9 +35,11 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
   const { basicDetails, employeeCode } = profile;
   const isSelf = useIsSelf(basicDetails?.workEmail, employeeCode, profile?.handle);
   // Self-edit requires module EDIT — VIEW-only users cannot update their
-  // own phone or photo.
+  // own phone or photo. Admins (ADD or DELETE) can edit anyone.
   const modulePerms = useCan('HRM_EMPLOYEE');
+  const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
   const canSelfEdit = isSelf && modulePerms.canEdit;
+  const canEditBasic = isAdmin || canSelfEdit;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -212,7 +214,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <Can I="edit" object="employee_record" passIf={canSelfEdit}>
+                <Can I="edit" object="employee_record" passIf={canEditBasic}>
                   <Upload
                     maxCount={1}
                     fileList={fileList}
@@ -300,7 +302,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                     placeholder="Enter phone number"
                     disabled={isSaving}
                   />
-                  <Can I="edit" object="employee_record" passIf={canSelfEdit}>
+                  <Can I="edit" object="employee_record" passIf={canEditBasic}>
                     <Button
                       type="primary"
                       size="small"
@@ -323,7 +325,7 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               ) : (
                 <>
                   <span style={{ fontSize: 13, color: '#1e293b' }}>{basicDetails.phone}</span>
-                  <Can I="edit" object="employee_record" passIf={canSelfEdit}>
+                  <Can I="edit" object="employee_record" passIf={canEditBasic}>
                     <Button
                       type="text"
                       size="small"

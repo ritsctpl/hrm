@@ -42,6 +42,24 @@
   user-select: none;
 }
 
+.brandMark {
+  /* anchor element inherits brandMark layout — keep text-decoration off */
+  text-decoration: none;
+}
+
+.brandMarkLogo {
+  /* Fit inside the 48px brandMark slot with breathing room on all sides */
+  max-width: calc(100% - 12px);
+  max-height: calc(100% - 12px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 2px;
+}
+
 /* ─── Navigation Groups ─── */
 .navGroup {
   flex: 1;

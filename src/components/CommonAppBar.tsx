@@ -27,6 +27,7 @@ import { decryptToken } from "@utils/encryption";
 import jwtDecode from "jwt-decode";
 import { updateUserSite } from "@services/userService";
 import { useRbacContext } from "@modules/hrmAccess/context/RbacContext";
+import { useCurrentEmployeeStore } from "@modules/hrmAccess/stores/currentEmployeeStore";
 import { HomeOutlined } from "@mui/icons-material";
 import ritsLogo from "../images1/rits-logo.png";
 import himalayaLogo from "../images/image1.png"; // Add this import
@@ -73,12 +74,31 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   // Derive from RBAC context
   const site = rbac.currentSite;
   const availableSites = rbac.organizations.map((org) => org.site);
+  const currentOrg = rbac.organizations.find(o => o.site === site);
+  const orgDisplayName = currentOrg?.organizationName || site || '';
   const allActivities = rbac.currentOrgModules.map((m) => ({
     description: m.moduleName,
     url: m.appUrl,
     activityId: m.moduleCode,
     type: 'UI',
   }));
+
+  // Signed-in user's employee card (photo + name) AND current org logo —
+  // both cached via the global store and fetched in parallel.
+  const currentEmployee = useCurrentEmployeeStore(s => s.data);
+  const currentOrgCard = useCurrentEmployeeStore(s => s.org);
+  const loadCurrentEmployee = useCurrentEmployeeStore(s => s.load);
+  useEffect(() => {
+    if (rbac.isReady && site) {
+      loadCurrentEmployee();
+    }
+  }, [rbac.isReady, site, loadCurrentEmployee]);
+
+  // Resolve the best available image source for the user avatar:
+  // prefer photoBase64 (already inlined) → photoUrl → null (fallback to initial).
+  const userAvatarSrc = currentEmployee?.photoBase64 || currentEmployee?.photoUrl || null;
+  // Same for the organization logo shown in the home/logo slot.
+  const orgLogoSrc = currentOrgCard?.logoBase64 || currentOrgCard?.logoUrl || null;
 
   useEffect(() => {
     setIsClientSide(true);
@@ -379,16 +399,11 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               minHeight: 48,
             }}
           >
-            <img
-              src={
-                siteDetails?.theme?.logo
-                  ? getImageSource(siteDetails?.theme?.logo)
-                  : logo.src
-              }
-              alt="company Logo"
-              className={styles.logo}
-              onClick={handleLogoClick}
-            />
+            {/*
+              Branding image removed from the top nav bar — the org logo
+              now lives in the sidebar's top slot (AppSidebar brandMark)
+              and acts as the home button from there.
+            */}
             <Typography
               variant="h6"
               className={styles.title}
@@ -398,6 +413,27 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
             >
               {appTitle}
             </Typography>
+            {orgDisplayName && (
+              <Typography
+                variant="body2"
+                title={orgDisplayName}
+                style={{
+                  marginLeft: 12,
+                  padding: "2px 10px",
+                  borderRadius: 12,
+                  background: "rgba(24,144,255,0.10)",
+                  color: "#1890ff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: 240,
+                }}
+              >
+                {orgDisplayName}
+              </Typography>
+            )}
  
             <Box className={styles.searchBox}>
               <Autocomplete
@@ -494,12 +530,28 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               >
                 <LogOut size={18} />
               </IconButton>
-              <div
-                className={styles.avatar}
-                title={`${username} | ${site}`}
-              >
-                {username ? username.charAt(0).toUpperCase() : "?"}
-              </div>
+              {userAvatarSrc ? (
+                <img
+                  src={userAvatarSrc}
+                  alt={currentEmployee?.fullName || username || ''}
+                  title={`${currentEmployee?.fullName || username || ''} | ${orgDisplayName}`}
+                  className={styles.avatar}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '1px solid var(--line-color)',
+                  }}
+                />
+              ) : (
+                <div
+                  className={styles.avatar}
+                  title={`${currentEmployee?.fullName || username || ''} | ${orgDisplayName}`}
+                >
+                  {(currentEmployee?.fullName || username || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
             </Box>
           </Toolbar>
         </AppBar>
