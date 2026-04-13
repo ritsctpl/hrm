@@ -11,6 +11,7 @@ import CompanyFinancialYearSection from './CompanyFinancialYearSection';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
 interface Section {
@@ -27,6 +28,18 @@ const SECTIONS: Section[] = [
   { id: 'financial', title: 'Financial Year', icon: <CalendarOutlined /> },
 ];
 
+// Helper to check if section is visible based on permissions
+const getSectionVisibility = (sectionId: string, permissions: ReturnType<typeof useOrganizationPermissions>) => {
+  switch (sectionId) {
+    case 'identity': return permissions.canViewIdentity;
+    case 'statutory': return permissions.canViewStatutory;
+    case 'addresses': return permissions.canViewAddresses;
+    case 'bank': return permissions.canViewBankAccounts;
+    case 'financial': return permissions.canViewFinancialYear;
+    default: return false;
+  }
+};
+
 const CompanyProfileForm: React.FC = () => {
   const {
     companyProfile,
@@ -34,6 +47,7 @@ const CompanyProfileForm: React.FC = () => {
     saveCompanyProfile,
   } = useHrmOrganizationStore();
   
+  const permissions = useOrganizationPermissions();
   const get = useHrmOrganizationStore.getState;
 
   const { isLoading, isSaving, isEditing, data, errors } = companyProfile;
@@ -116,6 +130,20 @@ const CompanyProfileForm: React.FC = () => {
   const isNew = !data;
   const isDisabled = !isEditing && !isNew;
 
+  // Filter sections based on permissions
+  const visibleSections = SECTIONS.filter(section => getSectionVisibility(section.id, permissions));
+
+  // Section-specific disabled states based on permissions
+  // When creating new company (isNew), check ADD permission
+  // When editing existing company, check EDIT permission
+  const sectionDisabled = {
+    identity: isNew ? !permissions.canAddIdentity : (isDisabled || !permissions.canEditIdentity),
+    statutory: isNew ? !permissions.canAddStatutory : (isDisabled || !permissions.canEditStatutory),
+    addresses: isNew ? !permissions.canAddAddresses : (isDisabled || !permissions.canEditAddresses),
+    bank: isNew ? !permissions.canAddBankAccounts : (isDisabled || !permissions.canEditBankAccounts),
+    financial: isNew ? !permissions.canAddFinancialYear : (isDisabled || !permissions.canEditFinancialYear),
+  };
+
   return (
     <div style={{ display: 'flex', gap: '0', height: '100%', minHeight: 0, position: 'relative' }}>
       {/* Save success flash */}
@@ -149,7 +177,7 @@ const CompanyProfileForm: React.FC = () => {
           Sections
         </div>
 
-        {SECTIONS.map((section, index) => {
+        {visibleSections.map((section, index) => {
           const d = companyProfile.draft || companyProfile.data;
           const dr = d as Record<string, unknown> | null | undefined;
           const sectionCompletion: Record<string, [number, number]> = {
@@ -167,14 +195,14 @@ const CompanyProfileForm: React.FC = () => {
           return (
           <div key={section.id} style={{ position: 'relative', marginBottom: '4px' }}>
             {/* Timeline line */}
-            {index < SECTIONS.length - 1 && (
+            {index < visibleSections.length - 1 && (
               <div style={{
                 position: 'absolute',
                 left: '31px',
                 top: '48px',
                 width: '2px',
                 height: '32px',
-                backgroundColor: activeSection === section.id || SECTIONS.slice(0, index + 1).some(s => s.id === activeSection) ? '#1890ff' : '#d9d9d9',
+                backgroundColor: activeSection === section.id || visibleSections.slice(0, index + 1).some(s => s.id === activeSection) ? '#1890ff' : '#d9d9d9',
                 transition: 'background-color 0.3s ease',
               }} />
             )}
@@ -263,52 +291,62 @@ const CompanyProfileForm: React.FC = () => {
         )}
 
         {/* Section 1: Identity */}
-        <div
-          ref={(el) => { if (el) sectionRefs.current['identity'] = el; }}
-          className={mainStyles.profileSection}
-        >
-          <div className={mainStyles.profileSectionTitle}>Identity</div>
-          <CompanyIdentitySection disabled={isDisabled} />
-        </div>
+        {permissions.canViewIdentity && (
+          <div
+            ref={(el) => { if (el) sectionRefs.current['identity'] = el; }}
+            className={mainStyles.profileSection}
+          >
+            <div className={mainStyles.profileSectionTitle}>Identity</div>
+            <CompanyIdentitySection disabled={sectionDisabled.identity} />
+          </div>
+        )}
 
         {/* Section 2: Statutory Details */}
-        <div
-          ref={(el) => { if (el) sectionRefs.current['statutory'] = el; }}
-          className={mainStyles.profileSection}
-        >
-          <div className={mainStyles.profileSectionTitle}>Statutory Details</div>
-          <CompanyStatutorySection disabled={isDisabled} />
-        </div>
+        {permissions.canViewStatutory && (
+          <div
+            ref={(el) => { if (el) sectionRefs.current['statutory'] = el; }}
+            className={mainStyles.profileSection}
+          >
+            <div className={mainStyles.profileSectionTitle}>Statutory Details</div>
+            <CompanyStatutorySection disabled={sectionDisabled.statutory} />
+          </div>
+        )}
 
         {/* Section 3: Addresses */}
-        <div
-          ref={(el) => { if (el) sectionRefs.current['addresses'] = el; }}
-          className={mainStyles.profileSection}
-        >
-          <div className={mainStyles.profileSectionTitle}>Addresses</div>
-          <CompanyAddressSection disabled={isDisabled} />
-        </div>
+        {permissions.canViewAddresses && (
+          <div
+            ref={(el) => { if (el) sectionRefs.current['addresses'] = el; }}
+            className={mainStyles.profileSection}
+          >
+            <div className={mainStyles.profileSectionTitle}>Addresses</div>
+            <CompanyAddressSection disabled={sectionDisabled.addresses} />
+          </div>
+        )}
 
         {/* Section 4: Bank Accounts */}
-        <div
-          ref={(el) => { if (el) sectionRefs.current['bank'] = el; }}
-          className={mainStyles.profileSection}
-        >
-          <div className={mainStyles.profileSectionTitle}>Bank Accounts</div>
-          <CompanyBankSection disabled={isDisabled} />
-        </div>
+        {permissions.canViewBankAccounts && (
+          <div
+            ref={(el) => { if (el) sectionRefs.current['bank'] = el; }}
+            className={mainStyles.profileSection}
+          >
+            <div className={mainStyles.profileSectionTitle}>Bank Accounts</div>
+            <CompanyBankSection disabled={sectionDisabled.bank} />
+          </div>
+        )}
 
         {/* Section 5: Financial Year */}
-        <div
-          ref={(el) => { if (el) sectionRefs.current['financial'] = el; }}
-          className={mainStyles.profileSection}
-        >
-          <div className={mainStyles.profileSectionTitle}>Financial Year</div>
-          <CompanyFinancialYearSection />
-        </div>
+        {permissions.canViewFinancialYear && (
+          <div
+            ref={(el) => { if (el) sectionRefs.current['financial'] = el; }}
+            className={mainStyles.profileSection}
+          >
+            <div className={mainStyles.profileSectionTitle}>Financial Year</div>
+            <CompanyFinancialYearSection disabled={sectionDisabled.financial} />
+          </div>
+        )}
 
         {/* Bottom actions for long form */}
-        {(isEditing || isNew) && (
+        {(isEditing || isNew) && permissions.canEditIdentity && (
           <div className={mainStyles.companyActions}>
             {data && (
               <Button

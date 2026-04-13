@@ -8,6 +8,7 @@ import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { BusinessUnit } from '../../types/domain.types';
 import type { BusinessUnitTableProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
@@ -19,6 +20,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
     deleteBusinessUnit,
   } = useHrmOrganizationStore();
 
+  const permissions = useOrganizationPermissions();
   const { list, searchText, isLoading, selected } = businessUnit;
   const [tableHeight, setTableHeight] = useState<number>(500);
 

@@ -22,12 +22,17 @@ const OrgViewField: React.FC<OrgViewFieldProps> = ({
       <div style={{
         fontSize: '14px',
         color: '#262626',
-        padding: '8px 0',
-        minHeight: '32px',
+        fontWeight: 500,
+        padding: '10px 12px',
+        minHeight: '40px',
         display: 'flex',
         alignItems: 'center',
+        backgroundColor: '#fafafa',
+        border: '1px solid #f0f0f0',
+        borderRadius: '6px',
+        lineHeight: '1.5',
       }}>
-        {children || value || '-'}
+        {children || value || <span style={{ color: '#bfbfbf', fontWeight: 400 }}>-</span>}
       </div>
     </div>
   );

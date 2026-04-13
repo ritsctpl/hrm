@@ -4,6 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Input, Select, Button, Divider, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -13,7 +14,7 @@ import type { LocationFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
+const LocationForm: React.FC<LocationFormProps> = ({ onClose, readOnly = false }) => {
   const {
     location,
     setLocationDraft,
@@ -22,10 +23,15 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
 
   const { draft, isSaving, isCreating, selected, errors } = location;
   const isNew = isCreating && !selected;
-  const title = isNew ? 'New Location' : `Edit: ${selected?.name || ''}`;
+  const title = readOnly 
+    ? `View: ${selected?.name || ''}` 
+    : isNew 
+    ? 'New Location' 
+    : `Edit: ${selected?.name || ''}`;
 
   const handleFieldChange = useCallback(
     (field: string, value: string | number) => {
+      if (readOnly) return;
       setLocationDraft({ [field]: value });
 
       // Clear city when state changes
@@ -37,7 +43,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
         setLocationDraft({ state: '', city: '' });
       }
     },
-    [setLocationDraft]
+    [setLocationDraft, readOnly]
   );
 
   // State options for selected country
@@ -72,109 +78,130 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose }) => {
       </div>
 
       <div className={formStyles.identityGrid}>
-        <OrgFormField label="Location Code" required error={errors?.code}>
-          <Input
-            value={draft?.code || ''}
-            onChange={(e) => handleFieldChange('code', e.target.value)}
-            placeholder="Enter location code"
-            disabled={!isNew}
-          />
-        </OrgFormField>
+        {readOnly ? (
+          // Read-only view
+          <>
+            <OrgViewField label="Location Code" value={draft?.code} required />
+            <OrgViewField label="Location Name" value={draft?.name} required />
+            <div className={formStyles.identityFullWidth}>
+              <OrgViewField label="Address Line 1" value={draft?.addressLine1} required />
+            </div>
+            <div className={formStyles.identityFullWidth}>
+              <OrgViewField label="Address Line 2" value={draft?.addressLine2} />
+            </div>
+            <OrgViewField label="Country" value={draft?.country || 'India'} required />
+            <OrgViewField label="State" value={draft?.state} required />
+            <OrgViewField label="City" value={draft?.city} required />
+            <OrgViewField label="PIN / ZIP" value={draft?.pincode} required />
+          </>
+        ) : (
+          // Editable form
+          <>
+            <OrgFormField label="Location Code" required error={errors?.code}>
+              <Input
+                value={draft?.code || ''}
+                onChange={(e) => handleFieldChange('code', e.target.value)}
+                placeholder="Enter location code"
+                disabled={!isNew}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="Location Name" required error={errors?.name}>
-          <Input
-            value={draft?.name || ''}
-            onChange={(e) => handleFieldChange('name', e.target.value)}
-            placeholder="Enter location name"
-          />
-        </OrgFormField>
+            <OrgFormField label="Location Name" required error={errors?.name}>
+              <Input
+                value={draft?.name || ''}
+                onChange={(e) => handleFieldChange('name', e.target.value)}
+                placeholder="Enter location name"
+              />
+            </OrgFormField>
 
-        <div className={formStyles.identityFullWidth}>
-          <OrgFormField label="Address Line 1" required error={errors?.addressLine1}>
-            <Input
-              value={draft?.addressLine1 || ''}
-              onChange={(e) => handleFieldChange('addressLine1', e.target.value)}
-              placeholder="Enter address line 1"
-            />
-          </OrgFormField>
-        </div>
+            <div className={formStyles.identityFullWidth}>
+              <OrgFormField label="Address Line 1" required error={errors?.addressLine1}>
+                <Input
+                  value={draft?.addressLine1 || ''}
+                  onChange={(e) => handleFieldChange('addressLine1', e.target.value)}
+                  placeholder="Enter address line 1"
+                />
+              </OrgFormField>
+            </div>
 
-        <div className={formStyles.identityFullWidth}>
-          <OrgFormField label="Address Line 2">
-            <Input
-              value={draft?.addressLine2 ?? ''}
-              onChange={(e) => handleFieldChange('addressLine2', e.target.value)}
-              placeholder="Enter address line 2"
-            />
-          </OrgFormField>
-        </div>
+            <div className={formStyles.identityFullWidth}>
+              <OrgFormField label="Address Line 2">
+                <Input
+                  value={draft?.addressLine2 ?? ''}
+                  onChange={(e) => handleFieldChange('addressLine2', e.target.value)}
+                  placeholder="Enter address line 2"
+                />
+              </OrgFormField>
+            </div>
 
-        <OrgFormField label="Country" required error={errors?.country}>
-          <Select
-            value={draft?.country || 'India'}
-            onChange={(val) => handleFieldChange('country', val)}
-            options={[...COUNTRY_OPTIONS]}
-            placeholder="Select country"
-            style={{ width: '100%' }}
-          />
-        </OrgFormField>
+            <OrgFormField label="Country" required error={errors?.country}>
+              <Select
+                value={draft?.country || 'India'}
+                onChange={(val) => handleFieldChange('country', val)}
+                options={[...COUNTRY_OPTIONS]}
+                placeholder="Select country"
+                style={{ width: '100%' }}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="State" required error={errors?.state}>
-          <Select
-            value={draft?.state || undefined}
-            onChange={(val) => handleFieldChange('state', val)}
-            options={stateOptions}
-            placeholder="Select state"
-            showSearch
-            optionFilterProp="label"
-            style={{ width: '100%' }}
-          />
-        </OrgFormField>
+            <OrgFormField label="State" required error={errors?.state}>
+              <Select
+                value={draft?.state || undefined}
+                onChange={(val) => handleFieldChange('state', val)}
+                options={stateOptions}
+                placeholder="Select state"
+                showSearch
+                optionFilterProp="label"
+                style={{ width: '100%' }}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="City" required error={errors?.city}>
-          <Select
-            value={draft?.city || undefined}
-            onChange={(val) => handleFieldChange('city', val)}
-            options={cityOptions}
-            placeholder={draft?.state ? 'Select or type city' : 'Select state first'}
-            showSearch
-            optionFilterProp="label"
-            style={{ width: '100%' }}
-            disabled={!draft?.state}
-            notFoundContent={draft?.state ? 'Type to add custom city' : 'Select state first'}
-            // Allow custom city entry if not in list
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                {draft?.state && cityOptions.length > 0 && (
+            <OrgFormField label="City" required error={errors?.city}>
+              <Select
+                value={draft?.city || undefined}
+                onChange={(val) => handleFieldChange('city', val)}
+                options={cityOptions}
+                placeholder={draft?.state ? 'Select or type city' : 'Select state first'}
+                showSearch
+                optionFilterProp="label"
+                style={{ width: '100%' }}
+                disabled={!draft?.state}
+                notFoundContent={draft?.state ? 'Type to add custom city' : 'Select state first'}
+                // Allow custom city entry if not in list
+                dropdownRender={(menu) => (
                   <>
-                    <Divider style={{ margin: '4px 0' }} />
-                    <div style={{ padding: '4px 8px', fontSize: 11, color: '#8c8c8c' }}>
-                      City not listed? Type in the search box
-                    </div>
+                    {menu}
+                    {draft?.state && cityOptions.length > 0 && (
+                      <>
+                        <Divider style={{ margin: '4px 0' }} />
+                        <div style={{ padding: '4px 8px', fontSize: 11, color: '#8c8c8c' }}>
+                          City not listed? Type in the search box
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
-              </>
-            )}
-            // Allow typing custom value not in the list
-            filterOption={(input, option) =>
-              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-            }
-            onSearch={() => {}}
-          />
-        </OrgFormField>
+                // Allow typing custom value not in the list
+                filterOption={(input, option) =>
+                  (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+                onSearch={() => {}}
+              />
+            </OrgFormField>
 
-        <OrgFormField label="PIN / ZIP" required error={errors?.pincode}>
-          <Input
-            value={draft?.pincode || ''}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/[^0-9]/g, '');
-              handleFieldChange('pincode', digits);
-            }}
-            placeholder="Enter PIN/ZIP code"
-            maxLength={6}
-          />
-        </OrgFormField>
+            <OrgFormField label="PIN / ZIP" required error={errors?.pincode}>
+              <Input
+                value={draft?.pincode || ''}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^0-9]/g, '');
+                  handleFieldChange('pincode', digits);
+                }}
+                placeholder="Enter PIN/ZIP code"
+                maxLength={6}
+              />
+            </OrgFormField>
+          </>
+        )}
       </div>
 
       {errors?._general && (

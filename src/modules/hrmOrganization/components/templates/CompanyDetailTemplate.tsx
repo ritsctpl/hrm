@@ -27,6 +27,7 @@ import OrgAuditLogPanel from '../organisms/OrgAuditLogPanel';
 import DataCompletenessPanel from '../organisms/DataCompletenessPanel';
 import type { DetailTabKey } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
+import { useOrganizationPermissions } from '@modules/hrmOrganization/hooks/useOrganizationPermissions';
 
 const CompanyDetailTemplate: React.FC = () => {
   const {
@@ -43,6 +44,7 @@ const CompanyDetailTemplate: React.FC = () => {
   } = useHrmOrganizationStore();
 
   const { confirmNavigation } = useUnsavedChanges();
+  const permissions = useOrganizationPermissions();
   const get = useHrmOrganizationStore.getState;
   const isNew = selectedCompanyHandle === 'new';
   const { isEditing, isSaving, errors, data } = companyProfile;
@@ -124,7 +126,8 @@ const CompanyDetailTemplate: React.FC = () => {
   };
 
   const tabItems = [
-    {
+    // Profile Tab - visible if user can view at least one profile object
+    permissions.canViewProfileTab && {
       key: 'profile',
       label: (
         <span className={styles.tabLabel}>
@@ -135,7 +138,8 @@ const CompanyDetailTemplate: React.FC = () => {
       ),
       children: <CompanyProfileTemplate />,
     },
-    {
+    // Business Units Tab
+    permissions.canViewBusinessUnit && {
       key: 'businessUnits',
       label: (
         <span className={styles.tabLabel}>
@@ -147,7 +151,8 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <BusinessUnitTemplate />,
       disabled: false,
     },
-    {
+    // Departments Tab
+    permissions.canViewDepartment && {
       key: 'departments',
       label: (
         <span className={styles.tabLabel}>
@@ -159,7 +164,8 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <DepartmentTemplate />,
       disabled: false,
     },
-    {
+    // Locations Tab
+    permissions.canViewLocation && {
       key: 'locations',
       label: (
         <span className={styles.tabLabel}>
@@ -171,7 +177,8 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <LocationTemplate />,
       disabled: false,
     },
-    {
+    // Hierarchy Tab - visible if user can view any organizational structure
+    (permissions.canViewBusinessUnit || permissions.canViewDepartment) && {
       key: 'hierarchy',
       label: (
         <span className={styles.tabLabel}>
@@ -182,7 +189,8 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <OrgHierarchyChart />,
       disabled: false,
     },
-    {
+    // Audit Log Tab - visible if user can view profile
+    permissions.canViewProfileTab && {
       key: 'audit',
       label: (
         <span className={styles.tabLabel}>
@@ -193,7 +201,8 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <OrgAuditLogPanel />,
       disabled: isNew,
     },
-    {
+    // Reports Tab - visible if user can view profile
+    permissions.canViewProfileTab && {
       key: 'reports',
       label: (
         <span className={styles.tabLabel}>
@@ -204,7 +213,7 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <DataCompletenessPanel />,
       disabled: isNew,
     },
-  ];
+  ].filter(Boolean); // Remove false/undefined items
 
   return (
     <div className={styles.detailViewContainer}>

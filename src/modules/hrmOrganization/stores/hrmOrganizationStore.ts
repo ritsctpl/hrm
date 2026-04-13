@@ -696,6 +696,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
             isCreating: false,
           },
         }));
+        
+        // Refresh global hierarchy after BU update
+        get().fetchHierarchy();
       } else {
         const created = await HrmOrganizationService.createBusinessUnit(payload);
         set((state) => ({
@@ -708,6 +711,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
             isCreating: false,
           },
         }));
+        
+        // Refresh global hierarchy after BU creation
+        get().fetchHierarchy();
       }
     } catch (error: unknown) {
       const errMsg =
@@ -752,6 +758,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
               : state.businessUnit.draft,
         },
       }));
+      
+      // Refresh global hierarchy after BU deletion
+      get().fetchHierarchy();
     } catch (error: unknown) {
       let errMsg = 'Failed to delete business unit';
       
@@ -941,7 +950,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         }));
       }
 
-      // Refresh hierarchy after save
+      // Refresh department hierarchy after save (for specific BU)
       const { department: updatedDept } = get();
       if (updatedDept.selectedBuHandle) {
         const hierarchy = await HrmOrganizationService.fetchDepartmentHierarchy(
@@ -952,6 +961,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           department: { ...state.department, hierarchy },
         }));
       }
+      
+      // Refresh global hierarchy after department save
+      get().fetchHierarchy();
     } catch (error: unknown) {
       const errMsg =
         error instanceof Error ? error.message : 'Failed to save department';
@@ -995,7 +1007,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         },
       }));
 
-      // Refresh hierarchy after delete
+      // Refresh department hierarchy after delete (for specific BU)
       const { department } = get();
       if (department.selectedBuHandle) {
         const hierarchy = await HrmOrganizationService.fetchDepartmentHierarchy(
@@ -1006,6 +1018,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           department: { ...state.department, hierarchy },
         }));
       }
+      
+      // Refresh global hierarchy after department deletion
+      get().fetchHierarchy();
     } catch (error: unknown) {
       let errMsg = 'Failed to delete department';
       

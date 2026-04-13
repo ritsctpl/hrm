@@ -133,7 +133,7 @@
 }
 
 .shrink {
-  flex: 0.5;
+  flex: 0.6;
 }
 
 .formContainer {
@@ -148,8 +148,8 @@
 }
 
 .show {
-  flex: 1;
-  overflow: hidden;
+  flex: 0.4;
+  overflow: auto;
 }
 
 /* Tab content */

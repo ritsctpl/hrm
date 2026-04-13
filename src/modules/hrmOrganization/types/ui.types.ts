@@ -176,6 +176,10 @@ export interface CompanyStatutorySectionProps {
   disabled?: boolean;
 }
 
+export interface CompanyFinancialYearSectionProps {
+  disabled?: boolean;
+}
+
 export interface CompanyBankSectionProps {
   disabled?: boolean;
 }
@@ -195,6 +199,7 @@ export interface BusinessUnitTableProps {
 
 export interface BusinessUnitFormProps {
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 export interface DepartmentTreeProps {
@@ -204,6 +209,7 @@ export interface DepartmentTreeProps {
 
 export interface DepartmentFormProps {
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 export interface TreeNodeData {
@@ -233,6 +239,7 @@ export interface LocationTableProps {
 
 export interface LocationFormProps {
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 // ============================================

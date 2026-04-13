@@ -8,6 +8,7 @@ import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { Location } from '../../types/domain.types';
 import type { LocationTableProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
@@ -19,6 +20,7 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
     deleteLocation,
   } = useHrmOrganizationStore();
 
+  const permissions = useOrganizationPermissions();
   const { list, searchText, isLoading, selected } = location;
   const [tableHeight, setTableHeight] = useState<number>(500);
 
@@ -100,9 +102,8 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
         render: (active: number) => <OrgStatusTag active={active} />,
       },
       {
-        title: '',
+        title: 'Action',
         key: 'actions',
-        width: 50,
         render: (_: unknown, record: Location) => (
           <Can I="delete">
             <Popconfirm

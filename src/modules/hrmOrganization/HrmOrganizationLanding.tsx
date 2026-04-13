@@ -7,11 +7,22 @@ import CompanyDetailTemplate from './components/templates/CompanyDetailTemplate'
 import { useHrmOrganizationStore } from './stores/hrmOrganizationStore';
 import { useUnsavedChanges } from './hooks/useUnsavedChanges';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import styles from './styles/HrmOrganization.module.css';
 
 const HrmOrganizationLanding: React.FC = () => {
   const { view, reset } = useHrmOrganizationStore();
+  const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
+  const isReady = useHrmRbacStore(s => s.isReady);
+  
   useUnsavedChanges();
+
+  // Load Organization module permissions on mount
+  useEffect(() => {
+    if (isReady) {
+      loadSectionPermissions('HRM_ORGANIZATION');
+    }
+  }, [isReady, loadSectionPermissions]);
 
   useEffect(() => {
     return () => {

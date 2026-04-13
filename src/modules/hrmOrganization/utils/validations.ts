@@ -112,6 +112,9 @@ export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Phone pattern (basic - allows 10+ digits with optional +, -, spaces)
 export const PHONE_PATTERN = /^[\+]?[\d\s\-\(\)]{10,}$/;
 
+// Pincode pattern (6 digits for India)
+export const PINCODE_PATTERN = /^[0-9]{6}$/;
+
 export const validateEmail = (email: string): string | null => {
   if (!email) return null; // Optional field
   if (!EMAIL_PATTERN.test(email)) {
@@ -124,6 +127,16 @@ export const validatePhone = (phone: string): string | null => {
   if (!phone) return null; // Optional field
   if (!PHONE_PATTERN.test(phone)) {
     return 'Please enter a valid phone number (at least 10 digits)';
+  }
+  return null;
+};
+
+export const validatePincode = (pincode: string): string | null => {
+  if (!pincode || !pincode.trim()) {
+    return 'Pincode is required';
+  }
+  if (!PINCODE_PATTERN.test(pincode.trim())) {
+    return 'Pincode must be exactly 6 digits';
   }
   return null;
 };
@@ -195,8 +208,9 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     if (!registeredAddress.state?.trim()) {
       errors['registeredOfficeAddress.state'] = 'State is required';
     }
-    if (!registeredAddress.pincode?.trim()) {
-      errors['registeredOfficeAddress.pincode'] = 'Pincode is required';
+    const pincodeError = validatePincode(registeredAddress.pincode || '');
+    if (pincodeError) {
+      errors['registeredOfficeAddress.pincode'] = pincodeError;
     }
   }
 
@@ -273,8 +287,8 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
   if (!data.gstin?.trim()) {
     errors.gstin = 'GSTIN is required';
   } else {
-    // Business units don't have separate PAN field, so just validate format
-    const gstinError = validateGSTIN(data.gstin);
+    // Validate GSTIN format and cross-check with state
+    const gstinError = validateGSTIN(data.gstin, undefined, data.state);
     if (gstinError) errors.gstin = gstinError;
   }
 
@@ -292,8 +306,9 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
     if (!data.address.state?.trim()) {
       errors['address.state'] = 'State is required';
     }
-    if (!data.address.pincode?.trim()) {
-      errors['address.pincode'] = 'Pincode is required';
+    const pincodeError = validatePincode(data.address.pincode || '');
+    if (pincodeError) {
+      errors['address.pincode'] = pincodeError;
     }
   } else {
     errors['address'] = 'Address is required';
@@ -333,8 +348,9 @@ export const validateLocation = (data: any, existingCodes?: string[]): Record<st
     errors.country = 'Country is required';
   }
 
-  if (!data.pincode?.trim()) {
-    errors.pincode = 'PIN/ZIP Code is required';
+  const pincodeError = validatePincode(data.pincode || '');
+  if (pincodeError) {
+    errors.pincode = pincodeError;
   }
 
   return errors;

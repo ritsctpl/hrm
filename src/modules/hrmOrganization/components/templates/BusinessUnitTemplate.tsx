@@ -4,6 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import BusinessUnitTable from '../organisms/BusinessUnitTable';
 import BusinessUnitForm from '../organisms/BusinessUnitForm';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { BusinessUnit } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
@@ -14,10 +15,30 @@ const BusinessUnitTemplate: React.FC = () => {
     setBusinessUnitCreating,
   } = useHrmOrganizationStore();
 
+  const permissions = useOrganizationPermissions();
+
   const isFormOpen = useMemo(
     () => businessUnit.selected !== null || businessUnit.isCreating,
     [businessUnit.selected, businessUnit.isCreating]
   );
+
+  // Determine if form should be read-only
+  // For new records: check ADD permission
+  // For existing records: check EDIT permission
+  const isReadOnly = useMemo(() => {
+    if (businessUnit.isCreating) {
+      // Creating new record - need ADD permission
+      return !permissions.canAddBusinessUnit;
+    } else {
+      // Editing existing record - need EDIT permission (VIEW-only = read-only)
+      return permissions.canViewBusinessUnit && !permissions.canEditBusinessUnit;
+    }
+  }, [
+    businessUnit.isCreating,
+    permissions.canAddBusinessUnit,
+    permissions.canViewBusinessUnit,
+    permissions.canEditBusinessUnit,
+  ]);
 
   const handleSelect = useCallback(
     (bu: BusinessUnit) => {
@@ -45,7 +66,7 @@ const BusinessUnitTemplate: React.FC = () => {
       <div
         className={`${mainStyles.formContainer} ${isFormOpen ? mainStyles.show : ''}`}
       >
-        {isFormOpen && <BusinessUnitForm onClose={handleClose} />}
+        {isFormOpen && <BusinessUnitForm onClose={handleClose} readOnly={isReadOnly} />}
       </div>
     </div>
   );

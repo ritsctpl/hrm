@@ -9,6 +9,7 @@ import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import { parseCookies } from 'nookies';
+import type { CompanyFinancialYearSectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
 const MONTHS = [
@@ -26,7 +27,9 @@ const MONTHS = [
   { label: 'December', value: 'December' },
 ];
 
-const CompanyFinancialYearSection: React.FC = () => {
+const CompanyFinancialYearSection: React.FC<CompanyFinancialYearSectionProps> = ({
+  disabled = false,
+}) => {
   const { companyProfile, fetchCompanyProfile, setCompanyDraft } = useHrmOrganizationStore();
   const data = companyProfile.data;
   const draft = companyProfile.draft;
@@ -95,7 +98,7 @@ const CompanyFinancialYearSection: React.FC = () => {
 
   return (
     <div className={formStyles.contactGrid}>
-      {isEditing ? (
+      {!disabled ? (
         <>
           <OrgFormField label="Start Month" required>
             <Select
@@ -103,6 +106,7 @@ const CompanyFinancialYearSection: React.FC = () => {
               onChange={handleStartMonthChange}
               options={MONTHS}
               style={{ width: '100%' }}
+              disabled={disabled}
             />
           </OrgFormField>
 
@@ -112,6 +116,7 @@ const CompanyFinancialYearSection: React.FC = () => {
               onChange={handleEndMonthChange}
               options={MONTHS}
               style={{ width: '100%' }}
+              disabled={disabled}
             />
           </OrgFormField>
 

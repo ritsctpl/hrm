@@ -9,6 +9,7 @@ import LocationTable from '../organisms/LocationTable';
 import LocationForm from '../organisms/LocationForm';
 import OrgHierarchyTree from '../organisms/OrgHierarchyTree';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { Department, Location } from '../../types/domain.types';
 import type { StructureSubView } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
@@ -26,6 +27,8 @@ const StructureTemplate: React.FC = () => {
     fetchBusinessUnits,
     fetchLocations,
   } = useHrmOrganizationStore();
+
+  const permissions = useOrganizationPermissions();
 
   const [activeView, setActiveView] = useState<StructureSubView>('departments');
 
@@ -49,6 +52,22 @@ const StructureTemplate: React.FC = () => {
     [department.selected, department.isCreating]
   );
 
+  // Determine if department form should be read-only
+  const isDeptReadOnly = useMemo(() => {
+    if (department.isCreating) {
+      // Creating new record - need ADD permission
+      return !permissions.canAddDepartment;
+    } else {
+      // Editing existing record - need EDIT permission (VIEW-only = read-only)
+      return permissions.canViewDepartment && !permissions.canEditDepartment;
+    }
+  }, [
+    department.isCreating,
+    permissions.canAddDepartment,
+    permissions.canViewDepartment,
+    permissions.canEditDepartment,
+  ]);
+
   const handleDeptSelect = useCallback(
     (dept: Department) => {
       selectDepartment(dept);
@@ -69,6 +88,22 @@ const StructureTemplate: React.FC = () => {
     () => location.selected !== null || location.isCreating,
     [location.selected, location.isCreating]
   );
+
+  // Determine if location form should be read-only
+  const isLocReadOnly = useMemo(() => {
+    if (location.isCreating) {
+      // Creating new record - need ADD permission
+      return !permissions.canAddLocation;
+    } else {
+      // Editing existing record - need EDIT permission (VIEW-only = read-only)
+      return permissions.canViewLocation && !permissions.canEditLocation;
+    }
+  }, [
+    location.isCreating,
+    permissions.canAddLocation,
+    permissions.canViewLocation,
+    permissions.canEditLocation,
+  ]);
 
   const handleLocSelect = useCallback(
     (loc: Location) => {
@@ -141,7 +176,7 @@ const StructureTemplate: React.FC = () => {
           <div
             className={`${mainStyles.formContainer} ${isDeptFormOpen ? mainStyles.show : ''}`}
           >
-            {isDeptFormOpen && <DepartmentForm onClose={handleDeptClose} />}
+            {isDeptFormOpen && <DepartmentForm onClose={handleDeptClose} readOnly={isDeptReadOnly} />}
           </div>
         </div>
       )}
@@ -157,7 +192,7 @@ const StructureTemplate: React.FC = () => {
           <div
             className={`${mainStyles.formContainer} ${isLocFormOpen ? mainStyles.show : ''}`}
           >
-            {isLocFormOpen && <LocationForm onClose={handleLocClose} />}
+            {isLocFormOpen && <LocationForm onClose={handleLocClose} readOnly={isLocReadOnly} />}
           </div>
         </div>
       )}

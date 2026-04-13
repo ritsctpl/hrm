@@ -6,6 +6,7 @@ import { PlusOutlined, ApartmentOutlined, BankOutlined } from '@ant-design/icons
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { Department, DepartmentNode, BusinessUnit } from '../../types/domain.types';
 import type { DepartmentTreeProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
@@ -18,11 +19,33 @@ interface AntTreeNode {
   selectable?: boolean;
 }
 
-function buildDeptNodes(nodes: DepartmentNode[]): AntTreeNode[] {
+function buildDeptNodes(
+  nodes: DepartmentNode[],
+  canEdit: boolean,
+  canView: boolean,
+  onViewClick?: (dept: Department) => void
+): AntTreeNode[] {
   return nodes.map((node) => ({
     key: node.handle,
-    title: `${node.deptName} (${node.deptCode})`,
-    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children) : undefined,
+    title: (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <span>{node.deptName} ({node.deptCode})</span>
+        {canView && !canEdit && onViewClick && (
+          <Button
+            type="link"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewClick(node);
+            }}
+            style={{ marginLeft: 8 }}
+          >
+            View
+          </Button>
+        )}
+      </div>
+    ),
+    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children, canEdit, canView, onViewClick) : undefined,
     isLeaf: !node.children || node.children.length === 0,
   }));
 }
@@ -68,6 +91,7 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     fetchHierarchy,
   } = useHrmOrganizationStore();
 
+  const permissions = useOrganizationPermissions();
   const {
     isLoading,
     searchText,
@@ -92,6 +116,23 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     }
   }, [hierarchyState.data, fetchHierarchy]);
 
+  // Handle view button click
+  const handleViewClick = useCallback(
+    (dept: Department) => {
+      // Find parent BU for context
+      const parentBu = allBuDepts.find(({ depts }) => {
+        const findInDepts = (nodes: DepartmentNode[]): boolean =>
+          nodes.some((n) => n.handle === dept.handle || (n.children && findInDepts(n.children)));
+        return findInDepts(depts);
+      });
+      if (parentBu) {
+        setDepartmentSelectedBu(parentBu.bu.handle);
+      }
+      onSelect(dept);
+    },
+    [allBuDepts, onSelect, setDepartmentSelectedBu]
+  );
+
   // Build combined tree: BU → Departments grouped
   const treeData = useMemo(() => {
     const searchLower = searchText?.toLowerCase() || '';
@@ -112,11 +153,16 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
             </span>
           ),
           selectable: false,
-          children: buildDeptNodes(filteredDepts),
+          children: buildDeptNodes(
+            filteredDepts,
+            permissions.canEditDepartment,
+            permissions.canViewDepartment,
+            handleViewClick
+          ),
         } as AntTreeNode;
       })
       .filter(Boolean) as AntTreeNode[];
-  }, [allBuDepts, searchText]);
+  }, [allBuDepts, searchText, permissions.canEditDepartment, permissions.canViewDepartment, handleViewClick]);
 
   // Collect all keys for expand-all when searching
   const allKeys = useMemo(() => {
@@ -229,6 +275,7 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
             onExpand={handleExpand}
             showLine
             blockNode
+            style={{ cursor: 'pointer' }}
           />
         )}
       </div>

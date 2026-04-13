@@ -4,6 +4,7 @@ import React, { useCallback } from 'react';
 import { Input, Select, Tabs, Button, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import OrgAddressFields from '../molecules/OrgAddressFields';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
@@ -20,7 +21,7 @@ const getIndianStates = () => {
   return states.map((s) => ({ label: s, value: s }));
 };
 
-const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
+const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly = false }) => {
   const {
     businessUnit,
     setBusinessUnitDraft,
@@ -32,23 +33,29 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
 
   const { draft, isSaving, isCreating, selected, errors } = businessUnit;
   const isNew = isCreating && !selected;
-  const title = isNew ? 'New Business Unit' : `Edit: ${selected?.buName || ''}`;
+  const title = readOnly 
+    ? `View: ${selected?.buName || ''}` 
+    : isNew 
+    ? 'New Business Unit' 
+    : `Edit: ${selected?.buName || ''}`;
 
   const handleFieldChange = useCallback(
     (field: string, value: string | number | Record<string, string>) => {
+      if (readOnly) return;
       setBusinessUnitDraft({ [field]: value });
     },
-    [setBusinessUnitDraft]
+    [setBusinessUnitDraft, readOnly]
   );
 
   const handleAddressChange = useCallback(
     (field: string, value: string) => {
+      if (readOnly) return;
       const currentAddress = draft?.address || { ...EMPTY_ADDRESS };
       setBusinessUnitDraft({
         address: { ...currentAddress, [field]: value } as Address,
       });
     },
-    [draft?.address, setBusinessUnitDraft]
+    [draft?.address, setBusinessUnitDraft, readOnly]
   );
 
   const handleSave = useCallback(async () => {
@@ -76,7 +83,18 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   }, [saveBusinessUnit, isNew]);
 
   // General Tab
-  const generalContent = (
+  const generalContent = readOnly ? (
+    // Read-only view using OrgViewField
+    <div className={formStyles.identityGrid}>
+      <OrgViewField label="BU Code" value={draft?.buCode} required />
+      <OrgViewField label="BU Name" value={draft?.buName} required />
+      <OrgViewField label="State" value={draft?.state} required />
+      <OrgViewField label="Place of Supply" value={draft?.placeOfSupply} required />
+      <OrgViewField label="GSTIN" value={draft?.gstin} required />
+      <OrgViewField label="Primary Contact" value={draft?.primaryContact} required />
+    </div>
+  ) : (
+    // Editable form
     <div className={formStyles.identityGrid}>
       <OrgFormField label="BU Code" required error={errors.buCode}>
         <Input
@@ -141,9 +159,10 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose }) => {
   const addressContent = (
     <OrgAddressFields
       prefix="address"
-      address={draft?.address || {}}
+      address={draft?.address || { line1: '', city: '', state: '', pincode: '', country: 'India' }}
       onChange={handleAddressChange}
       errors={errors}
+      disabled={readOnly}
     />
   );
 

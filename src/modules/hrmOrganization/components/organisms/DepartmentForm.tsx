@@ -6,6 +6,7 @@ import { CloseOutlined, UserOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
 import { parseCookies } from 'nookies';
 import OrgFormField from '../molecules/OrgFormField';
+import OrgViewField from '../molecules/OrgViewField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -14,7 +15,7 @@ import type { DepartmentFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
+const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = false }) => {
   const {
     department,
     businessUnit,
@@ -34,7 +35,11 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
     })),
     [businessUnit.list]
   );
-  const title = isNew ? 'New Department' : `Edit: ${selected?.deptName || ''}`;
+  const title = readOnly 
+    ? `View: ${selected?.deptName || ''}` 
+    : isNew 
+    ? 'New Department' 
+    : `Edit: ${selected?.deptName || ''}`;
 
   // Employee search state
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: React.ReactNode }[]>([]);
@@ -93,11 +98,23 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       }));
   }, [list, selected?.handle]);
 
+  // Get display values for view mode
+  const buName = useMemo(() => {
+    const bu = businessUnit.list.find(b => b.handle === selectedBuHandle);
+    return bu ? `${bu.buName} (${bu.buCode})` : undefined;
+  }, [businessUnit.list, selectedBuHandle]);
+
+  const parentDeptName = useMemo(() => {
+    const parent = list.find(d => d.handle === draft?.parentDeptHandle);
+    return parent ? `${parent.deptName} (${parent.deptCode})` : undefined;
+  }, [list, draft?.parentDeptHandle]);
+
   const handleFieldChange = useCallback(
     (field: string, value: string | number | undefined) => {
+      if (readOnly) return;
       setDepartmentDraft({ [field]: value });
     },
-    [setDepartmentDraft]
+    [setDepartmentDraft, readOnly]
   );
 
   const handleSave = useCallback(async () => {
@@ -146,80 +163,98 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose }) => {
       </div>
 
       <div className={formStyles.deptFormGrid}>
-        {isNew && (
-          <div className={formStyles.addressFieldFull}>
-            <OrgFormField label="Business Unit" required error={!selectedBuHandle ? 'Business Unit is required' : undefined}>
-              <Select
-                value={selectedBuHandle || undefined}
-                onChange={(val) => setDepartmentSelectedBu(val)}
-                options={buOptions}
-                placeholder="Select Business Unit"
-                showSearch
-                optionFilterProp="label"
-                style={{ width: '100%' }}
+        {readOnly ? (
+          // Read-only view
+          <>
+            <OrgViewField label="Business Unit" value={buName} required />
+            <OrgViewField label="Department Code" value={draft?.deptCode} required />
+            <OrgViewField label="Department Name" value={draft?.deptName} required />
+            <div className={formStyles.addressFieldFull}>
+              <OrgViewField label="Parent Department" value={parentDeptName} />
+            </div>
+            <div className={formStyles.addressFieldFull}>
+              <OrgViewField label="Head of Department" value={draft?.headOfDepartmentEmployeeId} />
+            </div>
+          </>
+        ) : (
+          // Editable form
+          <>
+            {isNew && (
+              <div className={formStyles.addressFieldFull}>
+                <OrgFormField label="Business Unit" required error={!selectedBuHandle ? 'Business Unit is required' : undefined}>
+                  <Select
+                    value={selectedBuHandle || undefined}
+                    onChange={(val) => setDepartmentSelectedBu(val)}
+                    options={buOptions}
+                    placeholder="Select Business Unit"
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                  />
+                </OrgFormField>
+              </div>
+            )}
+
+            <OrgFormField label="Department Code" required error={errors.deptCode}>
+              <Input
+                value={draft?.deptCode || ''}
+                onChange={(e) => handleFieldChange('deptCode', e.target.value)}
+                placeholder="Enter department code"
+                disabled={!isNew}
               />
             </OrgFormField>
-          </div>
+
+            <OrgFormField label="Department Name" required error={errors.deptName}>
+              <Input
+                value={draft?.deptName || ''}
+                onChange={(e) => handleFieldChange('deptName', e.target.value)}
+                placeholder="Enter department name"
+              />
+            </OrgFormField>
+
+            <div className={formStyles.addressFieldFull}>
+              <OrgFormField label="Parent Department" error={errors.parentDeptHandle}>
+                <Select
+                  value={draft?.parentDeptHandle || undefined}
+                  onChange={(val) => handleFieldChange('parentDeptHandle', val)}
+                  options={parentOptions}
+                  placeholder="Select parent department (optional)"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  style={{ width: '100%' }}
+                />
+              </OrgFormField>
+            </div>
+
+            <div className={formStyles.addressFieldFull}>
+              <OrgFormField label="Head of Department" error={errors.headOfDepartmentEmployeeId}>
+                <Select
+                  showSearch
+                  value={draft?.headOfDepartmentEmployeeId || undefined}
+                  placeholder="Type to search employee..."
+                  filterOption={false}
+                  onSearch={handleEmployeeSearch}
+                  onChange={(val) => handleFieldChange('headOfDepartmentEmployeeId', val)}
+                  options={employeeOptions}
+                  loading={employeeSearchLoading}
+                  allowClear
+                  style={{ width: '100%' }}
+                  optionLabelProp="title"
+                  popupMatchSelectWidth={350}
+                  notFoundContent={
+                    employeeSearchLoading
+                      ? 'Searching...'
+                      : employeeOptions.length === 0
+                      ? 'Type at least 2 characters to search'
+                      : 'No employees found'
+                  }
+                  suffixIcon={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                />
+              </OrgFormField>
+            </div>
+          </>
         )}
-
-        <OrgFormField label="Department Code" required error={errors.deptCode}>
-          <Input
-            value={draft?.deptCode || ''}
-            onChange={(e) => handleFieldChange('deptCode', e.target.value)}
-            placeholder="Enter department code"
-            disabled={!isNew}
-          />
-        </OrgFormField>
-
-        <OrgFormField label="Department Name" required error={errors.deptName}>
-          <Input
-            value={draft?.deptName || ''}
-            onChange={(e) => handleFieldChange('deptName', e.target.value)}
-            placeholder="Enter department name"
-          />
-        </OrgFormField>
-
-        <div className={formStyles.addressFieldFull}>
-          <OrgFormField label="Parent Department" error={errors.parentDeptHandle}>
-            <Select
-              value={draft?.parentDeptHandle || undefined}
-              onChange={(val) => handleFieldChange('parentDeptHandle', val)}
-              options={parentOptions}
-              placeholder="Select parent department (optional)"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              style={{ width: '100%' }}
-            />
-          </OrgFormField>
-        </div>
-
-        <div className={formStyles.addressFieldFull}>
-          <OrgFormField label="Head of Department" error={errors.headOfDepartmentEmployeeId}>
-            <Select
-              showSearch
-              value={draft?.headOfDepartmentEmployeeId || undefined}
-              placeholder="Type to search employee..."
-              filterOption={false}
-              onSearch={handleEmployeeSearch}
-              onChange={(val) => handleFieldChange('headOfDepartmentEmployeeId', val)}
-              options={employeeOptions}
-              loading={employeeSearchLoading}
-              allowClear
-              style={{ width: '100%' }}
-              optionLabelProp="title"
-              popupMatchSelectWidth={350}
-              notFoundContent={
-                employeeSearchLoading
-                  ? 'Searching...'
-                  : employeeOptions.length === 0
-                  ? 'Type at least 2 characters to search'
-                  : 'No employees found'
-              }
-              suffixIcon={<UserOutlined style={{ color: '#bfbfbf' }} />}
-            />
-          </OrgFormField>
-        </div>
       </div>
 
       {errors._general && (

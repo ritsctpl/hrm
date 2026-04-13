@@ -174,7 +174,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     if (sectionPermissionCache[moduleCode]) return;
 
     try {
-      const response = await HrmAccessService.fetchEffectivePermissions(currentSite, userId);
+      const response = await HrmAccessService.fetchEffectivePermissions(currentSite, userId, moduleCode);
       const perms = response.permissions.filter(p => p.moduleCode === moduleCode);
 
       const sectionPerms: ModuleSectionPermissions = {};
