@@ -9,7 +9,7 @@ import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } f
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
-import Can from '../../../hrmAccess/components/Can';
+import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EducationEntry } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -19,6 +19,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   onRefresh,
 }) => {
   const { education } = profile;
+  const permissions = useEmployeePermissions();
   const [addOpen, setAddOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -142,7 +143,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Can I="add" object="employee_education">
+        {permissions.canAddEducation && (
           <Button
             type="primary"
             size="small"
@@ -150,7 +151,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
           >
             Add Education
           </Button>
-        </Can>
+        )}
       </div>
 
       {education.length === 0 ? (
@@ -174,15 +175,15 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                 icon={<EyeOutlined />}
                 onClick={() => handleView(edu)}
               />
-              <Can I="edit" object="employee_education">
+              {permissions.canEditEducation && (
                 <Button
                   type="text"
                   size="small"
                   icon={<EditOutlined />}
                   onClick={() => handleEdit(edu)}
                 />
-              </Can>
-              <Can I="delete" object="employee_education">
+              )}
+              {permissions.canDeleteEducation && (
                 <Popconfirm
                   title="Delete Education"
                   description="Are you sure you want to delete this education entry?"
@@ -198,7 +199,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                     loading={loading}
                   />
                 </Popconfirm>
-              </Can>
+              )}
             </div>
           </div>
         ))

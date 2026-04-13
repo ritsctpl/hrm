@@ -10,7 +10,7 @@ import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
-import Can from '../../../hrmAccess/components/Can';
+import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import { formatDate } from '../../utils/transformations';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { PreviousExperience } from '../../types/domain.types';
@@ -21,6 +21,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   onRefresh,
 }) => {
   const { previousExperience } = profile;
+  const permissions = useEmployeePermissions();
   const [addOpen, setAddOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -142,7 +143,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Can I="add" object="employee_experience">
+        {permissions.canAddExperience && (
           <Button
             type="primary"
             size="small"
@@ -150,7 +151,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
           >
             Add Experience
           </Button>
-        </Can>
+        )}
       </div>
 
       {previousExperience.length === 0 ? (
@@ -174,15 +175,15 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                 icon={<EyeOutlined />}
                 onClick={() => handleView(exp)}
               />
-              <Can I="edit" object="employee_experience">
+              {permissions.canEditExperience && (
                 <Button
                   type="text"
                   size="small"
                   icon={<EditOutlined />}
                   onClick={() => handleEdit(exp)}
                 />
-              </Can>
-              <Can I="delete" object="employee_experience">
+              )}
+              {permissions.canDeleteExperience && (
                 <Popconfirm
                   title="Delete Experience"
                   description="Are you sure you want to delete this experience?"
@@ -198,7 +199,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                     loading={loading}
                   />
                 </Popconfirm>
-              </Can>
+              )}
             </div>
           </div>
         ))

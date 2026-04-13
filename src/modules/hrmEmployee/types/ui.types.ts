@@ -86,6 +86,7 @@ export interface EmpDocumentRowProps {
   onView?: (docId: string) => void;
   onDownload: (docId: string) => void;
   onDelete: (docId: string) => void;
+  canDelete?: boolean;
 }
 
 /** Employee table props */
