@@ -14,7 +14,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Tabs, Button, Spin, Typography } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
 import EmpAvatar from '../atoms/EmpAvatar';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
@@ -23,7 +23,6 @@ import OfficialDetailsTab from '../organisms/OfficialDetailsTab';
 import PersonalDetailsTab from '../organisms/PersonalDetailsTab';
 import ContactDetailsTab from '../organisms/ContactDetailsTab';
 import SkillsTab from '../organisms/SkillsTab';
-import JobHistoryTab from '../organisms/JobHistoryTab';
 import PreviousExperienceTab from '../organisms/PreviousExperienceTab';
 import EducationTab from '../organisms/EducationTab';
 import TrainingCertTab from '../organisms/TrainingCertTab';
@@ -31,6 +30,7 @@ import DocumentsTab from '../organisms/DocumentsTab';
 import AssetsTab from '../organisms/AssetsTab';
 import RemunerationTab from './RemunerationTab';
 import LeaveSummaryTab from './LeaveSummaryTab';
+import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import Can from '../../../hrmAccess/components/Can';
 import { useCan } from '../../../hrmAccess/hooks/useCan';
 import { useIsSelf } from '../../../hrmAccess/hooks/useIsSelf';
@@ -92,11 +92,9 @@ const ProfileSection: React.FC<{
                 size="small"
                 loading={isSaving}
                 onClick={() => {
-                  // Call the ref's save method if available
                   if (tabRef?.current?.save) {
                     tabRef.current.save();
                   } else {
-                    // Fallback: call onSave directly
                     sectionKey && onSave?.(sectionKey);
                   }
                 }}
@@ -107,11 +105,9 @@ const ProfileSection: React.FC<{
             <Button
               size="small"
               onClick={() => {
-                // Call the ref's cancel method if available
                 if (tabRef?.current?.cancel) {
                   tabRef.current.cancel();
                 }
-                // Then call onCancel to update template state
                 onCancel?.();
               }}
             >
@@ -160,6 +156,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   onBack,
   onRefresh,
 }) => {
+  // Get object-level permissions
+  const permissions = useEmployeePermissions();
+  
   // Track which section within a tab is being edited (for Overview tab with multiple sections)
   const [editingSection, setEditingSection] = useState<string | null>(null);
 
@@ -194,8 +193,6 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   //   - All other tabs (Contact, Career, Documents, Compensation): only
   //     ADMINS (canAdd/canDelete) or the user themselves (isSelf).
   // VIEW-only or VIEW+EDIT users viewing OTHER employees see ONLY Overview.
-  // Compensation specifically must NOT leak via module-level VIEW fallback,
-  // so we don't reference HRM_COMPENSATION here either.
   const canSeeOverview = true;
   const canSeeContact = isAdmin || isSelf;
   const canSeeCareer = isAdmin || isSelf;
@@ -244,13 +241,19 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   /** Build consolidated tab content */
   const tabItems = PROFILE_TABS.map((tab) => {
     let content: React.ReactNode = null;
+    let hasVisibleContent = false;
 
     switch (tab.key) {
       /* ---- Overview: Basic + Official + Personal ---- */
       case 'overview':
+        // Check if any section in Overview tab is visible
+        hasVisibleContent = permissions.canViewEmployee || 
+                           permissions.canViewOfficialDetails || 
+                           permissions.canViewPersonalDetails;
+        
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection
+            <ProfileSection 
               title="Basic Details"
               sectionKey="basic"
               onEditSection={setEditingSection}
@@ -278,7 +281,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             >
               <BasicDetailsTab ref={basicDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection
+            <ProfileSection 
               title="Official Details"
               sectionKey="official"
               onEditSection={setEditingSection}
@@ -287,10 +290,8 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
-              editObject="employee_official"
-              editPassIf={isAdmin}
               action={
-                <Can I="edit" object="employee_official" passIf={isAdmin}>
+                permissions.canEditOfficialDetails && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -301,12 +302,12 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
                   >
                     Edit
                   </Button>
-                </Can>
+                )
               }
             >
               <OfficialDetailsTab ref={officialDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection
+            <ProfileSection 
               title="Personal Details"
               sectionKey="personal"
               onEditSection={setEditingSection}
@@ -315,10 +316,8 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
-              editObject="employee_personal"
-              editPassIf={isAdmin}
               action={
-                <Can I="edit" object="employee_personal" passIf={isAdmin}>
+                permissions.canEditPersonalDetails && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -329,7 +328,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
                   >
                     Edit
                   </Button>
-                </Can>
+                )
               }
             >
               <PersonalDetailsTab ref={personalDetailsRef} {...tabProps} onEdit={onEdit} />
@@ -340,9 +339,12 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Contact & Family ---- */
       case 'contactFamily':
+        // Check if any section in Contact & Family tab is visible
+        hasVisibleContent = permissions.canViewEmergencyContact;
+        
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection
+            <ProfileSection 
               title="Contact Details"
               sectionKey="contact"
               onEditSection={setEditingSection}
@@ -351,10 +353,8 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
-              editObject="employee_contact"
-              editPassIf={isAdmin || canSelfEdit}
               action={
-                <Can I="edit" object="employee_contact" passIf={isAdmin || canSelfEdit}>
+                permissions.canEditEmergencyContact && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -365,7 +365,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
                   >
                     Edit
                   </Button>
-                </Can>
+                )
               }
             >
               <ContactDetailsTab ref={contactDetailsRef} {...tabProps} onEdit={onEdit} />
@@ -376,54 +376,98 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Career: Skills + Job History + Experience + Education + Training ---- */
       case 'career':
+        // Check if any section in Career tab is visible
+        hasVisibleContent = permissions.canViewEmploymentDetails || 
+                           permissions.canViewExperience || 
+                           permissions.canViewEducation;
+        
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Skills">
-              <SkillsTab {...tabProps} onRefresh={onRefresh} />
-            </ProfileSection>
-            {/* <ProfileSection title="Job History">
-              <JobHistoryTab {...tabProps} />
-            </ProfileSection> */}
-            <ProfileSection title="Previous Experience">
-              <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />
-            </ProfileSection>
-            <ProfileSection title="Education">
-              <EducationTab {...tabProps} onRefresh={onRefresh} />
-            </ProfileSection>
-            <ProfileSection title="Training & Certifications">
-              <TrainingCertTab {...tabProps} />
-            </ProfileSection>
+            {/* Skills - uses employmentDetails object permission */}
+            {permissions.canViewEmploymentDetails && (
+              <ProfileSection title="Skills">
+                <SkillsTab {...tabProps} onRefresh={onRefresh} />
+              </ProfileSection>
+            )}
+            
+            {/* Previous Experience - uses experience object permission */}
+            {permissions.canViewExperience && (
+              <ProfileSection title="Previous Experience">
+                <PreviousExperienceTab {...tabProps} onRefresh={onRefresh} />
+              </ProfileSection>
+            )}
+            
+            {/* Education - uses education object permission */}
+            {permissions.canViewEducation && (
+              <ProfileSection title="Education">
+                <EducationTab {...tabProps} onRefresh={onRefresh} />
+              </ProfileSection>
+            )}
+            
+            {/* Training & Certifications - uses employmentDetails object permission */}
+            {permissions.canViewEmploymentDetails && (
+              <ProfileSection title="Training & Certifications">
+                <TrainingCertTab {...tabProps} />
+              </ProfileSection>
+            )}
           </div>
         );
         break;
 
       /* ---- Documents & Assets ---- */
       case 'documentsAssets':
+        // Check if any section in Documents & Assets tab is visible
+        hasVisibleContent = permissions.canViewDocuments || 
+                           permissions.canViewEmploymentDetails;
+        
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Documents">
-              <DocumentsTab {...tabProps} onRefresh={onRefresh} />
-            </ProfileSection>
-            <ProfileSection title="Assets">
-              <AssetsTab {...tabProps} />
-            </ProfileSection>
+            {/* Documents - uses documents object permission */}
+            {permissions.canViewDocuments && (
+              <ProfileSection title="Documents">
+                <DocumentsTab {...tabProps} onRefresh={onRefresh} />
+              </ProfileSection>
+            )}
+            
+            {/* Assets - uses employmentDetails object permission */}
+            {permissions.canViewEmploymentDetails && (
+              <ProfileSection title="Assets">
+                <AssetsTab {...tabProps} />
+              </ProfileSection>
+            )}
           </div>
         );
         break;
 
       /* ---- Compensation: Remuneration + Leave Summary ---- */
       case 'compensation':
+        // Check if any section in Compensation tab is visible
+        hasVisibleContent = permissions.canViewCompensation || 
+                           permissions.canViewEmploymentDetails;
+        
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection title="Remuneration">
-              <RemunerationTab profile={profile} onRefresh={onRefresh} />
-            </ProfileSection>
-            <ProfileSection title="Leave Summary">
-              <LeaveSummaryTab profile={profile} />
-            </ProfileSection>
+            {/* Remuneration - uses compensation object permission */}
+            {permissions.canViewCompensation && (
+              <ProfileSection title="Remuneration">
+                <RemunerationTab profile={profile} onRefresh={onRefresh} />
+              </ProfileSection>
+            )}
+            
+            {/* Leave Summary - uses employmentDetails object permission */}
+            {permissions.canViewEmploymentDetails && (
+              <ProfileSection title="Leave Summary">
+                <LeaveSummaryTab profile={profile} />
+              </ProfileSection>
+            )}
           </div>
         );
         break;
+    }
+
+    // Only return tab if it has visible content
+    if (!hasVisibleContent) {
+      return null;
     }
 
     return {
@@ -431,12 +475,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       label: tab.label,
       children: content,
     };
-  }).filter(item => visibleTabKeys.has(item.key));
-
-  // If the active tab was hidden by RBAC, fall back to the first visible tab.
-  const safeActiveTab = visibleTabKeys.has(activeTab)
-    ? activeTab
-    : (tabItems[0]?.key as ProfileTabKey | undefined);
+  });
 
   return (
     <div className={styles.profileWrapper}>
@@ -488,9 +527,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
       {/* Tabs */}
       <div className={styles.profileTabsWrapper}>
         <Tabs
-          activeKey={safeActiveTab}
+          activeKey={activeTab}
           onChange={(key) => onTabChange(key as ProfileTabKey)}
-          items={tabItems}
+          items={tabItems.filter(Boolean)}
           size="small"
           tabBarStyle={{ marginBottom: 0 }}
         />

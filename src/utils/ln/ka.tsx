@@ -931,7 +931,97 @@ export const kannadaLanguage = {
   "createPodMaintenance": "ಪ್ರಮಾಣಪತ್ರ ರಚಿಸಿ",
   "reloadWorkList": "ಕಾರ್ಯ ಪಟ್ಟಿ ಮರೆಯಿರಿ",
   "reloadResource": "ಸಂಸ್ಥಾನ ಮರೆಯಿರಿ",
-  "settings": "ಸೆಟಿಂಗ್ಸ್",
+  "nav": {
+    "breadcrumb": {
+      "home": "ಮುಖಪುಟ"
+    },
+    "footer": {
+      "version": "ಆವೃತ್ತಿ 1.0.0",
+      "copyright": "© 2026 RITS Consulting and Technologies Pvt Ltd. ಎಲ್ಲ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.",
+      "helpCenter": "ಸಹಾಯ ಕೇಂದ್ರ"
+    }
+  },
+  "settings": {
+    "_label": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+    "sidebar": {
+      "profile": "ಪ್ರೊಫೈಲ್",
+      "security": "ಭದ್ರತೆ",
+      "notifications": "ಅಧಿಸೂಚನೆಗಳು",
+      "preferences": "ಆದ್ಯತೆಗಳು",
+      "support": "ಸಹಾಯ",
+      "logout": "ಲಾಗ್ ಔಟ್"
+    },
+    "profile": {
+      "title": "ಪ್ರೊಫೈಲ್",
+      "personalInfo": "ವೈಯಕ್ತಿಕ ಮಾಹಿತಿ",
+      "name": "ಪೂರ್ಣ ಹೆಸರು",
+      "phone": "ಫೋನ್",
+      "personalEmail": "ವೈಯಕ್ತಿಕ ಇಮೇಲ್",
+      "contactNumber": "ಸಂಪರ್ಕ ಸಂಖ್ಯೆ",
+      "emergencyContact": "ತುರ್ತು ಸಂಪರ್ಕ",
+      "relationship": "ಸಂಬಂಧ",
+      "uploadPhoto": "ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+      "saveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ"
+    },
+    "security": {
+      "title": "ಭದ್ರತೆ",
+      "changePassword": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ",
+      "currentPassword": "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್",
+      "newPassword": "ಹೊಸ ಪಾಸ್‌ವರ್ಡ್",
+      "confirmPassword": "ಪಾಸ್‌ವರ್ಡ್ ದೃಢೀಕರಿಸಿ",
+      "comingSoon": "ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ",
+      "comingSoonDesc": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾವಣೆ ಭವಿಷ್ಯದ ಬಿಡುಗಡೆಯಲ್ಲಿ ಲಭ್ಯವಿರುತ್ತದೆ.",
+      "sessionInfo": "ಸೆಷನ್ ಮಾಹಿತಿ",
+      "lastLogin": "ಕೊನೆಯ ಲಾಗಿನ್",
+      "loginMethod": "ಲಾಗಿನ್ ವಿಧಾನ"
+    },
+    "notifications": {
+      "title": "ಅಧಿಸೂಚನೆಗಳು",
+      "email": "ಇಮೇಲ್ ಅಧಿಸೂಚನೆಗಳು",
+      "push": "ಪುಷ್ ಅಧಿಸೂಚನೆಗಳು",
+      "savePreferences": "ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸಿ",
+      "salaryCredit": "ವೇತನ ಜಮಾ",
+      "leaveApproval": "ರಜೆ ಅನುಮೋದನೆ",
+      "generalAnnouncements": "ಸಾಮಾನ್ಯ ಪ್ರಕಟಣೆಗಳು",
+      "holidayAlerts": "ರಜಾದಿನ ಎಚ್ಚರಿಕೆಗಳು",
+      "appraisalUpdates": "ಮೌಲ್ಯಮಾಪನ ನವೀಕರಣಗಳು",
+      "payslipAvailable": "ಪೇಸ್ಲಿಪ್ ಲಭ್ಯ",
+      "policyUpdates": "ನೀತಿ ನವೀಕರಣಗಳು",
+      "expenseApproval": "ವೆಚ್ಚ ಅನುಮೋದನೆ",
+      "projectAssignments": "ಪ್ರಾಜೆಕ್ಟ್ ಹಂಚಿಕೆಗಳು",
+      "dnd": "ಡಿಸ್ಟರ್ಬ್ ಮಾಡಬೇಡಿ",
+      "dndStartTime": "ಪ್ರಾರಂಭ ಸಮಯ",
+      "dndEndTime": "ಮುಕ್ತಾಯ ಸಮಯ"
+    },
+    "preferences": {
+      "title": "ಆದ್ಯತೆಗಳು",
+      "language": "ಭಾಷೆ",
+      "theme": "ಥೀಮ್",
+      "darkMode": "ಡಾರ್ಕ್ ಮೋಡ್",
+      "calendarSync": "ಕ್ಯಾಲೆಂಡರ್ ಸಿಂಕ್",
+      "googleCalendar": "Google ಕ್ಯಾಲೆಂಡರ್",
+      "outlookCalendar": "Outlook ಕ್ಯಾಲೆಂಡರ್",
+      "calendarComingSoon": "ಕ್ಯಾಲೆಂಡರ್ ಸಿಂಕ್ ಸಂಯೋಜನೆ ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ."
+    },
+    "support": {
+      "title": "ಸಹಾಯ",
+      "submitTicket": "ಟಿಕೆಟ್ ಸಲ್ಲಿಸಿ",
+      "submit": "ಸಲ್ಲಿಸಿ",
+      "subject": "ವಿಷಯ",
+      "description": "ವಿವರಣೆ",
+      "category": "ವರ್ಗ",
+      "priority": "ಆದ್ಯತೆ",
+      "myTickets": "ನನ್ನ ಟಿಕೆಟ್‌ಗಳು",
+      "noTickets": "ಇದುವರೆಗೂ ಯಾವುದೇ ಟಿಕೆಟ್‌ಗಳನ್ನು ಸಲ್ಲಿಸಲಾಗಿಲ್ಲ.",
+      "quickLinks": "ತ್ವರಿತ ಲಿಂಕ್‌ಗಳು",
+      "privacyPolicy": "ಗೌಪ್ಯತೆ ನೀತಿ",
+      "termsOfService": "ಸೇವಾ ನಿಯಮಗಳು"
+    },
+    "logout": {
+      "title": "ಸೈನ್ ಔಟ್",
+      "confirm": "ನೀವು ಸೈನ್ ಔಟ್ ಮಾಡಲು ಖಚಿತವಾಗಿದ್ದೀರಾ?"
+    }
+  },
   "layout": "ಲೇಆಉಟ್",
   "PCUOrBatchNumberBrowseActivity": "PCU ಅಥವಾ ಬೆಚ್ಚೆ ಸಂಖ್ಯೆ ಬ್ರಾಉಜ್ ಚಟುವಟಿಕೆ",
   "PodWorkListActivity": "ಪ್ರಮಾಣಪತ್ರ ಕಾರ್ಯ ಪಟ್ಟಿ ಚಟುವಟಿಕೆ",

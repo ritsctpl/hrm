@@ -1132,7 +1132,97 @@ export const englishLanguage = {
   "createPodMaintenance": "Create Pod Maintenance",
   "reloadWorkList": "Reload Work List",
   "reloadResource": "Reload Resource",
-  "settings": "Settings",
+  "nav": {
+    "breadcrumb": {
+      "home": "Home"
+    },
+    "footer": {
+      "version": "Version 1.0.0",
+      "copyright": "© 2026 RITS Consulting and Technologies Pvt Ltd. All rights reserved.",
+      "helpCenter": "Help Center"
+    }
+  },
+  "settings": {
+    "_label": "Settings",
+    "sidebar": {
+      "profile": "Profile",
+      "security": "Security",
+      "notifications": "Notifications",
+      "preferences": "Preferences",
+      "support": "Help & Support",
+      "logout": "Logout"
+    },
+    "profile": {
+      "title": "Profile",
+      "personalInfo": "Personal Information",
+      "name": "Full Name",
+      "phone": "Phone",
+      "personalEmail": "Personal Email",
+      "contactNumber": "Contact Number",
+      "emergencyContact": "Emergency Contact",
+      "relationship": "Relationship",
+      "uploadPhoto": "Upload Photo",
+      "saveChanges": "Save Changes"
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "comingSoon": "Coming Soon",
+      "comingSoonDesc": "Password change will be available in a future release.",
+      "sessionInfo": "Session Information",
+      "lastLogin": "Last Login",
+      "loginMethod": "Login Method"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "email": "Email Notifications",
+      "push": "Push Notifications",
+      "savePreferences": "Save Preferences",
+      "salaryCredit": "Salary Credit",
+      "leaveApproval": "Leave Approval",
+      "generalAnnouncements": "General Announcements",
+      "holidayAlerts": "Holiday Alerts",
+      "appraisalUpdates": "Appraisal Updates",
+      "payslipAvailable": "Payslip Available",
+      "policyUpdates": "Policy Updates",
+      "expenseApproval": "Expense Approval",
+      "projectAssignments": "Project Assignments",
+      "dnd": "Do Not Disturb",
+      "dndStartTime": "Start Time",
+      "dndEndTime": "End Time"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "language": "Language",
+      "theme": "Theme",
+      "darkMode": "Dark Mode",
+      "calendarSync": "Calendar Sync",
+      "googleCalendar": "Google Calendar",
+      "outlookCalendar": "Outlook Calendar",
+      "calendarComingSoon": "Calendar sync integration coming soon."
+    },
+    "support": {
+      "title": "Help & Support",
+      "submitTicket": "Submit a Ticket",
+      "submit": "Submit",
+      "subject": "Subject",
+      "description": "Description",
+      "category": "Category",
+      "priority": "Priority",
+      "myTickets": "My Tickets",
+      "noTickets": "No tickets submitted yet.",
+      "quickLinks": "Quick Links",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service"
+    },
+    "logout": {
+      "title": "Sign Out",
+      "confirm": "Are you sure you want to sign out?"
+    }
+  },
   "layout": "Layout",
   "PCUOrBatchNumberBrowseActivity": "PCU Or Batch Number Browse Activity",
   "PodWorkListActivity": "Pod Work List Activity",

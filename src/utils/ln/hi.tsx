@@ -923,7 +923,97 @@ export const hindiLanguage = {
   "createPodMaintenance": "पीओडी रखरखाव बनाएं",
   "reloadWorkList": "कार्य सूची फिर से लोड करें",
   "reloadResource": "संसाधन फिर से लोड करें",
-  "settings": "सेटिंग्स",
+  "nav": {
+    "breadcrumb": {
+      "home": "होम"
+    },
+    "footer": {
+      "version": "संस्करण 1.0.0",
+      "copyright": "© 2026 RITS Consulting and Technologies Pvt Ltd. सर्वाधिकार सुरक्षित।",
+      "helpCenter": "सहायता केंद्र"
+    }
+  },
+  "settings": {
+    "_label": "सेटिंग्स",
+    "sidebar": {
+      "profile": "प्रोफ़ाइल",
+      "security": "सुरक्षा",
+      "notifications": "सूचनाएं",
+      "preferences": "प्राथमिकताएं",
+      "support": "सहायता",
+      "logout": "लॉग आउट"
+    },
+    "profile": {
+      "title": "प्रोफ़ाइल",
+      "personalInfo": "व्यक्तिगत जानकारी",
+      "name": "पूरा नाम",
+      "phone": "फ़ोन",
+      "personalEmail": "व्यक्तिगत ईमेल",
+      "contactNumber": "संपर्क संख्या",
+      "emergencyContact": "आपातकालीन संपर्क",
+      "relationship": "रिश्ता",
+      "uploadPhoto": "फ़ोटो अपलोड करें",
+      "saveChanges": "बदलाव सहेजें"
+    },
+    "security": {
+      "title": "सुरक्षा",
+      "changePassword": "पासवर्ड बदलें",
+      "currentPassword": "वर्तमान पासवर्ड",
+      "newPassword": "नया पासवर्ड",
+      "confirmPassword": "पासवर्ड की पुष्टि करें",
+      "comingSoon": "जल्द आ रहा है",
+      "comingSoonDesc": "पासवर्ड परिवर्तन भविष्य के रिलीज़ में उपलब्ध होगा।",
+      "sessionInfo": "सत्र जानकारी",
+      "lastLogin": "अंतिम लॉगिन",
+      "loginMethod": "लॉगिन विधि"
+    },
+    "notifications": {
+      "title": "सूचनाएं",
+      "email": "ईमेल सूचनाएं",
+      "push": "पुश सूचनाएं",
+      "savePreferences": "प्राथमिकताएं सहेजें",
+      "salaryCredit": "वेतन क्रेडिट",
+      "leaveApproval": "अवकाश अनुमोदन",
+      "generalAnnouncements": "सामान्य घोषणाएं",
+      "holidayAlerts": "अवकाश अलर्ट",
+      "appraisalUpdates": "मूल्यांकन अपडेट",
+      "payslipAvailable": "पे-स्लिप उपलब्ध",
+      "policyUpdates": "नीति अपडेट",
+      "expenseApproval": "व्यय अनुमोदन",
+      "projectAssignments": "प्रोजेक्ट असाइनमेंट",
+      "dnd": "परेशान न करें",
+      "dndStartTime": "प्रारंभ समय",
+      "dndEndTime": "समाप्ति समय"
+    },
+    "preferences": {
+      "title": "प्राथमिकताएं",
+      "language": "भाषा",
+      "theme": "थीम",
+      "darkMode": "डार्क मोड",
+      "calendarSync": "कैलेंडर सिंक",
+      "googleCalendar": "Google कैलेंडर",
+      "outlookCalendar": "Outlook कैलेंडर",
+      "calendarComingSoon": "कैलेंडर सिंक एकीकरण जल्द आ रहा है।"
+    },
+    "support": {
+      "title": "सहायता",
+      "submitTicket": "टिकट सबमिट करें",
+      "submit": "सबमिट करें",
+      "subject": "विषय",
+      "description": "विवरण",
+      "category": "श्रेणी",
+      "priority": "प्राथमिकता",
+      "myTickets": "मेरे टिकट",
+      "noTickets": "अभी तक कोई टिकट सबमिट नहीं किया गया।",
+      "quickLinks": "त्वरित लिंक",
+      "privacyPolicy": "गोपनीयता नीति",
+      "termsOfService": "सेवा की शर्तें"
+    },
+    "logout": {
+      "title": "साइन आउट",
+      "confirm": "क्या आप वाकई साइन आउट करना चाहते हैं?"
+    }
+  },
   "layout": "लेआउट",
   "PCUOrBatchNumberBrowseActivity": "पीसीयू या बैच नंबर ब्राउज गतिविधि",
   "PodWorkListActivity": "पीओडी कार्य सूची गतिविधि",

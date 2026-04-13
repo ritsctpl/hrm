@@ -945,7 +945,97 @@ export const tamilLanguage = {
   "createPodMaintenance": "பொருள் பதிப்பு பராமரிப்பு உருவாக்கு",
   "reloadWorkList": "வேலை பட்டியலை மீள்விசை",
   "reloadResource": "மேலதிக வரையறை",
-  "settings": "அமைப்புகள்",
+  "nav": {
+    "breadcrumb": {
+      "home": "முகப்பு"
+    },
+    "footer": {
+      "version": "பதிப்பு 1.0.0",
+      "copyright": "© 2026 RITS Consulting and Technologies Pvt Ltd. அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை.",
+      "helpCenter": "உதவி மையம்"
+    }
+  },
+  "settings": {
+    "_label": "அமைப்புகள்",
+    "sidebar": {
+      "profile": "சுயவிவரம்",
+      "security": "பாதுகாப்பு",
+      "notifications": "அறிவிப்புகள்",
+      "preferences": "விருப்பங்கள்",
+      "support": "உதவி",
+      "logout": "வெளியேறு"
+    },
+    "profile": {
+      "title": "சுயவிவரம்",
+      "personalInfo": "தனிப்பட்ட தகவல்",
+      "name": "முழு பெயர்",
+      "phone": "தொலைபேசி",
+      "personalEmail": "தனிப்பட்ட மின்னஞ்சல்",
+      "contactNumber": "தொடர்பு எண்",
+      "emergencyContact": "அவசர தொடர்பு",
+      "relationship": "உறவு",
+      "uploadPhoto": "புகைப்படத்தை பதிவேற்று",
+      "saveChanges": "மாற்றங்களை சேமி"
+    },
+    "security": {
+      "title": "பாதுகாப்பு",
+      "changePassword": "கடவுச்சொல் மாற்று",
+      "currentPassword": "தற்போதைய கடவுச்சொல்",
+      "newPassword": "புதிய கடவுச்சொல்",
+      "confirmPassword": "கடவுச்சொல்லை உறுதிப்படுத்து",
+      "comingSoon": "விரைவில் வரும்",
+      "comingSoonDesc": "கடவுச்சொல் மாற்றம் எதிர்கால வெளியீட்டில் கிடைக்கும்.",
+      "sessionInfo": "அமர்வு தகவல்",
+      "lastLogin": "கடைசி உள்நுழைவு",
+      "loginMethod": "உள்நுழைவு முறை"
+    },
+    "notifications": {
+      "title": "அறிவிப்புகள்",
+      "email": "மின்னஞ்சல் அறிவிப்புகள்",
+      "push": "புஷ் அறிவிப்புகள்",
+      "savePreferences": "விருப்பங்களை சேமி",
+      "salaryCredit": "சம்பளம் வரவு",
+      "leaveApproval": "விடுப்பு ஒப்புதல்",
+      "generalAnnouncements": "பொது அறிவிப்புகள்",
+      "holidayAlerts": "விடுமுறை எச்சரிக்கைகள்",
+      "appraisalUpdates": "மதிப்பீட்டு புதுப்பிப்புகள்",
+      "payslipAvailable": "சம்பள ரசீது கிடைக்கிறது",
+      "policyUpdates": "கொள்கை புதுப்பிப்புகள்",
+      "expenseApproval": "செலவு ஒப்புதல்",
+      "projectAssignments": "திட்ட ஒதுக்கீடுகள்",
+      "dnd": "தொந்தரவு செய்ய வேண்டாம்",
+      "dndStartTime": "தொடக்க நேரம்",
+      "dndEndTime": "முடிவு நேரம்"
+    },
+    "preferences": {
+      "title": "விருப்பங்கள்",
+      "language": "மொழி",
+      "theme": "தீம்",
+      "darkMode": "டார்க் மோடு",
+      "calendarSync": "காலண்டர் ஒத்திசைவு",
+      "googleCalendar": "Google காலண்டர்",
+      "outlookCalendar": "Outlook காலண்டர்",
+      "calendarComingSoon": "காலண்டர் ஒத்திசைவு ஒருங்கிணைப்பு விரைவில் வரும்."
+    },
+    "support": {
+      "title": "உதவி",
+      "submitTicket": "டிக்கெட்டை சமர்ப்பி",
+      "submit": "சமர்ப்பி",
+      "subject": "தலைப்பு",
+      "description": "விளக்கம்",
+      "category": "வகை",
+      "priority": "முன்னுரிமை",
+      "myTickets": "எனது டிக்கெட்டுகள்",
+      "noTickets": "இதுவரை எந்த டிக்கெட்டும் சமர்ப்பிக்கப்படவில்லை.",
+      "quickLinks": "விரைவு இணைப்புகள்",
+      "privacyPolicy": "தனியுரிமை கொள்கை",
+      "termsOfService": "சேவை விதிமுறைகள்"
+    },
+    "logout": {
+      "title": "வெளியேறு",
+      "confirm": "நீங்கள் வெளியேற விரும்புகிறீர்களா?"
+    }
+  },
   "layout": "வரிசை",
   "PCUOrBatchNumberBrowseActivity": "பொருள் பதிப்பு அல்லது பெச்செட் எண் பராமரிப்பு",
   "PodWorkListActivity": "பொருள் பதிப்பு வேலை பட்டியல்",

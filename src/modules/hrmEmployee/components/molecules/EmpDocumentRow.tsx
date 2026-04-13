@@ -14,7 +14,6 @@ import {
   WarningOutlined,
 } from '@ant-design/icons';
 import { formatDate, isExpiringSoon, isExpired } from '../../utils/transformations';
-import Can from '../../../hrmAccess/components/Can';
 import type { EmpDocumentRowProps } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
@@ -27,6 +26,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
   onView,
   onDownload,
   onDelete,
+  canDelete = false,
 }) => {
   const expired = isExpired(expiryDate);
   const expiringSoon = !expired && isExpiringSoon(expiryDate);
@@ -75,7 +75,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
             onClick={() => onDownload(docId)}
           />
         </Tooltip>
-        <Can I="delete" object="employee_document">
+        {canDelete && (
           <Tooltip title="Delete">
             <Button
               type="text"
@@ -85,7 +85,7 @@ const EmpDocumentRow: React.FC<EmpDocumentRowProps> = ({
               onClick={() => onDelete(docId)}
             />
           </Tooltip>
-        </Can>
+        )}
       </div>
     </div>
   );

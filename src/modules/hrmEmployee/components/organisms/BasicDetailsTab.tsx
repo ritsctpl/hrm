@@ -11,6 +11,7 @@ import type { UploadFile } from 'antd';
 import EmpAvatar from '../atoms/EmpAvatar';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
+import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import Can from '../../../hrmAccess/components/Can';
 import { useCan } from '../../../hrmAccess/hooks/useCan';
 import { useIsSelf } from '../../../hrmAccess/hooks/useIsSelf';
@@ -40,6 +41,9 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
   const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
   const canSelfEdit = isSelf && modulePerms.canEdit;
   const canEditBasic = isAdmin || canSelfEdit;
+  // Keep the legacy hook around so any other consumers continue to work.
+  const permissions = useEmployeePermissions();
+  void permissions;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);

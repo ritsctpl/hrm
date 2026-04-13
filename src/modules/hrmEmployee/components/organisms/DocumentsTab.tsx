@@ -10,7 +10,7 @@ import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import EmpDocumentRow from '../molecules/EmpDocumentRow';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
-import Can from '../../../hrmAccess/components/Can';
+import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import { DOCUMENT_TYPE_OPTIONS } from '../../utils/constants';
 import type { ProfileTabProps } from '../../types/ui.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -20,6 +20,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   onRefresh,
 }) => {
   const { documents } = profile;
+  const permissions = useEmployeePermissions();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -214,7 +215,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Documents</h3>
-        <Can I="add" object="employee_document">
+        {permissions.canAddDocuments && (
           <Button
             type="primary"
             size="small"
@@ -230,7 +231,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
           >
             Upload Document
           </Button>
-        </Can>
+        )}
       </div>
 
       {documents.length === 0 ? (
@@ -247,6 +248,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             onView={handleView}
             onDownload={handleDownload}
             onDelete={handleDelete}
+            canDelete={permissions.canDeleteDocuments}
           />
         ))
       )}

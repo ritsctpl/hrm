@@ -33,7 +33,6 @@ import ritsLogo from "../images1/rits-logo.png";
 import himalayaLogo from "../images/image1.png"; // Add this import
 import exideLogo from "../images/EXIDE-logo.png"; // Add this import
 import LoadingWrapper from "./LoadingWrapper";
-import { Building2, LogOut } from "lucide-react";
 import { CiSearch } from "react-icons/ci";
 import { useTheme as useAppTheme } from "./ThemeContext";
 const { Option } = Select;
@@ -289,12 +288,22 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   };
  
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    // debugger
     setAnchorEl(event.currentTarget);
   };
- 
+
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleSettingsClick = () => {
+    setAnchorEl(null);
+    router.push('/rits/hrm_settings_app');
+  };
+
+  const handleLogoutClick = () => {
+    setAnchorEl(null);
+    destroyCookie(null, 'rl_user_id', { path: '/' });
+    logout();
   };
  
   const handleSiteChange = async (newSite: string) => {
@@ -418,17 +427,16 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                 variant="body2"
                 title={orgDisplayName}
                 style={{
-                  marginLeft: 12,
-                  padding: "2px 10px",
-                  borderRadius: 12,
-                  background: "rgba(24,144,255,0.10)",
-                  color: "#1890ff",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  marginLeft: 16,
+                  padding: "4px 14px",
+                  borderRadius: 14,
+                  background: "var(--button-color, #1890ff)",
+                  color: "#ffffff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: 0.3,
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  maxWidth: 240,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
                 }}
               >
                 {orgDisplayName}
@@ -479,34 +487,6 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
             </Box>
  
             <Box className={styles.userInfo}>
-              <IconButton
-                color="inherit"
-                onClick={handleMenuOpen}
-                className={styles.iconButton}
-                title={site || ""}
-              >
-                <Building2 size={18} style={{ color: "var(--text-color)" }} />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                PaperProps={{
-                  style: {
-                    maxHeight: 200,
-                    width: "20ch",
-                  },
-                }}
-              >
-                {availableSites?.map((siteOption, index) => (
-                  <MenuItem
-                    key={index}
-                    onClick={() => handleSiteChange(siteOption)}
-                  >
-                    {siteOption}
-                  </MenuItem>
-                ))}
-              </Menu>
               <div>
                 <Select
                   defaultValue={currentLanguage}
@@ -519,22 +499,12 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                   <Option value="hi">हिंदी</Option>
                 </Select>
               </div>
-              <IconButton
-                color="inherit"
-                onClick={() => {
-                  destroyCookie(null, 'rl_user_id', { path: '/' });
-                  logout();
-                }}
-                title={t("logout")}
-                sx={{ color: "var(--text-color)" }}
-              >
-                <LogOut size={18} />
-              </IconButton>
               {userAvatarSrc ? (
                 <img
                   src={userAvatarSrc}
                   alt={currentEmployee?.fullName || username || ''}
                   title={`${currentEmployee?.fullName || username || ''} | ${orgDisplayName}`}
+                  onClick={handleMenuOpen}
                   className={styles.avatar}
                   style={{
                     width: 32,
@@ -542,16 +512,34 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
                     borderRadius: '50%',
                     objectFit: 'cover',
                     border: '1px solid var(--line-color)',
+                    cursor: 'pointer',
                   }}
                 />
               ) : (
                 <div
                   className={styles.avatar}
+                  onClick={handleMenuOpen}
                   title={`${currentEmployee?.fullName || username || ''} | ${orgDisplayName}`}
+                  style={{ cursor: 'pointer' }}
                 >
                   {(currentEmployee?.fullName || username || '?').charAt(0).toUpperCase()}
                 </div>
               )}
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ style: { minWidth: 160 } }}
+              >
+                <MenuItem onClick={handleSettingsClick}>
+                  {t('settings._label') || 'Settings'}
+                </MenuItem>
+                <MenuItem onClick={handleLogoutClick}>
+                  {t('logout') || 'Logout'}
+                </MenuItem>
+              </Menu>
             </Box>
           </Toolbar>
         </AppBar>

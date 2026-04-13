@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useEmployeeDirectory } from './hooks/useHrmEmployeeData';
 import EmployeeDirectoryTemplate from './components/templates/EmployeeDirectoryTemplate';
@@ -14,6 +14,7 @@ import FieldSchemaConfigPanel from './components/organisms/FieldSchemaConfigPane
 import EmployeeExportPanel from './components/organisms/EmployeeExportPanel';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useHrmRbacStore } from '../hrmAccess/stores/hrmRbacStore';
 import type { DirectoryFilters } from './types/ui.types';
 
 interface HrmEmployeeLandingProps {
@@ -49,6 +50,16 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   const [exportOpen, setExportOpen] = useState(false);
 
   const perms = useCan('HRM_EMPLOYEE');
+
+  // Load section-level permissions on mount
+  const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
+  const isReady = useHrmRbacStore(s => s.isReady);
+
+  useEffect(() => {
+    if (isReady) {
+      loadSectionPermissions('HRM_EMPLOYEE');
+    }
+  }, [isReady, loadSectionPermissions]);
 
   // Derive unique departments from data for filter dropdowns
   const departments = useMemo(
