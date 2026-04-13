@@ -6,7 +6,6 @@ import type { ColumnsType } from 'antd/es/table';
 import { MdDelete } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
-import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { BusinessUnit } from '../../types/domain.types';
@@ -62,47 +61,45 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
   );
 
   const columns: ColumnsType<BusinessUnit> = useMemo(
-    () => [
-      {
-        title: 'BU Code',
-        dataIndex: 'buCode',
-        key: 'buCode',
-        sorter: (a, b) => a.buCode.localeCompare(b.buCode),
-      },
-      {
-        title: 'BU Name',
-        dataIndex: 'buName',
-        key: 'buName',
-        ellipsis: true,
-        sorter: (a, b) => a.buName.localeCompare(b.buName),
-      },
-      {
-        title: 'Department Count',
-        dataIndex: 'departmentCount',
-        key: 'departmentCount',
-      },
-      {
-        title: 'Primary Contact',
-        dataIndex: 'primaryContact',
-        key: 'primaryContact',
-        ellipsis: true,
-      },
-      {
-        title: 'State',
-        dataIndex: 'state',
-        key: 'state',
-      },
-      // {
-      //   title: 'Status',
-      //   dataIndex: 'active',
-      //   key: 'active',
-      //   render: (active: number) => <OrgStatusTag active={active} />,
-      // },
-      {
-        title: 'Action',
-        key: 'actions',
-        render: (_: unknown, record: BusinessUnit) => (
-          <Can I="delete">
+    () => {
+      const baseColumns: ColumnsType<BusinessUnit> = [
+        {
+          title: 'BU Code',
+          dataIndex: 'buCode',
+          key: 'buCode',
+          sorter: (a, b) => a.buCode.localeCompare(b.buCode),
+        },
+        {
+          title: 'BU Name',
+          dataIndex: 'buName',
+          key: 'buName',
+          ellipsis: true,
+          sorter: (a, b) => a.buName.localeCompare(b.buName),
+        },
+        {
+          title: 'Department Count',
+          dataIndex: 'departmentCount',
+          key: 'departmentCount',
+        },
+        {
+          title: 'Primary Contact',
+          dataIndex: 'primaryContact',
+          key: 'primaryContact',
+          ellipsis: true,
+        },
+        {
+          title: 'State',
+          dataIndex: 'state',
+          key: 'state',
+        },
+      ];
+
+      // Only add Action column if user has DELETE permission
+      if (permissions.canDeleteBusinessUnit) {
+        baseColumns.push({
+          title: 'Action',
+          key: 'actions',
+          render: (_: unknown, record: BusinessUnit) => (
             <Popconfirm
               title="Delete Business Unit"
               description="Are you sure you want to delete this business unit?"
@@ -121,11 +118,13 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
                 />
               </Tooltip>
             </Popconfirm>
-          </Can>
-        ),
-      },
-    ],
-    [handleDelete]
+          ),
+        });
+      }
+
+      return baseColumns;
+    },
+    [handleDelete, permissions.canDeleteBusinessUnit]
   );
 
   if (isLoading) {
@@ -149,11 +148,11 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
             placeholder="Search by code, name, or type..."
           />
         </div>
-        <Can I="add">
+        {permissions.canAddBusinessUnit && (
           <Button type="primary" onClick={onAdd}>
             +
           </Button>
-        </Can>
+        )}
       </div>
 
       <Table<BusinessUnit>
