@@ -5,9 +5,8 @@
 
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Tooltip, message, Spin } from 'antd';
+import React, { useMemo } from 'react';
+import { Button, Tooltip, Spin } from 'antd';
 import {
   AppstoreOutlined,
   BarsOutlined,
@@ -89,12 +88,10 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
   canEdit = true,
   canDelete = true,
 }) => {
-  // Get object-level permissions
+  // Per-object permissions (now uses module-level fallback when the
+  // backend hasn't published per-object grants — see useEmployeePermissions).
   const permissions = useEmployeePermissions();
   const isReady = useHrmRbacStore(s => s.isReady);
-  const sectionPerms = useHrmRbacStore(s => s.getSectionPermissions('HRM_EMPLOYEE'));
-  const router = useRouter();
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const activeCount = useMemo(
     () => employees.filter((e) => e.status === 'ACTIVE').length,
@@ -105,17 +102,11 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
     [employees]
   );
 
-  // Redirect to home page if no VIEW permission (only after permissions are loaded)
-  useEffect(() => {
-    if (isReady && sectionPerms && !permissions.canViewEmployee) {
-      setIsRedirecting(true);
-      message.warning('You don\'t have permission to access the Employee Directory');
-      router.push('/');
-    }
-  }, [isReady, sectionPerms, permissions.canViewEmployee, router]);
-
-  // Show loading spinner while permissions are loading or redirecting
-  if (!isReady || !sectionPerms || isRedirecting) {
+  // Access control is handled upstream by <ModuleAccessGate moduleCode="HRM_EMPLOYEE">
+  // wrapping HrmEmployeeLanding. That gate is the single source of truth
+  // for module-level VIEW; reaching this template means the user passed it.
+  // Wait for RBAC to finish initializing before rendering the directory.
+  if (!isReady) {
     return (
       <div
         style={{
@@ -128,30 +119,7 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
         }}
       >
         <Spin size="large" />
-        <div style={{ color: '#64748b', fontSize: 14 }}>
-          {isRedirecting ? "Redirecting..." : "Loading..."}
-        </div>
-      </div>
-    );
-  }
-
-  // After permissions are loaded, check access
-  if (!permissions.canViewEmployee) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 400,
-          gap: 16,
-        }}
-      >
-        <Spin size="large" />
-        <div style={{ color: '#64748b', fontSize: 14 }}>
-          Redirecting...
-        </div>
+        <div style={{ color: '#64748b', fontSize: 14 }}>Loading...</div>
       </div>
     );
   }

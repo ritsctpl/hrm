@@ -4,7 +4,7 @@ import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 /**
  * Hook to manage Employee module permissions
  * Loads and provides access to all 12 object permissions (48 total flags)
- * 
+ *
  * Objects:
  * 1. employee - Employee master record (directory access)
  * 2. personalDetails - Name, DOB, gender, marital status
@@ -18,10 +18,19 @@ import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
  * 10. education - Educational qualifications
  * 11. experience - Work experience history
  * 12. reportingStructure - Reporting manager, hierarchy
+ *
+ * Fallback semantics:
+ *   - If the backend has published per-object grants (sectionPerms is non-empty),
+ *     each object check is strict — missing object means no permission.
+ *   - If the backend has NOT published per-object grants (sectionPerms is empty
+ *     or null), every check falls back to the module-level grant. This keeps
+ *     existing module-level admins working until the backend exposes per-object
+ *     RBAC for HRM_EMPLOYEE.
  */
 export const useEmployeePermissions = () => {
   const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
   const sectionPerms = useHrmRbacStore(s => s.getSectionPermissions('HRM_EMPLOYEE'));
+  const moduleLevelPerms = useHrmRbacStore(s => s.permissionsByModule['HRM_EMPLOYEE']);
   const isReady = useHrmRbacStore(s => s.isReady);
 
   // Load permissions on mount
@@ -33,19 +42,47 @@ export const useEmployeePermissions = () => {
 
   // Memoize permissions to avoid recalculation
   const permissions = useMemo(() => {
-    // Extract object permissions
-    const employeePerms = sectionPerms?.['employee'];
-    const personalDetailsPerms = sectionPerms?.['personalDetails'];
-    const officialDetailsPerms = sectionPerms?.['officialDetails'];
-    const employmentDetailsPerms = sectionPerms?.['employmentDetails'];
-    const compensationPerms = sectionPerms?.['compensation'];
-    const bankDetailsPerms = sectionPerms?.['bankDetails'];
-    const documentsPerms = sectionPerms?.['documents'];
-    const emergencyContactPerms = sectionPerms?.['emergencyContact'];
-    const familyDetailsPerms = sectionPerms?.['familyDetails'];
-    const educationPerms = sectionPerms?.['education'];
-    const experiencePerms = sectionPerms?.['experience'];
-    const reportingStructurePerms = sectionPerms?.['reportingStructure'];
+    const moduleFallback = {
+      canView: moduleLevelPerms?.canView ?? false,
+      canAdd: moduleLevelPerms?.canAdd ?? false,
+      canEdit: moduleLevelPerms?.canEdit ?? false,
+      canDelete: moduleLevelPerms?.canDelete ?? false,
+    };
+
+    // Per-object resolver:
+    //   - If the backend has explicitly returned grants for this object name
+    //     (whether allow or deny), use them as-is.
+    //   - Otherwise fall back to the module-level grant. This keeps existing
+    //     module-wide admins working while the backend incrementally rolls
+    //     out per-object permissions for HRM_EMPLOYEE.
+    //
+    // Note: this hook intentionally uses Karthick's object-name vocabulary
+    // (`employee`, `personalDetails`, `compensation`, …). The codebase ALSO
+    // has a parallel <Can object="employee_record" …> system using the
+    // hrmEmployeeSectionMap names. Both live side-by-side until a single
+    // source of truth is consolidated — see TODO below.
+    //
+    // TODO(rbac-consolidation): Pick ONE pattern (either useCan + <Can> with
+    // hrmEmployeeSectionMap, or this hook with Karthick's names) and migrate
+    // the rest of the Employee module to it. The dual system is brittle.
+    const resolveObject = (objectName: string) => {
+      const explicit = sectionPerms?.[objectName];
+      if (explicit) return explicit;
+      return moduleFallback;
+    };
+
+    const employeePerms = resolveObject('employee');
+    const personalDetailsPerms = resolveObject('personalDetails');
+    const officialDetailsPerms = resolveObject('officialDetails');
+    const employmentDetailsPerms = resolveObject('employmentDetails');
+    const compensationPerms = resolveObject('compensation');
+    const bankDetailsPerms = resolveObject('bankDetails');
+    const documentsPerms = resolveObject('documents');
+    const emergencyContactPerms = resolveObject('emergencyContact');
+    const familyDetailsPerms = resolveObject('familyDetails');
+    const educationPerms = resolveObject('education');
+    const experiencePerms = resolveObject('experience');
+    const reportingStructurePerms = resolveObject('reportingStructure');
 
     return {
       // Employee (Directory) permissions

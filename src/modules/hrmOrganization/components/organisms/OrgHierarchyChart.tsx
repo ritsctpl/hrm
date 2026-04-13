@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Spin, Empty, Button, Tag, Tooltip } from 'antd';
+import { parseCookies } from 'nookies';
+import { Spin, Empty, Button, Tag, Tooltip, Avatar } from 'antd';
 import {
   ApartmentOutlined,
   BankOutlined,
@@ -10,17 +11,72 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
   FullscreenOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import { HrmEmployeeService } from '../../../hrmEmployee/services/hrmEmployeeService';
+import type { EmployeeDirectoryRow } from '../../../hrmEmployee/types/api.types';
 import type { OrgHierarchy, DepartmentNode } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import styles from '../../styles/OrgChart.module.css';
 
 /* ------------------------------------------------------------------ */
-/*  Dept card — recursive                                              */
+/*  Employee leaf card                                                 */
 /* ------------------------------------------------------------------ */
-const DeptCard: React.FC<{ dept: DepartmentNode; depth: number }> = ({ dept, depth }) => {
-  const hasChildren = dept.children && dept.children.length > 0;
+const EmployeeCard: React.FC<{ emp: EmployeeDirectoryRow }> = ({ emp }) => {
+  const photo = emp.photoUrl;
+  return (
+    <li className={styles.chartNode}>
+      <Tooltip
+        title={
+          <div>
+            <div style={{ fontWeight: 600 }}>{emp.fullName}</div>
+            {emp.role && <div>{emp.role}</div>}
+            <div style={{ opacity: 0.7, fontSize: 11 }}>{emp.workEmail}</div>
+          </div>
+        }
+      >
+        <div className={`${styles.chartCard} ${styles.employeeCard}`}>
+          {photo ? (
+            <Avatar src={photo} size={28} className={styles.cardIcon} />
+          ) : (
+            <Avatar size={28} className={styles.cardIcon} icon={<UserOutlined />} />
+          )}
+          <div className={styles.cardContent}>
+            <div className={styles.cardName}>{emp.fullName}</div>
+            <div className={styles.cardCode}>{emp.role || emp.employeeCode}</div>
+          </div>
+        </div>
+      </Tooltip>
+    </li>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Dept card — recursive (now also renders employees)                 */
+/* ------------------------------------------------------------------ */
+const DeptCard: React.FC<{
+  dept: DepartmentNode;
+  depth: number;
+  employeesByDept: Record<string, EmployeeDirectoryRow[]>;
+}> = ({ dept, depth, employeesByDept }) => {
+  const childDepts = dept.children || [];
+  // Match employees by both deptName and deptCode (case-insensitive) — backend
+  // and frontend may use different identifiers, so check both keys.
+  const deptEmployees = useMemo(() => {
+    const byName = employeesByDept[(dept.deptName || '').toLowerCase().trim()] || [];
+    const byCode = employeesByDept[(dept.deptCode || '').toLowerCase().trim()] || [];
+    // De-duplicate by handle in case both keys overlap.
+    const seen = new Set<string>();
+    return [...byName, ...byCode].filter((e) => {
+      if (seen.has(e.handle)) return false;
+      seen.add(e.handle);
+      return true;
+    });
+  }, [employeesByDept, dept.deptName, dept.deptCode]);
+
+  const totalChildren = childDepts.length + deptEmployees.length;
+  const hasChildren = totalChildren > 0;
   const [collapsed, setCollapsed] = useState(depth > 2);
 
   return (
@@ -34,11 +90,18 @@ const DeptCard: React.FC<{ dept: DepartmentNode; depth: number }> = ({ dept, dep
           <TeamOutlined className={styles.cardIcon} style={{ color: '#722ed1' }} />
           <div className={styles.cardContent}>
             <div className={styles.cardName}>{dept.deptName}</div>
-            <div className={styles.cardCode}>{dept.deptCode}</div>
+            <div className={styles.cardCode}>
+              {dept.deptCode}
+              {deptEmployees.length > 0 && (
+                <span style={{ marginLeft: 6, color: '#1890ff' }}>
+                  · {deptEmployees.length} {deptEmployees.length === 1 ? 'member' : 'members'}
+                </span>
+              )}
+            </div>
           </div>
           {hasChildren && (
             <span className={styles.childCount}>
-              {collapsed ? `+${dept.children!.length}` : '−'}
+              {collapsed ? `+${totalChildren}` : '−'}
             </span>
           )}
         </div>
@@ -46,8 +109,16 @@ const DeptCard: React.FC<{ dept: DepartmentNode; depth: number }> = ({ dept, dep
 
       {hasChildren && !collapsed && (
         <ul className={styles.chartChildren}>
-          {dept.children!.map((child) => (
-            <DeptCard key={child.handle} dept={child} depth={depth + 1} />
+          {childDepts.map((child) => (
+            <DeptCard
+              key={child.handle}
+              dept={child}
+              depth={depth + 1}
+              employeesByDept={employeesByDept}
+            />
+          ))}
+          {deptEmployees.map((emp) => (
+            <EmployeeCard key={emp.handle} emp={emp} />
           ))}
         </ul>
       )}
@@ -63,10 +134,46 @@ const OrgHierarchyChart: React.FC = () => {
   const { data, isLoading } = hierarchy;
 
   const [zoom, setZoom] = useState(1);
+  const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
 
   useEffect(() => {
     fetchHierarchy();
   }, [fetchHierarchy]);
+
+  // Fetch all employees once for grouping under departments. Uses the
+  // standard directory endpoint with no filters; the API caps results
+  // server-side, so this stays cheap.
+  useEffect(() => {
+    const cookies = parseCookies();
+    const site = cookies.site || '';
+    if (!site) return;
+    let cancelled = false;
+    HrmEmployeeService.fetchDirectory({ site, page: 0, size: 500 })
+      .then((res) => {
+        if (cancelled) return;
+        setEmployees((res?.employees || []) as EmployeeDirectoryRow[]);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setEmployees([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Group employees by department. Key on lowercased trimmed name AND code
+  // since the dept might be referenced either way.
+  const employeesByDept = useMemo(() => {
+    const map: Record<string, EmployeeDirectoryRow[]> = {};
+    for (const emp of employees) {
+      const key = (emp.department || '').toLowerCase().trim();
+      if (!key) continue;
+      if (!map[key]) map[key] = [];
+      map[key].push(emp);
+    }
+    return map;
+  }, [employees]);
 
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.15, 1.8));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.4));
@@ -106,6 +213,7 @@ const OrgHierarchyChart: React.FC = () => {
           <span className={styles.toolbarTitle}>Organization Hierarchy</span>
           <Tag color="blue">{totalBUs} BUs</Tag>
           <Tag color="purple">{totalDepts} Depts</Tag>
+          <Tag color="cyan">{employees.length} Employees</Tag>
         </div>
         <div className={styles.toolbarActions}>
           <Button size="small" icon={<ZoomOutOutlined />} onClick={handleZoomOut} disabled={zoom <= 0.4} />
@@ -156,7 +264,12 @@ const OrgHierarchyChart: React.FC = () => {
                         {depts.length > 0 && (
                           <ul className={styles.chartChildren}>
                             {depts.map((dept) => (
-                              <DeptCard key={dept.handle} dept={dept} depth={1} />
+                              <DeptCard
+                                key={dept.handle}
+                                dept={dept}
+                                depth={1}
+                                employeesByDept={employeesByDept}
+                              />
                             ))}
                           </ul>
                         )}
