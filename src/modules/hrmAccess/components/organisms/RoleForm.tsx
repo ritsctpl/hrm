@@ -97,11 +97,11 @@ const RoleForm: React.FC<RoleFormProps> = ({
           <Form.Item label="Status">
             <Space>
               <Switch
-                checked={draft?.isActive ?? false}
+                checked={draft?.isActive ?? true}
                 onChange={onToggleStatus}
                 disabled={isSystemRole}
               />
-              <Text>{draft?.isActive ? 'Active' : 'Inactive'}</Text>
+              <Text>{(draft?.isActive ?? true) ? 'Active' : 'Inactive'}</Text>
             </Space>
           </Form.Item>
         </div>

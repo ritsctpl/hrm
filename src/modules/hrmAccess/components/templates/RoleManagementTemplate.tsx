@@ -100,47 +100,30 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
       return;
     }
 
-    try {
-      const usersWithRole = await HrmAccessService.fetchUsersWithRole(site, targetRole.roleCode);
-      const userCount = Array.isArray(usersWithRole) ? usersWithRole.length : 0;
-
-      Modal.confirm({
-        title: 'Delete Role',
-        content:
-          userCount > 0
-            ? `This role is assigned to ${userCount} user(s). Deleting this role will revoke it from all assigned users. Are you sure?`
-            : `Are you sure you want to delete "${targetRole.roleName}"?`,
-        okText: 'Delete',
-        okType: 'danger',
-        onOk: async () => {
-          try {
-            if (userCount > 0) {
-              await HrmAccessService.revokeByRole(site, targetRole.roleCode);
-            }
-            await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
-            notification.success({
-              message:
-                userCount > 0
-                  ? `Role deleted and revoked from ${userCount} user(s)`
-                  : 'Role deleted successfully',
-            });
-            const refreshed = await HrmAccessService.fetchAllRoles(site);
-            store.setRoles(refreshed);
-            if (role.selected?.handle === targetRole.handle) {
-              store.selectRole(null);
-            }
-          } catch (err: unknown) {
-            notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
+    Modal.confirm({
+      title: 'Delete Role',
+      content: `Are you sure you want to delete "${targetRole.roleName}"?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await HrmAccessService.revokeByRole(site, targetRole.roleCode);
+          await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
+          notification.success({ message: 'Role deleted successfully' });
+          const refreshed = await HrmAccessService.fetchAllRoles(site);
+          store.setRoles(refreshed);
+          if (role.selected?.handle === targetRole.handle) {
+            store.selectRole(null);
           }
-        },
-      });
-    } catch (err: unknown) {
-      notification.error({ message: 'Failed to check role assignments' });
-    }
+        } catch (err: unknown) {
+          notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
+        }
+      },
+    });
   };
 
   const handleToggleStatus = () => {
-    const current = role.draft?.isActive ?? role.selected?.isActive ?? true;
+    const current = role.draft?.isActive ?? true;
     store.updateRoleDraft({ isActive: !current });
   };
 
