@@ -79,7 +79,7 @@ const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited 
         <Form.Item name="notes" label="Notes">
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Can I="add" object="leave_comp_off">
+        <Can I="add" object="leave_comp_off" passIf={true}>
           <Button type="primary" onClick={handleSubmit} loading={loading}>
             Credit Comp Off
           </Button>

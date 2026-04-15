@@ -123,7 +123,7 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
               />
             </Form.Item>
             <Form.Item>
-              <Can I="view" object="leave_payroll_export">
+              <Can I="view" object="leave_payroll_export" passIf={true}>
                 <Button type="primary" loading={exporting} onClick={handleExport}>
                   Export CSV
                 </Button>
@@ -146,7 +146,7 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
               <DatePicker picker="month" format="MMM YYYY" />
             </Form.Item>
             <Form.Item>
-              <Can I="add" object="leave_payroll_lock">
+              <Can I="add" object="leave_payroll_lock" passIf={true}>
                 <Popconfirm
                   title="Lock this payroll month?"
                   description="This cannot be easily undone."

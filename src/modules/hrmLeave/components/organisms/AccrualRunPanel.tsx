@@ -185,7 +185,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
           </div>
 
           {accrualPreview.canPost && (
-            <Can I="add" object="leave_accrual">
+            <Can I="add" object="leave_accrual" passIf={true}>
               <Button
                 type="primary"
                 onClick={handlePost}
@@ -253,7 +253,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
                 width: 140,
                 render: (_v: unknown, row: AccrualBatch) =>
                   row.status === "POSTED" ? (
-                    <Can I="delete" object="leave_accrual">
+                    <Can I="delete" object="leave_accrual" passIf={true}>
                       <Popconfirm
                         title="Roll back this batch?"
                         description="This will reverse the accrual entries."

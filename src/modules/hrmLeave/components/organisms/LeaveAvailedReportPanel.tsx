@@ -154,12 +154,12 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site 
           </Form.Item>
           <Form.Item>
             <Space>
-              <Can I="view" object="leave_report">
+              <Can I="view" object="leave_report" passIf={true}>
                 <Button type="primary" onClick={handleGenerate} loading={loading}>
                   Generate
                 </Button>
               </Can>
-              <Can I="view" object="leave_report">
+              <Can I="view" object="leave_report" passIf={true}>
                 <Button onClick={handleExport} loading={exporting}>
                   Export CSV
                 </Button>

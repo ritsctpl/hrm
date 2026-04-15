@@ -126,7 +126,7 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
         <Form.Item name="reason" label="Notes / Reason">
           <Input.TextArea rows={3} placeholder="Optional description" />
         </Form.Item>
-        <Can I="add" object="leave_adjustment">
+        <Can I="add" object="leave_adjustment" passIf={true}>
           <Button type="primary" onClick={handleSubmit} loading={loading}>
             Apply Bulk Adjustment
           </Button>

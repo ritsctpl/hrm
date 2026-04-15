@@ -174,7 +174,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         request.status === "PENDING_SUPERVISOR" &&
         request.createdBy === actorId && (
           <div style={{ padding: "12px 0" }}>
-            <Can I="delete" object="leave_request">
+            <Can I="delete" object="leave_request" passIf={true}>
               <Button
                 danger
                 size="small"

@@ -100,7 +100,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
                 onChange={(v) => setCarryYear(Number(v) || currentYear)}
                 style={{ width: 110 }}
               />
-              <Can I="add" object="leave_year_end">
+              <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run carry forward?"
                   description={`Process carry forward for ${site} / ${carryYear}`}
@@ -130,7 +130,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
                 onChange={(v) => setLapseYear(Number(v) || currentYear)}
                 style={{ width: 110 }}
               />
-              <Can I="add" object="leave_year_end">
+              <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run lapse?"
                   description={`Process lapse for ${site} / ${lapseYear}`}
@@ -160,7 +160,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
                 onChange={(v) => setEncashYear(Number(v) || currentYear)}
                 style={{ width: 110 }}
               />
-              <Can I="add" object="leave_year_end">
+              <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run encashment?"
                   description={`Process encashment for ${site} / ${encashYear}`}

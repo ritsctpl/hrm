@@ -55,7 +55,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
     <div className={styles.approvalPanel}>
       <Space wrap>
         {permissions.canApprove && (
-          <Can I="edit" object="leave_approval">
+          <Can I="edit" object="leave_approval" passIf={true}>
             <Button
               type="primary"
               icon={<CheckOutlined />}
@@ -68,7 +68,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
         )}
 
         {permissions.canReject && (
-          <Can I="edit" object="leave_approval">
+          <Can I="edit" object="leave_approval" passIf={true}>
             <Button
               danger
               icon={<CloseOutlined />}
@@ -80,13 +80,13 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
         )}
 
         {permissions.canEscalate && onEscalate && (
-          <Can I="edit" object="leave_approval">
+          <Can I="edit" object="leave_approval" passIf={true}>
             <Button onClick={onEscalate}>Escalate</Button>
           </Can>
         )}
 
         {permissions.canReassign && onReassign && (
-          <Can I="edit" object="leave_approval">
+          <Can I="edit" object="leave_approval" passIf={true}>
             <Button icon={<SwapOutlined />} onClick={() => setReassignVisible(true)}>
               Reassign
             </Button>
@@ -94,7 +94,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
         )}
 
         {permissions.canOverride && onOverride && (
-          <Can I="edit" object="leave_approval">
+          <Can I="edit" object="leave_approval" passIf={true}>
             <>
               <Button
                 type="dashed"

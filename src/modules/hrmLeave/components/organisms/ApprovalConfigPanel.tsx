@@ -183,7 +183,7 @@ const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ site }) => {
         />
 
         <div style={{ marginTop: 16 }}>
-          <Can I="edit" object="leave_approval_config">
+          <Can I="edit" object="leave_approval_config" passIf={true}>
             <Button type="primary" onClick={handleSave} loading={saving}>
               Save Config
             </Button>

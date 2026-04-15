@@ -248,7 +248,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       key: "active",
       width: 90,
       render: (v: number, row) => (
-        <Can I="edit" object="leave_policy">
+        <Can I="edit" object="leave_policy" passIf={true}>
           <Switch
             checked={!!v}
             loading={togglingHandle === row.handle}
@@ -263,7 +263,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       width: 280,
       render: (_, row) => (
         <Space size="small">
-          <Can I="edit" object="leave_policy">
+          <Can I="edit" object="leave_policy" passIf={true}>
             <Button
               size="small"
               type="link"
@@ -276,12 +276,12 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               Edit
             </Button>
           </Can>
-          <Can I="edit" object="leave_policy">
+          <Can I="edit" object="leave_policy" passIf={true}>
             <Button size="small" type="link" onClick={() => openPolicyDrawer(row)}>
               Policies
             </Button>
           </Can>
-          <Can I="delete" object="leave_policy">
+          <Can I="delete" object="leave_policy" passIf={true}>
             <Popconfirm
               title="Delete this leave type?"
               description="This action cannot be undone."
@@ -354,7 +354,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     <div className={styles.policySettings}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <Title level={5} style={{ margin: 0 }}>Leave Types</Title>
-        <Can I="add" object="leave_policy">
+        <Can I="add" object="leave_policy" passIf={true}>
           <Button
             type="primary"
             size="small"
@@ -389,7 +389,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           <Button key="cancel" onClick={() => setTypeModalOpen(false)}>
             Cancel
           </Button>,
-          <Can key="save" I={editingType ? "edit" : "add"} object="leave_policy">
+          <Can key="save" I={editingType ? "edit" : "add"} object="leave_policy" passIf={true}>
             <Button type="primary" loading={saving} onClick={handleSaveType}>
               OK
             </Button>
@@ -433,7 +433,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           <Text type="secondary">
             Policies are versioned by effective date. A new save creates a new version.
           </Text>
-          <Can I="add" object="leave_policy">
+          <Can I="add" object="leave_policy" passIf={true}>
             <Button type="primary" size="small" onClick={openCreatePolicy}>
               + Add Policy
             </Button>

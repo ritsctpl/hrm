@@ -38,7 +38,7 @@ const HrGlobalQueueTable: React.FC<HrGlobalQueueTableProps> = ({
       <div className={styles.requestsListHeader}>
         <Text strong>Global Queue ({requests.length})</Text>
         {wfhCount > 0 && (
-          <Can I="edit" object="leave_hr_queue">
+          <Can I="edit" object="leave_hr_queue" passIf={true}>
             <Button size="small" type="link">
               Batch Approve WFH ({wfhCount})
             </Button>

@@ -88,7 +88,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
         <Form.Item name="notes" label="Notes">
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Can I="add" object="leave_adjustment">
+        <Can I="add" object="leave_adjustment" passIf={true}>
           <Button type="primary" onClick={handleSubmit} loading={loading}>
             Post Adjustment
           </Button>
