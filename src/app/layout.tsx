@@ -69,6 +69,7 @@ if (typeof globalThis !== 'undefined' && typeof globalThis.crypto !== 'undefined
 }
 
 import '@ant-design/v5-patch-for-react-19';
+import { App as AntdApp } from "antd";
 import "./globals.css";
 import { ReactNode, useEffect } from "react";
 import { AuthProvider } from "../context/AuthContext";
@@ -144,15 +145,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           <RbacProvider>
             <ThemeProviderComponent>
-              <LoadingWrapper>
-                <div style={{ display: 'flex', minHeight: '100vh' }}>
-                  <AppSidebar />
-                  <div style={{ flex: 1, marginLeft: 56, paddingBottom: 32, minHeight: 0, display: 'flex', flexDirection: 'column' as const }}>
-                    {children}
+              <AntdApp>
+                <LoadingWrapper>
+                  <div style={{ display: 'flex', minHeight: '100vh' }}>
+                    <AppSidebar />
+                    <div style={{ flex: 1, marginLeft: 56, paddingBottom: 32, minHeight: 0, display: 'flex', flexDirection: 'column' as const }}>
+                      {children}
+                    </div>
                   </div>
-                </div>
-                <AppFooter />
-              </LoadingWrapper>
+                  <AppFooter />
+                </LoadingWrapper>
+              </AntdApp>
             </ThemeProviderComponent>
           </RbacProvider>
         </AuthProvider>

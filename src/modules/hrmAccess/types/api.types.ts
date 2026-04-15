@@ -75,6 +75,7 @@ export interface RoleRequest {
   roleScope?: RoleScope;
   description?: string | null;
   category?: string;
+  isActive: boolean;
   createdBy?: string;
   modifiedBy?: string;
 }

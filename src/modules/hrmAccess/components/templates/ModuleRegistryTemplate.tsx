@@ -419,10 +419,28 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
           form.resetFields();
         }}
         okText="Save"
+        width={600}
+        style={{ top: 20 }}
+        bodyStyle={{
+          maxHeight: 'calc(100vh - 200px)',
+          overflowY: 'auto',
+        }}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="moduleCode" label="Module Code" hidden>
-            <Input />
+          <Form.Item
+            name="moduleCode"
+            label="Module Code"
+            rules={[{ required: true, message: 'Module Code is required' }]}
+          >
+            <Input
+              placeholder="e.g. HRM_EMPLOYEE"
+              disabled={!!editingHandle}
+              maxLength={50}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase().replace(/[^A-Z_]/g, '');
+                form.setFieldsValue({ moduleCode: value });
+              }}
+            />
           </Form.Item>
           <Form.Item name="moduleName" label="Module Name" rules={[{ required: true }]}>
             {!editingHandle ? (

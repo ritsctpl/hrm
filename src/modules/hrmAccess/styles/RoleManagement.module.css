@@ -87,6 +87,20 @@
   gap: 16px;
 }
 
+.stickyHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  top: -16px;
+  background: #fff;
+  z-index: 10;
+  padding: 12px 16px;
+  margin: -16px -16px 12px -16px;
+  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
 /* Role Form */
 .roleForm {
   display: flex;

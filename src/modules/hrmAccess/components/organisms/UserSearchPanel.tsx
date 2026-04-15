@@ -39,10 +39,17 @@ const UserSearchPanel: React.FC<UserSearchPanelProps> = ({
           <List.Item.Meta
             avatar={
               <Avatar
-                icon={<UserOutlined />}
+                src={
+                  user.photoBase64
+                    ? user.photoBase64.startsWith('data:')
+                      ? user.photoBase64
+                      : `data:image/jpeg;base64,${user.photoBase64}`
+                    : undefined
+                }
+                icon={!user.photoBase64 ? <UserOutlined /> : undefined}
                 style={{ backgroundColor: '#1890ff' }}
               >
-                {user.avatarInitials}
+                {!user.photoBase64 && user.avatarInitials}
               </Avatar>
             }
             title={user.displayName}

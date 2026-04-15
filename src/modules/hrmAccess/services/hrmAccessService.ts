@@ -220,8 +220,14 @@ export class HrmAccessService {
     site: string,
     roleCode: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/assignment/retrieveUsersWithRole`, { site, roleCode });
-    return res.data;
+    const res = await api.get(`${BASE}/assignment/byRole`, {
+      params: { site, roleCode },
+    });
+    return res.data?.data ?? res.data ?? [];
+  }
+
+  static async revokeByRole(site: string, roleCode: string): Promise<void> {
+    await api.post(`${BASE}/assignment/revokeByRole`, { site, roleCode });
   }
 
   static async revokeRoleFromUser(

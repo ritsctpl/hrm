@@ -22,36 +22,51 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
   const [orphanedData, setOrphanedData] = useState<UserRoleAssignmentResponse[]>([]);
   const [loadingAccess, setLoadingAccess] = useState(false);
   const [loadingOrphaned, setLoadingOrphaned] = useState(false);
-  const [searchUserId, setSearchUserId] = useState<string | undefined>(undefined);
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string | undefined>(undefined);
   const [userOptions, setUserOptions] = useState<UserOption[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
 
   // Load initial users on mount
   useEffect(() => {
     loadUsers('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [site]);
 
   const loadUsers = async (query: string) => {
     setSearchingUsers(true);
     try {
-      const results = await HrmAccessService.searchKeycloakUsers(site, query);
-      const mapped = results.map((u) => ({
-        value: u.id,
-        label: `${u.firstName} ${u.lastName}`.trim() || u.username,
-        email: u.email || u.username,
-      }));
-      setUserOptions(mapped);
-    } catch (err) {
-      console.error('Failed to load users:', err);
+      const response = await HrmAccessService.fetchEmployeeDirectory({
+        site,
+        page: 0,
+        size: 100,
+        searchTerm: query,
+        status: 'ACTIVE',
+      });
+      if (response.employees && response.employees.length > 0) {
+        const mapped: UserOption[] = response.employees.map((emp) => ({
+          value: emp.workEmail,
+          label: emp.fullName,
+          email: emp.workEmail,
+        }));
+        setUserOptions(mapped);
+      } else {
+        setUserOptions([]);
+      }
+    } catch {
+      // swallow; empty options
     } finally {
       setSearchingUsers(false);
     }
   };
 
   const loadUserAccessReport = async () => {
+    if (!selectedUserEmail) {
+      message.warning('Please select a user');
+      return;
+    }
     setLoadingAccess(true);
     try {
-      const data = await HrmAccessService.getUserAccessReport(site, searchUserId);
+      const data = await HrmAccessService.getUserAccessReport(site, selectedUserEmail);
       setUserAccessData(data);
     } catch {
       message.error('Failed to load user access report');
@@ -133,12 +148,12 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <Select
             showSearch
-            placeholder="Select a user (optional)"
-            value={searchUserId}
-            onChange={(value) => setSearchUserId(value)}
+            placeholder="Select an employee"
+            value={selectedUserEmail}
+            onChange={(value) => setSelectedUserEmail(value)}
             onSearch={(value) => loadUsers(value)}
             filterOption={false}
-            notFoundContent={searchingUsers ? <Spin size="small" /> : <Empty description="No users found" />}
+            notFoundContent={searchingUsers ? <Spin size="small" /> : <Empty description="No employees found" />}
             style={{ minWidth: 300 }}
             allowClear
             optionLabelProp="label"

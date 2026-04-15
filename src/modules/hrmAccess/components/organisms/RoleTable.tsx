@@ -32,6 +32,14 @@ const RoleTable: React.FC<RoleTableProps> = ({
       ellipsis: true,
     },
     {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      width: 200,
+      ellipsis: true,
+      render: (text: string | null) => text || '-',
+    },
+    {
       title: 'Scope',
       dataIndex: 'roleScope',
       key: 'roleScope',
@@ -55,6 +63,22 @@ const RoleTable: React.FC<RoleTableProps> = ({
       key: 'permissionCount',
       width: 65,
       align: 'right',
+    },
+    {
+      title: 'Created Date',
+      dataIndex: 'createdDateTime',
+      key: 'createdDateTime',
+      width: 110,
+      render: (date: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+      },
     },
     {
       title: 'Actions',

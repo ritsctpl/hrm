@@ -12,6 +12,7 @@ export function mapRoleDraftToRequest(
     roleName: draft.roleName ?? '',
     roleScope: draft.roleScope ?? 'GLOBAL',
     description: draft.description ?? null,
+    isActive: draft.isActive ?? true,
     createdBy: userId,
     modifiedBy: userId,
   };

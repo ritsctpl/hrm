@@ -42,18 +42,24 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
       return;
     }
     const payload = mapRoleDraftToRequest(role.draft!, site, user?.id ?? '');
+    const isActiveValue = role.draft?.isActive ?? true;
     store.setRoleSaving(true);
     try {
       if (role.isCreating) {
         await HrmAccessService.createRole(payload);
+        await HrmAccessService.toggleRoleStatus(site, payload.roleCode, isActiveValue, user?.id ?? '');
         notification.success({ message: 'Role created successfully.' });
+        const refreshed = await HrmAccessService.fetchAllRoles(site);
+        store.setRoles(refreshed);
+        store.clearRoleDraft();
+        store.selectRole(null);
       } else {
         await HrmAccessService.updateRole(role.selected!.handle, payload, user?.id ?? '');
+        await HrmAccessService.toggleRoleStatus(site, payload.roleCode, isActiveValue, user?.id ?? '');
         notification.success({ message: 'Role updated successfully.' });
+        const refreshed = await HrmAccessService.fetchAllRoles(site);
+        store.setRoles(refreshed);
       }
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
-      store.setRoles(refreshed);
-      store.clearRoleDraft();
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to save role.' });
     } finally {
@@ -88,44 +94,65 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
   const handleDeleteRole = async (roleToDelete?: Role) => {
     const targetRole = roleToDelete || role.selected;
     if (!targetRole) return;
-    
+
     if (targetRole.isSystemRole) {
       notification.warning({ message: 'System roles cannot be deleted.' });
       return;
     }
-    
+
     try {
-      await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
-      notification.success({ message: 'Role deleted successfully.' });
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
-      store.setRoles(refreshed);
-      // Clear selection if deleted role was selected
-      if (role.selected?.handle === targetRole.handle) {
-        store.selectRole(null);
-      }
+      const usersWithRole = await HrmAccessService.fetchUsersWithRole(site, targetRole.roleCode);
+      const userCount = Array.isArray(usersWithRole) ? usersWithRole.length : 0;
+
+      Modal.confirm({
+        title: 'Delete Role',
+        content:
+          userCount > 0
+            ? `This role is assigned to ${userCount} user(s). Deleting this role will revoke it from all assigned users. Are you sure?`
+            : `Are you sure you want to delete "${targetRole.roleName}"?`,
+        okText: 'Delete',
+        okType: 'danger',
+        onOk: async () => {
+          try {
+            if (userCount > 0) {
+              await HrmAccessService.revokeByRole(site, targetRole.roleCode);
+            }
+            await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
+            notification.success({
+              message:
+                userCount > 0
+                  ? `Role deleted and revoked from ${userCount} user(s)`
+                  : 'Role deleted successfully',
+            });
+            const refreshed = await HrmAccessService.fetchAllRoles(site);
+            store.setRoles(refreshed);
+            if (role.selected?.handle === targetRole.handle) {
+              store.selectRole(null);
+            }
+          } catch (err: unknown) {
+            notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
+          }
+        },
+      });
     } catch (err: unknown) {
-      notification.error({ message: (err as Error).message ?? 'Failed to delete role.' });
+      notification.error({ message: 'Failed to check role assignments' });
     }
   };
 
-  const handleToggleStatus = async () => {
-    if (!role.selected) return;
-    store.setRoleSaving(true);
+  const handleToggleStatus = () => {
+    const current = role.draft?.isActive ?? role.selected?.isActive ?? true;
+    store.updateRoleDraft({ isActive: !current });
+  };
+
+  const handleSearch = async () => {
+    store.setRoleLoading(true);
     try {
-      await HrmAccessService.toggleRoleStatus(
-        site,
-        role.selected.roleCode,
-        !role.selected.isActive,
-        user?.id ?? ''
-      );
-      notification.success({ message: `Role ${role.selected.isActive ? 'deactivated' : 'activated'}.` });
       const refreshed = await HrmAccessService.fetchAllRoles(site);
       store.setRoles(refreshed);
-      store.selectRole(null);
-    } catch (err: unknown) {
-      notification.error({ message: (err as Error).message ?? 'Failed to toggle status.' });
+    } catch {
+      notification.error({ message: 'Failed to load roles' });
     } finally {
-      store.setRoleSaving(false);
+      store.setRoleLoading(false);
     }
   };
 
@@ -157,20 +184,30 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
     <div className={styles.roleTemplate}>
       {!showRightPanel ? (
         <div className={styles.leftPanelFullWidth}>
-          <div className={styles.leftToolbar}>
+          <div
+            className={styles.leftToolbar}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <RbacSearchBar
               value={role.searchText}
               onChange={store.setRoleSearch}
+              onSearch={handleSearch}
               placeholder="Search roles..."
+              width={300}
             />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => store.setRoleCreating(true)}
-              className={styles.addButton}
-            >
-              New Role
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button type="default" onClick={handleSearch} loading={role.isLoading}>
+                Go
+              </Button>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => store.setRoleCreating(true)}
+                className={styles.addButton}
+              >
+                New Role
+              </Button>
+            </div>
           </div>
 
           <RoleTable
@@ -188,7 +225,7 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
         </div>
       ) : (
         <div className={styles.rightPanelFullWidth}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div className={styles.stickyHeader}>
             <Button
               size="small"
               onClick={() => {

@@ -41,57 +41,70 @@ const RoleForm: React.FC<RoleFormProps> = ({
       )}
 
       <Form layout="vertical" className={styles.formInner}>
-        <Form.Item
-          label="Role Code"
-          validateStatus={errors.roleCode ? 'error' : ''}
-          help={errors.roleCode}
-          required
-        >
-          <Input
-            value={draft?.roleCode ?? ''}
-            onChange={(e) => {
-              const val = e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
-              onChange({ roleCode: val });
-            }}
-            placeholder="e.g. HR_ADMIN"
-            disabled={isExistingRole}
-            maxLength={50}
-          />
-          {isExistingRole && (
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              Role code cannot be changed after creation.
-            </Text>
-          )}
-        </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <Form.Item
+            label="Role Code"
+            validateStatus={errors.roleCode ? 'error' : ''}
+            help={errors.roleCode}
+            required
+          >
+            <Input
+              value={draft?.roleCode ?? ''}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+                onChange({ roleCode: val });
+              }}
+              placeholder="e.g. HR_ADMIN"
+              disabled={isExistingRole}
+              maxLength={50}
+            />
+            {isExistingRole && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Role code cannot be changed after creation.
+              </Text>
+            )}
+          </Form.Item>
 
-        <Form.Item
-          label="Role Name"
-          validateStatus={errors.roleName ? 'error' : ''}
-          help={errors.roleName}
-          required
-        >
-          <Input
-            value={draft?.roleName ?? ''}
-            onChange={(e) => onChange({ roleName: e.target.value })}
-            placeholder="e.g. HR Administrator"
-            maxLength={100}
-          />
-        </Form.Item>
+          <Form.Item
+            label="Role Name"
+            validateStatus={errors.roleName ? 'error' : ''}
+            help={errors.roleName}
+            required
+          >
+            <Input
+              value={draft?.roleName ?? ''}
+              onChange={(e) => onChange({ roleName: e.target.value })}
+              placeholder="e.g. HR Administrator"
+              maxLength={100}
+            />
+          </Form.Item>
 
-        <Form.Item
-          label="Scope"
-          validateStatus={errors.roleScope ? 'error' : ''}
-          help={errors.roleScope}
-          required
-        >
-          <Select
-            value={draft?.roleScope}
-            onChange={(val) => onChange({ roleScope: val })}
-            options={ROLE_SCOPES.map((s) => ({ value: s.value, label: s.label }))}
-            placeholder="Select scope"
-            disabled={isSystemRole}
-          />
-        </Form.Item>
+          <Form.Item
+            label="Scope"
+            validateStatus={errors.roleScope ? 'error' : ''}
+            help={errors.roleScope}
+            required
+          >
+            <Select
+              value={draft?.roleScope}
+              onChange={(val) => onChange({ roleScope: val })}
+              options={ROLE_SCOPES.map((s) => ({ value: s.value, label: s.label }))}
+              placeholder="Select scope"
+              disabled={isSystemRole}
+            />
+          </Form.Item>
+
+          <Form.Item label="Status">
+            <Space>
+              <Switch
+                checked={draft?.isActive ?? false}
+                onChange={onToggleStatus}
+                disabled={isSystemRole}
+              />
+              <Text>{draft?.isActive ? 'Active' : 'Inactive'}</Text>
+            </Space>
+          </Form.Item>
+        </div>
 
         <Form.Item
           label="Description"
@@ -106,17 +119,6 @@ const RoleForm: React.FC<RoleFormProps> = ({
             rows={3}
             showCount
           />
-        </Form.Item>
-
-        <Form.Item label="Status">
-          <Space>
-            <Switch
-              checked={draft?.isActive ?? false}
-              onChange={onToggleStatus}
-              disabled={isSystemRole}
-            />
-            <Text>{draft?.isActive ? 'Active' : 'Inactive'}</Text>
-          </Space>
         </Form.Item>
       </Form>
 

@@ -33,6 +33,7 @@ export interface RbacSearchBarProps {
   onChange: (value: string) => void;
   placeholder?: string;
   onSearch?: (value: string) => void;
+  width?: number | string;
 }
 
 export interface RbacRoleCardProps {
@@ -188,4 +189,10 @@ export interface KeycloakUserSummaryUI {
   displayName: string;
   email: string;
   avatarInitials: string;
+  employeeCode?: string;
+  department?: string;
+  role?: string;
+  location?: string;
+  status?: string;
+  photoBase64?: string | null;
 }

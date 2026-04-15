@@ -9,8 +9,8 @@ import RoleManagementTemplate from './components/templates/RoleManagementTemplat
 import PermissionMatrixTemplate from './components/templates/PermissionMatrixTemplate';
 import UserRoleAssignmentTemplate from './components/templates/UserRoleAssignmentTemplate';
 import ImportExportTemplate from './components/templates/ImportExportTemplate';
-import RbacReportsTemplate from './components/templates/RbacReportsTemplate';
-import RbacAuditLogTemplate from './components/templates/RbacAuditLogTemplate';
+// import RbacReportsTemplate from './components/templates/RbacReportsTemplate';
+// import RbacAuditLogTemplate from './components/templates/RbacAuditLogTemplate';
 import { useHrmAccessStore } from './stores/hrmAccessStore';
 import { HrmAccessService } from './services/hrmAccessService';
 import styles from './styles/HrmAccess.module.css';
@@ -73,16 +73,16 @@ const HrmAccessLanding: React.FC = () => {
       label: 'Import / Export',
       children: <ImportExportTemplate site={site} user={user} />,
     },
-    {
-      key: 'reports',
-      label: 'Reports',
-      children: <RbacReportsTemplate site={site} />,
-    },
-    {
-      key: 'audit',
-      label: 'Audit Log',
-      children: <RbacAuditLogTemplate site={site} />,
-    },
+    // {
+    //   key: 'reports',
+    //   label: 'Reports',
+    //   children: <RbacReportsTemplate site={site} />,
+    // },
+    // {
+    //   key: 'audit',
+    //   label: 'Audit Log',
+    //   children: <RbacAuditLogTemplate site={site} />,
+    // },
   ];
 
   return (

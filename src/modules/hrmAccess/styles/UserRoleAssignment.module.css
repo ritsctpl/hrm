@@ -112,6 +112,28 @@
   background: #f8f9fb;
 }
 
+.userSearchList :global(.ant-list-item-meta) {
+  overflow: hidden;
+}
+
+.userSearchList :global(.ant-list-item-meta-content) {
+  overflow: hidden;
+}
+
+.userSearchList :global(.ant-list-item-meta-title) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.userSearchList :global(.ant-list-item-meta-description) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
 .userSearchItem {
   padding: 10px 12px;
   border-radius: 6px;

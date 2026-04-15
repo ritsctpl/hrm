@@ -11,6 +11,7 @@ const RbacSearchBar: React.FC<RbacSearchBarProps> = ({
   onChange,
   placeholder = 'Search...',
   onSearch,
+  width,
 }) => {
   return (
     <Search
@@ -19,7 +20,7 @@ const RbacSearchBar: React.FC<RbacSearchBarProps> = ({
       onSearch={onSearch}
       placeholder={placeholder}
       allowClear
-      style={{ width: '100%' }}
+      style={{ width: width ?? '100%' }}
     />
   );
 };
