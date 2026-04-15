@@ -51,40 +51,58 @@ import {
 export class HrmLeaveService {
   private static readonly BASE = "/hrm-service";
 
+  /**
+   * Backend wraps most leave responses in an envelope shaped like
+   * `{ handle, message_details, errorCode, response: <payload> }`. Strip
+   * the envelope so callers always see the raw payload (array / object).
+   * Pass-through for already-unwrapped responses.
+   */
+  private static unwrap<T>(data: unknown): T {
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      "response" in (data as Record<string, unknown>)
+    ) {
+      return (data as { response: T }).response;
+    }
+    return data as T;
+  }
+
   // ── Leave Type CRUD ──────────────────────────────────────────────────
 
   static async createLeaveType(payload: LeaveTypeRequest): Promise<LeaveType> {
     const { data } = await api.post(`${this.BASE}/leave-type/create`, payload);
-    return data;
+    return this.unwrap<LeaveType>(data);
   }
 
   static async updateLeaveType(payload: LeaveTypeRequest): Promise<LeaveType> {
     const { data } = await api.post(`${this.BASE}/leave-type/update`, payload);
-    return data;
+    return this.unwrap<LeaveType>(data);
   }
 
   static async getAllLeaveTypes(payload: SiteRequest): Promise<LeaveType[]> {
     const { data } = await api.post(`${this.BASE}/leave-type/retrieve-all`, payload);
-    return data;
+    return this.unwrap<LeaveType[]>(data) ?? [];
   }
 
   // ── Policy CRUD ──────────────────────────────────────────────────────
 
   static async createOrUpdatePolicy(payload: LeavePolicyRequest): Promise<LeavePolicy> {
     const { data } = await api.post(`${this.BASE}/leave-policy/create`, payload);
-    return data;
+    return this.unwrap<LeavePolicy>(data);
   }
 
   static async getPoliciesByLeaveType(payload: LeavePolicyQueryRequest): Promise<LeavePolicy[]> {
     const { data } = await api.post(`${this.BASE}/leave-policy/retrieve`, payload);
-    return data;
+    return this.unwrap<LeavePolicy[]>(data) ?? [];
   }
 
   // ── Balance APIs ─────────────────────────────────────────────────────
 
   static async getEmployeeBalances(payload: BalanceQueryRequest): Promise<LeaveBalanceResponse[]> {
     const { data } = await api.post(`${this.BASE}/leave-balance/retrieve`, payload);
-    return data;
+    return this.unwrap<LeaveBalanceResponse[]>(data) ?? [];
   }
 
   static async recalculateBalance(payload: RecalculateRequest): Promise<number> {
@@ -96,48 +114,48 @@ export class HrmLeaveService {
 
   static async previewAccrual(payload: AccrualRunRequest): Promise<AccrualPreviewResponse> {
     const { data } = await api.post(`${this.BASE}/accrual/preview`, payload);
-    return data;
+    return this.unwrap<AccrualPreviewResponse>(data);
   }
 
   static async postAccrual(payload: AccrualRunRequest): Promise<AccrualBatch> {
     const { data } = await api.post(`${this.BASE}/accrual/post`, payload);
-    return data;
+    return this.unwrap<AccrualBatch>(data);
   }
 
   static async rollbackAccrual(payload: RollbackRequest): Promise<AccrualBatch> {
     const { data } = await api.post(`${this.BASE}/accrual/rollback`, payload);
-    return data;
+    return this.unwrap<AccrualBatch>(data);
   }
 
   static async getAccrualBatches(payload: YearQueryRequest): Promise<AccrualBatch[]> {
     const { data } = await api.post(`${this.BASE}/accrual/retrieve-batches`, payload);
-    return data;
+    return this.unwrap<AccrualBatch[]>(data) ?? [];
   }
 
   // ── Manual Adjustment APIs ───────────────────────────────────────────
 
   static async postManualAdjustment(payload: ManualAdjustmentRequest): Promise<LedgerHistoryResponse> {
     const { data } = await api.post(`${this.BASE}/ledger/adjust`, payload);
-    return data;
+    return this.unwrap<LedgerHistoryResponse>(data);
   }
 
   static async bulkAdjustment(payload: BulkAdjustmentRequest): Promise<LedgerHistoryResponse[]> {
     const { data } = await api.post(`${this.BASE}/ledger/bulk-adjust`, payload);
-    return data;
+    return this.unwrap<LedgerHistoryResponse[]>(data) ?? [];
   }
 
   // ── Comp-Off APIs ────────────────────────────────────────────────────
 
   static async creditCompOff(payload: CompOffCreditRequest): Promise<LedgerHistoryResponse> {
     const { data } = await api.post(`${this.BASE}/comp-off/credit`, payload);
-    return data;
+    return this.unwrap<LedgerHistoryResponse>(data);
   }
 
   // ── Ledger History ───────────────────────────────────────────────────
 
   static async getLedgerHistory(payload: LedgerHistoryRequest): Promise<LedgerHistoryResponse[]> {
     const { data } = await api.post(`${this.BASE}/ledger/history`, payload);
-    return data;
+    return this.unwrap<LedgerHistoryResponse[]>(data) ?? [];
   }
 
   // ── Year-End Operations ──────────────────────────────────────────────
@@ -171,87 +189,87 @@ export class HrmLeaveService {
 
   static async getBalanceSummaryReport(payload: ReportQueryRequest): Promise<LeaveBalanceResponse[]> {
     const { data } = await api.post(`${this.BASE}/reports/balance-summary`, payload);
-    return data;
+    return this.unwrap<LeaveBalanceResponse[]>(data) ?? [];
   }
 
   static async getLeaveAvailedReport(payload: LeaveAvailedReportRequest): Promise<LedgerHistoryResponse[]> {
     const { data } = await api.post(`${this.BASE}/reports/leave-availed`, payload);
-    return data;
+    return this.unwrap<LedgerHistoryResponse[]>(data) ?? [];
   }
 
   // ── Leave Request: Employee APIs ─────────────────────────────────────
 
   static async validateLeaveRequest(payload: LeaveRequestCreateDto): Promise<ValidationSummaryResponse> {
     const { data } = await api.post(`${this.BASE}/leave-request/validate`, payload);
-    return data;
+    return this.unwrap<ValidationSummaryResponse>(data);
   }
 
   static async submitLeaveRequest(payload: LeaveRequestCreateDto): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/submit`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async cancelLeaveRequest(payload: CancelLeaveRequest): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/cancel`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async getMyRequests(payload: EmployeeQueryRequest): Promise<LeaveRequestResponse[]> {
     const { data } = await api.post(`${this.BASE}/leave-request/my-requests`, payload);
-    return data;
+    return this.unwrap<LeaveRequestResponse[]>(data) ?? [];
   }
 
   static async getLeaveRequestById(payload: GetByIdRequest): Promise<LeaveRequestResponse> {
     const { data } = await api.post(`${this.BASE}/leave-request/retrieve`, payload);
-    return data;
+    return this.unwrap<LeaveRequestResponse>(data);
   }
 
   // ── Leave Request: Approval APIs ─────────────────────────────────────
 
   static async approveRequest(payload: ApprovalActionRequest): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/approve`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async rejectRequest(payload: ApprovalActionRequest): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/reject`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async escalateRequest(payload: { site: string; requestId: string }): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/escalate`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async reassignRequest(payload: ApprovalActionRequest): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/reassign`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   static async overrideRequest(
     payload: ApprovalActionRequest & { approved: boolean }
   ): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/override`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   // ── Leave Request: Queue / Inbox APIs ────────────────────────────────
 
   static async getPendingForApprover(payload: ApproverInboxRequest): Promise<LeaveRequestResponse[]> {
     const { data } = await api.post(`${this.BASE}/leave-request/pending-for-approver`, payload);
-    return data;
+    return this.unwrap<LeaveRequestResponse[]>(data) ?? [];
   }
 
   static async getGlobalQueue(payload: GlobalQueueRequest): Promise<LeaveRequestResponse[]> {
     const { data } = await api.post(`${this.BASE}/leave-request/global-queue`, payload);
-    return data;
+    return this.unwrap<LeaveRequestResponse[]>(data) ?? [];
   }
 
   // ── Leave Type Retrieve / Delete / Toggle ───────────────────────────
 
   static async getLeaveTypeByCode(payload: LeaveTypeByCodeRequest): Promise<LeaveType | null> {
     const { data } = await api.post(`${this.BASE}/leave-type/retrieve`, payload);
-    return data ?? null;
+    return this.unwrap<LeaveType | null>(data) ?? null;
   }
 
   static async deleteLeaveType(payload: DeleteLeaveTypeRequest): Promise<void> {
@@ -260,7 +278,7 @@ export class HrmLeaveService {
 
   static async activateDeactivateLeaveType(payload: ActivateDeactivateLeaveTypeRequest): Promise<LeaveType> {
     const { data } = await api.post(`${this.BASE}/leave-type/activate-deactivate`, payload);
-    return data;
+    return this.unwrap<LeaveType>(data);
   }
 
   // ── Policy Delete ─────────────────────────────────────────────────
@@ -273,40 +291,41 @@ export class HrmLeaveService {
 
   static async getEffectivePolicy(payload: EffectivePolicyRequest): Promise<LeavePolicy | null> {
     const { data } = await api.post(`${this.BASE}/leave-policy/effective`, payload);
-    return data ?? null;
+    return this.unwrap<LeavePolicy | null>(data) ?? null;
   }
 
   // ── Balance By Type ───────────────────────────────────────────────
 
   static async getBalanceByType(payload: BalanceByTypeRequest): Promise<LeaveBalanceResponse | null> {
     const { data } = await api.post(`${this.BASE}/leave-balance/retrieve-by-type`, payload);
-    return data ?? null;
+    return this.unwrap<LeaveBalanceResponse | null>(data) ?? null;
   }
 
   // ── Team Calendar ─────────────────────────────────────────────────
 
   static async getTeamCalendar(payload: TeamCalendarRequest): Promise<TeamCalendarEntry[]> {
     const { data } = await api.post(`${this.BASE}/leave-request/team-calendar`, payload);
-    return Array.isArray(data) ? data : [];
+    const unwrapped = this.unwrap<TeamCalendarEntry[]>(data);
+    return Array.isArray(unwrapped) ? unwrapped : [];
   }
 
   // ── Amend Leave Request ───────────────────────────────────────────
 
   static async amendLeaveRequest(payload: AmendLeaveRequestPayload): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/amend`, payload);
-    return data;
+    return this.unwrap<LeaveRequest>(data);
   }
 
   // ── Approval Config ───────────────────────────────────────────────
 
   static async saveApprovalConfig(payload: SaveApprovalConfigRequest): Promise<LeaveApprovalConfig> {
     const { data } = await api.post(`${this.BASE}/leave-approval-config/save`, payload);
-    return data;
+    return this.unwrap<LeaveApprovalConfig>(data);
   }
 
   static async getApprovalConfig(payload: SiteRequest): Promise<LeaveApprovalConfig | null> {
     const { data } = await api.post(`${this.BASE}/leave-approval-config/retrieve`, payload);
-    return data ?? null;
+    return this.unwrap<LeaveApprovalConfig | null>(data) ?? null;
   }
 
   // ── Export Leave Report ───────────────────────────────────────────
