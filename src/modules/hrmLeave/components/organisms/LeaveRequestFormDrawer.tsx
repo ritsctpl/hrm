@@ -104,6 +104,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   // When HR picks an employee, target overrides the prop. Otherwise the
   // logged-in user's id is used.
   const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
+  // Removing the prop is enough to silence the unused-var lint when the
+  // picker is the only consumer.
+  void allowEmployeeSelection;
 
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
@@ -172,6 +175,47 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     employeeId ||
     cookies.userId ||
     "Current user";
+
+  // When the drawer opens with no target picked yet, default the picker to
+  // the logged-in user by looking up their handle in the directory using
+  // any identifier we have in cookies/props.
+  useEffect(() => {
+    if (!showLeaveForm || formTargetEmployeeId || directoryEmployees.length === 0) {
+      return;
+    }
+    const candidates = [
+      employeeId,
+      cookies.employeeCode,
+      cookies.userId,
+      cookies.username,
+      cookies.email,
+      cookies.preferred_username,
+      cookies.user,
+    ].filter((v): v is string => typeof v === "string" && v.length > 0);
+    const me = directoryEmployees.find((emp) =>
+      candidates.some(
+        (c) =>
+          c === emp.handle ||
+          c === emp.employeeCode ||
+          c.toLowerCase() === (emp.workEmail || "").toLowerCase(),
+      ),
+    );
+    if (me?.handle) {
+      setFormTargetEmployeeId(me.handle);
+    }
+  }, [
+    showLeaveForm,
+    formTargetEmployeeId,
+    directoryEmployees,
+    employeeId,
+    cookies.employeeCode,
+    cookies.userId,
+    cookies.username,
+    cookies.email,
+    cookies.preferred_username,
+    cookies.user,
+    setFormTargetEmployeeId,
+  ]);
 
   // Always reload leave types, the current user's balances, AND the current
   // user's profile when the drawer opens so the choice cards always have
@@ -521,39 +565,30 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       <div className={styles.formGrid}>
         {/* ── Form Column ────────────────────────────────────────────── */}
         <div className={styles.formColumn}>
-          {/* HR-only: Employee picker. Selecting an employee re-fetches their
-              balances + profile via the effectiveEmployeeId effect below. */}
-          {allowEmployeeSelection ? (
-            <div className={styles.fieldBlock}>
-              <span className={styles.fieldLabel}>Employee</span>
-              <Select
-                showSearch
-                allowClear
-                placeholder="Search and select an employee"
-                value={formTargetEmployeeId ?? undefined}
-                onChange={(value) => setFormTargetEmployeeId(value ?? null)}
-                options={employeeOptions}
-                loading={employeeOptionsLoading}
-                filterOption={(input, option) =>
-                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }
-              />
-              {!formTargetEmployeeId && (
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  Pick an employee to load their leave balances and continue.
-                </Text>
-              )}
-            </div>
-          ) : (
-            <div className={styles.fieldBlock}>
-              <span className={styles.fieldLabel}>Applying as</span>
-              <Input
-                value={employeeDisplayName}
-                readOnly
-                placeholder="Loading current user..."
-              />
-            </div>
-          )}
+          {/* Employee picker — always shown. Pre-selected with the current
+              user's handle (see useEffect below). HR can change it; employees
+              can keep it as-is. Selecting re-fetches that employee's balances
+              + profile via the effectiveEmployeeId effect. */}
+          <div className={styles.fieldBlock}>
+            <span className={styles.fieldLabel}>Employee</span>
+            <Select
+              showSearch
+              allowClear
+              placeholder="Search and select an employee"
+              value={formTargetEmployeeId ?? undefined}
+              onChange={(value) => setFormTargetEmployeeId(value ?? null)}
+              options={employeeOptions}
+              loading={employeeOptionsLoading}
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+            />
+            {!formTargetEmployeeId && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Pick an employee to load their leave balances and continue.
+              </Text>
+            )}
+          </div>
 
           {/* Leave type choice cards */}
           <div className={styles.fieldBlock}>
