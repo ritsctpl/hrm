@@ -82,8 +82,6 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const cookies = parseCookies();
   const userId = cookies.userId ?? employeeId;
   const buHandle = cookies.buHandle ?? "";
-  const employeeDisplayName =
-    cookies.fullName ?? cookies.employeeName ?? cookies.username ?? employeeId;
 
   const {
     showLeaveForm,
@@ -103,6 +101,22 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+
+  // Resolve a friendly applying-as label: prefer the directory match for the
+  // current employeeId, then fall through whatever name cookies happen to be
+  // populated, and finally fall back to the raw id so the field is never blank.
+  const directoryMatch = employeeOptions.find((opt) => opt.value === employeeId);
+  const employeeDisplayName =
+    directoryMatch?.label ??
+    cookies.fullName ??
+    cookies.employeeName ??
+    cookies.name ??
+    cookies.firstName ??
+    cookies.username ??
+    cookies.user ??
+    employeeId ??
+    cookies.userId ??
+    "Current user";
 
   // Always reload leave types AND the current user's balances when the
   // drawer opens so the choice cards always have something to render.
@@ -434,7 +448,12 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Applying as</span>
             <Input
-              value={`${employeeDisplayName}${employeeId ? ` · ${employeeId}` : ""}`}
+              value={
+                directoryMatch?.label ??
+                (employeeId
+                  ? `${employeeDisplayName} · ${employeeId}`
+                  : employeeDisplayName)
+              }
               disabled
             />
           </div>
