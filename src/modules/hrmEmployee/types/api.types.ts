@@ -300,6 +300,22 @@ export interface ExpiringAlertResponse {
   daysUntilExpiry: number;
 }
 
+/** Employee hierarchy node — recursive, matches backend EmployeeHierarchyNode DTO */
+export interface EmployeeHierarchyNode {
+  handle: string;
+  employeeCode: string;
+  fullName: string;
+  workEmail: string;
+  status: string;
+  department: string;
+  role: string;
+  designation: string;
+  location: string;
+  reportingManager: string;
+  level: number;
+  directReports: EmployeeHierarchyNode[];
+}
+
 /** Direct reports response */
 export interface DirectReportResponse {
   handle: string;

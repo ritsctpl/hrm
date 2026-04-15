@@ -21,6 +21,7 @@ import type {
   BulkAssignBuRequest,
   ExpiringAlertResponse,
   DirectReportResponse,
+  EmployeeHierarchyNode,
   AuditLogResponse,
   InitiateOnboardingRequest,
   UpdateOnboardingItemRequest,
@@ -535,6 +536,19 @@ export class HrmEmployeeService {
     employeeId: string
   ): Promise<DirectReportResponse[]> {
     const response = await api.post(`${this.BASE}/direct-reports`, { site, employeeId });
+    return response.data;
+  }
+
+  /**
+   * Fetch the site-wide employee reporting hierarchy as a pre-built tree.
+   * Backend returns a list of roots (employees with no manager or manager
+   * outside the site); each node carries `directReports` recursively. The
+   * backend guarantees the tree is cycle-safe.
+   */
+  static async fetchEmployeeHierarchy(
+    site: string
+  ): Promise<EmployeeHierarchyNode[]> {
+    const response = await api.post(`${this.BASE}/hierarchy`, { site });
     return response.data;
   }
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { parseCookies } from 'nookies';
-import { Spin, Empty, Button, Tag, Tooltip, Avatar } from 'antd';
+import { Spin, Empty, Button, Tag, Tooltip, Avatar, Segmented } from 'antd';
 import {
   ApartmentOutlined,
   BankOutlined,
@@ -15,7 +15,10 @@ import {
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmEmployeeService } from '../../../hrmEmployee/services/hrmEmployeeService';
-import type { EmployeeDirectoryRow } from '../../../hrmEmployee/types/api.types';
+import type {
+  EmployeeDirectoryRow,
+  EmployeeHierarchyNode,
+} from '../../../hrmEmployee/types/api.types';
 import type { OrgHierarchy, DepartmentNode } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import styles from '../../styles/OrgChart.module.css';
@@ -178,6 +181,56 @@ const ReportingNode: React.FC<{
 };
 
 /* ------------------------------------------------------------------ */
+/*  Hierarchy employee node — renders backend EmployeeHierarchyNode    */
+/*  directly, with a photo lookup keyed by employee handle             */
+/* ------------------------------------------------------------------ */
+const HierarchyEmployeeNode: React.FC<{
+  node: EmployeeHierarchyNode;
+  photoByHandle: Record<string, string | undefined>;
+  isRoot: boolean;
+}> = ({ node, photoByHandle, isRoot }) => {
+  const reports = node.directReports || [];
+  // Adapt to the EmployeeDirectoryRow shape that EmployeeCardBody expects.
+  // The backend hierarchy DTO lacks photoUrl, so we look it up from the
+  // directory fetch. Fields not on the DTO (phone, businessUnits, etc.)
+  // aren't used by the card, so undefined/defaults are fine.
+  const cardEmp: EmployeeDirectoryRow = {
+    handle: node.handle,
+    employeeCode: node.employeeCode,
+    fullName: node.fullName,
+    workEmail: node.workEmail,
+    status: (node.status as EmployeeDirectoryRow['status']) || 'ACTIVE',
+    department: node.department,
+    role: node.role || node.designation || '',
+    photoUrl: photoByHandle[node.handle],
+  };
+  return (
+    <li className={styles.chartNode}>
+      <EmployeeCardBody emp={cardEmp} isHead={isRoot} />
+      {reports.length > 0 && (
+        <ul className={styles.chartChildren}>
+          {reports.map((child) => (
+            <HierarchyEmployeeNode
+              key={child.handle}
+              node={child}
+              photoByHandle={photoByHandle}
+              isRoot={false}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+};
+
+// Total employee count across a hierarchy forest (pre-order).
+const countHierarchy = (nodes: EmployeeHierarchyNode[]): number =>
+  nodes.reduce(
+    (sum, n) => sum + 1 + countHierarchy(n.directReports || []),
+    0,
+  );
+
+/* ------------------------------------------------------------------ */
 /*  Dept card — recursive (now also renders employees)                 */
 /* ------------------------------------------------------------------ */
 const DeptCard: React.FC<{
@@ -279,34 +332,41 @@ const DeptCard: React.FC<{
 /* ------------------------------------------------------------------ */
 /*  Main Chart component                                               */
 /* ------------------------------------------------------------------ */
+type ViewMode = 'org' | 'tree';
+
 const OrgHierarchyChart: React.FC = () => {
   const { hierarchy, fetchHierarchy } = useHrmOrganizationStore();
   const { data, isLoading } = hierarchy;
 
   const [zoom, setZoom] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>('org');
   const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
+  const [empHierarchy, setEmpHierarchy] = useState<EmployeeHierarchyNode[]>([]);
 
   useEffect(() => {
     fetchHierarchy();
   }, [fetchHierarchy]);
 
-  // Fetch all employees once for grouping under departments. Uses the
-  // standard directory endpoint with no filters; the API caps results
-  // server-side, so this stays cheap.
+  // Fetch directory + employee-hierarchy in parallel. Directory is used for
+  // the Org Structure view (dept grouping) and also provides photoUrl which
+  // the hierarchy DTO doesn't carry. Hierarchy powers the Reporting Tree view.
   useEffect(() => {
     const cookies = parseCookies();
     const site = cookies.site || '';
     if (!site) return;
     let cancelled = false;
-    HrmEmployeeService.fetchDirectory({ site, page: 0, size: 500 })
-      .then((res) => {
-        if (cancelled) return;
-        setEmployees((res?.employees || []) as EmployeeDirectoryRow[]);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setEmployees([]);
-      });
+    Promise.all([
+      HrmEmployeeService.fetchDirectory({ site, page: 0, size: 500 }).catch(
+        () => ({ employees: [] } as { employees: EmployeeDirectoryRow[] }),
+      ),
+      HrmEmployeeService.fetchEmployeeHierarchy(site).catch(
+        () => [] as EmployeeHierarchyNode[],
+      ),
+    ]).then(([dirRes, hier]) => {
+      if (cancelled) return;
+      setEmployees((dirRes?.employees || []) as EmployeeDirectoryRow[]);
+      setEmpHierarchy(hier || []);
+    });
     return () => {
       cancelled = true;
     };
@@ -321,6 +381,16 @@ const OrgHierarchyChart: React.FC = () => {
       if (!key) continue;
       if (!map[key]) map[key] = [];
       map[key].push(emp);
+    }
+    return map;
+  }, [employees]);
+
+  // photoUrl lookup for Reporting Tree view — backend hierarchy DTO doesn't
+  // carry photoUrl, so join against the directory by handle.
+  const photoByHandle = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const emp of employees) {
+      if (emp.photoUrl) map[emp.handle] = emp.photoUrl;
     }
     return map;
   }, [employees]);
@@ -361,9 +431,24 @@ const OrgHierarchyChart: React.FC = () => {
         <div className={styles.toolbarLeft}>
           <ApartmentOutlined style={{ color: 'var(--hrm-accent, #1890ff)' }} />
           <span className={styles.toolbarTitle}>Organization Hierarchy</span>
-          <Tag color="blue">{totalBUs} BUs</Tag>
-          <Tag color="purple">{totalDepts} Depts</Tag>
-          <Tag color="cyan">{employees.length} Employees</Tag>
+          <Segmented<ViewMode>
+            size="small"
+            value={viewMode}
+            onChange={(v) => setViewMode(v)}
+            options={[
+              { label: 'Org Structure', value: 'org' },
+              { label: 'Reporting Tree', value: 'tree' },
+            ]}
+          />
+          {viewMode === 'org' ? (
+            <>
+              <Tag color="blue">{totalBUs} BUs</Tag>
+              <Tag color="purple">{totalDepts} Depts</Tag>
+              <Tag color="cyan">{employees.length} Employees</Tag>
+            </>
+          ) : (
+            <Tag color="cyan">{countHierarchy(empHierarchy)} Employees</Tag>
+          )}
         </div>
         <div className={styles.toolbarActions}>
           <Button size="small" icon={<ZoomOutOutlined />} onClick={handleZoomOut} disabled={zoom <= 0.4} />
@@ -379,57 +464,77 @@ const OrgHierarchyChart: React.FC = () => {
           className={styles.chartScroll}
           style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
         >
-          {/* Root: Company */}
-          <ul className={styles.chartTree}>
-            <li className={styles.chartNode}>
-              <div className={`${styles.chartCard} ${styles.companyCard}`}>
-                <ShopOutlined className={styles.cardIcon} style={{ color: '#1890ff' }} />
-                <div className={styles.cardContent}>
-                  <div className={styles.cardName}>{companyName}</div>
-                  <div className={styles.cardCode}>
-                    {data.company?.industryType || data.company?.industry || 'Root'}
+          {viewMode === 'org' ? (
+            /* Root: Company → BUs → Depts → Employees (dept-scoped) */
+            <ul className={styles.chartTree}>
+              <li className={styles.chartNode}>
+                <div className={`${styles.chartCard} ${styles.companyCard}`}>
+                  <ShopOutlined className={styles.cardIcon} style={{ color: '#1890ff' }} />
+                  <div className={styles.cardContent}>
+                    <div className={styles.cardName}>{companyName}</div>
+                    <div className={styles.cardCode}>
+                      {data.company?.industryType || data.company?.industry || 'Root'}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {buList.length > 0 && (
-                <ul className={styles.chartChildren}>
-                  {buList.map((entry) => {
-                    const bu = entry.businessUnit;
-                    const depts = entry.departments || [];
+                {buList.length > 0 && (
+                  <ul className={styles.chartChildren}>
+                    {buList.map((entry) => {
+                      const bu = entry.businessUnit;
+                      const depts = entry.departments || [];
 
-                    return (
-                      <li key={bu.handle} className={styles.chartNode}>
-                        <div className={`${styles.chartCard} ${styles.buCard}`}>
-                          <BankOutlined className={styles.cardIcon} style={{ color: '#13c2c2' }} />
-                          <div className={styles.cardContent}>
-                            <div className={styles.cardName}>{bu.buName}</div>
-                            <div className={styles.cardCode}>{bu.buCode}</div>
+                      return (
+                        <li key={bu.handle} className={styles.chartNode}>
+                          <div className={`${styles.chartCard} ${styles.buCard}`}>
+                            <BankOutlined className={styles.cardIcon} style={{ color: '#13c2c2' }} />
+                            <div className={styles.cardContent}>
+                              <div className={styles.cardName}>{bu.buName}</div>
+                              <div className={styles.cardCode}>{bu.buCode}</div>
+                            </div>
+                            {depts.length > 0 && (
+                              <span className={styles.childCount}>{depts.length}</span>
+                            )}
                           </div>
-                          {depts.length > 0 && (
-                            <span className={styles.childCount}>{depts.length}</span>
-                          )}
-                        </div>
 
-                        {depts.length > 0 && (
-                          <ul className={styles.chartChildren}>
-                            {depts.map((dept) => (
-                              <DeptCard
-                                key={dept.handle}
-                                dept={dept}
-                                depth={1}
-                                employeesByDept={employeesByDept}
-                              />
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                          {depts.length > 0 && (
+                            <ul className={styles.chartChildren}>
+                              {depts.map((dept) => (
+                                <DeptCard
+                                  key={dept.handle}
+                                  dept={dept}
+                                  depth={1}
+                                  employeesByDept={employeesByDept}
+                                />
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            </ul>
+          ) : (
+            /* Reporting Tree: backend employee hierarchy rendered directly */
+            <ul className={styles.chartTree}>
+              {empHierarchy.length === 0 ? (
+                <li className={styles.chartNode}>
+                  <Empty description="No employee hierarchy data" />
+                </li>
+              ) : (
+                empHierarchy.map((root) => (
+                  <HierarchyEmployeeNode
+                    key={root.handle}
+                    node={root}
+                    photoByHandle={photoByHandle}
+                    isRoot={true}
+                  />
+                ))
               )}
-            </li>
-          </ul>
+            </ul>
+          )}
         </div>
       </div>
     </div>
