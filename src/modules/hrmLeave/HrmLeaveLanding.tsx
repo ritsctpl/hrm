@@ -44,11 +44,18 @@ const HrmLeaveLanding: React.FC = () => {
   const cookieRole = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
 
   // RBAC-driven role: canDelete -> Admin/HR, canEdit -> Supervisor, canAdd -> Employee.
-  // Falls back to the cookie role string when RBAC hasn't published HRM_LEAVE grants.
+  // When the backend has published HRM_LEAVE grants we trust them exclusively;
+  // the cookie role is only consulted as a fallback for environments where
+  // RBAC isn't wired yet.
   const modulePerms = useCan("HRM_LEAVE");
-  const isHrAdmin = modulePerms.canDelete || HR_ROLES.includes(cookieRole);
+  const rbacPublished =
+    modulePerms.canView || modulePerms.canAdd || modulePerms.canEdit || modulePerms.canDelete;
+  const isHrAdmin = rbacPublished
+    ? modulePerms.canDelete
+    : HR_ROLES.includes(cookieRole);
   const isSupervisor =
-    !isHrAdmin && (modulePerms.canEdit || SUPERVISOR_ROLES.includes(cookieRole));
+    !isHrAdmin &&
+    (rbacPublished ? modulePerms.canEdit : SUPERVISOR_ROLES.includes(cookieRole));
   const role = isHrAdmin ? "HR" : isSupervisor ? "SUPERVISOR" : "EMPLOYEE";
 
   const permissions = useLeavePermissions(role);
