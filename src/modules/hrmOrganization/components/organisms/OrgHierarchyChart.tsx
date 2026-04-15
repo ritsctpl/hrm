@@ -225,6 +225,22 @@ const DeptCard: React.FC<{
     });
   }, [employeesByDept, dept.deptName, dept.deptCode]);
 
+  const reportingTree = useMemo(
+    () => buildReportingTree(deptEmployees, dept.headOfDepartmentEmployeeId),
+    [deptEmployees, dept.headOfDepartmentEmployeeId, dept.handle],
+  );
+
+  // Dev diagnostic: head id is set but doesn't resolve to an employee in
+  // the dept's member list. Falls back to flat rendering below.
+  useEffect(() => {
+    if (dept.headOfDepartmentEmployeeId && !reportingTree && deptEmployees.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[OrgHierarchyChart] Dept "${dept.deptName}" (${dept.deptCode}) has headOfDepartmentEmployeeId="${dept.headOfDepartmentEmployeeId}" but no matching employee in its member list — falling back to flat render.`,
+      );
+    }
+  }, [dept.deptName, dept.deptCode, dept.headOfDepartmentEmployeeId, reportingTree, deptEmployees.length]);
+
   const totalChildren = childDepts.length + deptEmployees.length;
   const hasChildren = totalChildren > 0;
   const [collapsed, setCollapsed] = useState(depth > 2);
@@ -267,9 +283,18 @@ const DeptCard: React.FC<{
               employeesByDept={employeesByDept}
             />
           ))}
-          {deptEmployees.map((emp) => (
-            <EmployeeCard key={emp.handle} emp={emp} />
-          ))}
+          {reportingTree ? (
+            <>
+              <ReportingNode node={reportingTree.head} isHead={true} />
+              {reportingTree.orphans.map((emp) => (
+                <EmployeeCard key={emp.handle} emp={emp} />
+              ))}
+            </>
+          ) : (
+            deptEmployees.map((emp) => (
+              <EmployeeCard key={emp.handle} emp={emp} />
+            ))
+          )}
         </ul>
       )}
     </li>
