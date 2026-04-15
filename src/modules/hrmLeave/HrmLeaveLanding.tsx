@@ -451,9 +451,9 @@ const HrmLeaveLanding: React.FC = () => {
             site={site}
             employeeId={employeeId}
             balances={balances}
-            allowEmployeeSelection
             onSubmitted={() => {
-              loadLedgerHistory();
+              loadMyRequests();
+              loadBalances();
               loadGlobalQueue();
             }}
           />
