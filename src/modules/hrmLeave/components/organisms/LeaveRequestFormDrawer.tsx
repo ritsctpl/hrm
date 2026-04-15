@@ -199,12 +199,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       HrmEmployeeService.fetchProfile(site, employeeId)
         .then((raw) => {
           if (cancelled) return;
-          // Backend returns the profile in a flat shape that needs to be
-          // mapped to the EmployeeProfile domain type before basicDetails
-          // is reliably populated.
-          const mapped = mapApiProfileToEmployeeProfile(
-            raw as unknown as Record<string, unknown>,
-          );
+          // Backend wraps the payload in { response: <profile> } but the
+          // employee service returns the envelope verbatim. Strip it before
+          // running the mapper so basicDetails / officialDetails resolve.
+          const rawObj = raw as unknown as Record<string, unknown>;
+          const inner =
+            rawObj && typeof rawObj === "object" && "response" in rawObj
+              ? (rawObj.response as Record<string, unknown>)
+              : rawObj;
+          const mapped = mapApiProfileToEmployeeProfile(inner ?? {});
           setCurrentProfile(mapped);
         })
         .catch(() => {
