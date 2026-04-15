@@ -205,24 +205,54 @@
   min-width: 130px;
 }
 
-/* Employee leaf card — smaller, neutral, visibly different from depts */
+/* Employee leaf card — vertical: role header bar + photo + name */
 .employeeCard {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
   border-color: #bae0ff;
-  background: linear-gradient(135deg, #f0f9ff 0%, #fff 100%);
-  min-width: 140px;
-  padding: 6px 10px;
+  background: var(--hrm-bg-white, #fff);
+  min-width: 180px;
+  max-width: 220px;
+  overflow: hidden;
+}
+
+.empRoleHeader {
+  background: #1890ff;
+  color: #fff;
   font-size: 11px;
-}
-
-.employeeCard .cardName {
-  font-size: 12px;
   font-weight: 600;
-  color: #0958d9;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 6px 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.employeeCard .cardCode {
-  font-size: 10px;
-  color: #7c8a9a;
+.empRoleHeaderHead {
+  background: linear-gradient(135deg, #faad14 0%, #d48806 100%);
+}
+
+.empBody {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.empName {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hrm-text-primary, #1f1f1f);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cardIcon {

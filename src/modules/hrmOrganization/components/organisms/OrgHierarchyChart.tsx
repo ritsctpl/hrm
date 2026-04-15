@@ -120,36 +120,40 @@ const buildReportingTree = (
 };
 
 /* ------------------------------------------------------------------ */
-/*  Employee leaf card                                                 */
+/*  Shared employee card body — role header + photo + name             */
 /* ------------------------------------------------------------------ */
-const EmployeeCard: React.FC<{ emp: EmployeeDirectoryRow }> = ({ emp }) => {
+const EmployeeCardBody: React.FC<{
+  emp: EmployeeDirectoryRow;
+  isHead?: boolean;
+}> = ({ emp, isHead = false }) => {
   const photo = emp.photoUrl;
   return (
-    <li className={styles.chartNode}>
-      <Tooltip
-        title={
-          <div>
-            <div style={{ fontWeight: 600 }}>{emp.fullName}</div>
-            {emp.role && <div>{emp.role}</div>}
-            <div style={{ opacity: 0.7, fontSize: 11 }}>{emp.workEmail}</div>
-          </div>
-        }
+    <div className={`${styles.chartCard} ${styles.employeeCard}`}>
+      <div
+        className={`${styles.empRoleHeader} ${isHead ? styles.empRoleHeaderHead : ''}`}
       >
-        <div className={`${styles.chartCard} ${styles.employeeCard}`}>
-          {photo ? (
-            <Avatar src={photo} size={28} className={styles.cardIcon} />
-          ) : (
-            <Avatar size={28} className={styles.cardIcon} icon={<UserOutlined />} />
-          )}
-          <div className={styles.cardContent}>
-            <div className={styles.cardName}>{emp.fullName}</div>
-            <div className={styles.cardCode}>{emp.role || emp.employeeCode}</div>
-          </div>
-        </div>
-      </Tooltip>
-    </li>
+        {emp.role || 'EMPLOYEE'}
+      </div>
+      <div className={styles.empBody}>
+        {photo ? (
+          <Avatar src={photo} size={48} />
+        ) : (
+          <Avatar size={48} icon={<UserOutlined />} />
+        )}
+        <div className={styles.empName}>{emp.fullName}</div>
+      </div>
+    </div>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/*  Employee leaf card                                                 */
+/* ------------------------------------------------------------------ */
+const EmployeeCard: React.FC<{ emp: EmployeeDirectoryRow }> = ({ emp }) => (
+  <li className={styles.chartNode}>
+    <EmployeeCardBody emp={emp} />
+  </li>
+);
 
 /* ------------------------------------------------------------------ */
 /*  Reporting tree node — recursive employee card                      */
@@ -159,38 +163,9 @@ const ReportingNode: React.FC<{
   isHead: boolean;
 }> = ({ node, isHead }) => {
   const { emp, reports } = node;
-  const photo = emp.photoUrl;
   return (
     <li className={styles.chartNode}>
-      <Tooltip
-        title={
-          <div>
-            <div style={{ fontWeight: 600 }}>{emp.fullName}</div>
-            {emp.role && <div>{emp.role}</div>}
-            <div style={{ opacity: 0.7, fontSize: 11 }}>{emp.workEmail}</div>
-          </div>
-        }
-      >
-        <div className={`${styles.chartCard} ${styles.employeeCard}`}>
-          {photo ? (
-            <Avatar src={photo} size={28} className={styles.cardIcon} />
-          ) : (
-            <Avatar size={28} className={styles.cardIcon} icon={<UserOutlined />} />
-          )}
-          <div className={styles.cardContent}>
-            <div className={styles.cardName}>
-              {emp.fullName}
-              {isHead && (
-                <Tag color="gold" style={{ marginLeft: 6, fontSize: 10, lineHeight: '14px', padding: '0 4px' }}>
-                  HOD
-                </Tag>
-              )}
-            </div>
-            <div className={styles.cardCode}>{emp.role || emp.employeeCode}</div>
-          </div>
-        </div>
-      </Tooltip>
-
+      <EmployeeCardBody emp={emp} isHead={isHead} />
       {reports.length > 0 && (
         <ul className={styles.chartChildren}>
           {reports.map((child) => (
