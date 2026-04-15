@@ -38,6 +38,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
     showUnlockModal,
     editingHoliday,
     categoryFilter,
+    monthFilter,
     calendarMonth,
     setActiveTab,
     openHolidayForm,
@@ -52,8 +53,6 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
     closeLockModal,
     openUnlockModal,
     closeUnlockModal,
-    addHoliday,
-    updateHoliday,
     updateGroupStatus,
     setCalendarMonth,
   } = useHrmHolidayStore();
@@ -77,8 +76,12 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
   }, [holidays, statsFilter]);
 
   useEffect(() => {
-    loadHolidays({ groupHandle: group.handle, category: categoryFilter ?? undefined });
-  }, [group.handle, categoryFilter]);
+    loadHolidays({
+      groupHandle: group.handle,
+      category: categoryFilter ?? undefined,
+      month: monthFilter ?? undefined,
+    });
+  }, [group.handle, categoryFilter, monthFilter]);
 
   useEffect(() => {
     loadCategories();
@@ -256,17 +259,20 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
         groupStatus={group.status}
         holiday={editingHoliday}
         onClose={closeHolidayForm}
-        onSaved={(h) => {
-          editingHoliday ? updateHoliday(h.handle, h) : addHoliday(h);
+        onSaved={async () => {
           closeHolidayForm();
           message.success('Holiday saved');
+          await loadHolidays({
+            groupHandle: group.handle,
+            category: categoryFilter ?? undefined,
+            month: monthFilter ?? undefined,
+          });
         }}
       />
 
       <BuMappingPanel
         open={showBuMapping}
         groupHandle={group.handle}
-        mappings={group.mappings}
         onClose={closeBuMapping}
         onMappingChanged={() => {}}
       />

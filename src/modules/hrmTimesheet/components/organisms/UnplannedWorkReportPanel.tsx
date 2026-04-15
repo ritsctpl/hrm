@@ -15,17 +15,18 @@ const { RangePicker } = DatePicker;
 
 export default function UnplannedWorkReportPanel() {
   const {
-    reportPeriodStart, reportPeriodEnd, reportDept,
-    setReportPeriodStart, setReportPeriodEnd, setReportDept,
+    reportPeriodStart, reportPeriodEnd,
+    setReportPeriodStart, setReportPeriodEnd,
     loadingReport, setLoadingReport,
   } = useHrmTimesheetStore();
   const { site } = parseCookies();
   const [report, setReport] = useState<UnplannedWorkReport | null>(null);
+  const [department, setDepartment] = useState('');
 
   async function handleGenerate() {
     setLoadingReport(true);
     try {
-      const data = await HrmTimesheetService.getUnplannedWorkReport(site, reportPeriodStart, reportPeriodEnd, reportDept || undefined);
+      const data = await HrmTimesheetService.getUnplannedWorkReport(site, reportPeriodStart, reportPeriodEnd, department || undefined);
       setReport(data);
     } catch (err) {
       message.error('Failed to generate unplanned work report');
@@ -66,8 +67,8 @@ export default function UnplannedWorkReportPanel() {
           <Input
             size="small"
             placeholder="All"
-            value={reportDept}
-            onChange={(e) => setReportDept(e.target.value)}
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
             style={{ width: 140 }}
           />
         </Form.Item>

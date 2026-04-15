@@ -6,6 +6,7 @@ import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
+import { resolveEmployeeId } from '../../utils/resolveEmployeeId';
 import Can from '../../../hrmAccess/components/Can';
 import type { UnplannedCategory } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
@@ -22,14 +23,7 @@ export default function UnplannedCategoryManager() {
   const { unplannedCategories, setUnplannedCategories } = useHrmTimesheetStore();
   const cookies = parseCookies();
   const site = cookies.site ?? '';
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    '';
+  const employeeId = resolveEmployeeId(cookies);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UnplannedCategory | null>(null);
   const [saving, setSaving] = useState(false);
@@ -99,8 +93,9 @@ export default function UnplannedCategoryManager() {
       await HrmTimesheetService.deleteUnplannedCategory(site, handle, employeeId);
       message.success('Category deleted');
       await reloadCategories();
-    } catch (err) {
-      message.error('Failed to delete category');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(msg ?? 'Failed to delete category');
     }
   }
 

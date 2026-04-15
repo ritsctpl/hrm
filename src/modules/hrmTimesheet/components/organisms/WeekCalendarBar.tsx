@@ -1,4 +1,5 @@
 'use client';
+import { Skeleton } from 'antd';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import DaySummaryCard from '../molecules/DaySummaryCard';
@@ -34,6 +35,21 @@ function buildWeekDays(weekStart: string, timesheets: TimesheetHeader[] = []): W
 export default function WeekCalendarBar({ weeklyTimesheets, loading }: Props) {
   const { selectedDate, selectedWeekStart, setSelectedDate } = useHrmTimesheetStore();
   const days = buildWeekDays(selectedWeekStart, Array.isArray(weeklyTimesheets) ? weeklyTimesheets : []);
+
+  if (loading) {
+    return (
+      <div className={styles.weekCalendarBar}>
+        <div className={styles.weekNavSection}>
+          <WeekNavigator />
+        </div>
+        <div className={styles.daySummaryStrip}>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton.Button key={i} active style={{ width: 60, height: 80 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.weekCalendarBar}>

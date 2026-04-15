@@ -1,5 +1,5 @@
 'use client';
-import { Button, Input, Space, Spin, Tag, Typography } from 'antd';
+import { Button, Input, Space, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { UndoOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -37,8 +37,8 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
 
   if (!ts) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-        <Spin />
+      <div className={styles.emptyState}>
+        <Text type="secondary">Timesheet no longer pending</Text>
       </div>
     );
   }

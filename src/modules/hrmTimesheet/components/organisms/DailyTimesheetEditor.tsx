@@ -2,6 +2,7 @@
 import { Button, Input, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import { CopyOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
@@ -39,6 +40,12 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
     currentDayTimesheet?.holiday || currentDayTimesheet?.leaveDay;
 
   const lines = currentDayTimesheet?.lines ?? [];
+
+  const [notes, setNotes] = useState<string>(currentDayTimesheet?.notes ?? '');
+
+  useEffect(() => {
+    setNotes(currentDayTimesheet?.notes ?? '');
+  }, [currentDayTimesheet?.handle]);
 
   if (loadingDay) {
     return (
@@ -81,7 +88,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
               <Button
                 size="small"
                 icon={<SaveOutlined />}
-                onClick={() => onSave()}
+                onClick={() => onSave(notes)}
                 loading={savingTimesheet}
               >
                 Save
@@ -94,7 +101,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
                 icon={<SendOutlined />}
                 onClick={onSubmit}
                 loading={submittingTimesheet}
-                disabled={lines.length === 0}
+                disabled={lines.length === 0 || !currentDayTimesheet?.handle}
               >
                 Submit
               </Button>
@@ -127,7 +134,8 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
           <Input.TextArea
             rows={2}
             placeholder="Notes for this day..."
-            defaultValue={currentDayTimesheet?.notes ?? ''}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             style={{ marginTop: 4 }}
           />
         </div>

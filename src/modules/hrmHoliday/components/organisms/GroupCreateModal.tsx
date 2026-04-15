@@ -15,12 +15,11 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const yearOptions = getYearOptions(3);
+  const cookies = parseCookies();
+  const site = cookies.site ?? '';
+  const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
-    const cookies = parseCookies();
-    const site = cookies.site ?? '';
-    const userId = cookies.userId ?? '';
-
     try {
       const values = await form.validateFields();
       setSaving(true);

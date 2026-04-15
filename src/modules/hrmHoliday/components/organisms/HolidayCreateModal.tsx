@@ -19,12 +19,11 @@ interface HolidayCreateModalProps {
 export default function HolidayCreateModal({ open, groups, onClose, onCreated }: HolidayCreateModalProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const cookies = parseCookies();
+  const site = cookies.site ?? '';
+  const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
-    const cookies = parseCookies();
-    const site = cookies.site ?? '';
-    const userId = cookies.userId ?? '';
-
     try {
       const values = await form.validateFields();
       setSaving(true);
@@ -74,7 +73,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       open={open}
       title="Create Holiday"
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       width={500}
       footer={[
         <Button key="cancel" onClick={onClose}>

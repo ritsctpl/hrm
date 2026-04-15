@@ -1,5 +1,5 @@
 'use client';
-import { Button, Space, Statistic, Typography } from 'antd';
+import { Alert, Button, Space, Statistic, Typography } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import Can from '../../../hrmAccess/components/Can';
@@ -15,9 +15,18 @@ export default function WeeklySubmitPanel({ onSubmitWeek }: Props) {
   const { weekSummary, submittingWeek } = useHrmTimesheetStore();
 
   const pendingDays = weekSummary?.pendingDays ?? 0;
+  const rejectedDays =
+    weekSummary?.dailyTimesheets?.filter((t) => t.status === 'REJECTED').length ?? 0;
 
   return (
     <div className={styles.weeklyPanel}>
+      {rejectedDays > 0 && (
+        <Alert
+          type="warning"
+          message={`${rejectedDays} day(s) rejected — please review and resubmit`}
+          style={{ marginBottom: 8 }}
+        />
+      )}
       <div className={styles.weekSummaryRow}>
         <div className={styles.weekStatItem}>
           <span className={styles.weekStatValue} style={{ color: '#1677ff' }}>

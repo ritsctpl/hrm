@@ -37,8 +37,11 @@ export default function HrmTimesheetLanding() {
   // Load approval/team data when switching to those tabs
   useEffect(() => {
     if (activeTab === 'approvals') void loadPendingApprovals();
+  }, [activeTab, loadPendingApprovals]);
+
+  useEffect(() => {
     if (activeTab === 'team') void loadTeamTimesheets();
-  }, [activeTab, loadPendingApprovals, loadTeamTimesheets]);
+  }, [activeTab, selectedWeekStart, loadTeamTimesheets]);
 
   // Week label for AppBar subtitle
   const weekEnd = dayjs(selectedWeekStart).add(6, 'day');

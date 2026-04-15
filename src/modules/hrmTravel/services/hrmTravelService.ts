@@ -41,7 +41,7 @@ function mapAction(raw: any): TravelAction {
     toStatus: raw.toStatus ?? "",
     remarks: raw.remarks,
     escalationLevel: raw.escalationLevel ?? 0,
-    actionDateTime: raw.actionDateTime ?? raw.actionAt ?? "",
+    actionDateTime: raw.actionDateTime ?? raw.actionAt ?? raw.createdAt ?? raw.timestamp ?? raw.performedAt ?? "",
   };
 }
 

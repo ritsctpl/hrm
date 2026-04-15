@@ -16,11 +16,11 @@ export default function TimesheetEmployeeTemplate() {
 
   useEffect(() => {
     void loadWeeklyTimesheets();
-  }, [selectedWeekStart]);
+  }, [selectedWeekStart, loadWeeklyTimesheets]);
 
   useEffect(() => {
     void loadDayTimesheet(selectedDate);
-  }, [selectedDate]);
+  }, [selectedDate, loadDayTimesheet]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>

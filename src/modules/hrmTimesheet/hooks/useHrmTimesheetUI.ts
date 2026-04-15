@@ -5,31 +5,29 @@ import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useHrmTimesheetStore } from '../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../services/hrmTimesheetService';
-import { useHrmTimesheetData } from './useHrmTimesheetData';
-import type { TimesheetLine } from '../types/domain.types';
+import { mapTimesheetResponse, useHrmTimesheetData } from './useHrmTimesheetData';
+import { resolveEmployeeId } from '../utils/resolveEmployeeId';
 
 export function useHrmTimesheetUI() {
   const store = useHrmTimesheetStore();
   const { loadWeeklyTimesheets, loadDayTimesheet, loadPendingApprovals } = useHrmTimesheetData();
-  const { site } = parseCookies();
   const cookies = parseCookies();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    '';
+  const { site } = cookies;
+  const employeeId = resolveEmployeeId(cookies);
+  const approverName =
+    (cookies as Record<string, string | undefined>).employeeName ??
+    (cookies as Record<string, string | undefined>).fullName ??
+    (cookies as Record<string, string | undefined>).username ??
+    employeeId;
 
   const saveTimesheet = useCallback(async (notes?: string) => {
-    if (!store.currentDayTimesheet && (!store.currentDayTimesheet || (store.currentDayTimesheet as unknown as { lines: TimesheetLine[] }).lines?.length === 0)) {
+    const lines = store.currentDayTimesheet?.lines ?? [];
+    if (lines.length === 0) {
       message.warning('No timesheet lines to save');
       return;
     }
     store.setSavingTimesheet(true);
     try {
-      const lines = store.currentDayTimesheet?.lines ?? [];
       await HrmTimesheetService.saveTimesheet({
         site,
         employeeId,
@@ -91,7 +89,14 @@ export function useHrmTimesheetUI() {
         weekStartDate: store.selectedWeekStart,
         submittedBy: employeeId,
       });
-      message.success(`Week submitted: ${result.submittedDays} of ${result.totalDays} days`);
+      if (result.submittedDays === 0 && (result.skippedDays ?? 0) > 0) {
+        message.info('All days already submitted for this week');
+      } else {
+        message.success(`Week submitted: ${result.submittedDays} day(s) submitted`);
+      }
+      if (result.errors?.length) {
+        message.warning(`${result.errors.length} day(s) failed to submit`);
+      }
       await loadWeeklyTimesheets();
     } catch (err) {
       message.error('Failed to submit week');
@@ -110,6 +115,7 @@ export function useHrmTimesheetUI() {
         action,
         remarks,
         approverEmployeeId: employeeId,
+        approverName,
       });
       message.success(`Timesheet ${action.toLowerCase()}`);
       await loadPendingApprovals();
@@ -120,7 +126,7 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setApprovingTimesheet(false);
     }
-  }, [site, employeeId, loadPendingApprovals]);
+  }, [site, employeeId, approverName, loadPendingApprovals]);
 
   const bulkApproveTimesheets = useCallback(async (handles: string[], action: 'APPROVED' | 'REJECTED', remarks: string) => {
     if (handles.length === 0) {
@@ -135,6 +141,7 @@ export function useHrmTimesheetUI() {
         action,
         remarks,
         approverEmployeeId: employeeId,
+        approverName,
       });
       message.success(`Bulk ${action.toLowerCase()}: ${result.successful ?? 0} processed, ${result.failed ?? 0} failed`);
       await loadPendingApprovals();
@@ -145,7 +152,7 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setApprovingTimesheet(false);
     }
-  }, [site, employeeId, loadPendingApprovals]);
+  }, [site, employeeId, approverName, loadPendingApprovals]);
 
   const reopenTimesheet = useCallback(async (handle: string, reason: string) => {
     store.setApprovingTimesheet(true);
@@ -171,42 +178,7 @@ export function useHrmTimesheetUI() {
     store.setSavingTimesheet(true);
     try {
       const data = await HrmTimesheetService.copyFromPreviousDay(site, employeeId, store.selectedDate, employeeId);
-      store.setCurrentDayTimesheet({
-        handle: data.handle,
-        site: data.site,
-        employeeId: data.employeeId,
-        employeeName: data.employeeName,
-        department: data.department,
-        buCode: data.buCode,
-        supervisorId: data.supervisorId,
-        date: data.date,
-        lines: data.lines.map((l) => ({
-          lineId: l.lineId,
-          lineType: l.lineType as TimesheetLine['lineType'],
-          projectHandle: l.projectHandle,
-          projectCode: l.projectCode,
-          projectName: l.projectName,
-          allocationHandle: l.allocationHandle,
-          hours: l.hours,
-          categoryId: l.categoryId,
-          categoryLabel: l.categoryLabel,
-          reason: l.reason,
-          notes: l.notes,
-          allocatedHoursForDay: l.allocatedHoursForDay,
-          overrun: l.overrun,
-        })),
-        totalHours: data.totalHours,
-        colorCode: data.colorCode,
-        status: data.status,
-        notes: data.notes,
-        version: data.version,
-        holiday: data.holiday,
-        leaveDay: data.leaveDay,
-        leaveType: data.leaveType,
-        active: data.active,
-        createdDateTime: data.createdDateTime,
-        modifiedDateTime: data.modifiedDateTime,
-      });
+      store.setCurrentDayTimesheet(mapTimesheetResponse(data));
       message.success('Copied from previous day');
     } catch (err) {
       message.warning('No previous day data to copy');

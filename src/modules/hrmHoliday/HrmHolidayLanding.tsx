@@ -53,7 +53,10 @@ export default function HrmHolidayLanding() {
   const permissions = useHolidayPermissions(userRole);
 
   const fetchGroups = async () => {
-    if (!site) return;
+    if (!site) {
+      message.error('Site not configured. Please log in again.');
+      return;
+    }
     setGroupsLoading(true);
     setGroupsError(null);
     try {
@@ -63,22 +66,15 @@ export default function HrmHolidayLanding() {
         status: searchParams.status,
         requestingUserRole: '',
         buHandle: searchParams.buHandle,
+        search: searchParams.search?.trim() || undefined,
       });
-      
+
       // Handle both wrapped and unwrapped responses
       const data = res?.data || res;
-      let groups = Array.isArray(data) ? data : [];
-      
-      // Apply client-side search filter if search term exists
-      if (searchParams.search && searchParams.search.trim()) {
-        const searchLower = searchParams.search.toLowerCase().trim();
-        groups = groups.filter((g: HolidayGroup) => 
-          g.groupName?.toLowerCase().includes(searchLower)
-        );
-      }
-      
+      const groups = Array.isArray(data) ? data : [];
+
       setGroups(groups.map((g: HolidayGroup) => ({ ...g, mappings: g.mappings ?? [] })));
-      
+
       // BUG-003 FIX: Clear selected group if it's not in the filtered results
       if (selectedGroup && !groups.find((g: HolidayGroup) => g.handle === selectedGroup.handle)) {
         selectGroup(null);
@@ -102,11 +98,12 @@ export default function HrmHolidayLanding() {
     selectGroup(group);
   };
 
-  const handleDuplicated = (handle: string) => {
+  const handleDuplicated = async (handle: string) => {
     closeDuplicateModal();
     message.success('Group duplicated successfully');
-    // Refresh groups list
-    fetchGroups();
+    await fetchGroups();
+    const newGroup = useHrmHolidayStore.getState().groups.find((g) => g.handle === handle);
+    if (newGroup) selectGroup(newGroup);
   };
 
   const handleEditGroup = () => {

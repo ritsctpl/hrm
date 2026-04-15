@@ -40,16 +40,17 @@ export default function ApprovalInbox({ onApprove, onBulkApprove, onReopen }: Pr
   }, [selectedHandles.length, pendingApprovals]);
 
   const handleBulkApprove = useCallback(async () => {
-    await onBulkApprove(selectedHandles, 'APPROVED', bulkRemarks);
+    await onBulkApprove(selectedHandles, 'APPROVED', bulkRemarks.trim());
     setSelectedHandles([]);
     setBulkRemarks('');
   }, [selectedHandles, bulkRemarks, onBulkApprove]);
 
   const handleBulkReject = useCallback(async () => {
-    if (!bulkRemarks.trim()) {
+    const trimmed = bulkRemarks.trim();
+    if (!trimmed) {
       return;
     }
-    await onBulkApprove(selectedHandles, 'REJECTED', bulkRemarks);
+    await onBulkApprove(selectedHandles, 'REJECTED', trimmed);
     setSelectedHandles([]);
     setBulkRemarks('');
   }, [selectedHandles, bulkRemarks, onBulkApprove]);

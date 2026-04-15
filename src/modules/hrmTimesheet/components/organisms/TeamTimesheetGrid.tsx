@@ -52,7 +52,10 @@ export default function TeamTimesheetGrid() {
         </thead>
         <tbody>
           {teamTimesheets.map((member) => {
-            const totalHours = member.weeklyData.reduce((s, d) => s + d.totalHours, 0);
+            const totalHours = weekDates.reduce((s, date) => {
+              const day = member.weeklyData.find((d) => d.date === date);
+              return s + (day?.totalHours ?? 0);
+            }, 0);
             return (
               <tr key={member.employeeId}>
                 <td className={styles.stickyCol}>

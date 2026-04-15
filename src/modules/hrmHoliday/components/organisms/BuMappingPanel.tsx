@@ -15,7 +15,6 @@ import styles from '../../styles/HolidayForm.module.css';
 export default function BuMappingPanel({
   open,
   groupHandle,
-  mappings: initialMappings,
   onClose,
   onMappingChanged,
 }: BuMappingPanelProps) {

@@ -2,7 +2,7 @@
 
 export type TimesheetStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'REOPENED';
 export type DayColorCode = 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
-export type LineType = 'PROJECT' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
+export type LineType = 'PROJECT' | 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
 
 export interface TimesheetLine {
   lineId: string;

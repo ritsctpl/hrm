@@ -6,6 +6,12 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 
 const { Text } = Typography;
 
+function getMondayOf(d: dayjs.Dayjs): dayjs.Dayjs {
+  const day = d.day();
+  const diff = day === 0 ? -6 : 1 - day;
+  return d.add(diff, 'day').startOf('day');
+}
+
 export default function WeekNavigator() {
   const { selectedWeekStart, setSelectedWeekStart } = useHrmTimesheetStore();
 
@@ -13,6 +19,8 @@ export default function WeekNavigator() {
   const nextWeek = () => setSelectedWeekStart(dayjs(selectedWeekStart).add(7, 'day').format('YYYY-MM-DD'));
 
   const weekEnd = dayjs(selectedWeekStart).add(6, 'day');
+  const currentWeekStart = getMondayOf(dayjs());
+  const isCurrentWeek = dayjs(selectedWeekStart).isSame(currentWeekStart, 'day');
 
   return (
     <Space>
@@ -20,7 +28,12 @@ export default function WeekNavigator() {
       <Text strong style={{ minWidth: 180, textAlign: 'center', display: 'inline-block' }}>
         {dayjs(selectedWeekStart).format('DD MMM')} — {weekEnd.format('DD MMM YYYY')}
       </Text>
-      <Button size="small" icon={<RightOutlined />} onClick={nextWeek} />
+      <Button
+        size="small"
+        icon={<RightOutlined />}
+        onClick={nextWeek}
+        disabled={isCurrentWeek}
+      />
     </Space>
   );
 }

@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import { Input, Select, DatePicker } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
 import styles from "../../styles/Travel.module.css";
 
@@ -69,7 +70,9 @@ const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
         format="DD/MM/YYYY"
         onChange={(_, strings) => {
           if (strings[0] && strings[1]) {
-            setDateRange([strings[0], strings[1]]);
+            const from = dayjs(strings[0], "DD/MM/YYYY").format("YYYY-MM-DD");
+            const to   = dayjs(strings[1], "DD/MM/YYYY").format("YYYY-MM-DD");
+            setDateRange([from, to]);
           } else {
             setDateRange(null);
           }

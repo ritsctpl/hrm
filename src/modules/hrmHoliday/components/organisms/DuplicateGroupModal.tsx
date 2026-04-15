@@ -18,12 +18,11 @@ export default function DuplicateGroupModal({
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const yearOptions = getYearOptions(3).filter((y) => y.value !== sourceGroup.year);
+  const cookies = parseCookies();
+  const site = cookies.site ?? '';
+  const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
-    const cookies = parseCookies();
-    const site = cookies.site ?? '';
-    const userId = cookies.userId ?? '';
-
     try {
       const values = await form.validateFields();
       setSaving(true);

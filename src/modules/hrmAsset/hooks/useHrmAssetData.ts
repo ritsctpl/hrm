@@ -11,7 +11,8 @@ export function useHrmAssetData() {
 
   const getSite = () => parseCookies().site ?? '';
   const getUserId = () => parseCookies().userId ?? parseCookies().user ?? '';
-  const getSupervisorId = () => parseCookies().supervisorId ?? getUserId();
+  // The logged-in user IS the supervisor — pass their own userId as supervisorId
+  const getSupervisorId = () => getUserId();
 
   const loadDashboard = useCallback(async () => {
     store.setLoadingDashboard(true);

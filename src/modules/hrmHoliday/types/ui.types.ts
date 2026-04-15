@@ -7,7 +7,6 @@ import type {
   Holiday,
   HolidayGroup,
   HolidayCategoryConfig,
-  HolidayBuMapping,
   HolidayGroupStatus,
 } from './domain.types';
 
@@ -45,7 +44,6 @@ export interface HolidayFormPanelProps {
 export interface BuMappingPanelProps {
   open: boolean;
   groupHandle: string;
-  mappings: HolidayBuMapping[];
   onClose: () => void;
   onMappingChanged: () => void;
 }

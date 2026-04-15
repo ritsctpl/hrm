@@ -37,6 +37,7 @@ const HrmTravelLanding: React.FC = () => {
     selectedRequest,
     screenMode,
     policies,
+    searchTerm,
     statusFilter,
     typeFilter,
     dateRange,
@@ -53,7 +54,7 @@ const HrmTravelLanding: React.FC = () => {
   // Load data on mount and when filters change
   useEffect(() => {
     loadMyRequests();
-  }, [loadMyRequests, statusFilter, typeFilter, dateRange]);
+  }, [loadMyRequests, statusFilter, typeFilter, dateRange, searchTerm]);
 
   useEffect(() => {
     if (isSupervisor || isAdmin) {

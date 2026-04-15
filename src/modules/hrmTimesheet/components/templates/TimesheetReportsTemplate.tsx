@@ -6,6 +6,7 @@ import { parseCookies } from 'nookies';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
+import { resolveEmployeeId } from '../../utils/resolveEmployeeId';
 import PayrollExportPanel from '../organisms/PayrollExportPanel';
 import ComplianceReportPanel from '../organisms/ComplianceReportPanel';
 import UnplannedWorkReportPanel from '../organisms/UnplannedWorkReportPanel';
@@ -27,34 +28,39 @@ function LockPeriodManager() {
   const [periods, setPeriods] = useState<LockPeriodRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [newDate, setNewDate] = useState<dayjs.Dayjs | null>(null);
-  const site = parseCookies().site ?? '';
-  const user = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+  const cookies = parseCookies();
+  const site = cookies.site ?? '';
+  const user = resolveEmployeeId(cookies) || 'system';
 
+  // TODO(backend): no /lockPeriod/list endpoint exists. This loadPeriods is a
+  // no-op until the backend exposes one — periods are tracked in local state
+  // via save/delete responses.
   const loadPeriods = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await HrmTimesheetService.getLockPeriods(site);
-      setPeriods(Array.isArray(data) ? data : []);
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false);
-    }
-  }, [site]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => { loadPeriods(); }, [loadPeriods]);
 
   const handleAdd = async () => {
     if (!newDate) return;
     try {
-      await HrmTimesheetService.saveLockPeriod({
+      const saved = await HrmTimesheetService.saveLockPeriod({
         site,
         lockDate: newDate.format('YYYY-MM-DD'),
         createdBy: user,
       });
+      setPeriods((prev) => [
+        ...prev,
+        {
+          handle: saved.handle,
+          site: saved.site,
+          lockDate: saved.lockDate,
+          createdBy: saved.createdBy,
+          createdDateTime: saved.createdDateTime,
+        },
+      ]);
       message.success('Lock period created');
       setNewDate(null);
-      loadPeriods();
     } catch {
       message.error('Failed to create lock period');
     }
@@ -63,8 +69,8 @@ function LockPeriodManager() {
   const handleDelete = async (record: LockPeriodRecord) => {
     try {
       await HrmTimesheetService.deleteLockPeriod(site, record.handle ?? '', user);
+      setPeriods((prev) => prev.filter((p) => p.handle !== record.handle));
       message.success('Lock period deleted');
-      loadPeriods();
     } catch {
       message.error('Failed to delete lock period');
     }

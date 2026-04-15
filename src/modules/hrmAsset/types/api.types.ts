@@ -64,6 +64,19 @@ export interface CreateAssetPayload {
   createdBy: string;
 }
 
+export interface UpdateAssetPayload {
+  site: string;
+  assetId: string;
+  assetName?: string;
+  purchaseValueINR?: number;
+  purchaseDate?: string;
+  vendor?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  location?: string;
+  modifiedBy: string;
+}
+
 export interface AssetAttachmentDto {
   attachmentId: string;
   fileType: string;

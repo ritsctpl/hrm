@@ -15,13 +15,17 @@ export class HrmNotificationService {
     site: string,
     recipientId: string,
     page: number = 0,
-    size: number = 20
+    size: number = 20,
+    type?: string,
+    read?: boolean
   ): Promise<NotificationResponse[]> {
     const res = await api.post(`${this.BASE}/my-notifications`, {
       site,
       recipientId,
       page,
       size,
+      ...(type ? { type } : {}),
+      ...(read !== undefined ? { read } : {}),
     });
     return res.data;
   }

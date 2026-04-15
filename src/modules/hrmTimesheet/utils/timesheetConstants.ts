@@ -16,6 +16,7 @@ export const DAY_COLOR_STYLES: Record<string, { background: string; border: stri
 };
 
 export const LINE_TYPE_LABELS: Record<string, string> = {
+  PROJECT: 'Allocated',
   ALLOCATED: 'Allocated',
   UNPLANNED: 'Unplanned',
   LEAVE: 'Leave',
@@ -29,7 +30,9 @@ export const YELLOW_THRESHOLD = 6;
 
 export const REPORT_TABS = [
   { key: 'payroll', label: 'Payroll Export' },
-  { key: 'compliance', label: 'Compliance' },
+  { key: 'compliance', label: 'Submission Compliance' },
   { key: 'unplanned', label: 'Unplanned Work' },
   { key: 'holiday', label: 'Holiday Working' },
+  { key: 'categories', label: 'Unplanned Categories' },
+  { key: 'lockPeriods', label: 'Lock Periods' },
 ];

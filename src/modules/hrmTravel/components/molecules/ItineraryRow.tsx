@@ -29,7 +29,7 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
           <DatePicker
             format={dateFormat}
             disabled={readonly}
-            value={value.travelDate ? dayjs(value.travelDate) : null}
+            value={value.travelDate ? dayjs(value.travelDate, dateFormat) : null}
             onChange={(_, s) => onChange?.("travelDate", (Array.isArray(s) ? s[0] : s) || null)}
             style={{ width: "100%" }}
           />
@@ -62,7 +62,7 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
         <DatePicker
           format={dateFormat}
           disabled={readonly}
-          value={value.startDate ? dayjs(value.startDate) : null}
+          value={value.startDate ? dayjs(value.startDate, dateFormat) : null}
           onChange={(_, s) => onChange?.("startDate", (Array.isArray(s) ? s[0] : s) || null)}
           style={{ width: "100%" }}
         />
@@ -71,7 +71,7 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
         <DatePicker
           format={dateFormat}
           disabled={readonly}
-          value={value.endDate ? dayjs(value.endDate) : null}
+          value={value.endDate ? dayjs(value.endDate, dateFormat) : null}
           onChange={(_, s) => onChange?.("endDate", (Array.isArray(s) ? s[0] : s) || null)}
           style={{ width: "100%" }}
         />

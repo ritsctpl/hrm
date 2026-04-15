@@ -121,9 +121,24 @@ const HrmTravelScreen: React.FC<Props> = ({
   };
 
   const handleUpload = async (file: File) => {
-    if (!request?.handle) return;
-    await HrmTravelService.uploadAttachment(request.handle, file, site);
-    onActionComplete();
+    let handle = request?.handle;
+
+    if (!handle) {
+      const saved = await saveDraft(formState, undefined);
+      if (!saved) {
+        message.error("Please save the draft before uploading attachments.");
+        return;
+      }
+      handle = saved.handle;
+    }
+
+    try {
+      await HrmTravelService.uploadAttachment(handle, file, site);
+      onActionComplete();
+      message.success("Attachment uploaded.");
+    } catch {
+      message.error("Failed to upload attachment.");
+    }
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {

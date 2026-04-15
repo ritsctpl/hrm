@@ -2,13 +2,22 @@
 
 import { useCallback, useRef } from "react";
 import { parseCookies } from "nookies";
+import { message } from "antd";
 import { HrmTravelService } from "../services/hrmTravelService";
 import { useHrmTravelStore } from "../stores/hrmTravelStore";
 
 export function useCoTravellerSearch() {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
+  const employeeId =
+    cookies.empId        ??
+    cookies.employeeId   ??
+    cookies.employeeCode ??
+    cookies.username     ??
+    cookies.userId       ??
+    cookies.user         ??
+    cookies.rl_user_id   ??
+    "";
 
   const { setEligibleCoTravellers, setCoTravellerSearchLoading } = useHrmTravelStore();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -17,6 +26,11 @@ export function useCoTravellerSearch() {
     const trimmed = query.trim();
     if (!trimmed) {
       setEligibleCoTravellers([]);
+      return;
+    }
+
+    if (!employeeId) {
+      message.error("Employee ID not found in session. Cannot search co-travellers.");
       return;
     }
 

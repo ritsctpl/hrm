@@ -8,6 +8,8 @@ import type {
   AssetCategoryPayload,
   AssetCategoryResponse,
   CreateAssetPayload,
+  UpdateAssetPayload,
+  AssetAttachmentDto,
   AssetResponse,
   AssetListResponse,
   UpdateAssetStatusPayload,
@@ -67,7 +69,7 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async updateAsset(payload: CreateAssetPayload): Promise<AssetResponse> {
+  static async updateAsset(payload: UpdateAssetPayload): Promise<AssetResponse> {
     const res = await api.post(`${this.BASE}/asset/update`, payload);
     return res.data;
   }
@@ -241,5 +243,38 @@ export class HrmAssetService {
   static async getApprovalHistory(site: string, requestId: string): Promise<AssetApprovalActionResponse[]> {
     const res = await api.post(`${this.BASE}/asset/request/approvalHistory`, { site, requestId });
     return res.data;
+  }
+
+  // ─── Attachments ──────────────────────────────────────────────────────────
+
+  static async uploadAttachment(
+    site: string,
+    assetId: string,
+    file: File,
+    uploadedBy: string,
+  ): Promise<AssetAttachmentDto> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('site', site);
+    form.append('assetId', assetId);
+    form.append('uploadedBy', uploadedBy);
+    const res = await api.post(`${this.BASE}/asset/attachment/upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
+
+  static async deleteAttachment(
+    site: string,
+    assetId: string,
+    attachmentId: string,
+    deletedBy: string,
+  ): Promise<void> {
+    await api.post(`${this.BASE}/asset/attachment/delete`, {
+      site,
+      assetId,
+      attachmentId,
+      deletedBy,
+    });
   }
 }

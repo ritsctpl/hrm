@@ -33,7 +33,10 @@ export default function TimesheetLineRow({ line, allocations, categories, readOn
         <Select
           size="small"
           value={line.categoryId}
-          onChange={(v) => onUpdate?.(line.lineId, { categoryId: v })}
+          onChange={(v) => {
+            const cat = categories.find((c) => c.handle === v);
+            onUpdate?.(line.lineId, { categoryId: v, categoryLabel: cat?.label });
+          }}
           options={categories.map((c) => ({ label: c.label, value: c.handle }))}
           placeholder="Category"
           style={{ width: 160 }}
@@ -53,7 +56,10 @@ export default function TimesheetLineRow({ line, allocations, categories, readOn
           max={24}
           step={HOURS_STEP}
           value={line.hours}
-          onChange={(v) => onUpdate?.(line.lineId, { hours: v ?? HOURS_STEP })}
+          onChange={(v) => {
+            const hours = Math.max(HOURS_STEP, v ?? HOURS_STEP);
+            onUpdate?.(line.lineId, { hours });
+          }}
           style={{ width: 80 }}
         />
       )}

@@ -15,17 +15,18 @@ const { RangePicker } = DatePicker;
 
 export default function ComplianceReportPanel() {
   const {
-    reportPeriodStart, reportPeriodEnd, reportDept,
-    setReportPeriodStart, setReportPeriodEnd, setReportDept,
+    reportPeriodStart, reportPeriodEnd,
+    setReportPeriodStart, setReportPeriodEnd,
     loadingReport, setLoadingReport,
   } = useHrmTimesheetStore();
   const { site } = parseCookies();
   const [report, setReport] = useState<SubmissionComplianceReport | null>(null);
+  const [department, setDepartment] = useState('');
 
   async function handleGenerate() {
     setLoadingReport(true);
     try {
-      const data = await HrmTimesheetService.getComplianceReport(site, reportPeriodStart, reportPeriodEnd, reportDept || undefined);
+      const data = await HrmTimesheetService.getComplianceReport(site, reportPeriodStart, reportPeriodEnd, department || undefined);
       setReport(data);
     } catch (err) {
       message.error('Failed to generate compliance report');
@@ -90,8 +91,8 @@ export default function ComplianceReportPanel() {
           <Input
             size="small"
             placeholder="All"
-            value={reportDept}
-            onChange={(e) => setReportDept(e.target.value)}
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
             style={{ width: 140 }}
           />
         </Form.Item>

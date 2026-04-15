@@ -22,13 +22,16 @@ export function useNotificationData() {
   const loadNotifications = useCallback(
     async (page: number, replace: boolean) => {
       const { site, recipientId } = getSiteAndUser();
+      const { filterType, filterRead } = useHrmNotificationStore.getState();
       store.setLoadingNotifications(true);
       try {
         const data = await HrmNotificationService.getMyNotifications(
           site,
           recipientId,
           page,
-          PAGE_SIZE
+          PAGE_SIZE,
+          filterType || undefined,
+          filterRead === 'unread' ? false : undefined
         );
         const mapped: Notification[] = data.map((d) => ({
           ...d,
@@ -94,6 +97,8 @@ export function useNotificationData() {
     try {
       await HrmNotificationService.markAllAsRead(site, recipientId);
       store.markAllRead();
+      const count = await HrmNotificationService.getUnreadCount(site, recipientId);
+      store.setUnreadCount(count);
     } catch {
       message.error('Failed to mark all as read');
     } finally {

@@ -10,7 +10,7 @@ export interface TimesheetRequest {
 }
 
 export interface TimesheetLineRequest {
-  lineType: 'PROJECT' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
+  lineType: 'PROJECT' | 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
   projectHandle?: string;
   allocationHandle?: string;
   hours: number;

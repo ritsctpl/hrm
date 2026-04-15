@@ -1,12 +1,14 @@
 'use client';
 // src/modules/hrmTimesheet/hooks/useHrmTimesheetData.ts
 import { useCallback } from 'react';
+import { message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useHrmTimesheetStore } from '../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../services/hrmTimesheetService';
+import { resolveEmployeeId } from '../utils/resolveEmployeeId';
 import type { TimesheetHeader, TimesheetLine } from '../types/domain.types';
 
-function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse): TimesheetHeader {
+export function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse): TimesheetHeader {
   return {
     handle: r.handle,
     site: r.site,
@@ -47,16 +49,9 @@ function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse)
 
 export function useHrmTimesheetData() {
   const store = useHrmTimesheetStore();
-  const { site } = parseCookies();
   const cookies = parseCookies();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    '';
+  const { site } = cookies;
+  const employeeId = resolveEmployeeId(cookies);
 
   const loadWeeklyTimesheets = useCallback(async () => {
     store.setLoadingWeek(true);
@@ -88,9 +83,13 @@ export function useHrmTimesheetData() {
     try {
       const data = await HrmTimesheetService.getTimesheetByDate(site, employeeId, date);
       store.setCurrentDayTimesheet(mapTimesheetResponse(data));
-    } catch (err) {
-      // No timesheet for this day — create empty
-      store.setCurrentDayTimesheet(null);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (!status || status === 404) {
+        store.setCurrentDayTimesheet(null);
+      } else {
+        message.error('Failed to load timesheet for this day');
+      }
     } finally {
       store.setLoadingDay(false);
     }

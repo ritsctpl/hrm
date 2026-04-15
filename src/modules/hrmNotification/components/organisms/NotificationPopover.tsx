@@ -7,6 +7,7 @@ import NotificationPopoverHeader from '../molecules/NotificationPopoverHeader';
 import NotificationItem from '../molecules/NotificationItem';
 import { useHrmNotificationStore } from '../../stores/hrmNotificationStore';
 import { useNotificationData } from '../../hooks/useNotificationData';
+import { getDeepLink } from '../../utils/notificationHelpers';
 import type { Notification } from '../../types/domain.types';
 import styles from '../../styles/NotificationCentre.module.css';
 
@@ -22,16 +23,17 @@ export default function NotificationPopover({ site, recipientId }: NotificationP
     unreadCount,
     loadingPopover,
     markingAllRead,
+    isPopoverOpen,
     setPopoverOpen,
   } = useHrmNotificationStore();
 
   const { loadPopoverNotifications, handleMarkRead, handleMarkAllRead } = useNotificationData();
 
   useEffect(() => {
-    if (site && recipientId) {
+    if (isPopoverOpen && site && recipientId) {
       loadPopoverNotifications();
     }
-  }, [site, recipientId]);
+  }, [isPopoverOpen, site, recipientId]);
 
   const handleViewAll = () => {
     setPopoverOpen(false);
@@ -40,6 +42,10 @@ export default function NotificationPopover({ site, recipientId }: NotificationP
 
   const handleDeepLink = (n: Notification) => {
     setPopoverOpen(false);
+    const link = getDeepLink(n);
+    if (link) {
+      router.push(link);
+    }
   };
 
   return (

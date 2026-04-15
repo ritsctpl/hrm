@@ -2,7 +2,6 @@
 
 import { useEffect, useCallback } from 'react';
 import { Select, Radio, Button } from 'antd';
-import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import NotificationList from './components/organisms/NotificationList';
@@ -28,10 +27,6 @@ export default function HrmNotificationCentre() {
   } = useHrmNotificationStore();
 
   const { loadNotifications, handleMarkRead, handleMarkAllRead } = useNotificationData();
-
-  const cookies = parseCookies();
-  const site = cookies.site ?? '';
-  const recipientId = cookies.employeeId ?? cookies.userId ?? '';
 
   const reload = useCallback(() => {
     loadNotifications(0, true);

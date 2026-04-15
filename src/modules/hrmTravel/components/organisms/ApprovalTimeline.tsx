@@ -4,6 +4,9 @@ import React from "react";
 import { Timeline, Tag, Typography } from "antd";
 import type { TravelAction } from "../../types/domain.types";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 const { Text } = Typography;
 
@@ -36,7 +39,9 @@ const ApprovalTimeline: React.FC<Props> = ({ actions }) => {
         children: (
           <div>
             <div style={{ fontSize: 12, color: "#8c8c8c", marginBottom: 4 }}>
-              {dayjs(a.actionDateTime).format("DD MMM YYYY, hh:mm A")}
+              {a.actionDateTime
+                ? dayjs.utc(a.actionDateTime).local().format("DD MMM YYYY, hh:mm A")
+                : "—"}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <Tag color={ACTION_COLORS[a.action] ?? "blue"} style={{ margin: 0 }}>

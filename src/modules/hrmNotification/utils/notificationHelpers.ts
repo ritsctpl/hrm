@@ -20,6 +20,7 @@ export function getTypeEmoji(type: string): string {
   const map: Record<string, string> = {
     LEAVE_APPROVED: '✅',
     LEAVE_REJECTED: '❌',
+    LEAVE_SUBMITTED: '📝',
     EXPENSE_SUBMITTED: '📄',
     EXPENSE_APPROVED: '💳',
     PAYROLL_PUBLISHED: '💰',
@@ -28,6 +29,7 @@ export function getTypeEmoji(type: string): string {
     ANNOUNCEMENT: '📣',
     APPRAISAL_DUE: '⭐',
     POLICY_PUBLISHED: '📋',
+    TIMESHEET_REMINDER: '⏰',
     SYSTEM: '🔔',
   };
   return map[type] ?? '🔔';

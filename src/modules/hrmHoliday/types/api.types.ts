@@ -44,6 +44,7 @@ export interface HolidayGroupSearchRequest {
   category?: string;
   month?: number;
   requestingUserRole: string;
+  search?: string;
 }
 
 export interface HolidayFetchRequest {

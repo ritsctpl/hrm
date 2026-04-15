@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, message, Button } from 'antd';
+import { Modal, Form, Input, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
@@ -24,7 +24,6 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
       form.setFieldsValue({
         groupName: group.groupName,
         description: group.description,
-        status: group.status,
       });
     }
   }, [open, group, form]);
@@ -42,10 +41,9 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
         handle: group.handle,
         groupName: values.groupName,
         description: values.description,
-        status: values.status,
         modifiedBy: userId,
       });
-      
+
       // Response is unwrapped by interceptor
       // Update endpoint returns a string message, not an object
       message.success('Holiday group updated successfully');
@@ -53,7 +51,6 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
         ...group,
         groupName: values.groupName,
         description: values.description,
-        status: values.status,
       };
       onUpdated(updatedGroup);
     } catch (error) {
@@ -69,7 +66,7 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
       open={open}
       title="Update Holiday Group"
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="cancel" onClick={onClose}>
           Cancel
@@ -84,15 +81,6 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item label="Group Name" name="groupName" rules={groupFormRules.groupName}>
           <Input placeholder="e.g. India Holidays 2026" maxLength={120} />
-        </Form.Item>
-        <Form.Item label="Status" name="status" rules={[{ required: true, message: 'Status is required' }]}>
-          <Select
-            options={[
-              { value: 'DRAFT', label: 'Draft' },
-              { value: 'PUBLISHED', label: 'Published' },
-              { value: 'LOCKED', label: 'Locked' },
-            ]}
-          />
         </Form.Item>
         <Form.Item label="Description" name="description" rules={groupFormRules.description}>
           <Input.TextArea rows={2} maxLength={512} placeholder="Optional description" />

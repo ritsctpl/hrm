@@ -2,7 +2,6 @@
 
 import { Skeleton, Button, Spin } from 'antd';
 import NotificationItem from '../molecules/NotificationItem';
-import NotificationEmptyState from '../molecules/NotificationEmptyState';
 import type { NotificationListProps } from '../../types/ui.types';
 import styles from '../../styles/NotificationCentre.module.css';
 
@@ -24,10 +23,6 @@ export default function NotificationList({
         ))}
       </div>
     );
-  }
-
-  if (!loading && notifications.length === 0) {
-    return <NotificationEmptyState hasFilter={false} />;
   }
 
   return (

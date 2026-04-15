@@ -13,6 +13,7 @@ import Can from '../../../hrmAccess/components/Can';
 import { COUNTRY_STATES } from '../../../hrmOrganization/utils/constants';
 import { STATE_CITIES } from '../../../hrmOrganization/utils/locationSearch';
 import type { Asset } from '../../types/domain.types';
+import type { CreateAssetPayload, UpdateAssetPayload } from '../../types/api.types';
 
 interface AssetFormProps {
   editAsset?: Asset | null;
@@ -81,28 +82,39 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
       const location = locationParts.join(', ');
 
       setSavingAsset(true);
-      const payload = {
-        site: site ?? '',
-        categoryCode: values.categoryCode,
-        assetName: values.assetName,
-        purchaseValueINR: values.purchaseValueINR,
-        purchaseDate: dayjs(values.purchaseDate).format('YYYY-MM-DD'),
-        vendor: values.vendor,
-        invoiceNo: values.invoiceNo,
-        invoiceDate: dayjs(values.invoiceDate).format('YYYY-MM-DD'),
-        location,
-        createdBy: userId ?? 'system',
-        ...(isEdit ? { assetId: editAsset!.assetId } : {}),
-      };
-
-      const res = isEdit
-        ? await HrmAssetService.updateAsset(payload)
-        : await HrmAssetService.createAsset(payload);
 
       if (isEdit) {
-        updateAssetInList(res.assetId, res as Partial<Asset>);
+        const updatePayload: UpdateAssetPayload = {
+          site: site ?? '',
+          assetId: editAsset!.assetId,
+          assetName: values.assetName,
+          purchaseValueINR: values.purchaseValueINR,
+          purchaseDate: dayjs(values.purchaseDate).format('YYYY-MM-DD'),
+          vendor: values.vendor,
+          invoiceNo: values.invoiceNo,
+          invoiceDate: dayjs(values.invoiceDate).format('YYYY-MM-DD'),
+          location,
+          modifiedBy: userId ?? 'system',
+        };
+        await HrmAssetService.updateAsset(updatePayload);
+        // Reload full asset so store reflects all persisted fields, not a partial update response
+        const fresh = await HrmAssetService.getAsset(site ?? '', editAsset!.assetId);
+        updateAssetInList(fresh.assetId, fresh as Partial<Asset>);
         message.success('Asset updated');
       } else {
+        const createPayload: CreateAssetPayload = {
+          site: site ?? '',
+          categoryCode: values.categoryCode,
+          assetName: values.assetName,
+          purchaseValueINR: values.purchaseValueINR,
+          purchaseDate: dayjs(values.purchaseDate).format('YYYY-MM-DD'),
+          vendor: values.vendor,
+          invoiceNo: values.invoiceNo,
+          invoiceDate: dayjs(values.invoiceDate).format('YYYY-MM-DD'),
+          location,
+          createdBy: userId ?? 'system',
+        };
+        await HrmAssetService.createAsset(createPayload);
         message.success('Asset created');
         handleClose();
         await loadAssets();
