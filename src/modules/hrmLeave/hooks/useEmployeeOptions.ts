@@ -31,7 +31,10 @@ export function useEmployeeOptions(): {
         setEmployees(rows);
         setOptions(
           rows.map((emp) => ({
-            value: emp.employeeCode,
+            // Use handle as the option value so downstream API calls
+            // (fetchProfile, getEmployeeBalances, ...) get the UUID the
+            // backend identifies employees by, not the human-friendly code.
+            value: emp.handle,
             label: `${emp.employeeCode} - ${emp.fullName}`,
           })),
         );
