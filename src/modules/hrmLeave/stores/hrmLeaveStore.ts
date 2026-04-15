@@ -92,6 +92,8 @@ interface HrmLeaveState {
   showLeaveForm: boolean;
   leaveFormStep: 1 | 2 | 3 | 4;
   leaveFormState: LeaveRequestFormState;
+  /** When set, the apply-leave drawer raises a request on behalf of this employee instead of the logged-in user. */
+  formTargetEmployeeId: string | null;
   showRejectModal: boolean;
   showReassignModal: boolean;
   pendingActionRequestId: string | null;
@@ -149,7 +151,7 @@ interface HrmLeaveState {
   // Actions — UI
   setActiveTab: (tab: string) => void;
   setActiveHrTab: (tab: string) => void;
-  openLeaveForm: () => void;
+  openLeaveForm: (forEmployeeId?: string) => void;
   closeLeaveForm: () => void;
   setLeaveFormStep: (step: 1 | 2 | 3 | 4) => void;
   updateLeaveFormState: (changes: Partial<LeaveRequestFormState>) => void;
@@ -207,6 +209,7 @@ const defaultState = {
   showLeaveForm: false,
   leaveFormStep: 1 as const,
   leaveFormState: defaultLeaveFormState,
+  formTargetEmployeeId: null,
   showRejectModal: false,
   showReassignModal: false,
   pendingActionRequestId: null,
@@ -274,14 +277,15 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
 
   setActiveTab: (activeTab) => set({ activeTab }),
   setActiveHrTab: (activeHrTab) => set({ activeHrTab }),
-  openLeaveForm: () =>
+  openLeaveForm: (forEmployeeId) =>
     set({
       showLeaveForm: true,
       leaveFormStep: 1,
       leaveFormState: defaultLeaveFormState,
       validationSummary: null,
+      formTargetEmployeeId: forEmployeeId ?? null,
     }),
-  closeLeaveForm: () => set({ showLeaveForm: false }),
+  closeLeaveForm: () => set({ showLeaveForm: false, formTargetEmployeeId: null }),
   setLeaveFormStep: (leaveFormStep) => set({ leaveFormStep }),
   updateLeaveFormState: (changes) =>
     set((s) => ({

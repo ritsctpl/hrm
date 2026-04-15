@@ -86,20 +86,56 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const {
     showLeaveForm,
     leaveFormState,
+    formTargetEmployeeId,
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
   } = useHrmLeaveStore();
+
+  const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
+  const isOnBehalf = !!formTargetEmployeeId && formTargetEmployeeId !== employeeId;
 
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
+  const [targetBalances, setTargetBalances] = useState<LeaveBalance[]>([]);
+  const [targetBalancesLoading, setTargetBalancesLoading] = useState(false);
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
-  const selectedBalance = balances.find(
+  // When HR raises on behalf, fetch the target employee's balances.
+  useEffect(() => {
+    if (!showLeaveForm || !isOnBehalf) {
+      setTargetBalances([]);
+      return;
+    }
+    let cancelled = false;
+    setTargetBalancesLoading(true);
+    HrmLeaveService.getEmployeeBalances({
+      site,
+      employeeId: effectiveEmployeeId,
+      year: new Date().getFullYear(),
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setTargetBalances(res as unknown as LeaveBalance[]);
+      })
+      .catch(() => {
+        if (!cancelled) setTargetBalances([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTargetBalancesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLeaveForm, isOnBehalf, site, effectiveEmployeeId]);
+
+  const effectiveBalances = isOnBehalf ? targetBalances : balances;
+
+  const selectedBalance = effectiveBalances.find(
     (b) => b.leaveTypeCode === leaveFormState.leaveTypeCode,
   );
 
@@ -136,7 +172,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     const start = dayjs(leaveFormState.startDate);
     HrmLeaveService.getTeamCalendar({
       site,
-      managerId: cookies.supervisorId ?? employeeId,
+      managerId: cookies.supervisorId ?? effectiveEmployeeId,
       month: start.month() + 1,
       year: start.year(),
     })
@@ -150,7 +186,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, leaveFormState.startDate, cookies.supervisorId, employeeId]);
+  }, [showLeaveForm, site, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -202,7 +238,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     const e = dayjs(leaveFormState.endDate);
     const byEmployee = new Map<string, { name: string; dates: string[] }>();
     teamEntries.forEach((entry) => {
-      if (entry.employeeId === employeeId) return;
+      if (entry.employeeId === effectiveEmployeeId) return;
       const d = dayjs(entry.date);
       if (d.isBefore(s, "day") || d.isAfter(e, "day")) return;
       const existing = byEmployee.get(entry.employeeId);
@@ -219,7 +255,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         ? dayjs(dates[0]).format("MMM D")
         : `${dayjs(dates[0]).format("MMM D")} – ${dayjs(dates[dates.length - 1]).format("MMM D")}`,
     }));
-  }, [teamEntries, leaveFormState.startDate, leaveFormState.endDate, employeeId]);
+  }, [teamEntries, leaveFormState.startDate, leaveFormState.endDate, effectiveEmployeeId]);
 
   const availableBalance = selectedBalance?.availableBalance ?? 0;
   const balanceAfter = availableBalance - leaveFormState.totalDays;
@@ -259,7 +295,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     try {
       const payload = {
         site,
-        employeeId,
+        employeeId: effectiveEmployeeId,
         leaveTypeCode: leaveFormState.leaveTypeCode,
         startDate: leaveFormState.startDate!,
         endDate: leaveFormState.endDate!,
@@ -309,9 +345,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     );
   };
 
+  const targetEmployeeName = isOnBehalf
+    ? employeeOptions.find((opt) => opt.value === effectiveEmployeeId)?.label ?? effectiveEmployeeId
+    : null;
+
   return (
     <Drawer
-      title="Apply for Leave"
+      title={isOnBehalf ? `Raise Leave Request — ${targetEmployeeName}` : "Apply for Leave"}
       open={showLeaveForm}
       onClose={handleClose}
       width={1080}
@@ -345,7 +385,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Leave Type</span>
             <div className={styles.typeChoiceGrid}>
-              {balances.map((b) => {
+              {effectiveBalances.map((b) => {
                 const selected = leaveFormState.leaveTypeCode === b.leaveTypeCode;
                 const disabled = b.availableBalance <= 0;
                 return (
@@ -370,7 +410,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
                   </div>
                 );
               })}
-              {balances.length === 0 && (
+              {targetBalancesLoading && (
+                <Text type="secondary">Loading employee balances...</Text>
+              )}
+              {!targetBalancesLoading && effectiveBalances.length === 0 && (
                 <Text type="secondary">No leave balance available.</Text>
               )}
             </div>
@@ -433,7 +476,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
               placeholder="Who will cover for you?"
               value={handoverPerson}
               onChange={(value) => setHandoverPerson(value ?? undefined)}
-              options={employeeOptions.filter((opt) => opt.value !== employeeId)}
+              options={employeeOptions.filter((opt) => opt.value !== effectiveEmployeeId)}
               loading={employeeOptionsLoading}
               filterOption={(input, option) =>
                 (option?.label ?? "").toLowerCase().includes(input.toLowerCase())

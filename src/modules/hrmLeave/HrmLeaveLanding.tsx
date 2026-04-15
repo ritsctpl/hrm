@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
 import { Tabs, Typography, Select, InputNumber, Button } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
 import CommonAppBar from "@/components/CommonAppBar";
 import EmployeeDashboard from "./components/organisms/EmployeeDashboard";
 import LeaveRequestsTable from "./components/organisms/LeaveRequestsTable";
@@ -338,6 +338,15 @@ const HrmLeaveLanding: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
           Refresh
         </Button>
+        <div style={{ flex: 1 }} />
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          disabled={!ledgerEmployeeId}
+          onClick={() => ledgerEmployeeId && openLeaveForm(ledgerEmployeeId)}
+        >
+          Raise Leave Request
+        </Button>
       </div>
 
       {/* Top: Balance Summary + Ledger History */}
@@ -440,6 +449,17 @@ const HrmLeaveLanding: React.FC = () => {
           reportsPanel={reportsPanel}
           approvalConfigPanel={approvalConfigPanel}
         />
+        {showLeaveForm && (
+          <LeaveRequestFormDrawer
+            site={site}
+            employeeId={employeeId}
+            balances={balances}
+            onSubmitted={() => {
+              loadLedgerHistory();
+              loadGlobalQueue();
+            }}
+          />
+        )}
       </div>
     </ModuleAccessGate>
   );
