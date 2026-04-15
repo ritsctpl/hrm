@@ -19,6 +19,8 @@ import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayService";
+import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
+import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry } from "../../types/api.types";
@@ -99,6 +101,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
+  const [currentProfile, setCurrentProfile] = useState<EmployeeProfile | null>(null);
 
   const {
     options: employeeOptions,
@@ -130,8 +133,19 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     ),
   );
 
+  // Build the profile-derived label first — that's the most authoritative
+  // source. fall back to directory match, then cookies, then raw ids.
+  const profileLabel = (() => {
+    if (!currentProfile) return "";
+    const code = currentProfile.employeeCode || currentProfile.basicDetails?.employeeCode || "";
+    const name = currentProfile.basicDetails?.fullName || "";
+    if (code && name) return `${code} - ${name}`;
+    return name || code || "";
+  })();
+
   // Use || (not ??) so empty-string cookies fall through.
   const employeeDisplayName =
+    profileLabel ||
     (matchedEmployee
       ? `${matchedEmployee.employeeCode} - ${matchedEmployee.fullName}`
       : "") ||
@@ -149,8 +163,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     cookies.userId ||
     "Current user";
 
-  // Always reload leave types AND the current user's balances when the
-  // drawer opens so the choice cards always have something to render.
+  // Always reload leave types, the current user's balances, AND the current
+  // user's profile when the drawer opens so the choice cards always have
+  // something to render and the Applying-as field knows the real name.
   useEffect(() => {
     if (!showLeaveForm || !site) return;
     let cancelled = false;
@@ -174,6 +189,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         })
         .catch(() => {
           if (!cancelled) setFetchedBalances([]);
+        });
+      HrmEmployeeService.fetchProfile(site, employeeId)
+        .then((profile) => {
+          if (cancelled) return;
+          setCurrentProfile(profile ?? null);
+        })
+        .catch(() => {
+          if (!cancelled) setCurrentProfile(null);
         });
     }
     return () => {
