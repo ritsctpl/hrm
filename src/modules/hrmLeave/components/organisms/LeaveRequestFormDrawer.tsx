@@ -86,9 +86,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const {
     showLeaveForm,
     leaveFormState,
+    leaveTypes,
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
+    setLeaveTypes,
   } = useHrmLeaveStore();
 
   const [submitting, setSubmitting] = useState(false);
@@ -99,8 +101,59 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
-  const selectedBalance = balances.find(
-    (b) => b.leaveTypeCode === leaveFormState.leaveTypeCode,
+  // Lazy-load leave types so the choice cards always have something to show
+  // even when the current user has no balance records yet.
+  useEffect(() => {
+    if (!showLeaveForm || !site || leaveTypes.length > 0) return;
+    let cancelled = false;
+    HrmLeaveService.getAllLeaveTypes({ site })
+      .then((res) => {
+        if (cancelled) return;
+        setLeaveTypes(res ?? []);
+      })
+      .catch(() => {
+        // silent — the form falls back to balances or shows the empty hint
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLeaveForm, site, leaveTypes.length, setLeaveTypes]);
+
+  // Merge balances with the configured leave types so a user without a
+  // balance record can still pick a type and apply.
+  const choiceOptions = useMemo(() => {
+    type ChoiceOption = {
+      code: string;
+      name: string;
+      available: number;
+      halfDayAllowed: boolean;
+      hasBalance: boolean;
+    };
+    const byCode = new Map<string, ChoiceOption>();
+    balances.forEach((b) => {
+      byCode.set(b.leaveTypeCode, {
+        code: b.leaveTypeCode,
+        name: b.leaveTypeName,
+        available: b.availableBalance,
+        halfDayAllowed: b.halfDayAllowed,
+        hasBalance: true,
+      });
+    });
+    leaveTypes.forEach((lt) => {
+      if (byCode.has(lt.code)) return;
+      byCode.set(lt.code, {
+        code: lt.code,
+        name: lt.name,
+        available: 0,
+        halfDayAllowed: !!lt.halfDayAllowed,
+        hasBalance: false,
+      });
+    });
+    return Array.from(byCode.values());
+  }, [balances, leaveTypes]);
+
+  const selectedBalance = choiceOptions.find(
+    (o) => o.code === leaveFormState.leaveTypeCode,
   );
 
   // Load published holidays for the user's BU once the drawer opens.
@@ -221,9 +274,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     }));
   }, [teamEntries, leaveFormState.startDate, leaveFormState.endDate, employeeId]);
 
-  const availableBalance = selectedBalance?.availableBalance ?? 0;
+  const availableBalance = selectedBalance?.available ?? 0;
+  const balanceKnown = selectedBalance?.hasBalance ?? false;
   const balanceAfter = availableBalance - leaveFormState.totalDays;
-  const exceedsBalance = leaveFormState.totalDays > 0 && balanceAfter < 0;
+  // Only enforce the exceeds-balance check when we actually know the user's
+  // balance — otherwise let the backend validate at submit time.
+  const exceedsBalance =
+    balanceKnown && leaveFormState.totalDays > 0 && balanceAfter < 0;
 
   const canSubmit =
     !!leaveFormState.leaveTypeCode &&
@@ -298,7 +355,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     if (!leaveFormState.leaveTypeCode || !leaveFormState.startDate || !leaveFormState.endDate) {
       return "Fill in the leave details to see the summary.";
     }
-    const typeName = selectedBalance?.leaveTypeName ?? leaveFormState.leaveTypeCode;
+    const typeName = selectedBalance?.name ?? leaveFormState.leaveTypeCode;
     return (
       <>
         Applying for <strong>{leaveFormState.totalDays.toFixed(1)} day(s)</strong> of{" "}
@@ -345,33 +402,29 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Leave Type</span>
             <div className={styles.typeChoiceGrid}>
-              {balances.map((b) => {
-                const selected = leaveFormState.leaveTypeCode === b.leaveTypeCode;
-                const disabled = b.availableBalance <= 0;
+              {choiceOptions.map((opt) => {
+                const selected = leaveFormState.leaveTypeCode === opt.code;
                 return (
                   <div
-                    key={b.leaveTypeCode}
+                    key={opt.code}
                     className={`${styles.typeChoiceCard} ${
                       selected ? styles.typeChoiceCardSelected : ""
-                    } ${disabled ? styles.typeChoiceCardDisabled : ""}`}
-                    onClick={() => {
-                      if (disabled) return;
-                      updateLeaveFormState({ leaveTypeCode: b.leaveTypeCode });
-                    }}
+                    }`}
+                    onClick={() => updateLeaveFormState({ leaveTypeCode: opt.code })}
                   >
-                    <span className={styles.typeChoiceIcon}>
-                      {getLeaveIcon(b.leaveTypeCode)}
-                    </span>
-                    <span className={styles.typeChoiceName}>{b.leaveTypeName}</span>
+                    <span className={styles.typeChoiceIcon}>{getLeaveIcon(opt.code)}</span>
+                    <span className={styles.typeChoiceName}>{opt.name}</span>
                     <span className={styles.typeChoiceBalance}>
-                      {b.availableBalance.toFixed(1)} days available
+                      {opt.hasBalance
+                        ? `${opt.available.toFixed(1)} days available`
+                        : "Balance not configured"}
                     </span>
                     {selected && <span className={styles.typeChoiceCheckmark}>✓</span>}
                   </div>
                 );
               })}
-              {balances.length === 0 && (
-                <Text type="secondary">No leave balance available.</Text>
+              {choiceOptions.length === 0 && (
+                <Text type="secondary">Loading leave types...</Text>
               )}
             </div>
           </div>
@@ -485,7 +538,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
             <div className={styles.smartCardHeader}>
               <span>💼</span> Balance Preview
             </div>
-            {selectedBalance ? (
+            {!selectedBalance ? (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Pick a leave type to see your balance preview.
+              </Text>
+            ) : balanceKnown ? (
               <>
                 <div className={styles.balancePreview}>
                   <span className={styles.balancePreviewCurrent}>
@@ -504,12 +561,12 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
                 <Text style={{ fontSize: 11, color: exceedsBalance ? "#dc2626" : "#64748b" }}>
                   {exceedsBalance
                     ? `Exceeds available balance by ${Math.abs(balanceAfter).toFixed(1)} day(s)`
-                    : `Applying ${leaveFormState.totalDays.toFixed(1)} day(s) of ${selectedBalance.leaveTypeName}`}
+                    : `Applying ${leaveFormState.totalDays.toFixed(1)} day(s) of ${selectedBalance.name}`}
                 </Text>
               </>
             ) : (
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Pick a leave type to see your balance preview.
+                Balance not configured for {selectedBalance.name}. Backend will validate on submit.
               </Text>
             )}
           </div>
