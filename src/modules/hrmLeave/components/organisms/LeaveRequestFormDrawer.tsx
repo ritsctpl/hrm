@@ -102,20 +102,24 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
-  // Resolve a friendly applying-as label: prefer the directory match for the
-  // current employeeId, then fall through whatever name cookies happen to be
-  // populated, and finally fall back to the raw id so the field is never blank.
-  const directoryMatch = employeeOptions.find((opt) => opt.value === employeeId);
+  // Resolve a friendly applying-as label. Use || (not ??) so empty-string
+  // cookies fall through to the next fallback instead of stopping the chain.
+  const directoryMatch =
+    employeeOptions.find((opt) => opt.value === employeeId) ||
+    employeeOptions.find((opt) => opt.value === cookies.employeeCode) ||
+    employeeOptions.find((opt) => opt.value === cookies.userId);
   const employeeDisplayName =
-    directoryMatch?.label ??
-    cookies.fullName ??
-    cookies.employeeName ??
-    cookies.name ??
-    cookies.firstName ??
-    cookies.username ??
-    cookies.user ??
-    employeeId ??
-    cookies.userId ??
+    directoryMatch?.label ||
+    cookies.fullName ||
+    cookies.employeeName ||
+    cookies.name ||
+    cookies.firstName ||
+    cookies.displayName ||
+    cookies.username ||
+    cookies.user ||
+    cookies.employeeCode ||
+    employeeId ||
+    cookies.userId ||
     "Current user";
 
   // Always reload leave types AND the current user's balances when the
@@ -449,12 +453,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
             <span className={styles.fieldLabel}>Applying as</span>
             <Input
               value={
-                directoryMatch?.label ??
+                directoryMatch?.label ||
                 (employeeId
                   ? `${employeeDisplayName} · ${employeeId}`
                   : employeeDisplayName)
               }
-              disabled
+              readOnly
+              placeholder="Loading current user..."
             />
           </div>
 
