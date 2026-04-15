@@ -92,6 +92,7 @@ interface HrmLeaveState {
   showLeaveForm: boolean;
   leaveFormStep: 1 | 2 | 3 | 4;
   leaveFormState: LeaveRequestFormState;
+  formTargetEmployeeId: string | null;
   showRejectModal: boolean;
   showReassignModal: boolean;
   pendingActionRequestId: string | null;
@@ -151,6 +152,7 @@ interface HrmLeaveState {
   setActiveHrTab: (tab: string) => void;
   openLeaveForm: () => void;
   closeLeaveForm: () => void;
+  setFormTargetEmployeeId: (id: string | null) => void;
   setLeaveFormStep: (step: 1 | 2 | 3 | 4) => void;
   updateLeaveFormState: (changes: Partial<LeaveRequestFormState>) => void;
   openRejectModal: (requestId: string) => void;
@@ -207,6 +209,7 @@ const defaultState = {
   showLeaveForm: false,
   leaveFormStep: 1 as const,
   leaveFormState: defaultLeaveFormState,
+  formTargetEmployeeId: null,
   showRejectModal: false,
   showReassignModal: false,
   pendingActionRequestId: null,
@@ -280,8 +283,10 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
       leaveFormStep: 1,
       leaveFormState: defaultLeaveFormState,
       validationSummary: null,
+      formTargetEmployeeId: null,
     }),
-  closeLeaveForm: () => set({ showLeaveForm: false }),
+  closeLeaveForm: () => set({ showLeaveForm: false, formTargetEmployeeId: null }),
+  setFormTargetEmployeeId: (formTargetEmployeeId) => set({ formTargetEmployeeId }),
   setLeaveFormStep: (leaveFormStep) => set({ leaveFormStep }),
   updateLeaveFormState: (changes) =>
     set((s) => ({

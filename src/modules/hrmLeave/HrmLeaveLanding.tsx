@@ -458,6 +458,7 @@ const HrmLeaveLanding: React.FC = () => {
             site={site}
             employeeId={employeeId}
             balances={balances}
+            allowEmployeeSelection
             onSubmitted={() => {
               loadMyRequests();
               loadBalances();

@@ -34,6 +34,8 @@ interface LeaveRequestFormDrawerProps {
   site: string;
   employeeId: string;
   balances: LeaveBalance[];
+  /** When true, the drawer renders an Employee picker so HR can choose which user to apply for. */
+  allowEmployeeSelection?: boolean;
   onSubmitted: () => void;
 }
 
@@ -80,6 +82,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   site,
   employeeId,
   balances,
+  allowEmployeeSelection = false,
   onSubmitted,
 }) => {
   const cookies = parseCookies();
@@ -90,11 +93,17 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     showLeaveForm,
     leaveFormState,
     leaveTypes,
+    formTargetEmployeeId,
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
     setLeaveTypes,
+    setFormTargetEmployeeId,
   } = useHrmLeaveStore();
+
+  // When HR picks an employee, target overrides the prop. Otherwise the
+  // logged-in user's id is used.
+  const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
 
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
@@ -111,12 +120,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     loading: employeeOptionsLoading,
   } = useEmployeeOptions();
 
-  // Resolve the current user against the employee directory by trying every
-  // identifier we have in cookies/props — handle, employeeCode, workEmail,
-  // username — so we always end up with a real employee record when one
-  // exists, regardless of how the auth layer stores the session.
+  // Resolve the active employee against the directory. When HR has picked a
+  // target the effectiveEmployeeId already points to that employee — match
+  // it by handle / employeeCode / email so the Applying-as label updates.
   const cookieCandidates = [
-    employeeId,
+    effectiveEmployeeId,
     cookies.employeeCode,
     cookies.userId,
     cookies.username,
@@ -183,10 +191,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       .finally(() => {
         if (!cancelled) setLeaveTypesLoading(false);
       });
-    if (employeeId) {
+    if (effectiveEmployeeId) {
       HrmLeaveService.getEmployeeBalances({
         site,
-        employeeId,
+        employeeId: effectiveEmployeeId,
         year: new Date().getFullYear(),
       })
         .then((res) => {
@@ -196,12 +204,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         .catch(() => {
           if (!cancelled) setFetchedBalances([]);
         });
-      HrmEmployeeService.fetchProfile(site, employeeId)
+      HrmEmployeeService.fetchProfile(site, effectiveEmployeeId)
         .then((raw) => {
           if (cancelled) return;
-          // Backend wraps the payload in { response: <profile> } but the
-          // employee service returns the envelope verbatim. Strip it before
-          // running the mapper so basicDetails / officialDetails resolve.
           const rawObj = raw as unknown as Record<string, unknown>;
           const inner =
             rawObj && typeof rawObj === "object" && "response" in rawObj
@@ -213,11 +218,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         .catch(() => {
           if (!cancelled) setCurrentProfile(null);
         });
+    } else {
+      setFetchedBalances([]);
+      setCurrentProfile(null);
     }
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, employeeId, setLeaveTypes]);
+  }, [showLeaveForm, site, effectiveEmployeeId, setLeaveTypes]);
 
   // Merge prop balances + drawer-fetched balances + configured leave types.
   // The drawer-fetched balances cover the case where the parent never loaded
@@ -292,7 +300,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     const start = dayjs(leaveFormState.startDate);
     HrmLeaveService.getTeamCalendar({
       site,
-      managerId: cookies.supervisorId ?? employeeId,
+      managerId: cookies.supervisorId ?? effectiveEmployeeId,
       month: start.month() + 1,
       year: start.year(),
     })
@@ -306,7 +314,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, leaveFormState.startDate, cookies.supervisorId, employeeId]);
+  }, [showLeaveForm, site, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -358,7 +366,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     const e = dayjs(leaveFormState.endDate);
     const byEmployee = new Map<string, { name: string; dates: string[] }>();
     teamEntries.forEach((entry) => {
-      if (entry.employeeId === employeeId) return;
+      if (entry.employeeId === effectiveEmployeeId) return;
       const d = dayjs(entry.date);
       if (d.isBefore(s, "day") || d.isAfter(e, "day")) return;
       const existing = byEmployee.get(entry.employeeId);
@@ -375,7 +383,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         ? dayjs(dates[0]).format("MMM D")
         : `${dayjs(dates[0]).format("MMM D")} – ${dayjs(dates[dates.length - 1]).format("MMM D")}`,
     }));
-  }, [teamEntries, leaveFormState.startDate, leaveFormState.endDate, employeeId]);
+  }, [teamEntries, leaveFormState.startDate, leaveFormState.endDate, effectiveEmployeeId]);
 
   const availableBalance = selectedBalance?.available ?? 0;
   const balanceKnown = selectedBalance?.hasBalance ?? false;
@@ -419,7 +427,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     try {
       const payload = {
         site,
-        employeeId: employeeId,
+        employeeId: effectiveEmployeeId,
         leaveTypeCode: leaveFormState.leaveTypeCode,
         startDate: leaveFormState.startDate!,
         endDate: leaveFormState.endDate!,
@@ -513,15 +521,39 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       <div className={styles.formGrid}>
         {/* ── Form Column ────────────────────────────────────────────── */}
         <div className={styles.formColumn}>
-          {/* Applying-as display — auto-filled from the logged-in user */}
-          <div className={styles.fieldBlock}>
-            <span className={styles.fieldLabel}>Applying as</span>
-            <Input
-              value={employeeDisplayName}
-              readOnly
-              placeholder="Loading current user..."
-            />
-          </div>
+          {/* HR-only: Employee picker. Selecting an employee re-fetches their
+              balances + profile via the effectiveEmployeeId effect below. */}
+          {allowEmployeeSelection ? (
+            <div className={styles.fieldBlock}>
+              <span className={styles.fieldLabel}>Employee</span>
+              <Select
+                showSearch
+                allowClear
+                placeholder="Search and select an employee"
+                value={formTargetEmployeeId ?? undefined}
+                onChange={(value) => setFormTargetEmployeeId(value ?? null)}
+                options={employeeOptions}
+                loading={employeeOptionsLoading}
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+              {!formTargetEmployeeId && (
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  Pick an employee to load their leave balances and continue.
+                </Text>
+              )}
+            </div>
+          ) : (
+            <div className={styles.fieldBlock}>
+              <span className={styles.fieldLabel}>Applying as</span>
+              <Input
+                value={employeeDisplayName}
+                readOnly
+                placeholder="Loading current user..."
+              />
+            </div>
+          )}
 
           {/* Leave type choice cards */}
           <div className={styles.fieldBlock}>
@@ -615,7 +647,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
               placeholder="Who will cover for you?"
               value={handoverPerson}
               onChange={(value) => setHandoverPerson(value ?? undefined)}
-              options={employeeOptions.filter((opt) => opt.value !== employeeId)}
+              options={employeeOptions.filter((opt) => opt.value !== effectiveEmployeeId)}
               loading={employeeOptionsLoading}
               filterOption={(input, option) =>
                 (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
