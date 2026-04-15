@@ -7,6 +7,8 @@ import {
   DatePicker,
   Form,
   Input,
+  InputNumber,
+  List,
   Popconfirm,
   Select,
   Space,
@@ -18,9 +20,11 @@ import {
   Alert,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import dayjs, { Dayjs } from "dayjs";
 import { parseCookies } from "nookies";
+import axios from "axios";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
-import { useHrmLeaveStore, AccrualPreviewData } from "../../stores/hrmLeaveStore";
+import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { AccrualRunPanelProps } from "../../types/ui.types";
 import { AccrualBatch } from "../../types/api.types";
 import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
@@ -29,23 +33,71 @@ import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
 
-const QUARTER_OPTIONS = [
+type Quarter = "Q1" | "Q2" | "Q3" | "Q4";
+
+const QUARTER_OPTIONS: { value: Quarter; label: string }[] = [
   { value: "Q1", label: "Q1 (Jan–Mar)" },
   { value: "Q2", label: "Q2 (Apr–Jun)" },
   { value: "Q3", label: "Q3 (Jul–Sep)" },
   { value: "Q4", label: "Q4 (Oct–Dec)" },
 ];
 
+// Quarter → start month (0-indexed). End is start+2, last day.
+const QUARTER_START_MONTH: Record<Quarter, number> = {
+  Q1: 0,
+  Q2: 3,
+  Q3: 6,
+  Q4: 9,
+};
+
+const getQuarterPeriod = (
+  quarter: Quarter,
+  year: number,
+): { start: Dayjs; end: Dayjs } => {
+  const startMonth = QUARTER_START_MONTH[quarter];
+  const start = dayjs(new Date(year, startMonth, 1));
+  const end = start.add(2, "month").endOf("month");
+  return { start, end };
+};
+
+// Best-effort backend error extraction: prefers the HRM envelope `message`
+// or a validation `errors[]` payload, falls back to axios .message, then
+// a generic string.
+const extractError = (err: unknown, fallback: string): string => {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as
+      | { message?: string; errors?: unknown[] }
+      | undefined;
+    if (data?.message) return data.message;
+    if (Array.isArray(data?.errors) && data!.errors!.length > 0) {
+      return data!.errors!.map((e) => String(e)).join(", ");
+    }
+    if (err.message) return err.message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+};
+
 const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
+  const currentYear = new Date().getFullYear();
   const [form] = Form.useForm();
   const { accrualPreview, accrualLoading, setAccrualPreview, setAccrualLoading } = useHrmLeaveStore();
   const [posting, setPosting] = useState(false);
   const [batches, setBatches] = useState<AccrualBatch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(false);
-  const [batchYear, setBatchYear] = useState<number>(new Date().getFullYear());
+  const [batchYear, setBatchYear] = useState<number>(currentYear);
   const [rollingBackId, setRollingBackId] = useState<string | null>(null);
+
+  // Auto-fill periodStart/periodEnd whenever quarter or year changes. Keeps
+  // the run window consistent with the selected quarter so a Q1 run can't
+  // accidentally use July dates.
+  const syncPeriodFromQuarter = (quarter: Quarter | undefined, year: number | undefined) => {
+    if (!quarter || !year || !Number.isFinite(year)) return;
+    const { start, end } = getQuarterPeriod(quarter, year);
+    form.setFieldsValue({ periodStart: start, periodEnd: end });
+  };
 
   const loadBatches = async (year: number) => {
     setBatchesLoading(true);
@@ -74,16 +126,35 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
       });
       message.success("Accrual batch rolled back");
       loadBatches(batchYear);
-    } catch {
-      message.error("Failed to roll back batch");
+    } catch (err) {
+      message.error(extractError(err, "Failed to roll back batch"));
     } finally {
       setRollingBackId(null);
     }
   };
 
   const handlePreview = async () => {
+    let values: {
+      quarter: Quarter;
+      year: number;
+      periodStart: Dayjs;
+      periodEnd: Dayjs;
+    };
     try {
-      const values = await form.validateFields();
+      values = await form.validateFields();
+    } catch {
+      // Ant's own validation messages already surface below each field.
+      return;
+    }
+
+    // Cross-field sanity: period end must not be before period start. Ant
+    // form validators don't do cross-field comparisons by default.
+    if (values.periodEnd.isBefore(values.periodStart, "day")) {
+      message.error("Period end must be on or after period start");
+      return;
+    }
+
+    try {
       setAccrualLoading(true);
       const res = await HrmLeaveService.previewAccrual({
         site,
@@ -106,8 +177,8 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
         errors: res.errors,
         canPost: res.canPost,
       });
-    } catch {
-      message.error("Failed to generate accrual preview");
+    } catch (err) {
+      message.error(extractError(err, "Failed to generate accrual preview"));
     } finally {
       setAccrualLoading(false);
     }
@@ -131,8 +202,8 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
       setAccrualPreview(null);
       loadBatches(batchYear);
       onPosted(batch.handle);
-    } catch {
-      message.error("Failed to post accrual");
+    } catch (err) {
+      message.error(extractError(err, "Failed to post accrual"));
     } finally {
       setPosting(false);
     }
@@ -142,17 +213,68 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
     <div className={styles.accrualPanel}>
       <Title level={5}>Accrual Run</Title>
 
-      <Form form={form} layout="inline" style={{ marginBottom: 16 }}>
+      <Form
+        form={form}
+        layout="inline"
+        style={{ marginBottom: 16 }}
+        initialValues={{ year: currentYear }}
+      >
         <Form.Item name="quarter" label="Quarter" rules={[{ required: true }]}>
-          <Select options={QUARTER_OPTIONS} style={{ width: 160 }} />
+          <Select
+            options={QUARTER_OPTIONS}
+            style={{ width: 160 }}
+            onChange={(value: Quarter) =>
+              syncPeriodFromQuarter(value, form.getFieldValue("year"))
+            }
+          />
         </Form.Item>
-        <Form.Item name="year" label="Year" rules={[{ required: true }]}>
-          <Input type="number" style={{ width: 80 }} defaultValue={new Date().getFullYear()} />
+        <Form.Item
+          name="year"
+          label="Year"
+          rules={[
+            { required: true, message: "Year is required" },
+            {
+              validator: (_, value) =>
+                typeof value === "number" && value >= 2000 && value <= 2100
+                  ? Promise.resolve()
+                  : Promise.reject(new Error("Enter a valid year (2000–2100)")),
+            },
+          ]}
+        >
+          <InputNumber
+            style={{ width: 100 }}
+            min={2000}
+            max={2100}
+            onChange={(value) =>
+              syncPeriodFromQuarter(
+                form.getFieldValue("quarter") as Quarter | undefined,
+                typeof value === "number" ? value : undefined,
+              )
+            }
+          />
         </Form.Item>
         <Form.Item name="periodStart" label="Period Start" rules={[{ required: true }]}>
           <DatePicker format="DD-MMM-YYYY" />
         </Form.Item>
-        <Form.Item name="periodEnd" label="Period End" rules={[{ required: true }]}>
+        <Form.Item
+          name="periodEnd"
+          label="Period End"
+          dependencies={["periodStart"]}
+          rules={[
+            { required: true },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                const start = getFieldValue("periodStart") as Dayjs | undefined;
+                if (!value || !start) return Promise.resolve();
+                return (value as Dayjs).isBefore(start, "day")
+                  ? Promise.reject(
+                      new Error("Period end must be on or after period start"),
+                    )
+                  : Promise.resolve();
+              },
+            }),
+          ]}
+        >
           <DatePicker format="DD-MMM-YYYY" />
         </Form.Item>
         <Form.Item>
@@ -169,11 +291,17 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
             <Statistic title="Total Days to Credit" value={accrualPreview.totalDaysToCredit} precision={1} />
           </Space>
 
-          {accrualPreview.errors?.length > 0 && (
+          {accrualPreview.errors && accrualPreview.errors.length > 0 && (
             <Alert
               type="warning"
-              message="Accrual Errors"
-              description={accrualPreview.errors.join(", ")}
+              message={`Accrual Errors (${accrualPreview.errors.length})`}
+              description={
+                <List
+                  size="small"
+                  dataSource={accrualPreview.errors}
+                  renderItem={(item) => <List.Item>{item}</List.Item>}
+                />
+              }
               style={{ marginBottom: 8 }}
             />
           )}
