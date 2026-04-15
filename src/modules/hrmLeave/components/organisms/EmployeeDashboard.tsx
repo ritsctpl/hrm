@@ -35,7 +35,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
           />
         </Space>
         {onApplyLeave && (
-          <Can I="add" object="leave_request">
+          <Can I="add" object="leave_request" passIf={true}>
             <Button type="primary" icon={<PlusOutlined />} onClick={onApplyLeave}>
               Apply for Leave
             </Button>

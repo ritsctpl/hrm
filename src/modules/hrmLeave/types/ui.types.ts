@@ -47,6 +47,7 @@ export interface LeaveRequestRowProps {
   request: LeaveRequest;
   isSelected: boolean;
   onClick: (request: LeaveRequest) => void;
+  onAmend?: (request: LeaveRequest) => void;
 }
 
 export interface ApproverRequestRowProps {

@@ -12,8 +12,13 @@ import LedgerHistoryTable from "./components/organisms/LedgerHistoryTable";
 import BalanceSummaryTable from "./components/organisms/BalanceSummaryTable";
 import AccrualRunPanel from "./components/organisms/AccrualRunPanel";
 import ManualAdjustmentForm from "./components/organisms/ManualAdjustmentForm";
+import BulkAdjustmentForm from "./components/organisms/BulkAdjustmentForm";
 import CompOffCreditForm from "./components/organisms/CompOffCreditForm";
 import PolicySettingsTable from "./components/organisms/PolicySettingsTable";
+import YearEndOperationsPanel from "./components/organisms/YearEndOperationsPanel";
+import PayrollExportPanel from "./components/organisms/PayrollExportPanel";
+import LeaveAvailedReportPanel from "./components/organisms/LeaveAvailedReportPanel";
+import ApprovalConfigPanel from "./components/organisms/ApprovalConfigPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
 import LeaveCalendarView from "./components/organisms/LeaveCalendarView";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";
@@ -33,8 +38,8 @@ const { Text } = Typography;
 const HrmLeaveLanding: React.FC = () => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
-  const employeeId = cookies.userId ?? "";
-  const role = cookies.userRole ?? "EMPLOYEE";
+  const employeeId = cookies.employeeId ?? cookies.userId ?? "";
+  const role = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
 
   const permissions = useLeavePermissions(role);
   const {
@@ -78,36 +83,36 @@ const HrmLeaveLanding: React.FC = () => {
   // Load data based on role on mount
   useEffect(() => {
     loadBalances();
-  }, [balancesYear, site, employeeId]);
+  }, [balancesYear, site, employeeId, loadBalances]);
 
   useEffect(() => {
     if (role === "EMPLOYEE" || SUPERVISOR_ROLES.includes(role) || HR_ROLES.includes(role)) {
       loadMyRequests();
     }
-  }, [site, employeeId]);
+  }, [site, employeeId, role, loadMyRequests]);
 
   useEffect(() => {
     if (SUPERVISOR_ROLES.includes(role) || HR_ROLES.includes(role)) {
       loadPendingForApprover();
     }
-  }, [site, employeeId, role]);
+  }, [site, employeeId, role, loadPendingForApprover]);
 
   useEffect(() => {
     if (permissions.canViewAll) {
       loadGlobalQueue();
     }
-  }, [site, permissions.canViewAll]);
+  }, [site, permissions.canViewAll, loadGlobalQueue]);
 
   useEffect(() => {
     if (permissions.canViewAll) {
       loadLeaveTypes();
       loadBalanceSummary(balancesYear);
     }
-  }, [site, balancesYear, permissions.canViewAll]);
+  }, [site, balancesYear, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
 
   useEffect(() => {
     loadLedgerHistory();
-  }, [site, employeeId]);
+  }, [site, employeeId, loadLedgerHistory]);
 
   const handleFilterChange = (filters: Record<string, string>) => {
     if (permissions.canViewAll) {
@@ -290,9 +295,10 @@ const HrmLeaveLanding: React.FC = () => {
         />
         <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
       </LeaveMasterDetail>
-      <div style={{ display: "flex", gap: 32, padding: 16, borderTop: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", gap: 32, padding: 16, borderTop: "1px solid #f0f0f0", flexWrap: "wrap" }}>
         <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
         <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
+        <BulkAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
       </div>
     </div>
   );
@@ -310,6 +316,19 @@ const HrmLeaveLanding: React.FC = () => {
     />
   );
 
+  const yearEndPanel = (
+    <YearEndOperationsPanel
+      site={site}
+      onProcessed={() => loadBalanceSummary(balancesYear)}
+    />
+  );
+
+  const payrollPanel = <PayrollExportPanel site={site} />;
+
+  const reportsPanel = <LeaveAvailedReportPanel site={site} />;
+
+  const approvalConfigPanel = <ApprovalConfigPanel site={site} />;
+
   return (
     <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
       <div className={`hrm-module-root ${styles.landing}`}>
@@ -324,6 +343,10 @@ const HrmLeaveLanding: React.FC = () => {
           ledgerPanel={ledgerPanel}
           accrualPanel={accrualPanel}
           policyPanel={policyPanel}
+          yearEndPanel={yearEndPanel}
+          payrollPanel={payrollPanel}
+          reportsPanel={reportsPanel}
+          approvalConfigPanel={approvalConfigPanel}
         />
       </div>
     </ModuleAccessGate>

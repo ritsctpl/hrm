@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Typography } from "antd";
+import { Button, Typography } from "antd";
+import { EditOutlined } from "@ant-design/icons";
 import LeaveTypeTag from "../atoms/LeaveTypeTag";
 import LeaveStatusChip from "../atoms/LeaveStatusChip";
 import HalfDayIndicator from "../atoms/HalfDayIndicator";
@@ -14,7 +15,9 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
   request,
   isSelected,
   onClick,
+  onAmend,
 }) => {
+  const isPending = request.status.startsWith("PENDING");
   const fromDate = new Date(request.startDate).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -45,6 +48,21 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
           {new Date(request.createdDateTime).toLocaleDateString("en-GB")}
         </Text>
       </div>
+      {isPending && onAmend && (
+        <div style={{ marginTop: 6, textAlign: "right" }}>
+          <Button
+            size="small"
+            type="link"
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAmend(request);
+            }}
+          >
+            Amend
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

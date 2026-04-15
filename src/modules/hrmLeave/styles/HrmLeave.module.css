@@ -1,12 +1,18 @@
 /* Landing */
 .landing {
   overflow: hidden;
+  background: #f5f7fa;
 }
 
 .filterBar {
-  padding: 8px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8eef5;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .emptyRight {
@@ -53,32 +59,35 @@
 
 /* Employee Dashboard */
 .dashboardSection {
-  padding: 12px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8eef5;
 }
 
 .dashboardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .balanceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
 }
 
 /* Balance Card */
 .balanceCard {
   cursor: default;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.15s;
+  border: 1px solid #e8eef5;
+  border-radius: 8px;
 }
 
 .balanceCard:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }
 
 .balanceCardSelected {
@@ -89,17 +98,19 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .balanceCardCode {
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #0f172a;
 }
 
 .balanceCardName {
   font-size: 11px;
-  color: #8c8c8c;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -108,27 +119,30 @@
 .balanceCardMain {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .balanceCardAvailable {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
-  color: #262626;
+  color: #0f172a;
+  line-height: 1;
 }
 
 .balanceCardUnit {
-  font-size: 11px;
-  color: #8c8c8c;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .balanceCardStats {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   font-size: 11px;
-  color: #595959;
+  color: #475569;
   flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .balanceCardBadge {
@@ -156,18 +170,19 @@
 }
 
 .requestRow {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f5f5f5;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eef2f7;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-left-color 0.15s;
+  border-left: 3px solid transparent;
 }
 
 .requestRow:hover {
-  background: #f5f5f5;
+  background: #f8fafc;
 }
 
 .requestRowSelected {
-  background: #e6f7ff;
+  background: #eff6ff;
   border-left: 3px solid #1890ff;
 }
 
@@ -259,20 +274,38 @@
 
 .calendarCell {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 2px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
 }
 
 .calendarCellEntry {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #ffffff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 
 .calendarCellMore {
-  font-size: 9px;
-  color: #8c8c8c;
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.calendarCellHoliday {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fa541c;
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 /* Accrual Panel */
@@ -336,18 +369,26 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  background: #f5f7fa;
 }
 
 .hrLayoutTabs {
   padding: 0 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid #e8eef5;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .hrLayoutContent {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: 20px;
+}
+
+.hrLayoutContent > * {
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e8eef5;
 }
 
 /* Policy Settings */

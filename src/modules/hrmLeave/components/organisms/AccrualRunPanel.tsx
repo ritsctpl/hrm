@@ -1,23 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Card,
   DatePicker,
   Form,
   Input,
+  Popconfirm,
   Select,
   Space,
   Statistic,
+  Table,
+  Tag,
   Typography,
   message,
   Alert,
 } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useHrmLeaveStore, AccrualPreviewData } from "../../stores/hrmLeaveStore";
 import { AccrualRunPanelProps } from "../../types/ui.types";
+import { AccrualBatch } from "../../types/api.types";
 import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
@@ -37,6 +42,44 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
   const [form] = Form.useForm();
   const { accrualPreview, accrualLoading, setAccrualPreview, setAccrualLoading } = useHrmLeaveStore();
   const [posting, setPosting] = useState(false);
+  const [batches, setBatches] = useState<AccrualBatch[]>([]);
+  const [batchesLoading, setBatchesLoading] = useState(false);
+  const [batchYear, setBatchYear] = useState<number>(new Date().getFullYear());
+  const [rollingBackId, setRollingBackId] = useState<string | null>(null);
+
+  const loadBatches = async (year: number) => {
+    setBatchesLoading(true);
+    try {
+      const data = await HrmLeaveService.getAccrualBatches({ site, year });
+      setBatches(Array.isArray(data) ? data : []);
+    } catch {
+      setBatches([]);
+    } finally {
+      setBatchesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (site) loadBatches(batchYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [site, batchYear]);
+
+  const handleRollback = async (batch: AccrualBatch) => {
+    setRollingBackId(batch.handle);
+    try {
+      await HrmLeaveService.rollbackAccrual({
+        site,
+        batchId: batch.handle,
+        requestedBy: userId,
+      });
+      message.success("Accrual batch rolled back");
+      loadBatches(batchYear);
+    } catch {
+      message.error("Failed to roll back batch");
+    } finally {
+      setRollingBackId(null);
+    }
+  };
 
   const handlePreview = async () => {
     try {
@@ -86,6 +129,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
       });
       message.success("Accrual posted successfully");
       setAccrualPreview(null);
+      loadBatches(batchYear);
       onPosted(batch.handle);
     } catch {
       message.error("Failed to post accrual");
@@ -154,6 +198,86 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
           )}
         </Card>
       )}
+
+      <div style={{ marginTop: 24 }}>
+        <Space style={{ justifyContent: "space-between", width: "100%", display: "flex", marginBottom: 8 }}>
+          <Title level={5} style={{ margin: 0 }}>Batch History</Title>
+          <Space>
+            <Text type="secondary">Year</Text>
+            <Input
+              type="number"
+              value={batchYear}
+              onChange={(e) => setBatchYear(Number(e.target.value) || new Date().getFullYear())}
+              style={{ width: 100 }}
+            />
+            <Button size="small" onClick={() => loadBatches(batchYear)}>Refresh</Button>
+          </Space>
+        </Space>
+        <Table
+          dataSource={batches}
+          rowKey="handle"
+          size="small"
+          loading={batchesLoading}
+          pagination={{ pageSize: 10 }}
+          columns={
+            [
+              { title: "Batch ID", dataIndex: "handle", key: "handle", width: 180 },
+              {
+                title: "Period",
+                key: "period",
+                render: (_v: unknown, row: AccrualBatch) => `${row.periodStart} → ${row.periodEnd}`,
+              },
+              { title: "Quarter", dataIndex: "quarter", key: "quarter", width: 80 },
+              { title: "Run Date", dataIndex: "postDate", key: "postDate", width: 120 },
+              { title: "Employees", dataIndex: "totalEmployees", key: "totalEmployees", width: 100 },
+              {
+                title: "Credits",
+                dataIndex: "totalDaysCredited",
+                key: "totalDaysCredited",
+                width: 100,
+              },
+              {
+                title: "Status",
+                dataIndex: "status",
+                key: "status",
+                width: 120,
+                render: (v: AccrualBatch["status"]) => (
+                  <Tag color={v === "POSTED" ? "green" : v === "ROLLED_BACK" ? "red" : "default"}>
+                    {v}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Action",
+                key: "action",
+                width: 140,
+                render: (_v: unknown, row: AccrualBatch) =>
+                  row.status === "POSTED" ? (
+                    <Can I="delete" object="leave_accrual">
+                      <Popconfirm
+                        title="Roll back this batch?"
+                        description="This will reverse the accrual entries."
+                        onConfirm={() => handleRollback(row)}
+                        okText="Rollback"
+                        okButtonProps={{ danger: true }}
+                        cancelText="Cancel"
+                      >
+                        <Button
+                          size="small"
+                          danger
+                          type="link"
+                          loading={rollingBackId === row.handle}
+                        >
+                          Rollback
+                        </Button>
+                      </Popconfirm>
+                    </Can>
+                  ) : null,
+              },
+            ] as ColumnsType<AccrualBatch>
+          }
+        />
+      </div>
     </div>
   );
 };

@@ -10,6 +10,10 @@ interface HrLeaveLayoutProps {
   ledgerPanel: React.ReactNode;
   accrualPanel: React.ReactNode;
   policyPanel: React.ReactNode;
+  yearEndPanel: React.ReactNode;
+  payrollPanel: React.ReactNode;
+  reportsPanel: React.ReactNode;
+  approvalConfigPanel: React.ReactNode;
 }
 
 const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
@@ -17,6 +21,10 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
   ledgerPanel,
   accrualPanel,
   policyPanel,
+  yearEndPanel,
+  payrollPanel,
+  reportsPanel,
+  approvalConfigPanel,
 }) => {
   const { activeHrTab, setActiveHrTab } = useHrmLeaveStore();
 
@@ -25,6 +33,10 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     { key: "ledger", label: "Ledger & Balances" },
     { key: "accruals", label: "Accruals" },
     { key: "policy", label: "Policy" },
+    { key: "yearEnd", label: "Year-End" },
+    { key: "payroll", label: "Payroll" },
+    { key: "reports", label: "Reports" },
+    { key: "approvalConfig", label: "Approval Config" },
   ];
 
   const contentMap: Record<string, React.ReactNode> = {
@@ -32,6 +44,10 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     ledger: ledgerPanel,
     accruals: accrualPanel,
     policy: policyPanel,
+    yearEnd: yearEndPanel,
+    payroll: payrollPanel,
+    reports: reportsPanel,
+    approvalConfig: approvalConfigPanel,
   };
 
   return (

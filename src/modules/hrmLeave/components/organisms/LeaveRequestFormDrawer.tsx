@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button, Drawer, Input, Radio, Steps, Typography, message } from "antd";
+import { Button, Drawer, Input, Radio, Steps, Typography, Upload, message } from "antd";
+import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
+import type { UploadFile } from "antd";
 import { parseCookies } from "nookies";
 import LeaveBalanceCard from "../molecules/LeaveBalanceCard";
 import DateRangePicker from "../molecules/DateRangePicker";
@@ -53,6 +55,49 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   } = useHrmLeaveStore();
 
   const [submitting, setSubmitting] = React.useState(false);
+  const [attachments, setAttachments] = React.useState<
+    { name: string; base64: string }[]
+  >([]);
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+    });
+
+  const handleAttachmentUpload = async (file: File) => {
+    const isAllowed =
+      file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!isAllowed) {
+      message.error("Only image or PDF files are allowed");
+      return false;
+    }
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error("File must be smaller than 5MB");
+      return false;
+    }
+    try {
+      const base64 = await fileToBase64(file);
+      setAttachments((prev) => [...prev, { name: file.name, base64 }]);
+      message.success(`${file.name} attached`);
+    } catch {
+      message.error("Failed to read file");
+    }
+    return false;
+  };
+
+  const removeAttachment = (name: string) => {
+    setAttachments((prev) => prev.filter((a) => a.name !== name));
+  };
+
+  const attachmentFileList: UploadFile[] = attachments.map((a, idx) => ({
+    uid: `${idx}`,
+    name: a.name,
+    status: "done",
+  }));
 
   const selectedBalance = balances.find(
     (b) => b.leaveTypeCode === leaveFormState.leaveTypeCode
@@ -91,7 +136,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     }
     setSubmitting(true);
     try {
-      const result = await HrmLeaveService.submitLeaveRequest({
+      const payload = {
         site,
         employeeId,
         leaveTypeCode: leaveFormState.leaveTypeCode,
@@ -103,9 +148,12 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         reason: leaveFormState.reason,
         attachmentPath: leaveFormState.attachmentPath ?? undefined,
         createdBy: userId,
-      });
+        attachments: attachments.map((a) => a.base64),
+      } as Parameters<typeof HrmLeaveService.submitLeaveRequest>[0];
+      const result = await HrmLeaveService.submitLeaveRequest(payload);
       addMyRequest(result);
       message.success("Leave request submitted successfully");
+      setAttachments([]);
       closeLeaveForm();
       onSubmitted();
     } catch {
@@ -203,6 +251,50 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
                 value={leaveFormState.reason}
                 onChange={(e) => updateLeaveFormState({ reason: e.target.value })}
               />
+              <div style={{ marginTop: 16 }}>
+                <Text style={{ display: "block", marginBottom: 8 }}>
+                  Supporting Documents (optional)
+                </Text>
+                <Upload
+                  accept="image/*,application/pdf"
+                  beforeUpload={handleAttachmentUpload}
+                  fileList={attachmentFileList}
+                  showUploadList={false}
+                  multiple
+                >
+                  <Button icon={<UploadOutlined />}>Attach File</Button>
+                </Upload>
+                <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
+                  Image or PDF, max 5MB each
+                </Text>
+                {attachments.length > 0 && (
+                  <ul style={{ marginTop: 8, paddingLeft: 0, listStyle: "none" }}>
+                    {attachments.map((a) => (
+                      <li
+                        key={a.name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "4px 8px",
+                          background: "#fafafa",
+                          borderRadius: 4,
+                          marginBottom: 4,
+                          fontSize: 12,
+                        }}
+                      >
+                        <span>{a.name}</span>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeAttachment(a.name)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         );

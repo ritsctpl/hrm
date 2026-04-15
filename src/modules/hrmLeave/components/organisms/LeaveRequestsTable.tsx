@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Empty, Spin, Typography } from "antd";
+import { parseCookies } from "nookies";
 import LeaveRequestRow from "../molecules/LeaveRequestRow";
+import AmendLeavePanel from "./AmendLeavePanel";
 import { LeaveRequestsTableProps } from "../../types/ui.types";
+import { LeaveRequest } from "../../types/domain.types";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Text } = Typography;
@@ -14,6 +17,22 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
   selectedHandle,
   onRowClick,
 }) => {
+  const cookies = parseCookies();
+  const site = cookies.site ?? "";
+
+  const [amendOpen, setAmendOpen] = useState(false);
+  const [amendTarget, setAmendTarget] = useState<LeaveRequest | null>(null);
+
+  const handleAmend = (request: LeaveRequest) => {
+    setAmendTarget(request);
+    setAmendOpen(true);
+  };
+
+  const handleAmendClose = () => {
+    setAmendOpen(false);
+    setAmendTarget(null);
+  };
+
   if (loading) {
     return (
       <div className={styles.panelLoading}>
@@ -41,8 +60,16 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
           request={req}
           isSelected={req.handle === selectedHandle}
           onClick={onRowClick}
+          onAmend={handleAmend}
         />
       ))}
+      <AmendLeavePanel
+        open={amendOpen}
+        site={site}
+        request={amendTarget}
+        onClose={handleAmendClose}
+        onAmended={handleAmendClose}
+      />
     </div>
   );
 };
