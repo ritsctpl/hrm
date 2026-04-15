@@ -347,19 +347,26 @@ const OrgHierarchyChart: React.FC = () => {
     fetchHierarchy();
   }, [fetchHierarchy]);
 
+  // Organization name for the currently-viewed company — needed by the
+  // backend hierarchy endpoint, which scopes to site + organization.
+  const orgName =
+    data?.company?.legalName ?? data?.company?.companyName ?? '';
+
   // Fetch directory + employee-hierarchy in parallel. Directory is used for
   // the Org Structure view (dept grouping) and also provides photoUrl which
   // the hierarchy DTO doesn't carry. Hierarchy powers the Reporting Tree view.
+  // Re-runs once the company data lands so orgName is populated before the
+  // hierarchy call.
   useEffect(() => {
     const cookies = parseCookies();
     const site = cookies.site || '';
-    if (!site) return;
+    if (!site || !orgName) return;
     let cancelled = false;
     Promise.all([
       HrmEmployeeService.fetchDirectory({ site, page: 0, size: 500 }).catch(
         () => ({ employees: [] } as { employees: EmployeeDirectoryRow[] }),
       ),
-      HrmEmployeeService.fetchEmployeeHierarchy(site).catch(
+      HrmEmployeeService.fetchEmployeeHierarchy(site, orgName).catch(
         () => [] as EmployeeHierarchyNode[],
       ),
     ]).then(([dirRes, hier]) => {
@@ -370,7 +377,7 @@ const OrgHierarchyChart: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [orgName]);
 
   // Group employees by department. Key on lowercased trimmed name AND code
   // since the dept might be referenced either way.

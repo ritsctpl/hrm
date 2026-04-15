@@ -540,15 +540,19 @@ export class HrmEmployeeService {
   }
 
   /**
-   * Fetch the site-wide employee reporting hierarchy as a pre-built tree.
-   * Backend returns a list of roots (employees with no manager or manager
-   * outside the site); each node carries `directReports` recursively. The
-   * backend guarantees the tree is cycle-safe.
+   * Fetch the site + organization scoped employee reporting hierarchy as a
+   * pre-built tree. Backend returns a list of roots (employees with no
+   * manager or manager outside the scope); each node carries `directReports`
+   * recursively. The backend guarantees the tree is cycle-safe.
    */
   static async fetchEmployeeHierarchy(
-    site: string
+    site: string,
+    organizationName: string
   ): Promise<EmployeeHierarchyNode[]> {
-    const response = await api.post(`${this.BASE}/hierarchy`, { site });
+    const response = await api.post(`${this.BASE}/hierarchy`, {
+      site,
+      organizationName,
+    });
     return response.data;
   }
 
