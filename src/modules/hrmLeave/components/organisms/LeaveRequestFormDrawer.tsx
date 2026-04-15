@@ -31,6 +31,8 @@ interface LeaveRequestFormDrawerProps {
   site: string;
   employeeId: string;
   balances: LeaveBalance[];
+  /** When true, the drawer renders an Employee picker so HR can choose who to raise the request for. */
+  allowEmployeeSelection?: boolean;
   onSubmitted: () => void;
 }
 
@@ -77,6 +79,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   site,
   employeeId,
   balances,
+  allowEmployeeSelection = false,
   onSubmitted,
 }) => {
   const cookies = parseCookies();
@@ -90,6 +93,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
+    setFormTargetEmployeeId,
   } = useHrmLeaveStore();
 
   const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
@@ -381,6 +385,30 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       <div className={styles.formGrid}>
         {/* ── Form Column ────────────────────────────────────────────── */}
         <div className={styles.formColumn}>
+          {/* Employee picker — only when HR is raising on behalf */}
+          {allowEmployeeSelection && (
+            <div className={styles.fieldBlock}>
+              <span className={styles.fieldLabel}>Employee</span>
+              <Select
+                showSearch
+                allowClear
+                placeholder="Search and select an employee"
+                value={formTargetEmployeeId ?? undefined}
+                onChange={(value) => setFormTargetEmployeeId(value ?? null)}
+                options={employeeOptions}
+                loading={employeeOptionsLoading}
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
+              {!formTargetEmployeeId && (
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  Pick an employee to load their leave balances and continue.
+                </Text>
+              )}
+            </div>
+          )}
+
           {/* Leave type choice cards */}
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Leave Type</span>

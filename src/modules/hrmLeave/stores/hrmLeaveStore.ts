@@ -153,6 +153,7 @@ interface HrmLeaveState {
   setActiveHrTab: (tab: string) => void;
   openLeaveForm: (forEmployeeId?: string) => void;
   closeLeaveForm: () => void;
+  setFormTargetEmployeeId: (id: string | null) => void;
   setLeaveFormStep: (step: 1 | 2 | 3 | 4) => void;
   updateLeaveFormState: (changes: Partial<LeaveRequestFormState>) => void;
   openRejectModal: (requestId: string) => void;
@@ -286,6 +287,7 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
       formTargetEmployeeId: forEmployeeId ?? null,
     }),
   closeLeaveForm: () => set({ showLeaveForm: false, formTargetEmployeeId: null }),
+  setFormTargetEmployeeId: (formTargetEmployeeId) => set({ formTargetEmployeeId }),
   setLeaveFormStep: (leaveFormStep) => set({ leaveFormStep }),
   updateLeaveFormState: (changes) =>
     set((s) => ({

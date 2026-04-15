@@ -284,15 +284,29 @@ const HrmLeaveLanding: React.FC = () => {
   // ── HR / ADMIN / SUPERADMIN VIEW ───────────────────────────────────
 
   const queuePanel = (
-    <LeaveMasterDetail leftWidth="50%">
-      <HrGlobalQueueTable
-        requests={globalQueue}
-        loading={globalQueueLoading}
-        selectedHandle={selectedRequest?.handle}
-        onRowClick={setSelectedRequest}
-      />
-      {rightPanel}
-    </LeaveMasterDetail>
+    <div className={styles.requestsPanel}>
+      <div className={styles.requestsToolbar}>
+        <span className={styles.requestsToolbarTitle}>
+          Leave Requests · {globalQueue.length}
+        </span>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => openLeaveForm()}
+        >
+          Raise Leave Request
+        </Button>
+      </div>
+      <LeaveMasterDetail leftWidth="50%">
+        <HrGlobalQueueTable
+          requests={globalQueue}
+          loading={globalQueueLoading}
+          selectedHandle={selectedRequest?.handle}
+          onRowClick={setSelectedRequest}
+        />
+        {rightPanel}
+      </LeaveMasterDetail>
+    </div>
   );
 
   const leaveTypeOptions = leaveTypes.map((lt) => ({
@@ -337,15 +351,6 @@ const HrmLeaveLanding: React.FC = () => {
         />
         <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
           Refresh
-        </Button>
-        <div style={{ flex: 1 }} />
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          disabled={!ledgerEmployeeId}
-          onClick={() => ledgerEmployeeId && openLeaveForm(ledgerEmployeeId)}
-        >
-          Raise Leave Request
         </Button>
       </div>
 
@@ -454,6 +459,7 @@ const HrmLeaveLanding: React.FC = () => {
             site={site}
             employeeId={employeeId}
             balances={balances}
+            allowEmployeeSelection
             onSubmitted={() => {
               loadLedgerHistory();
               loadGlobalQueue();
