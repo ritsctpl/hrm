@@ -5,7 +5,6 @@ import { parseCookies } from "nookies";
 import { Tabs, Typography, Select, InputNumber, Button } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import CommonAppBar from "@/components/CommonAppBar";
-import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeService";
 import EmployeeDashboard from "./components/organisms/EmployeeDashboard";
 import LeaveRequestsTable from "./components/organisms/LeaveRequestsTable";
 import ApproverInboxTable from "./components/organisms/ApproverInboxTable";
@@ -32,6 +31,7 @@ import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
+import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
 import { HR_ROLES, SUPERVISOR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -87,34 +87,7 @@ const HrmLeaveLanding: React.FC = () => {
   } = useHrmLeaveStore();
 
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
-  const [employeeOptions, setEmployeeOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const [employeeOptionsLoading, setEmployeeOptionsLoading] = useState(false);
-
-  // Load employee directory once for the HR ledger filter dropdown.
-  useEffect(() => {
-    if (!permissions.canViewAll || !site) return;
-    let cancelled = false;
-    setEmployeeOptionsLoading(true);
-    HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 })
-      .then((res) => {
-        if (cancelled) return;
-        setEmployeeOptions(
-          (res.employees || []).map((emp) => ({
-            value: emp.employeeCode,
-            label: `${emp.employeeCode} - ${emp.fullName}`,
-          })),
-        );
-      })
-      .catch(() => {
-        // Silent: ledger filter is optional.
-      })
-      .finally(() => {
-        if (!cancelled) setEmployeeOptionsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [site, permissions.canViewAll]);
+  const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
   // Load data based on role on mount
   useEffect(() => {

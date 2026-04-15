@@ -5,6 +5,7 @@ import { Button, DatePicker, Form, Input, Radio, Select, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -24,6 +25,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
   const userId = cookies.userId ?? "";
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
+  const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
   const handleSubmit = async () => {
     try {
@@ -53,8 +55,17 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
   return (
     <div className={styles.adjustmentForm}>
       <Form form={form} layout="vertical">
-        <Form.Item name="employeeId" label="Employee ID" rules={[{ required: true }]}>
-          <Input placeholder="Enter employee ID" />
+        <Form.Item name="employeeId" label="Employee" rules={[{ required: true }]}>
+          <Select
+            showSearch
+            allowClear
+            placeholder="Search by ID or name"
+            options={employeeOptions}
+            loading={employeeOptionsLoading}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          />
         </Form.Item>
         <Form.Item name="leaveTypeCode" label="Leave Type" rules={[{ required: true }]}>
           <Select options={LEAVE_TYPE_OPTIONS} />

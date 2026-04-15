@@ -13,6 +13,7 @@ import {
 } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -36,6 +37,7 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
   const userId = cookies.userId ?? "";
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
   const handleSubmit = async () => {
     try {
@@ -90,10 +92,18 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
           rules={[{ required: true, message: "Add at least one employee" }]}
         >
           <Select
-            mode="tags"
-            placeholder="Paste or type employee codes, press enter"
+            mode="multiple"
+            showSearch
+            allowClear
+            placeholder="Search and select employees"
+            options={employeeOptions}
+            loading={employeeOptionsLoading}
             tokenSeparators={[",", " ", "\n"]}
             style={{ width: "100%" }}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            maxTagCount="responsive"
           />
         </Form.Item>
         <Form.Item name="leaveTypeCode" label="Leave Type" rules={[{ required: true }]}>
