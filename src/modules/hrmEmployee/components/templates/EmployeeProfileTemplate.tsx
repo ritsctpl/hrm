@@ -199,13 +199,6 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   const canSeeDocs = isAdmin || isSelf;
   const canSeeComp = isAdmin || isSelf;
 
-  const visibleTabKeys = new Set<string>();
-  if (canSeeOverview) visibleTabKeys.add('overview');
-  if (canSeeContact) visibleTabKeys.add('contactFamily');
-  if (canSeeCareer) visibleTabKeys.add('career');
-  if (canSeeDocs) visibleTabKeys.add('documentsAssets');
-  if (canSeeComp) visibleTabKeys.add('compensation');
-
   const handleCancelSection = () => {
     setEditingSection(null);
     onCancel?.();
@@ -246,10 +239,13 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
     switch (tab.key) {
       /* ---- Overview: Basic + Official + Personal ---- */
       case 'overview':
-        // Check if any section in Overview tab is visible
-        hasVisibleContent = permissions.canViewEmployee || 
-                           permissions.canViewOfficialDetails || 
-                           permissions.canViewPersonalDetails;
+        // Overview is the catch-all view: visible to anyone past the access
+        // gate, including non-admins viewing OTHER employees.
+        hasVisibleContent = canSeeOverview && (
+          permissions.canViewEmployee ||
+          permissions.canViewOfficialDetails ||
+          permissions.canViewPersonalDetails
+        );
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
@@ -290,8 +286,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
+              editObject="employee_record"
+              editPassIf={isAdmin}
               action={
-                permissions.canEditOfficialDetails && (
+                isAdmin && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -316,8 +314,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
+              editObject="employee_record"
+              editPassIf={isAdmin}
               action={
-                permissions.canEditPersonalDetails && (
+                isAdmin && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -339,8 +339,8 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Contact & Family ---- */
       case 'contactFamily':
-        // Check if any section in Contact & Family tab is visible
-        hasVisibleContent = permissions.canViewEmergencyContact;
+        // Hidden from non-admins viewing OTHER employees — they only see Overview.
+        hasVisibleContent = canSeeContact && permissions.canViewEmergencyContact;
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
@@ -353,8 +353,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
+              editObject="employee_record"
+              editPassIf={isAdmin || canSelfEdit}
               action={
-                permissions.canEditEmergencyContact && (
+                (isAdmin || canSelfEdit) && (
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -376,10 +378,12 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Career: Skills + Job History + Experience + Education + Training ---- */
       case 'career':
-        // Check if any section in Career tab is visible
-        hasVisibleContent = permissions.canViewEmploymentDetails || 
-                           permissions.canViewExperience || 
-                           permissions.canViewEducation;
+        // Hidden from non-admins viewing OTHER employees — they only see Overview.
+        hasVisibleContent = canSeeCareer && (
+          permissions.canViewEmploymentDetails ||
+          permissions.canViewExperience ||
+          permissions.canViewEducation
+        );
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
@@ -416,9 +420,11 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Documents & Assets ---- */
       case 'documentsAssets':
-        // Check if any section in Documents & Assets tab is visible
-        hasVisibleContent = permissions.canViewDocuments || 
-                           permissions.canViewEmploymentDetails;
+        // Hidden from non-admins viewing OTHER employees — they only see Overview.
+        hasVisibleContent = canSeeDocs && (
+          permissions.canViewDocuments ||
+          permissions.canViewEmploymentDetails
+        );
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
@@ -441,9 +447,11 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
 
       /* ---- Compensation: Remuneration + Leave Summary ---- */
       case 'compensation':
-        // Check if any section in Compensation tab is visible
-        hasVisibleContent = permissions.canViewCompensation || 
-                           permissions.canViewEmploymentDetails;
+        // Hidden from non-admins viewing OTHER employees — they only see Overview.
+        hasVisibleContent = canSeeComp && (
+          permissions.canViewCompensation ||
+          permissions.canViewEmploymentDetails
+        );
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>

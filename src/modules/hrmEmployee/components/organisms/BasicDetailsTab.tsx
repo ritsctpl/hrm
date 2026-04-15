@@ -207,10 +207,10 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
                   photoBase64={photoBase64 || basicDetails.photoBase64}
                   size={80}
                 />
-                {/* Active/Inactive Switch */}
+                {/* Active/Inactive Switch — admin only; self-service users cannot toggle their own status */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                   <Form.Item name="isActive" valuePropName="checked" style={{ margin: 0 }}>
-                    <Switch />
+                    <Switch disabled={!isAdmin} />
                   </Form.Item>
                   <span style={{ fontSize: 11, color: '#64748b' }}>
                     {form.getFieldValue('isActive') ? 'Active' : 'Inactive'}
@@ -244,7 +244,8 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
               label="Full Name"
               rules={[{ required: true, message: 'Full name is required' }]}
             >
-              <Input />
+              {/* Name is identity — admin only. Self-service users cannot rename themselves. */}
+              <Input disabled={!isAdmin} />
             </Form.Item>
             <Form.Item
               name="phone"
