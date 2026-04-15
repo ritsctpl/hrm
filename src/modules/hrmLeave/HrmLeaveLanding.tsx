@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { parseCookies } from "nookies";
 import { Tabs, Typography, Select, InputNumber, Button } from "antd";
 import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
@@ -21,13 +21,13 @@ import PayrollExportPanel from "./components/organisms/PayrollExportPanel";
 import LeaveAvailedReportPanel from "./components/organisms/LeaveAvailedReportPanel";
 import ApprovalConfigPanel from "./components/organisms/ApprovalConfigPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
-import LeaveCalendarView from "./components/organisms/LeaveCalendarView";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";
 import LeaveFilterBar from "./components/molecules/LeaveFilterBar";
 import LeaveMasterDetail from "./components/templates/LeaveMasterDetail";
 import HrLeaveLayout from "./components/templates/HrLeaveLayout";
 import HrmLeaveScreen from "./HrmLeaveScreen";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { useCan } from "../hrmAccess/hooks/useCan";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
@@ -41,7 +41,15 @@ const HrmLeaveLanding: React.FC = () => {
   const cookies = parseCookies();
   const site = cookies.site ?? "";
   const employeeId = cookies.employeeId ?? cookies.userId ?? "";
-  const role = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
+  const cookieRole = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
+
+  // RBAC-driven role: canDelete -> Admin/HR, canEdit -> Supervisor, canAdd -> Employee.
+  // Falls back to the cookie role string when RBAC hasn't published HRM_LEAVE grants.
+  const modulePerms = useCan("HRM_LEAVE");
+  const isHrAdmin = modulePerms.canDelete || HR_ROLES.includes(cookieRole);
+  const isSupervisor =
+    !isHrAdmin && (modulePerms.canEdit || SUPERVISOR_ROLES.includes(cookieRole));
+  const role = isHrAdmin ? "HR" : isSupervisor ? "SUPERVISOR" : "EMPLOYEE";
 
   const permissions = useLeavePermissions(role);
   const {
@@ -86,7 +94,6 @@ const HrmLeaveLanding: React.FC = () => {
     showLeaveForm,
   } = useHrmLeaveStore();
 
-  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
   // Load data based on role on mount
@@ -173,23 +180,8 @@ const HrmLeaveLanding: React.FC = () => {
       </LeaveMasterDetail>
     );
 
-    const calendarTab = (
-      <LeaveCalendarView
-        requests={myRequests}
-        year={balancesYear}
-        month={calendarMonth}
-        onMonthChange={setCalendarMonth}
-      />
-    );
-
-    const ledgerTab = (
-      <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
-    );
-
     const tabItems = [
       { key: "requests", label: "My Requests", children: requestsTab },
-      { key: "calendar", label: "Calendar", children: calendarTab },
-      { key: "ledger", label: "Ledger History", children: ledgerTab },
     ];
 
     return (
@@ -200,7 +192,7 @@ const HrmLeaveLanding: React.FC = () => {
             balances={balances}
             year={balancesYear}
             onYearChange={setBalancesYear}
-            onApplyLeave={openLeaveForm}
+            onApplyLeave={() => openLeaveForm()}
             loading={balancesLoading}
           />
           <LeaveFilterBar role={role} permissions={permissions} />
@@ -260,7 +252,7 @@ const HrmLeaveLanding: React.FC = () => {
             balances={balances}
             year={balancesYear}
             onYearChange={setBalancesYear}
-            onApplyLeave={openLeaveForm}
+            onApplyLeave={() => openLeaveForm()}
             loading={balancesLoading}
           />
           <LeaveFilterBar role={role} permissions={permissions} />
