@@ -385,10 +385,76 @@
   padding: 20px;
 }
 
-.hrLayoutContent > * {
+/* Ledger panel */
+.ledgerPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ledgerToolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
   background: #ffffff;
-  border-radius: 8px;
   border: 1px solid #e8eef5;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.ledgerToolbarLabel {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-right: 4px;
+}
+
+.ledgerTopGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .ledgerTopGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ledgerFormsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.ledgerCard {
+  background: #ffffff;
+  border: 1px solid #e8eef5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ledgerCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8eef5;
+  background: #f8fafc;
+}
+
+.ledgerCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+}
+
+.ledgerCardBody {
+  padding: 12px 16px;
 }
 
 /* Policy Settings */

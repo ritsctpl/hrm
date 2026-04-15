@@ -16,7 +16,7 @@ import { HrmLeaveService } from "../../services/hrmLeaveService";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const LEAVE_TYPE_OPTIONS = [
   { value: "CL", label: "Casual Leave" },
@@ -80,11 +80,10 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
 
   return (
     <div className={styles.bulkAdjustmentForm}>
-      <Title level={5}>Bulk Ledger Adjustment</Title>
       <Text type="secondary">
         Apply the same credit/debit to multiple employees in one transaction.
       </Text>
-      <Form form={form} layout="vertical" style={{ maxWidth: 560, marginTop: 12 }}>
+      <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
         <Form.Item
           name="employeeIds"
           label="Employees"

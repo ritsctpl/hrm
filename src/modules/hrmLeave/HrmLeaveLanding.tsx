@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
-import { Tabs, Typography } from "antd";
+import { Tabs, Typography, Select, InputNumber, Button } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import CommonAppBar from "@/components/CommonAppBar";
+import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeService";
 import EmployeeDashboard from "./components/organisms/EmployeeDashboard";
 import LeaveRequestsTable from "./components/organisms/LeaveRequestsTable";
 import ApproverInboxTable from "./components/organisms/ApproverInboxTable";
@@ -65,12 +67,18 @@ const HrmLeaveLanding: React.FC = () => {
     selectedRequest,
     ledgerHistory,
     ledgerLoading,
+    ledgerEmployeeId,
+    ledgerYear,
+    ledgerLeaveTypeFilter,
     balanceSummary,
     balanceSummaryLoading,
     leaveTypes,
     leaveTypesLoading,
     setSelectedRequest,
     setBalancesYear,
+    setLedgerEmployeeId,
+    setLedgerYear,
+    setLedgerLeaveTypeFilter,
     openLeaveForm,
     activeTab,
     setActiveTab,
@@ -79,6 +87,34 @@ const HrmLeaveLanding: React.FC = () => {
   } = useHrmLeaveStore();
 
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [employeeOptions, setEmployeeOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [employeeOptionsLoading, setEmployeeOptionsLoading] = useState(false);
+
+  // Load employee directory once for the HR ledger filter dropdown.
+  useEffect(() => {
+    if (!permissions.canViewAll || !site) return;
+    let cancelled = false;
+    setEmployeeOptionsLoading(true);
+    HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 })
+      .then((res) => {
+        if (cancelled) return;
+        setEmployeeOptions(
+          (res.employees || []).map((emp) => ({
+            value: emp.employeeCode,
+            label: `${emp.employeeCode} - ${emp.fullName}`,
+          })),
+        );
+      })
+      .catch(() => {
+        // Silent: ledger filter is optional.
+      })
+      .finally(() => {
+        if (!cancelled) setEmployeeOptionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [site, permissions.canViewAll]);
 
   // Load data based on role on mount
   useEffect(() => {
@@ -112,7 +148,7 @@ const HrmLeaveLanding: React.FC = () => {
 
   useEffect(() => {
     loadLedgerHistory();
-  }, [site, employeeId, loadLedgerHistory]);
+  }, [site, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, loadLedgerHistory]);
 
   const handleFilterChange = (filters: Record<string, string>) => {
     if (permissions.canViewAll) {
@@ -286,19 +322,102 @@ const HrmLeaveLanding: React.FC = () => {
     </LeaveMasterDetail>
   );
 
+  const leaveTypeOptions = leaveTypes.map((lt) => ({
+    value: lt.code,
+    label: `${lt.code} - ${lt.name}`,
+  }));
+
   const ledgerPanel = (
-    <div>
-      <LeaveMasterDetail leftWidth="35%">
-        <BalanceSummaryTable
-          balances={balanceSummary}
-          loading={balanceSummaryLoading}
+    <div className={styles.ledgerPanel}>
+      {/* Filter toolbar */}
+      <div className={styles.ledgerToolbar}>
+        <span className={styles.ledgerToolbarLabel}>Employee</span>
+        <Select
+          showSearch
+          allowClear
+          placeholder="Search by ID or name"
+          value={ledgerEmployeeId ?? undefined}
+          onChange={(value) => setLedgerEmployeeId(value ?? null)}
+          options={employeeOptions}
+          loading={employeeOptionsLoading}
+          style={{ minWidth: 280 }}
+          filterOption={(input, option) =>
+            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+          }
         />
-        <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
-      </LeaveMasterDetail>
-      <div style={{ display: "flex", gap: 32, padding: 16, borderTop: "1px solid #f0f0f0", flexWrap: "wrap" }}>
-        <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
-        <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
-        <BulkAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+        <span className={styles.ledgerToolbarLabel}>Year</span>
+        <InputNumber
+          min={2000}
+          max={2100}
+          value={ledgerYear}
+          onChange={(value) => value && setLedgerYear(value)}
+          style={{ width: 100 }}
+        />
+        <span className={styles.ledgerToolbarLabel}>Type</span>
+        <Select
+          allowClear
+          placeholder="All leave types"
+          value={ledgerLeaveTypeFilter ?? undefined}
+          onChange={(value) => setLedgerLeaveTypeFilter(value ?? null)}
+          options={leaveTypeOptions}
+          style={{ minWidth: 200 }}
+        />
+        <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
+          Refresh
+        </Button>
+      </div>
+
+      {/* Top: Balance Summary + Ledger History */}
+      <div className={styles.ledgerTopGrid}>
+        <div className={styles.ledgerCard}>
+          <div className={styles.ledgerCardHeader}>
+            <span className={styles.ledgerCardTitle}>Balance Summary</span>
+          </div>
+          <div className={styles.ledgerCardBody}>
+            <BalanceSummaryTable
+              balances={balanceSummary}
+              loading={balanceSummaryLoading}
+            />
+          </div>
+        </div>
+        <div className={styles.ledgerCard}>
+          <div className={styles.ledgerCardHeader}>
+            <span className={styles.ledgerCardTitle}>
+              Ledger History {ledgerEmployeeId ? `— ${ledgerEmployeeId}` : ""}
+            </span>
+          </div>
+          <div className={styles.ledgerCardBody}>
+            <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: Adjustment forms */}
+      <div className={styles.ledgerFormsGrid}>
+        <div className={styles.ledgerCard}>
+          <div className={styles.ledgerCardHeader}>
+            <span className={styles.ledgerCardTitle}>Manual Adjustment</span>
+          </div>
+          <div className={styles.ledgerCardBody}>
+            <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+          </div>
+        </div>
+        <div className={styles.ledgerCard}>
+          <div className={styles.ledgerCardHeader}>
+            <span className={styles.ledgerCardTitle}>Credit Comp Off</span>
+          </div>
+          <div className={styles.ledgerCardBody}>
+            <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
+          </div>
+        </div>
+        <div className={styles.ledgerCard}>
+          <div className={styles.ledgerCardHeader}>
+            <span className={styles.ledgerCardTitle}>Bulk Adjustment</span>
+          </div>
+          <div className={styles.ledgerCardBody}>
+            <BulkAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+          </div>
+        </div>
       </div>
     </div>
   );

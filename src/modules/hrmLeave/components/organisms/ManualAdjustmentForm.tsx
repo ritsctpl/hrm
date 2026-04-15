@@ -1,14 +1,12 @@
 "use client";
 
 import React from "react";
-import { Button, DatePicker, Form, Input, Radio, Select, Typography, message } from "antd";
+import { Button, DatePicker, Form, Input, Radio, Select, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
-
-const { Title } = Typography;
 
 const LEAVE_TYPE_OPTIONS = [
   { value: "CL", label: "Casual Leave" },
@@ -54,8 +52,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
 
   return (
     <div className={styles.adjustmentForm}>
-      <Title level={5}>Manual Ledger Adjustment</Title>
-      <Form form={form} layout="vertical" style={{ maxWidth: 480 }}>
+      <Form form={form} layout="vertical">
         <Form.Item name="employeeId" label="Employee ID" rules={[{ required: true }]}>
           <Input placeholder="Enter employee ID" />
         </Form.Item>

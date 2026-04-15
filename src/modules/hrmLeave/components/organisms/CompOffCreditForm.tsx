@@ -1,14 +1,12 @@
 "use client";
 
 import React from "react";
-import { Button, DatePicker, Form, Input, Typography, message } from "antd";
+import { Button, DatePicker, Form, Input, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { CompOffCreditFormProps } from "../../types/ui.types";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
-
-const { Title } = Typography;
 
 const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited }) => {
   const cookies = parseCookies();
@@ -42,8 +40,7 @@ const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited 
 
   return (
     <div className={styles.adjustmentForm}>
-      <Title level={5}>Credit Comp Off</Title>
-      <Form form={form} layout="vertical" style={{ maxWidth: 480 }}>
+      <Form form={form} layout="vertical">
         <Form.Item name="employeeId" label="Employee ID" rules={[{ required: true }]}>
           <Input placeholder="Enter employee ID" />
         </Form.Item>
