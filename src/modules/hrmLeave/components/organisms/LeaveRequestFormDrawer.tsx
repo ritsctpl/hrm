@@ -20,6 +20,7 @@ import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayService";
 import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
+import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
@@ -102,6 +103,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
   const [currentProfile, setCurrentProfile] = useState<EmployeeProfile | null>(null);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
 
   const {
     options: employeeOptions,
@@ -169,6 +171,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   useEffect(() => {
     if (!showLeaveForm || !site) return;
     let cancelled = false;
+    setLeaveTypesLoading(true);
     HrmLeaveService.getAllLeaveTypes({ site })
       .then((res) => {
         if (cancelled) return;
@@ -176,6 +179,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       })
       .catch(() => {
         // silent — the form falls back to balances or shows the empty hint
+      })
+      .finally(() => {
+        if (!cancelled) setLeaveTypesLoading(false);
       });
     if (employeeId) {
       HrmLeaveService.getEmployeeBalances({
@@ -191,9 +197,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
           if (!cancelled) setFetchedBalances([]);
         });
       HrmEmployeeService.fetchProfile(site, employeeId)
-        .then((profile) => {
+        .then((raw) => {
           if (cancelled) return;
-          setCurrentProfile(profile ?? null);
+          // Backend returns the profile in a flat shape that needs to be
+          // mapped to the EmployeeProfile domain type before basicDetails
+          // is reliably populated.
+          const mapped = mapApiProfileToEmployeeProfile(
+            raw as unknown as Record<string, unknown>,
+          );
+          setCurrentProfile(mapped);
         })
         .catch(() => {
           if (!cancelled) setCurrentProfile(null);
@@ -534,7 +546,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
                 );
               })}
               {choiceOptions.length === 0 && (
-                <Text type="secondary">Loading leave types...</Text>
+                <Text type="secondary">
+                  {leaveTypesLoading
+                    ? "Loading leave types..."
+                    : "No leave types configured for this site."}
+                </Text>
               )}
             </div>
           </div>
