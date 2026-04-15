@@ -120,6 +120,7 @@ export interface EmployeeSummary {
   photoUrl?: string;
   photoBase64?: string;
   status: EmployeeStatus;
+  isActive?: boolean;
   department: string;
   role?: string;
   /** UI alias - mapped from backend 'role' field for backward compat */

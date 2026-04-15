@@ -23,6 +23,7 @@ export interface EmployeeSearchRequest {
   role?: string;
   location?: string;
   status?: EmployeeStatus | null;
+  isActive?: boolean | null;
   businessUnit?: string;
   page?: number;
   size?: number;
@@ -47,6 +48,7 @@ export interface EmployeeDirectoryRow {
   phone?: string;
   photoUrl?: string;
   status: EmployeeStatus;
+  isActive?: boolean;
   department: string;
   role: string;
   location?: string;

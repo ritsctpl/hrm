@@ -18,6 +18,16 @@ const EmpFilterBar: React.FC<EmpFilterBarProps> = ({
   return (
     <>
       <Select
+        value={filters.buFilter}
+        onChange={(value) => onFilterChange({ buFilter: value || null })}
+        placeholder="Business Unit"
+        allowClear
+        style={{ width: 200, height: 32 }}
+        suffixIcon={<FilterOutlined />}
+        options={businessUnits.map((bu) => ({ value: bu, label: bu }))}
+      />
+
+      <Select
         value={filters.departmentFilter}
         onChange={(value) => onFilterChange({ departmentFilter: value || null })}
         placeholder="Department"
@@ -27,27 +37,17 @@ const EmpFilterBar: React.FC<EmpFilterBarProps> = ({
         options={departments.map((d) => ({ value: d, label: d }))}
       />
 
-      {/* <Select
+      <Select
         value={filters.statusFilter}
-        onChange={(value) => onFilterChange({ statusFilter: value || null })}
+        onChange={(value) => onFilterChange({ statusFilter: value ?? null })}
         placeholder="Status"
         allowClear
         style={{ width: 120, height: 32 }}
         suffixIcon={<FilterOutlined />}
         options={[
-          { value: 'ACTIVE', label: 'Active' },
-          { value: 'INACTIVE', label: 'Inactive' },
+          { value: true, label: 'Active' },
+          { value: false, label: 'Inactive' },
         ]}
-      /> */}
-
-      <Select
-        value={filters.buFilter}
-        onChange={(value) => onFilterChange({ buFilter: value || null })}
-        placeholder="Business Unit"
-        allowClear
-        style={{ width: 160, height: 32 }}
-        suffixIcon={<FilterOutlined />}
-        options={businessUnits.map((bu) => ({ value: bu, label: bu }))}
       />
     </>
   );

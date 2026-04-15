@@ -17,6 +17,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     department: row.department,
     designation: row.role || '', // Backend returns 'role', map to 'designation' for UI
     status: row.status,
+    isActive: row.isActive,
     photoUrl: row.photoUrl,
     photoBase64: (row as unknown as Record<string, unknown>).photoBase64 as string | undefined,
     workEmail: row.workEmail,

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Drawer, Table, Button, DatePicker, Input, Empty, Tag, message } from 'antd';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Drawer, Table, Button, Select, Empty, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
@@ -25,10 +25,36 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
   const [handle, setHandle] = useState(employeeHandle ?? '');
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
+  const [employeeOptions, setEmployeeOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+
+  // Fetch employee list for the searchable dropdown when the drawer opens.
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!open) return;
+      setLoadingEmployees(true);
+      try {
+        const cookies = parseCookies();
+        const site = cookies.site;
+        if (!site) return;
+        const response = await HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 });
+        const options = (response.employees || []).map((emp) => ({
+          value: emp.handle,
+          label: `${emp.employeeCode} - ${emp.fullName}`,
+        }));
+        setEmployeeOptions(options);
+      } catch (error) {
+        console.error('Failed to fetch employees:', error);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+    fetchEmployees();
+  }, [open]);
 
   const loadAuditLog = useCallback(async (p = 0) => {
     if (!handle.trim()) {
-      message.warning('Please enter an employee handle');
+      message.warning('Please select an employee');
       return;
     }
     setLoading(true);
@@ -88,14 +114,20 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
       width={800}
     >
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <Input
-          placeholder="Employee handle"
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          style={{ width: 240 }}
+        <Select
+          showSearch
+          placeholder="Select employee"
+          value={handle || undefined}
+          onChange={(value) => setHandle(value || '')}
+          style={{ width: 300 }}
           allowClear
+          loading={loadingEmployees}
+          options={employeeOptions}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
         />
-        <Button type="primary" onClick={() => loadAuditLog(0)} loading={loading}>
+        <Button type="primary" onClick={() => loadAuditLog(0)} loading={loading} disabled={!handle}>
           Load
         </Button>
       </div>
@@ -113,7 +145,7 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
           onChange: (p) => loadAuditLog(p - 1),
           showTotal: (t) => `${t} entries`,
         }}
-        locale={{ emptyText: <Empty description="Enter an employee handle and click Load to view audit history" /> }}
+        locale={{ emptyText: <Empty description="Select an employee and click Load to view audit history" /> }}
       />
     </Drawer>
   );

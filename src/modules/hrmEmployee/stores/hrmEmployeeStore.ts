@@ -27,7 +27,7 @@ interface DirectoryState {
   viewMode: DirectoryViewMode;
   searchKeyword: string;
   departmentFilter: string | null;
-  statusFilter: 'ACTIVE' | 'INACTIVE' | null;
+  statusFilter: boolean | null;
   buFilter: string | null;
 }
 
@@ -140,7 +140,7 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
             site,
             keyword: searchKeyword || undefined,
             department: departmentFilter || undefined,
-            status: statusFilter,
+            isActive: statusFilter,
             businessUnit: buFilter || undefined,
             page: currentPage - 1, // Backend expects 0-indexed page
             size: pageSize,        // Backend expects 'size' not 'pageSize'

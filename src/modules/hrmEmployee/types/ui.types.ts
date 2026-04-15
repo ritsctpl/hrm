@@ -19,7 +19,7 @@ export type ProfileTabKey =
 /** Directory filter state */
 export interface DirectoryFilters {
   departmentFilter: string | null;
-  statusFilter: EmployeeStatus | null;
+  statusFilter: boolean | null;
   buFilter: string | null;
 }
 

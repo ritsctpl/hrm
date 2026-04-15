@@ -34,9 +34,9 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
 
     setLoading(true);
     Promise.all([
-      HrmEmployeeService.getExpiringDocuments(site),
-      HrmEmployeeService.getExpiringVisas(site),
-      HrmEmployeeService.getExpiringCertifications(site),
+      HrmEmployeeService.getExpiringDocuments(site, daysAhead),
+      HrmEmployeeService.getExpiringVisas(site, daysAhead),
+      HrmEmployeeService.getExpiringCertifications(site, daysAhead),
     ])
       .then(([docs, vis, certifications]) => {
         setDocuments(docs);
@@ -47,7 +47,7 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
         // silently handle errors
       })
       .finally(() => setLoading(false));
-  }, [open]);
+  }, [open, daysAhead]);
 
   const columns: ColumnsType<ExpiringAlertResponse> = [
     { title: 'Employee', dataIndex: 'employeeName', width: 160 },
@@ -67,22 +67,20 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
     },
   ];
 
-  const filterByDays = (items: ExpiringAlertResponse[]) =>
-    items.filter((i) => i.daysUntilExpiry <= daysAhead);
-
   const getContent = () => {
     if (loading) return <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>;
 
+    // Backend now filters by daysAhead — use the response data directly.
     let data: ExpiringAlertResponse[] = [];
     switch (activeTab) {
       case 'documents':
-        data = filterByDays(documents);
+        data = documents;
         break;
       case 'visas':
-        data = filterByDays(visas);
+        data = visas;
         break;
       case 'certs':
-        data = filterByDays(certs);
+        data = certs;
         break;
     }
 
@@ -122,17 +120,17 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
         items={[
           {
             key: 'documents',
-            label: `Documents (${filterByDays(documents).length})`,
+            label: `Documents (${documents.length})`,
             children: getContent(),
           },
           {
             key: 'visas',
-            label: `Visas (${filterByDays(visas).length})`,
+            label: `Visas (${visas.length})`,
             children: getContent(),
           },
           {
             key: 'certs',
-            label: `Certifications (${filterByDays(certs).length})`,
+            label: `Certifications (${certs.length})`,
             children: getContent(),
           },
         ]}

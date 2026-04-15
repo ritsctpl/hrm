@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { parseCookies } from 'nookies';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useEmployeeDirectory } from './hooks/useHrmEmployeeData';
 import EmployeeDirectoryTemplate from './components/templates/EmployeeDirectoryTemplate';
@@ -15,6 +16,7 @@ import EmployeeExportPanel from './components/organisms/EmployeeExportPanel';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { useHrmRbacStore } from '../hrmAccess/stores/hrmRbacStore';
+import { HrmOrganizationService } from '../hrmOrganization/services/hrmOrganizationService';
 import type { DirectoryFilters } from './types/ui.types';
 
 interface HrmEmployeeLandingProps {
@@ -48,6 +50,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   const [auditOpen, setAuditOpen] = useState(false);
   const [schemaConfigOpen, setSchemaConfigOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [businessUnitsData, setBusinessUnitsData] = useState<
+    Array<{ handle: string; buCode: string; buName: string }>
+  >([]);
 
   const perms = useCan('HRM_EMPLOYEE');
 
@@ -61,15 +66,41 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
     }
   }, [isReady, loadSectionPermissions]);
 
+  // Fetch business units for the directory's BU filter dropdown.
+  useEffect(() => {
+    const fetchBusinessUnits = async () => {
+      try {
+        const site = parseCookies().site;
+        if (!site) return;
+        const data = await HrmOrganizationService.fetchBusinessUnitsBySite(site);
+        setBusinessUnitsData(
+          (data || []).map((bu) => ({
+            handle: bu.handle,
+            buCode: bu.buCode || '',
+            buName: bu.buName || '',
+          }))
+        );
+      } catch (error) {
+        console.error('Failed to fetch business units:', error);
+      }
+    };
+    fetchBusinessUnits();
+  }, []);
+
   // Derive unique departments from data for filter dropdowns
   const departments = useMemo(
     () => Array.from(new Set(employees.map((e) => e.department).filter(Boolean))).sort(),
     [employees]
   );
 
-  const businessUnits = useMemo(() => {
-    return [] as string[];
-  }, []);
+  const businessUnits = useMemo(
+    () =>
+      businessUnitsData
+        .map((bu) => `${bu.buCode} - ${bu.buName}`)
+        .filter(Boolean)
+        .sort(),
+    [businessUnitsData]
+  );
 
   const filters: DirectoryFilters = {
     departmentFilter,

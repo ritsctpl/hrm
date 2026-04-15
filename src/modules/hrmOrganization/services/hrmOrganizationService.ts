@@ -121,6 +121,12 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /** Fetch all business units for a site (no company handle scoping). */
+  static async fetchBusinessUnitsBySite(site: string): Promise<BusinessUnit[]> {
+    const res = await api.post(`${this.BASE}/businessUnit/retrieveAllBySite`, { site });
+    return res.data;
+  }
+
   static async createBusinessUnit(payload: BusinessUnitRequest): Promise<BusinessUnitResponse> {
     const res = await api.post(`${this.BASE}/businessUnit/create`, payload);
     return res.data;

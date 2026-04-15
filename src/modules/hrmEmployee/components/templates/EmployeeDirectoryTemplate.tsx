@@ -94,11 +94,15 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
   const isReady = useHrmRbacStore(s => s.isReady);
 
   const activeCount = useMemo(
-    () => employees.filter((e) => e.status === 'ACTIVE').length,
+    () => employees.filter((e) =>
+      e.isActive !== undefined ? e.isActive === true : e.status === 'ACTIVE'
+    ).length,
     [employees]
   );
   const inactiveCount = useMemo(
-    () => employees.filter((e) => e.status === 'INACTIVE').length,
+    () => employees.filter((e) =>
+      e.isActive !== undefined ? e.isActive === false : e.status === 'INACTIVE'
+    ).length,
     [employees]
   );
 
