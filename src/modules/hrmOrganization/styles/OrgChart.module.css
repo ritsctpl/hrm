@@ -83,6 +83,9 @@
   align-items: center;
   position: relative;
   padding: 0;
+  /* Never shrink — preserve natural card + subtree width so the
+     canvas's horizontal scroll kicks in when the tree is wide. */
+  flex-shrink: 0;
 }
 
 /* Children container — flex row of child nodes */
@@ -93,6 +96,10 @@
   margin: 0;
   list-style: none;
   position: relative;
+  /* Grow the layout box to fit its children so horizontal scroll
+     propagates up through every nesting level. */
+  min-width: max-content;
+  flex-shrink: 0;
 }
 
 /*
