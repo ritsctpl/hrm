@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
 import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeService";
+import type { EmployeeDirectoryRow } from "@/modules/hrmEmployee/types/api.types";
 
 export interface EmployeeOption {
   value: string;
   label: string;
 }
 
-export function useEmployeeOptions(): { options: EmployeeOption[]; loading: boolean } {
+export function useEmployeeOptions(): {
+  options: EmployeeOption[];
+  employees: EmployeeDirectoryRow[];
+  loading: boolean;
+} {
   const [options, setOptions] = useState<EmployeeOption[]>([]);
+  const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,8 +27,10 @@ export function useEmployeeOptions(): { options: EmployeeOption[]; loading: bool
     HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 })
       .then((res) => {
         if (cancelled) return;
+        const rows = res.employees || [];
+        setEmployees(rows);
         setOptions(
-          (res.employees || []).map((emp) => ({
+          rows.map((emp) => ({
             value: emp.employeeCode,
             label: `${emp.employeeCode} - ${emp.fullName}`,
           })),
@@ -39,5 +47,5 @@ export function useEmployeeOptions(): { options: EmployeeOption[]; loading: bool
     };
   }, []);
 
-  return { options, loading };
+  return { options, employees, loading };
 }

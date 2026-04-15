@@ -100,22 +100,49 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
 
-  const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+  const {
+    options: employeeOptions,
+    employees: directoryEmployees,
+    loading: employeeOptionsLoading,
+  } = useEmployeeOptions();
 
-  // Resolve a friendly applying-as label. Use || (not ??) so empty-string
-  // cookies fall through to the next fallback instead of stopping the chain.
-  const directoryMatch =
-    employeeOptions.find((opt) => opt.value === employeeId) ||
-    employeeOptions.find((opt) => opt.value === cookies.employeeCode) ||
-    employeeOptions.find((opt) => opt.value === cookies.userId);
+  // Resolve the current user against the employee directory by trying every
+  // identifier we have in cookies/props — handle, employeeCode, workEmail,
+  // username — so we always end up with a real employee record when one
+  // exists, regardless of how the auth layer stores the session.
+  const cookieCandidates = [
+    employeeId,
+    cookies.employeeCode,
+    cookies.userId,
+    cookies.username,
+    cookies.email,
+    cookies.preferred_username,
+    cookies.user,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  const matchedEmployee = directoryEmployees.find((emp) =>
+    cookieCandidates.some(
+      (c) =>
+        c === emp.handle ||
+        c === emp.employeeCode ||
+        c.toLowerCase() === (emp.workEmail || "").toLowerCase() ||
+        c.toLowerCase() === (emp.fullName || "").toLowerCase(),
+    ),
+  );
+
+  // Use || (not ??) so empty-string cookies fall through.
   const employeeDisplayName =
-    directoryMatch?.label ||
+    (matchedEmployee
+      ? `${matchedEmployee.employeeCode} - ${matchedEmployee.fullName}`
+      : "") ||
     cookies.fullName ||
     cookies.employeeName ||
     cookies.name ||
     cookies.firstName ||
     cookies.displayName ||
     cookies.username ||
+    cookies.preferred_username ||
+    cookies.email ||
     cookies.user ||
     cookies.employeeCode ||
     employeeId ||
@@ -452,12 +479,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Applying as</span>
             <Input
-              value={
-                directoryMatch?.label ||
-                (employeeId
-                  ? `${employeeDisplayName} · ${employeeId}`
-                  : employeeDisplayName)
-              }
+              value={employeeDisplayName}
               readOnly
               placeholder="Loading current user..."
             />
