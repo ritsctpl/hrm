@@ -17,19 +17,12 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import type { Dayjs } from "dayjs";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import { LedgerHistoryResponse } from "../../types/api.types";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title } = Typography;
-
-const LEAVE_TYPE_OPTIONS = [
-  { value: "CL", label: "Casual Leave" },
-  { value: "SL", label: "Sick Leave" },
-  { value: "PL", label: "Privilege Leave" },
-  { value: "CO", label: "Comp Off" },
-  { value: "WFH", label: "Work From Home" },
-];
 
 interface LeaveAvailedReportPanelProps {
   site: string;
@@ -47,6 +40,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site 
   const [rows, setRows] = useState<LedgerHistoryResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const buildPayload = (values: FormValues) => {
     const [from, to] = values.dateRange;
@@ -143,10 +137,15 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site 
           </Form.Item>
           <Form.Item name="leaveTypeCode" label="Leave Type">
             <Select
+              showSearch
               allowClear
-              options={LEAVE_TYPE_OPTIONS}
+              options={leaveTypeOptions}
+              loading={leaveTypeOptionsLoading}
               style={{ width: 180 }}
               placeholder="All types"
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="department" label="Department">

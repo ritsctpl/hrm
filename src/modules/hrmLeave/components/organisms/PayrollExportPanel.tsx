@@ -16,18 +16,11 @@ import {
 import dayjs, { Dayjs } from "dayjs";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
-
-const LEAVE_TYPE_OPTIONS = [
-  { value: "CL", label: "Casual Leave" },
-  { value: "SL", label: "Sick Leave" },
-  { value: "PL", label: "Privilege Leave" },
-  { value: "CO", label: "Comp Off" },
-  { value: "WFH", label: "Work From Home" },
-];
 
 interface PayrollExportPanelProps {
   site: string;
@@ -40,6 +33,7 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
   const [lockForm] = Form.useForm();
   const [exporting, setExporting] = useState(false);
   const [locking, setLocking] = useState(false);
+  const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -116,10 +110,15 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
             </Form.Item>
             <Form.Item name="leaveTypeCode" label="Leave Type">
               <Select
+                showSearch
                 allowClear
-                options={LEAVE_TYPE_OPTIONS}
+                options={leaveTypeOptions}
+                loading={leaveTypeOptionsLoading}
                 style={{ width: 180 }}
                 placeholder="All types"
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
               />
             </Form.Item>
             <Form.Item>

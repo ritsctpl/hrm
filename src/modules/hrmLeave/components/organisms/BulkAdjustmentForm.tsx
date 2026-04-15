@@ -14,18 +14,11 @@ import {
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Text } = Typography;
-
-const LEAVE_TYPE_OPTIONS = [
-  { value: "CL", label: "Casual Leave" },
-  { value: "SL", label: "Sick Leave" },
-  { value: "PL", label: "Privilege Leave" },
-  { value: "CO", label: "Comp Off" },
-  { value: "WFH", label: "Work From Home" },
-];
 
 interface BulkAdjustmentFormProps {
   site: string;
@@ -38,6 +31,7 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+  const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const handleSubmit = async () => {
     try {
@@ -107,7 +101,15 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
           />
         </Form.Item>
         <Form.Item name="leaveTypeCode" label="Leave Type" rules={[{ required: true }]}>
-          <Select options={LEAVE_TYPE_OPTIONS} />
+          <Select
+            showSearch
+            options={leaveTypeOptions}
+            loading={leaveTypeOptionsLoading}
+            placeholder="Select leave type"
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          />
         </Form.Item>
         <Form.Item
           name="delta"

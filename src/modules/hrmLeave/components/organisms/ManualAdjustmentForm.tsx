@@ -6,16 +6,9 @@ import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
-
-const LEAVE_TYPE_OPTIONS = [
-  { value: "CL", label: "Casual Leave" },
-  { value: "SL", label: "Sick Leave" },
-  { value: "PL", label: "Privilege Leave" },
-  { value: "CO", label: "Comp Off" },
-  { value: "WFH", label: "Work From Home" },
-];
 
 const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
   site,
@@ -26,6 +19,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+  const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const handleSubmit = async () => {
     try {
@@ -68,7 +62,15 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
           />
         </Form.Item>
         <Form.Item name="leaveTypeCode" label="Leave Type" rules={[{ required: true }]}>
-          <Select options={LEAVE_TYPE_OPTIONS} />
+          <Select
+            showSearch
+            options={leaveTypeOptions}
+            loading={leaveTypeOptionsLoading}
+            placeholder="Select leave type"
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          />
         </Form.Item>
         <Form.Item name="direction" label="Direction" rules={[{ required: true }]}>
           <Radio.Group>
