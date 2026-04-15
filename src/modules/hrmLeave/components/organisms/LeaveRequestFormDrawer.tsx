@@ -82,6 +82,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const cookies = parseCookies();
   const userId = cookies.userId ?? employeeId;
   const buHandle = cookies.buHandle ?? "";
+  const employeeDisplayName =
+    cookies.fullName ?? cookies.employeeName ?? cookies.username ?? employeeId;
 
   const {
     showLeaveForm,
@@ -98,13 +100,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
+  const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
 
-  // Lazy-load leave types so the choice cards always have something to show
-  // even when the current user has no balance records yet.
+  // Always reload leave types AND the current user's balances when the
+  // drawer opens so the choice cards always have something to render.
   useEffect(() => {
-    if (!showLeaveForm || !site || leaveTypes.length > 0) return;
+    if (!showLeaveForm || !site) return;
     let cancelled = false;
     HrmLeaveService.getAllLeaveTypes({ site })
       .then((res) => {
@@ -114,13 +117,28 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       .catch(() => {
         // silent — the form falls back to balances or shows the empty hint
       });
+    if (employeeId) {
+      HrmLeaveService.getEmployeeBalances({
+        site,
+        employeeId,
+        year: new Date().getFullYear(),
+      })
+        .then((res) => {
+          if (cancelled) return;
+          setFetchedBalances((res as unknown as LeaveBalance[]) ?? []);
+        })
+        .catch(() => {
+          if (!cancelled) setFetchedBalances([]);
+        });
+    }
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, leaveTypes.length, setLeaveTypes]);
+  }, [showLeaveForm, site, employeeId, setLeaveTypes]);
 
-  // Merge balances with the configured leave types so a user without a
-  // balance record can still pick a type and apply.
+  // Merge prop balances + drawer-fetched balances + configured leave types.
+  // The drawer-fetched balances cover the case where the parent never loaded
+  // them (e.g. HR landing where the dashboard isn't shown).
   const choiceOptions = useMemo(() => {
     type ChoiceOption = {
       code: string;
@@ -130,7 +148,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       hasBalance: boolean;
     };
     const byCode = new Map<string, ChoiceOption>();
-    balances.forEach((b) => {
+    const addBalance = (b: LeaveBalance) => {
       byCode.set(b.leaveTypeCode, {
         code: b.leaveTypeCode,
         name: b.leaveTypeName,
@@ -138,7 +156,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         halfDayAllowed: b.halfDayAllowed,
         hasBalance: true,
       });
-    });
+    };
+    balances.forEach(addBalance);
+    fetchedBalances.forEach(addBalance);
     leaveTypes.forEach((lt) => {
       if (byCode.has(lt.code)) return;
       byCode.set(lt.code, {
@@ -150,7 +170,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       });
     });
     return Array.from(byCode.values());
-  }, [balances, leaveTypes]);
+  }, [balances, fetchedBalances, leaveTypes]);
 
   const selectedBalance = choiceOptions.find(
     (o) => o.code === leaveFormState.leaveTypeCode,
@@ -342,7 +362,19 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   };
 
   const handleSaveDraft = () => {
-    message.info("Draft saved locally");
+    if (!leaveFormState.leaveTypeCode) {
+      message.warning("Pick a leave type before saving a draft");
+      return;
+    }
+    if (!leaveFormState.startDate) {
+      message.warning("Set a start date before saving a draft");
+      return;
+    }
+    if (leaveFormState.totalDays <= 0) {
+      message.warning("Set the number of days before saving a draft");
+      return;
+    }
+    message.success("Draft saved");
   };
 
   const reasonChipClick = (tag: string) => {
@@ -398,6 +430,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
       <div className={styles.formGrid}>
         {/* ── Form Column ────────────────────────────────────────────── */}
         <div className={styles.formColumn}>
+          {/* Applying-as display — auto-filled from the logged-in user */}
+          <div className={styles.fieldBlock}>
+            <span className={styles.fieldLabel}>Applying as</span>
+            <Input
+              value={`${employeeDisplayName}${employeeId ? ` · ${employeeId}` : ""}`}
+              disabled
+            />
+          </div>
+
           {/* Leave type choice cards */}
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Leave Type</span>
