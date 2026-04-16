@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Select, Button, Skeleton, Typography, Space } from 'antd';
 import type { RolePermissionGridProps } from '../../types/ui.types';
 import type { Permission } from '../../types/domain.types';
@@ -99,9 +99,34 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
+              // Cascade handler: when a module-level checkbox is toggled,
+              // also toggle ALL child object permissions for the same action.
+              const handleModuleToggle = (handle: string) => {
+                const modulePerms = modPerms['__module__'] ?? [];
+                const toggledPerm = modulePerms.find((p) => p.handle === handle);
+                if (!toggledPerm) {
+                  onToggle(handle);
+                  return;
+                }
+                const willBeChecked = !selectedHandles.has(handle);
+                onToggle(handle);
+                // Cascade to all child objects for the same action
+                objKeys
+                  .filter((k) => k !== '__module__')
+                  .forEach((objKey) => {
+                    const childPerm = modPerms[objKey].find(
+                      (p) => p.action === toggledPerm.action,
+                    );
+                    if (!childPerm) return;
+                    const childIsChecked = selectedHandles.has(childPerm.handle);
+                    if (willBeChecked && !childIsChecked) onToggle(childPerm.handle);
+                    if (!willBeChecked && childIsChecked) onToggle(childPerm.handle);
+                  });
+              };
+
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module-level row */}
+                  {/* Module-level row — cascade toggles to child objects */}
                   <RbacPermissionGroupRow
                     moduleCode={moduleCode}
                     moduleName={modName}
@@ -109,7 +134,7 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                     permissions={modPerms['__module__'] ?? []}
                     selectedHandles={selectedHandles}
                     disabled={disabled}
-                    onChange={onToggle}
+                    onChange={handleModuleToggle}
                   />
                   {/* Object-level rows */}
                   {objKeys
