@@ -99,34 +99,36 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
-              const childObjKeys = objKeys.filter((k) => k !== '__module__');
-
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module header row — label only, no checkboxes.
-                      Module-level V/A/E/D is controlled by the role-module
-                      assignment, not the permission grid. */}
-                  <tr className={styles.moduleRow}>
-                    <td className={styles.permLabel}>{modName}</td>
-                    {PERMISSION_ACTIONS.map((action) => (
-                      <td key={action} className={styles.permCell}>
-                        <span className={styles.permNA}>—</span>
-                      </td>
+                  {/* Module-level row — independent checkboxes from the
+                      __module__ permission records. These are separate from
+                      object rows: checking an object's ADD does NOT affect
+                      the module-level ADD and vice versa. */}
+                  <RbacPermissionGroupRow
+                    moduleCode={moduleCode}
+                    moduleName={modName}
+                    objectName={null}
+                    permissions={modPerms['__module__'] ?? []}
+                    selectedHandles={selectedHandles}
+                    disabled={disabled}
+                    onChange={onToggle}
+                  />
+                  {/* Object-level rows */}
+                  {objKeys
+                    .filter((k) => k !== '__module__')
+                    .map((objKey) => (
+                      <RbacPermissionGroupRow
+                        key={`${moduleCode}-${objKey}`}
+                        moduleCode={moduleCode}
+                        moduleName={modName}
+                        objectName={objKey}
+                        permissions={modPerms[objKey]}
+                        selectedHandles={selectedHandles}
+                        disabled={disabled}
+                        onChange={onToggle}
+                      />
                     ))}
-                  </tr>
-                  {/* Object-level rows — each has independent checkboxes */}
-                  {childObjKeys.map((objKey) => (
-                    <RbacPermissionGroupRow
-                      key={`${moduleCode}-${objKey}`}
-                      moduleCode={moduleCode}
-                      moduleName={modName}
-                      objectName={objKey}
-                      permissions={modPerms[objKey]}
-                      selectedHandles={selectedHandles}
-                      disabled={disabled}
-                      onChange={onToggle}
-                    />
-                  ))}
                 </React.Fragment>
               );
             })}
