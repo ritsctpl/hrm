@@ -6,6 +6,7 @@ import type { RolePermissionGridProps } from '../../types/ui.types';
 import type { Permission } from '../../types/domain.types';
 import type { PermissionAction } from '../../types/api.types';
 import RbacPermissionGroupRow from '../molecules/RbacPermissionGroupRow';
+import { getRootObjectCode } from '../../utils/moduleObjectRegistry';
 import { PERMISSION_ACTIONS, PERMISSION_ACTION_LABELS } from '../../utils/rbacConstants';
 import styles from '../../styles/RoleManagement.module.css';
 
@@ -101,14 +102,17 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
-              const childObjKeys = objKeys.filter((k) => k !== '__module__');
+              const rootCode = getRootObjectCode(moduleCode);
+              const allObjKeys = objKeys.filter((k) => k !== '__module__');
+              const rootKey = allObjKeys.find((k) => k === rootCode);
+              const childObjKeys = allObjKeys.filter((k) => k !== rootCode);
 
-              // Cascade handler: when module-level checkbox is toggled,
-              // also toggle all child object permissions for the same action.
-              // Object-level changes do NOT cascade upward.
-              const handleModuleToggle = (handle: string) => {
-                const modulePerms = modPerms['__module__'] ?? [];
-                const toggledPerm = modulePerms.find((p) => p.handle === handle);
+              // Cascade: when ROOT object checkbox is toggled, cascade to
+              // ALL child objects for the same action. Children independently
+              // toggled do NOT cascade upward to the root.
+              const handleRootToggle = (handle: string) => {
+                const rootPerms = rootKey ? (modPerms[rootKey] ?? []) : [];
+                const toggledPerm = rootPerms.find((p) => p.handle === handle);
                 onToggle(handle);
                 if (!toggledPerm) return;
                 const willBeChecked = !selectedHandles.has(handle);
@@ -125,17 +129,29 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
 
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module-level row — own checkboxes + cascade down on click */}
-                  <RbacPermissionGroupRow
-                    moduleCode={moduleCode}
-                    moduleName={modName}
-                    objectName={null}
-                    permissions={modPerms['__module__'] ?? []}
-                    selectedHandles={selectedHandles}
-                    disabled={disabled}
-                    onChange={handleModuleToggle}
-                  />
-                  {/* Object-level rows — independent, no upward cascade */}
+                  {/* Module header */}
+                  <tr className={styles.moduleRow}>
+                    <td className={styles.permLabel}>{modName}</td>
+                    {PERMISSION_ACTIONS.map((action) => (
+                      <td key={action} className={styles.permCell}>
+                        <span className={styles.permNA}>—</span>
+                      </td>
+                    ))}
+                  </tr>
+                  {/* Root object (Module Access) — cascade on click */}
+                  {rootKey && (
+                    <RbacPermissionGroupRow
+                      key={`${moduleCode}-${rootKey}`}
+                      moduleCode={moduleCode}
+                      moduleName={modName}
+                      objectName={rootKey}
+                      permissions={modPerms[rootKey]}
+                      selectedHandles={selectedHandles}
+                      disabled={disabled}
+                      onChange={handleRootToggle}
+                    />
+                  )}
+                  {/* Child object rows — independent, no upward cascade */}
                   {childObjKeys.map((objKey) => (
                     <RbacPermissionGroupRow
                       key={`${moduleCode}-${objKey}`}
