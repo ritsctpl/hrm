@@ -44,15 +44,16 @@ export function useCan(moduleCode?: string, objectName?: string): ModulePermissi
   );
 
   // Object-level resolution rules:
-  //   1. Cache loaded WITH object entries → strict lookup (no module fallback)
-  //   2. Cache loaded but EMPTY → backend hasn't published object perms for
-  //      this module; fall back to module-level grants.
-  //   3. Cache not loaded yet → transient; fall back to module-level so the
-  //      UI doesn't flicker buttons in/out during the initial load.
+  //   1. Cache loaded (with or without entries) → strict lookup. If the
+  //      requested objectName isn't in the cache, return EMPTY (denied).
+  //      This enforces per-object grants: an object without an explicit
+  //      grant is treated as denied even when the module-level grant is
+  //      broader. The only escape hatch is the <Can passIf> prop.
+  //   2. Cache not loaded yet → transient; fall back to module-level so
+  //      the UI doesn't flicker buttons in/out during the initial load.
+  //      Once loadSectionPermissions completes, rule 1 takes over.
   if (objectName && resolvedCode) {
-    const cacheLoadedWithObjects =
-      cacheForModule !== undefined && Object.keys(cacheForModule).length > 0;
-    if (cacheLoadedWithObjects) {
+    if (cacheForModule !== undefined) {
       return cacheForModule[objectName] || EMPTY;
     }
     return moduleFromStore || EMPTY;
