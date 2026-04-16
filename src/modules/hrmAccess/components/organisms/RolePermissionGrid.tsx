@@ -31,7 +31,10 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
     [modules]
   );
 
-  // Group permissions by moduleCode then objectName
+  // Group permissions by moduleCode then objectName. If a module has
+  // object-level records but NO module-level records (objectName=null),
+  // inject synthetic __module__ entries so the module row always renders
+  // checkboxes — even when the backend hasn't created null-object records.
   const grouped = useMemo(() => {
     const result: Record<string, Record<string, Permission[]>> = {};
 
@@ -44,8 +47,27 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
       result[mod][obj].push(perm);
     }
 
+    // Inject synthetic module-level entries where missing
+    for (const mod of Object.keys(result)) {
+      if (!result[mod]['__module__'] || result[mod]['__module__'].length === 0) {
+        const modName = modules.find((m) => m.moduleCode === mod)?.moduleName ?? mod;
+        result[mod]['__module__'] = PERMISSION_ACTIONS.map((action) => ({
+          handle: `__synthetic__${mod}__${action}`,
+          site: '',
+          moduleCode: mod,
+          moduleName: modName,
+          objectName: null,
+          action: action as Permission['action'],
+          isDefault: false,
+          active: 1,
+          createdDateTime: '',
+          createdBy: '',
+        }));
+      }
+    }
+
     return result;
-  }, [allPermissions, moduleFilter]);
+  }, [allPermissions, moduleFilter, modules]);
 
   const moduleCodes = Object.keys(grouped);
 
