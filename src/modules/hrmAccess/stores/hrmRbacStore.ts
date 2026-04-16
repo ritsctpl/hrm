@@ -185,8 +185,25 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       const perms = response.permissions.filter(p => p.moduleCode === moduleCode);
 
       const sectionPerms: ModuleSectionPermissions = {};
+      // Track whether the response includes explicit module-level grants
+      // (objectName = null). If it does, use those as the TRUE module-level
+      // permissions instead of the potentially inflated actions array from
+      // userModulesByOrganization.
+      let hasModuleLevelGrants = false;
+      const moduleLevelPerms: ModulePermissions = { canView: false, canAdd: false, canEdit: false, canDelete: false };
+
       for (const perm of perms) {
-        const objName = perm.objectName || moduleCode;
+        if (perm.objectName === null || perm.objectName === '') {
+          hasModuleLevelGrants = true;
+          switch (perm.action) {
+            case 'VIEW': moduleLevelPerms.canView = true; break;
+            case 'ADD': moduleLevelPerms.canAdd = true; break;
+            case 'EDIT': moduleLevelPerms.canEdit = true; break;
+            case 'DELETE': moduleLevelPerms.canDelete = true; break;
+          }
+          continue;
+        }
+        const objName = perm.objectName;
         if (!sectionPerms[objName]) {
           sectionPerms[objName] = { canView: false, canAdd: false, canEdit: false, canDelete: false };
         }
@@ -203,6 +220,18 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
           ...state.sectionPermissionCache,
           [moduleCode]: sectionPerms,
         },
+        // Override module-level permissions when the effective permissions
+        // include explicit null-object grants. This corrects the inflated
+        // actions from userModulesByOrganization which aggregates object
+        // actions into the module level.
+        ...(hasModuleLevelGrants
+          ? {
+              permissionsByModule: {
+                ...state.permissionsByModule,
+                [moduleCode]: moduleLevelPerms,
+              },
+            }
+          : {}),
       }));
     } catch (err) {
       console.error('Failed to load section permissions for', moduleCode, err);
