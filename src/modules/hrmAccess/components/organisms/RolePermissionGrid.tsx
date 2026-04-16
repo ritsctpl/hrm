@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
-import { Select, Button, Skeleton, Typography, Space } from 'antd';
+import React, { useMemo } from 'react';
+import { Checkbox, Select, Button, Skeleton, Tooltip, Typography, Space } from 'antd';
 import type { RolePermissionGridProps } from '../../types/ui.types';
 import type { Permission } from '../../types/domain.types';
 import type { PermissionAction } from '../../types/api.types';
@@ -99,58 +99,84 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
-              // Cascade handler: when a module-level checkbox is toggled,
-              // also toggle ALL child object permissions for the same action.
-              const handleModuleToggle = (handle: string) => {
-                const modulePerms = modPerms['__module__'] ?? [];
-                const toggledPerm = modulePerms.find((p) => p.handle === handle);
-                if (!toggledPerm) {
-                  onToggle(handle);
-                  return;
+              // Gather all child object keys (everything except __module__)
+              const childObjKeys = objKeys.filter((k) => k !== '__module__');
+
+              // For each action, collect every child permission handle.
+              const childHandlesByAction: Record<string, string[]> = {};
+              for (const action of PERMISSION_ACTIONS) {
+                childHandlesByAction[action] = [];
+                for (const objKey of childObjKeys) {
+                  const p = modPerms[objKey]?.find((pm) => pm.action === action);
+                  if (p) childHandlesByAction[action].push(p.handle);
                 }
-                const willBeChecked = !selectedHandles.has(handle);
-                onToggle(handle);
-                // Cascade to all child objects for the same action
-                objKeys
-                  .filter((k) => k !== '__module__')
-                  .forEach((objKey) => {
-                    const childPerm = modPerms[objKey].find(
-                      (p) => p.action === toggledPerm.action,
-                    );
-                    if (!childPerm) return;
-                    const childIsChecked = selectedHandles.has(childPerm.handle);
-                    if (willBeChecked && !childIsChecked) onToggle(childPerm.handle);
-                    if (!willBeChecked && childIsChecked) onToggle(childPerm.handle);
-                  });
+              }
+
+              // Compute checked / indeterminate state per action for the
+              // module-level "select all" row.
+              const actionState = (action: string) => {
+                const handles = childHandlesByAction[action] ?? [];
+                if (handles.length === 0) return { checked: false, indeterminate: false, count: 0 };
+                const checkedCount = handles.filter((h) => selectedHandles.has(h)).length;
+                return {
+                  checked: checkedCount === handles.length,
+                  indeterminate: checkedCount > 0 && checkedCount < handles.length,
+                  count: handles.length,
+                };
+              };
+
+              // Select-all toggle: check all children if not all checked,
+              // uncheck all if all are already checked.
+              const handleSelectAll = (action: string) => {
+                const handles = childHandlesByAction[action] ?? [];
+                const { checked: allChecked } = actionState(action);
+                for (const h of handles) {
+                  const isChecked = selectedHandles.has(h);
+                  if (allChecked && isChecked) onToggle(h);
+                  if (!allChecked && !isChecked) onToggle(h);
+                }
               };
 
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module-level row — cascade toggles to child objects */}
-                  <RbacPermissionGroupRow
-                    moduleCode={moduleCode}
-                    moduleName={modName}
-                    objectName={null}
-                    permissions={modPerms['__module__'] ?? []}
-                    selectedHandles={selectedHandles}
-                    disabled={disabled}
-                    onChange={handleModuleToggle}
-                  />
+                  {/* Module-level row — virtual select-all checkboxes */}
+                  <tr className={styles.moduleRow}>
+                    <td className={styles.permLabel}>{modName}</td>
+                    {PERMISSION_ACTIONS.map((action) => {
+                      const { checked, indeterminate, count } = actionState(action);
+                      return (
+                        <td key={action} className={styles.permCell}>
+                          {count > 0 ? (
+                            <Tooltip
+                              title={`${checked ? 'Uncheck' : 'Check'} all ${PERMISSION_ACTION_LABELS[action as PermissionAction]} for ${modName}`}
+                            >
+                              <Checkbox
+                                checked={checked}
+                                indeterminate={indeterminate}
+                                disabled={disabled}
+                                onChange={() => handleSelectAll(action)}
+                              />
+                            </Tooltip>
+                          ) : (
+                            <span className={styles.permNA}>—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
                   {/* Object-level rows */}
-                  {objKeys
-                    .filter((k) => k !== '__module__')
-                    .map((objKey) => (
-                      <RbacPermissionGroupRow
-                        key={`${moduleCode}-${objKey}`}
-                        moduleCode={moduleCode}
-                        moduleName={modName}
-                        objectName={objKey}
-                        permissions={modPerms[objKey]}
-                        selectedHandles={selectedHandles}
-                        disabled={disabled}
-                        onChange={onToggle}
-                      />
-                    ))}
+                  {childObjKeys.map((objKey) => (
+                    <RbacPermissionGroupRow
+                      key={`${moduleCode}-${objKey}`}
+                      moduleCode={moduleCode}
+                      moduleName={modName}
+                      objectName={objKey}
+                      permissions={modPerms[objKey]}
+                      selectedHandles={selectedHandles}
+                      disabled={disabled}
+                      onChange={onToggle}
+                    />
+                  ))}
                 </React.Fragment>
               );
             })}
