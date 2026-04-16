@@ -6,6 +6,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import type { PermissionMatrixGridProps } from '../../types/ui.types';
 import type { PermissionsMatrixResponse } from '../../types/api.types';
 import { PERMISSION_ACTIONS } from '../../utils/rbacConstants';
+import { getObjectLabel } from '../../utils/moduleObjectRegistry';
 import styles from '../../styles/PermissionMatrix.module.css';
 
 const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
@@ -106,7 +107,7 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
         <tbody>
           {groupedData.map((group, rowIndex) => {
             const label = group.objectName
-              ? `${group.moduleName} > ${group.objectName}`
+              ? `${group.moduleName} > ${getObjectLabel(group.objectName)}`
               : group.moduleName;
             const isObject = group.objectName !== null;
 

@@ -5,6 +5,7 @@ import RbacPermissionCheckbox from '../atoms/RbacPermissionCheckbox';
 import type { RbacPermissionGroupRowProps } from '../../types/ui.types';
 import type { PermissionAction } from '../../types/api.types';
 import { PERMISSION_ACTIONS, PERMISSION_ACTION_LABELS } from '../../utils/rbacConstants';
+import { getObjectLabel } from '../../utils/moduleObjectRegistry';
 import styles from '../../styles/RoleManagement.module.css';
 
 const RbacPermissionGroupRow: React.FC<RbacPermissionGroupRowProps> = ({
@@ -19,7 +20,7 @@ const RbacPermissionGroupRow: React.FC<RbacPermissionGroupRowProps> = ({
   const getPermissionForAction = (action: PermissionAction) =>
     permissions.find((p) => p.action === action);
 
-  const label = objectName ? `  ${objectName}` : moduleName;
+  const label = objectName ? `  ${getObjectLabel(objectName)}` : moduleName;
   const isObjectRow = objectName !== null;
 
   return (

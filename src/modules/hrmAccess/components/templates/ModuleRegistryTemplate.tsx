@@ -6,6 +6,7 @@ import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
+import { getObjectsForModule } from '../../utils/moduleObjectRegistry';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
 
@@ -423,12 +424,29 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
               options={MODULE_TYPES}
             />
           </Form.Item>
-          <Form.Item name="defaultPermissionObjects" label="Default Permission Objects">
-            <Select
-              mode="tags"
-              placeholder="e.g., Attendance, Shift, Overtime"
-              style={{ width: '100%' }}
-            />
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.moduleCode !== cur.moduleCode}>
+            {() => {
+              const moduleCode = form.getFieldValue('moduleCode') ?? '';
+              const known = getObjectsForModule(moduleCode);
+              return (
+                <Form.Item
+                  name="defaultPermissionObjects"
+                  label="Permission Objects"
+                  extra={
+                    known.length > 0
+                      ? `${known.length} predefined objects for ${moduleCode}. You can also type custom ones.`
+                      : 'Type object codes (e.g., flow_record, flow_settings) and press Enter.'
+                  }
+                >
+                  <Select
+                    mode="tags"
+                    placeholder={known.length > 0 ? 'Select from predefined objects' : 'Type object codes and press Enter'}
+                    style={{ width: '100%' }}
+                    options={known.map((o) => ({ value: o.code, label: `${o.label} (${o.code})` }))}
+                  />
+                </Form.Item>
+              );
+            }}
           </Form.Item>
           <Form.Item name="isActive" label="Active" valuePropName="checked" initialValue={true}>
             <Checkbox />

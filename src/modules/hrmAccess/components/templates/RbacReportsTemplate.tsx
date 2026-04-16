@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Select, message, Empty, Card, Tag, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { HrmAccessService } from '../../services/hrmAccessService';
+import { getObjectLabel } from '../../utils/moduleObjectRegistry';
 import type { ColumnsType } from 'antd/es/table';
 import type { UserAccessReportResponse, UserRoleAssignmentResponse } from '../../types/api.types';
 
@@ -107,11 +108,11 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
 
   const userAccessColumns: ColumnsType<(typeof flattenedAccessData)[0]> = [
     { title: 'Module', dataIndex: 'moduleName', width: 160 },
-    { 
-      title: 'Object', 
-      dataIndex: 'objectName', 
+    {
+      title: 'Object',
+      dataIndex: 'objectName',
       width: 140,
-      render: (text) => text || '--',
+      render: (text) => text ? getObjectLabel(text) : '--',
     },
     {
       title: 'Action',
