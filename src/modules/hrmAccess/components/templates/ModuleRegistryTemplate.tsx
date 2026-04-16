@@ -6,7 +6,8 @@ import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
-import { getObjectsForModule, getObjectsByAppUrl } from '../../utils/moduleObjectRegistry';
+import { getObjectsForModule, getObjectsByAppUrl, getModuleCodeByAppUrl } from '../../utils/moduleObjectRegistry';
+import { useHrmRbacStore } from '../../stores/hrmRbacStore';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
 
@@ -428,10 +429,30 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             {() => {
               const moduleCode = form.getFieldValue('moduleCode') ?? '';
               const appUrl = form.getFieldValue('appUrl') ?? '';
-              const byCode = getObjectsForModule(moduleCode);
-              const byUrl = getObjectsByAppUrl(appUrl);
-              const known = byCode.length > 0 ? byCode : byUrl;
-              const matchSource = byCode.length > 0 ? moduleCode : (byUrl.length > 0 ? appUrl : '');
+
+              // 1. Try hardcoded registry by moduleCode
+              let known = getObjectsForModule(moduleCode);
+              let matchSource = moduleCode;
+
+              // 2. Fallback: try hardcoded registry by appUrl
+              if (known.length === 0 && appUrl) {
+                known = getObjectsByAppUrl(appUrl);
+                matchSource = appUrl;
+              }
+
+              // 3. Fallback: resolve moduleCode from appUrl via store
+              //    (works for modules created at runtime, not in hardcoded map)
+              if (known.length === 0 && appUrl) {
+                const storeModules = useHrmRbacStore.getState().currentOrgModules ?? [];
+                const storeMatch = storeModules.find(
+                  (m) => m.appUrl === appUrl || m.moduleCode === moduleCode,
+                );
+                if (storeMatch) {
+                  known = getObjectsForModule(storeMatch.moduleCode);
+                  matchSource = storeMatch.moduleCode;
+                }
+              }
+
               return (
                 <Form.Item
                   name="defaultPermissionObjects"
