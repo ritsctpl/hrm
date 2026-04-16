@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { HrmAccessService } from '../services/hrmAccessService';
+import { getRootObjectCode } from '../utils/moduleObjectRegistry';
 import type { PermissionAction } from '../types/api.types';
 import type {
   OrganizationModules,
@@ -185,25 +186,8 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       const perms = response.permissions.filter(p => p.moduleCode === moduleCode);
 
       const sectionPerms: ModuleSectionPermissions = {};
-      // Track whether the response includes explicit module-level grants
-      // (objectName = null). If it does, use those as the TRUE module-level
-      // permissions instead of the potentially inflated actions array from
-      // userModulesByOrganization.
-      let hasModuleLevelGrants = false;
-      const moduleLevelPerms: ModulePermissions = { canView: false, canAdd: false, canEdit: false, canDelete: false };
-
       for (const perm of perms) {
-        if (perm.objectName === null || perm.objectName === '') {
-          hasModuleLevelGrants = true;
-          switch (perm.action) {
-            case 'VIEW': moduleLevelPerms.canView = true; break;
-            case 'ADD': moduleLevelPerms.canAdd = true; break;
-            case 'EDIT': moduleLevelPerms.canEdit = true; break;
-            case 'DELETE': moduleLevelPerms.canDelete = true; break;
-          }
-          continue;
-        }
-        const objName = perm.objectName;
+        const objName = perm.objectName || moduleCode;
         if (!sectionPerms[objName]) {
           sectionPerms[objName] = { canView: false, canAdd: false, canEdit: false, canDelete: false };
         }
@@ -215,16 +199,15 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
 
-      // Correct module-level permissions:
-      //   - If effectivePermissions has objectName=null entries → use those
-      //     as the TRUE module V/A/E/D (explicit grants).
-      //   - If NO objectName=null entries → the backend hasn't granted
-      //     module-level ADD/EDIT/DELETE explicitly, so keep only VIEW
-      //     (since the user can access the app) and clear the rest.
-      // This overrides the inflated actions from userModulesByOrganization
-      // which incorrectly aggregates object-level actions into module-level.
-      const correctedModulePerms: ModulePermissions = hasModuleLevelGrants
-        ? moduleLevelPerms
+      // Override module-level permissions using the root object (e.g.,
+      // employee_module, leave_module). The root object is always the FIRST
+      // entry in the module's registry. Its V/A/E/D becomes the TRUE
+      // module-level permission, correcting the inflated actions array from
+      // userModulesByOrganization.
+      const rootCode = getRootObjectCode(moduleCode);
+      const rootPerms = rootCode ? sectionPerms[rootCode] : undefined;
+      const correctedModulePerms: ModulePermissions = rootPerms
+        ? { ...rootPerms }
         : {
             canView: (get().permissionsByModule[moduleCode]?.canView) ?? false,
             canAdd: false,

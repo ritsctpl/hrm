@@ -73,9 +73,20 @@ export const MODULE_TO_APP_URL: Record<string, string> = Object.fromEntries(
   Object.entries(APP_URL_TO_MODULE).map(([url, code]) => [code, url]),
 );
 
+/**
+ * The first entry in each module's list is the ROOT object — it controls
+ * module-level V/A/E/D (main record create/edit/delete). Convention:
+ * `{prefix}_module` e.g., `employee_module`, `leave_module`.
+ */
+export function getRootObjectCode(moduleCode: string): string | undefined {
+  const objs = MODULE_OBJECT_REGISTRY[moduleCode];
+  return objs?.[0]?.code;
+}
+
 export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   // ── Access Control ──────────────────────────────────────────────────
   HRM_ACCESS: [
+    { code: "access_module", label: "Module Access" },
     { code: "access_role", label: "Roles" },
     { code: "access_permission", label: "Permissions" },
     { code: "access_user_assignment", label: "User Assignment" },
@@ -84,6 +95,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Announcement ────────────────────────────────────────────────────
   HRM_ANNOUNCEMENT: [
+    { code: "announcement_module", label: "Module Access" },
     { code: "announcement_record", label: "Announcements" },
     { code: "announcement_category", label: "Categories" },
     { code: "announcement_target_group", label: "Target Groups" },
@@ -91,6 +103,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Appraisal ───────────────────────────────────────────────────────
   HRM_APPRAISAL: [
+    { code: "appraisal_module", label: "Module Access" },
     { code: "appraisal_cycle", label: "Cycles" },
     { code: "appraisal_goal", label: "Goals" },
     { code: "appraisal_self_assessment", label: "Self Assessment" },
@@ -103,6 +116,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Asset ───────────────────────────────────────────────────────────
   HRM_ASSET: [
+    { code: "asset_module", label: "Module Access" },
     { code: "asset_record", label: "Assets" },
     { code: "asset_assignment", label: "Assignments" },
     { code: "asset_category", label: "Categories" },
@@ -112,6 +126,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Compensation ────────────────────────────────────────────────────
   HRM_COMPENSATION: [
+    { code: "compensation_module", label: "Module Access" },
     { code: "compensation_salary_structure", label: "Salary Structure" },
     { code: "compensation_pay_component", label: "Pay Components" },
     { code: "compensation_employee", label: "Employee Compensation" },
@@ -121,6 +136,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Dashboard ───────────────────────────────────────────────────────
   HRM_DASHBOARD: [
+    { code: "dashboard_module", label: "Module Access" },
     { code: "dashboard_admin", label: "Admin Widgets" },
     { code: "dashboard_hr", label: "HR Widgets" },
     { code: "dashboard_manager", label: "Manager Widgets" },
@@ -129,6 +145,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Employee ────────────────────────────────────────────────────────
   HRM_EMPLOYEE: [
+    { code: "employee_module", label: "Module Access" },
     { code: "employee_record", label: "Employee Record" },
     { code: "employee_personal", label: "Personal Details" },
     { code: "employee_official", label: "Official Details" },
@@ -152,6 +169,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Expense ─────────────────────────────────────────────────────────
   HRM_EXPENSE: [
+    { code: "expense_module", label: "Module Access" },
     { code: "expense_record", label: "Expenses" },
     { code: "expense_approval", label: "Approval Queue" },
     { code: "expense_finance_approval", label: "Finance Approval" },
@@ -163,6 +181,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Holiday ─────────────────────────────────────────────────────────
   HRM_HOLIDAY: [
+    { code: "holiday_module", label: "Module Access" },
     { code: "holiday_record", label: "Holidays" },
     { code: "holiday_calendar", label: "Calendar" },
     { code: "holiday_policy", label: "Policy" },
@@ -170,6 +189,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Leave ───────────────────────────────────────────────────────────
   HRM_LEAVE: [
+    { code: "leave_module", label: "Module Access" },
     { code: "leave_request", label: "Leave Request" },
     { code: "leave_balance", label: "Balance" },
     { code: "leave_policy", label: "Policy" },
@@ -185,6 +205,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Notification ────────────────────────────────────────────────────
   HRM_NOTIFICATION: [
+    { code: "notification_module", label: "Module Access" },
     { code: "notification_record", label: "Notifications" },
     { code: "notification_preference", label: "Preferences" },
     { code: "notification_template", label: "Templates" },
@@ -192,6 +213,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Organization ────────────────────────────────────────────────────
   HRM_ORGANIZATION: [
+    { code: "org_module", label: "Module Access" },
     { code: "org_company_profile", label: "Company Profile" },
     { code: "org_department", label: "Departments" },
     { code: "org_position", label: "Positions" },
@@ -202,6 +224,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Payroll ─────────────────────────────────────────────────────────
   HRM_PAYROLL: [
+    { code: "payroll_module", label: "Module Access" },
     { code: "payroll_dashboard", label: "Dashboard" },
     { code: "payroll_run", label: "Payroll Runs" },
     { code: "payroll_wizard", label: "Wizard" },
@@ -214,6 +237,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Payslip ─────────────────────────────────────────────────────────
   HRM_PAYSLIP: [
+    { code: "payslip_module", label: "Module Access" },
     { code: "payslip_record", label: "Payslips" },
     { code: "payslip_history", label: "History" },
     { code: "payslip_download", label: "Download" },
@@ -221,6 +245,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Policy ──────────────────────────────────────────────────────────
   HRM_POLICY: [
+    { code: "policy_module", label: "Module Access" },
     { code: "policy_record", label: "Policies" },
     { code: "policy_category", label: "Categories" },
     { code: "policy_acknowledgement", label: "Acknowledgements" },
@@ -229,6 +254,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Project ─────────────────────────────────────────────────────────
   HRM_PROJECT: [
+    { code: "project_module", label: "Module Access" },
     { code: "project_record", label: "Projects" },
     { code: "project_task", label: "Tasks" },
     { code: "project_member", label: "Members" },
@@ -238,6 +264,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Timesheet ───────────────────────────────────────────────────────
   HRM_TIMESHEET: [
+    { code: "timesheet_module", label: "Module Access" },
     { code: "timesheet_record", label: "Timesheets" },
     { code: "timesheet_approval", label: "Approval Queue" },
     { code: "timesheet_calendar", label: "Calendar" },
@@ -247,6 +274,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
 
   // ── Travel ──────────────────────────────────────────────────────────
   HRM_TRAVEL: [
+    { code: "travel_module", label: "Module Access" },
     { code: "travel_request", label: "Travel Requests" },
     { code: "travel_approval", label: "Approval Queue" },
     { code: "travel_attachment", label: "Attachments" },
