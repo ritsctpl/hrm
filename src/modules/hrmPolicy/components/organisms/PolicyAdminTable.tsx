@@ -8,7 +8,7 @@ import { PolicyDocument } from "../../types/domain.types";
 import { PolicyAdminTableProps } from "../../types/ui.types";
 import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
 import PolicyStatusTag from "../atoms/PolicyStatusTag";
-import { useCan } from "../../../hrmAccess/hooks/useCan";
+import Can from "../../../hrmAccess/components/Can";
 
 const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   policies,
@@ -19,7 +19,6 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   onDelete,
   onViewDetail,
 }) => {
-  const { canEdit, canDelete } = useCan();
   const columns: ColumnsType<PolicyDocument> = [
     {
       title: "Code",
@@ -94,74 +93,84 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           <Tooltip title="View Details">
             <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
           </Tooltip>
-          {canEdit && (
+          <Can I="edit">
             <Tooltip title="Edit Policy">
               <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
             </Tooltip>
+          </Can>
+          {record.status === "DRAFT" && (
+            <Can I="edit">
+              <Popconfirm
+                title="Submit for review?"
+                description="This will send the policy for review."
+                onConfirm={() => onPublish(record.handle)}
+                okText="Submit"
+              >
+                <Tooltip title="Submit for Review">
+                  <Button size="small" icon={<CheckCircleOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           )}
-          {canEdit && record.status === "DRAFT" && (
-            <Popconfirm
-              title="Submit for review?"
-              description="This will send the policy for review."
-              onConfirm={() => onPublish(record.handle)}
-              okText="Submit"
-            >
-              <Tooltip title="Submit for Review">
-                <Button size="small" icon={<CheckCircleOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+          {record.status === "DRAFT" && (
+            <Can I="delete">
+              <Popconfirm
+                title="Delete this draft policy?"
+                description="This action cannot be undone."
+                onConfirm={() => onDelete(record.handle)}
+                okText="Yes, Delete"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title="Delete Policy">
+                  <Button size="small" danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           )}
-          {canDelete && record.status === "DRAFT" && (
-            <Popconfirm
-              title="Delete this draft policy?"
-              description="This action cannot be undone."
-              onConfirm={() => onDelete(record.handle)}
-              okText="Yes, Delete"
-              cancelText="Cancel"
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title="Delete Policy">
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+          {record.status === "REVIEW" && (
+            <Can I="edit">
+              <Popconfirm
+                title="Approve this policy?"
+                description="This will approve the policy after review."
+                onConfirm={() => onPublish(record.handle)}
+                okText="Approve"
+              >
+                <Tooltip title="Approve Policy">
+                  <Button size="small" icon={<CheckCircleOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           )}
-          {canEdit && record.status === "REVIEW" && (
-            <Popconfirm
-              title="Approve this policy?"
-              description="This will approve the policy after review."
-              onConfirm={() => onPublish(record.handle)}
-              okText="Approve"
-            >
-              <Tooltip title="Approve Policy">
-                <Button size="small" icon={<CheckCircleOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+          {record.status === "APPROVED" && (
+            <Can I="edit">
+              <Popconfirm
+                title="Publish this policy?"
+                description="This will make the policy visible to all employees."
+                onConfirm={() => onPublish(record.handle)}
+                okText="Publish"
+              >
+                <Tooltip title="Publish Policy">
+                  <Button size="small" icon={<CheckCircleOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           )}
-          {canEdit && record.status === "APPROVED" && (
-            <Popconfirm
-              title="Publish this policy?"
-              description="This will make the policy visible to all employees."
-              onConfirm={() => onPublish(record.handle)}
-              okText="Publish"
-            >
-              <Tooltip title="Publish Policy">
-                <Button size="small" icon={<CheckCircleOutlined />} />
-              </Tooltip>
-            </Popconfirm>
-          )}
-          {canDelete && record.status === "PUBLISHED" && (
-            <Popconfirm
-              title="Are you sure you want to retire this policy?"
-              description="This action will change the policy status to RETIRED."
-              onConfirm={() => onArchive(record.handle)}
-              okText="Yes, Retire"
-              cancelText="Cancel"
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title="Retire Policy">
-                <Button size="small" icon={<StopOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+          {record.status === "PUBLISHED" && (
+            <Can I="delete">
+              <Popconfirm
+                title="Are you sure you want to retire this policy?"
+                description="This action will change the policy status to RETIRED."
+                onConfirm={() => onArchive(record.handle)}
+                okText="Yes, Retire"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title="Retire Policy">
+                  <Button size="small" icon={<StopOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           )}
         </Space>
       ),

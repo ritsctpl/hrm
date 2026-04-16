@@ -6,6 +6,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyLibraryList from "../organisms/PolicyLibraryList";
 import PolicyLibraryGrid from "../organisms/PolicyLibraryGrid";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyLanding.module.css";
 
 const { Option } = Select;
@@ -143,11 +144,11 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
             },
           ]}
         />
-        {canAdmin && (
+        <Can I="add">
           <Button type="primary" icon={<PlusOutlined />} onClick={onCreatePolicy}>
             New Policy
           </Button>
-        )}
+        </Can>
       </Space>
     </div>
     <div className={viewMode === "grid" ? styles.libraryGrid : styles.libraryList}>
