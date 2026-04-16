@@ -31,10 +31,47 @@ export interface PermissionObjectEntry {
   label: string;
 }
 
+export interface ModuleEntry {
+  moduleCode: string;
+  appUrl: string;
+  objects: PermissionObjectEntry[];
+}
+
 const toLabel = (code: string): string =>
   code
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+
+/**
+ * appUrl → moduleCode map. Lets consumers look up objects by route.
+ * The appUrl values match the folder names under /rits/ (the Next.js
+ * route segments) and the `appUrl` field stored in the backend module
+ * registry.
+ */
+export const APP_URL_TO_MODULE: Record<string, string> = {
+  "/rits/hrm_access_app": "HRM_ACCESS",
+  "/rits/hrm_announcement_app": "HRM_ANNOUNCEMENT",
+  "/rits/hrm_appraisal_app": "HRM_APPRAISAL",
+  "/rits/hrm_asset_app": "HRM_ASSET",
+  "/rits/hrm_compensation_app": "HRM_COMPENSATION",
+  "/rits/hrm_dashboard_app": "HRM_DASHBOARD",
+  "/rits/hrm_employee_app": "HRM_EMPLOYEE",
+  "/rits/hrm_expense_app": "HRM_EXPENSE",
+  "/rits/hrm_holiday_app": "HRM_HOLIDAY",
+  "/rits/hrm_leave_app": "HRM_LEAVE",
+  "/rits/hrm_notification_app": "HRM_NOTIFICATION",
+  "/rits/hrm_organization_app": "HRM_ORGANIZATION",
+  "/rits/hrm_payroll_app": "HRM_PAYROLL",
+  "/rits/hrm_payslip_app": "HRM_PAYSLIP",
+  "/rits/hrm_policy_app": "HRM_POLICY",
+  "/rits/hrm_project_app": "HRM_PROJECT",
+  "/rits/hrm_timesheet_app": "HRM_TIMESHEET",
+  "/rits/hrm_travel_app": "HRM_TRAVEL",
+};
+
+export const MODULE_TO_APP_URL: Record<string, string> = Object.fromEntries(
+  Object.entries(APP_URL_TO_MODULE).map(([url, code]) => [code, url]),
+);
 
 export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   // ── Access Control ──────────────────────────────────────────────────
@@ -217,6 +254,19 @@ export function getObjectsForModule(moduleCode: string): PermissionObjectEntry[]
   return MODULE_OBJECT_REGISTRY[moduleCode] ?? [];
 }
 
+export function getObjectsByAppUrl(appUrl: string): PermissionObjectEntry[] {
+  const moduleCode = APP_URL_TO_MODULE[appUrl];
+  return moduleCode ? getObjectsForModule(moduleCode) : [];
+}
+
+export function getModuleCodeByAppUrl(appUrl: string): string | undefined {
+  return APP_URL_TO_MODULE[appUrl];
+}
+
+export function getAppUrlByModuleCode(moduleCode: string): string | undefined {
+  return MODULE_TO_APP_URL[moduleCode];
+}
+
 export function getObjectCodesForModule(moduleCode: string): string[] {
   return getObjectsForModule(moduleCode).map((o) => o.code);
 }
@@ -227,4 +277,12 @@ export function getObjectLabel(code: string): string {
     if (match) return match.label;
   }
   return toLabel(code);
+}
+
+export function getAllModuleEntries(): ModuleEntry[] {
+  return Object.entries(MODULE_OBJECT_REGISTRY).map(([moduleCode, objects]) => ({
+    moduleCode,
+    appUrl: MODULE_TO_APP_URL[moduleCode] ?? "",
+    objects,
+  }));
 }

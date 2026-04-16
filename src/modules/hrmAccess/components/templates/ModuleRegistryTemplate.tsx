@@ -6,7 +6,7 @@ import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
-import { getObjectsForModule } from '../../utils/moduleObjectRegistry';
+import { getObjectsForModule, getObjectsByAppUrl } from '../../utils/moduleObjectRegistry';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
 
@@ -424,17 +424,21 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
               options={MODULE_TYPES}
             />
           </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.moduleCode !== cur.moduleCode}>
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.moduleCode !== cur.moduleCode || prev.appUrl !== cur.appUrl}>
             {() => {
               const moduleCode = form.getFieldValue('moduleCode') ?? '';
-              const known = getObjectsForModule(moduleCode);
+              const appUrl = form.getFieldValue('appUrl') ?? '';
+              const byCode = getObjectsForModule(moduleCode);
+              const byUrl = getObjectsByAppUrl(appUrl);
+              const known = byCode.length > 0 ? byCode : byUrl;
+              const matchSource = byCode.length > 0 ? moduleCode : (byUrl.length > 0 ? appUrl : '');
               return (
                 <Form.Item
                   name="defaultPermissionObjects"
                   label="Permission Objects"
                   extra={
                     known.length > 0
-                      ? `${known.length} predefined objects for ${moduleCode}. You can also type custom ones.`
+                      ? `${known.length} predefined objects matched from ${matchSource}. You can also type custom ones.`
                       : 'Type object codes (e.g., flow_record, flow_settings) and press Enter.'
                   }
                 >
