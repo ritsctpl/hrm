@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Checkbox, Select, Button, Skeleton, Tooltip, Typography, Space } from 'antd';
+import { Select, Button, Skeleton, Typography, Space } from 'antd';
 import type { RolePermissionGridProps } from '../../types/ui.types';
 import type { Permission } from '../../types/domain.types';
 import type { PermissionAction } from '../../types/api.types';
@@ -99,72 +99,22 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
-              // Gather all child object keys (everything except __module__)
               const childObjKeys = objKeys.filter((k) => k !== '__module__');
-
-              // For each action, collect every child permission handle.
-              const childHandlesByAction: Record<string, string[]> = {};
-              for (const action of PERMISSION_ACTIONS) {
-                childHandlesByAction[action] = [];
-                for (const objKey of childObjKeys) {
-                  const p = modPerms[objKey]?.find((pm) => pm.action === action);
-                  if (p) childHandlesByAction[action].push(p.handle);
-                }
-              }
-
-              // Compute checked / indeterminate state per action for the
-              // module-level "select all" row.
-              const actionState = (action: string) => {
-                const handles = childHandlesByAction[action] ?? [];
-                if (handles.length === 0) return { checked: false, indeterminate: false, count: 0 };
-                const checkedCount = handles.filter((h) => selectedHandles.has(h)).length;
-                return {
-                  checked: checkedCount === handles.length,
-                  indeterminate: checkedCount > 0 && checkedCount < handles.length,
-                  count: handles.length,
-                };
-              };
-
-              // Select-all toggle: check all children if not all checked,
-              // uncheck all if all are already checked.
-              const handleSelectAll = (action: string) => {
-                const handles = childHandlesByAction[action] ?? [];
-                const { checked: allChecked } = actionState(action);
-                for (const h of handles) {
-                  const isChecked = selectedHandles.has(h);
-                  if (allChecked && isChecked) onToggle(h);
-                  if (!allChecked && !isChecked) onToggle(h);
-                }
-              };
 
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module-level row — virtual select-all checkboxes */}
+                  {/* Module header row — label only, no checkboxes.
+                      Module-level V/A/E/D is controlled by the role-module
+                      assignment, not the permission grid. */}
                   <tr className={styles.moduleRow}>
                     <td className={styles.permLabel}>{modName}</td>
-                    {PERMISSION_ACTIONS.map((action) => {
-                      const { checked, indeterminate, count } = actionState(action);
-                      return (
-                        <td key={action} className={styles.permCell}>
-                          {count > 0 ? (
-                            <Tooltip
-                              title={`${checked ? 'Uncheck' : 'Check'} all ${PERMISSION_ACTION_LABELS[action as PermissionAction]} for ${modName}`}
-                            >
-                              <Checkbox
-                                checked={checked}
-                                indeterminate={indeterminate}
-                                disabled={disabled}
-                                onChange={() => handleSelectAll(action)}
-                              />
-                            </Tooltip>
-                          ) : (
-                            <span className={styles.permNA}>—</span>
-                          )}
-                        </td>
-                      );
-                    })}
+                    {PERMISSION_ACTIONS.map((action) => (
+                      <td key={action} className={styles.permCell}>
+                        <span className={styles.permNA}>—</span>
+                      </td>
+                    ))}
                   </tr>
-                  {/* Object-level rows */}
+                  {/* Object-level rows — each has independent checkboxes */}
                   {childObjKeys.map((objKey) => (
                     <RbacPermissionGroupRow
                       key={`${moduleCode}-${objKey}`}
