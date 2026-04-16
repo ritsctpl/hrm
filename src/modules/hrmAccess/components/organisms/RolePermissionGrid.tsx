@@ -121,12 +121,31 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
+              const childObjKeys = objKeys.filter((k) => k !== '__module__');
+
+              // Cascade handler: when module-level checkbox is toggled,
+              // also toggle all child object permissions for the same action.
+              // Object-level changes do NOT cascade upward.
+              const handleModuleToggle = (handle: string) => {
+                const modulePerms = modPerms['__module__'] ?? [];
+                const toggledPerm = modulePerms.find((p) => p.handle === handle);
+                onToggle(handle);
+                if (!toggledPerm) return;
+                const willBeChecked = !selectedHandles.has(handle);
+                for (const objKey of childObjKeys) {
+                  const childPerm = (modPerms[objKey] ?? []).find(
+                    (p) => p.action === toggledPerm.action,
+                  );
+                  if (!childPerm) continue;
+                  const childIsChecked = selectedHandles.has(childPerm.handle);
+                  if (willBeChecked && !childIsChecked) onToggle(childPerm.handle);
+                  if (!willBeChecked && childIsChecked) onToggle(childPerm.handle);
+                }
+              };
+
               return (
                 <React.Fragment key={moduleCode}>
-                  {/* Module-level row — independent checkboxes from the
-                      __module__ permission records. These are separate from
-                      object rows: checking an object's ADD does NOT affect
-                      the module-level ADD and vice versa. */}
+                  {/* Module-level row — own checkboxes + cascade down on click */}
                   <RbacPermissionGroupRow
                     moduleCode={moduleCode}
                     moduleName={modName}
@@ -134,23 +153,21 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                     permissions={modPerms['__module__'] ?? []}
                     selectedHandles={selectedHandles}
                     disabled={disabled}
-                    onChange={onToggle}
+                    onChange={handleModuleToggle}
                   />
-                  {/* Object-level rows */}
-                  {objKeys
-                    .filter((k) => k !== '__module__')
-                    .map((objKey) => (
-                      <RbacPermissionGroupRow
-                        key={`${moduleCode}-${objKey}`}
-                        moduleCode={moduleCode}
-                        moduleName={modName}
-                        objectName={objKey}
-                        permissions={modPerms[objKey]}
-                        selectedHandles={selectedHandles}
-                        disabled={disabled}
-                        onChange={onToggle}
-                      />
-                    ))}
+                  {/* Object-level rows — independent, no upward cascade */}
+                  {childObjKeys.map((objKey) => (
+                    <RbacPermissionGroupRow
+                      key={`${moduleCode}-${objKey}`}
+                      moduleCode={moduleCode}
+                      moduleName={modName}
+                      objectName={objKey}
+                      permissions={modPerms[objKey]}
+                      selectedHandles={selectedHandles}
+                      disabled={disabled}
+                      onChange={onToggle}
+                    />
+                  ))}
                 </React.Fragment>
               );
             })}
