@@ -3,6 +3,7 @@
 import { useHrmRbacStore } from '../stores/hrmRbacStore';
 import type { ModulePermissions } from '../stores/hrmRbacStore';
 import { useModulePermissionContext } from '../context/ModulePermissionContext';
+import { getRootObjectCode } from '../utils/moduleObjectRegistry';
 
 const EMPTY: ModulePermissions = { canView: false, canAdd: false, canEdit: false, canDelete: false };
 
@@ -57,6 +58,17 @@ export function useCan(moduleCode?: string, objectName?: string): ModulePermissi
       return cacheForModule[objectName] || EMPTY;
     }
     return moduleFromStore || EMPTY;
+  }
+
+  // Module-level check (no object specified): resolve via the root object
+  // (e.g., employee_module) when the section cache is loaded. This gives
+  // strict module-level V/A/E/D from the root object's grants instead of
+  // the inflated actions from userModulesByOrganization.
+  if (!objectName && resolvedCode) {
+    const rootCode = getRootObjectCode(resolvedCode);
+    if (rootCode && cacheForModule !== undefined) {
+      return cacheForModule[rootCode] || EMPTY;
+    }
   }
 
   if (!moduleCode && ctx) {
