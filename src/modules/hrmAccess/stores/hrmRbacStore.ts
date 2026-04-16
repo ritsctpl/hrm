@@ -215,23 +215,32 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
 
+      // Correct module-level permissions:
+      //   - If effectivePermissions has objectName=null entries → use those
+      //     as the TRUE module V/A/E/D (explicit grants).
+      //   - If NO objectName=null entries → the backend hasn't granted
+      //     module-level ADD/EDIT/DELETE explicitly, so keep only VIEW
+      //     (since the user can access the app) and clear the rest.
+      // This overrides the inflated actions from userModulesByOrganization
+      // which incorrectly aggregates object-level actions into module-level.
+      const correctedModulePerms: ModulePermissions = hasModuleLevelGrants
+        ? moduleLevelPerms
+        : {
+            canView: (get().permissionsByModule[moduleCode]?.canView) ?? false,
+            canAdd: false,
+            canEdit: false,
+            canDelete: false,
+          };
+
       set(state => ({
         sectionPermissionCache: {
           ...state.sectionPermissionCache,
           [moduleCode]: sectionPerms,
         },
-        // Override module-level permissions when the effective permissions
-        // include explicit null-object grants. This corrects the inflated
-        // actions from userModulesByOrganization which aggregates object
-        // actions into the module level.
-        ...(hasModuleLevelGrants
-          ? {
-              permissionsByModule: {
-                ...state.permissionsByModule,
-                [moduleCode]: moduleLevelPerms,
-              },
-            }
-          : {}),
+        permissionsByModule: {
+          ...state.permissionsByModule,
+          [moduleCode]: correctedModulePerms,
+        },
       }));
     } catch (err) {
       console.error('Failed to load section permissions for', moduleCode, err);
