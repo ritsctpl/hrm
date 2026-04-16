@@ -8,16 +8,10 @@ import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
-import { fetchTop50Activity } from '@/services/activityService';
 
 interface Props {
   site: string;
   user: { id: string; name: string } | null;
-}
-
-interface Activity {
-  activityId: string;
-  description: string;
 }
 
 const MODULE_CATEGORIES = [
@@ -44,8 +38,6 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
   const [editingHandle, setEditingHandle] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchText, setSearchText] = useState('');
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loadingActivities, setLoadingActivities] = useState(false);
   const [form] = Form.useForm();
   const hasLoadedRef = useRef(false);
 
@@ -68,26 +60,6 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
 
     loadModules();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
-
-  // Load activities from activity service
-  useEffect(() => {
-    if (!site) return;
-    
-    const loadActivities = async () => {
-      setLoadingActivities(true);
-      try {
-        const activityList = await fetchTop50Activity(site);
-        setActivities(activityList || []);
-      } catch (error) {
-        console.error('Failed to load activities:', error);
-        message.error('Failed to load activity list');
-      } finally {
-        setLoadingActivities(false);
-      }
-    };
-
-    loadActivities();
   }, [site]);
 
   // Refresh modules - always fetch all and filter client-side
@@ -124,27 +96,6 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
     
     return result;
   }, [modules, categoryFilter, searchText]);
-
-  // Create activity options for dropdown - show description, store activityId
-  const activityOptions = useMemo(() => {
-    return activities.map((activity) => ({
-      label: activity.description,        // Display: "Employee Master"
-      value: activity.description,        // Store: "Employee Master"
-      activityId: activity.activityId,    // Hidden: "HRM_EMPLOYEE"
-    }));
-  }, [activities]);
-
-  // Handle module name selection - auto-set module code in background
-  const handleModuleNameSelect = (moduleName: string) => {
-    const selectedActivity = activities.find((a) => a.description === moduleName);
-    if (selectedActivity) {
-      // Set both moduleName (visible) and moduleCode (hidden)
-      form.setFieldsValue({
-        moduleName: selectedActivity.description,
-        moduleCode: selectedActivity.activityId,
-      });
-    }
-  };
 
   const handleSave = async () => {
     try {
@@ -443,21 +394,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             />
           </Form.Item>
           <Form.Item name="moduleName" label="Module Name" rules={[{ required: true }]}>
-            {!editingHandle ? (
-              <Select
-                showSearch
-                placeholder="Select module name"
-                options={activityOptions}
-                onChange={handleModuleNameSelect}
-                loading={loadingActivities}
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-                allowClear
-              />
-            ) : (
-              <Input placeholder="e.g., Attendance Management" />
-            )}
+            <Input placeholder="e.g., Attendance Management" />
           </Form.Item>
           <Form.Item name="moduleCategory" label="Category" rules={[{ required: true }]}>
             <Select
