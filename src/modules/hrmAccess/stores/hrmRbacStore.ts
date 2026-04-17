@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { HrmAccessService } from '../services/hrmAccessService';
-import { getRootObjectCode } from '../utils/moduleObjectRegistry';
+import { getRootObjectCode, getObjectCodesForModule } from '../utils/moduleObjectRegistry';
 import type { PermissionAction } from '../types/api.types';
 import type {
   OrganizationModules,
@@ -41,7 +41,7 @@ interface HrmRbacState {
   isReady: boolean;
   error: string | null;
   userId: string;
-  currentSite: string;
+  currentOrganizationId: string;
   organizations: OrganizationModules[];
   currentOrgModules: EnrichedModule[];
   modulesByCategory: Record<string, EnrichedModule[]>;
@@ -50,8 +50,8 @@ interface HrmRbacState {
 }
 
 interface HrmRbacActions {
-  initialize: (userId: string, initialSite?: string) => Promise<void>;
-  switchOrganization: (site: string) => void;
+  initialize: (userId: string, initialOrganizationId?: string) => Promise<void>;
+  switchOrganization: (organizationId: string) => void;
   loadSectionPermissions: (moduleCode: string) => Promise<void>;
   hasModuleAccess: (appUrl: string) => boolean;
   getModuleActions: (moduleCode: string) => PermissionAction[];
@@ -73,7 +73,7 @@ const initialState: HrmRbacState = {
   isReady: false,
   error: null,
   userId: '',
-  currentSite: '',
+  currentOrganizationId: '',
   organizations: [],
   currentOrgModules: [],
   modulesByCategory: {},
@@ -94,39 +94,39 @@ function groupByCategory(modules: EnrichedModule[]): Record<string, EnrichedModu
 export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) => ({
   ...initialState,
 
-  initialize: async (userId: string, initialSite?: string) => {
+  initialize: async (userId: string, initialOrganizationId?: string) => {
     set({ isLoading: true, error: null });
     try {
       // Fetch user modules by organization
       const userModules = await HrmAccessService.fetchUserModulesByOrganization(userId);
       const organizations = userModules.organizations || [];
 
-      // Determine current site
-      let currentSite = initialSite || '';
-      if (!currentSite && organizations.length > 0) {
+      // Determine current organization
+      let currentOrganizationId = initialOrganizationId || '';
+      if (!currentOrganizationId && organizations.length > 0) {
         // Try to get site preference
         try {
           const sitePref = await HrmAccessService.getUserSitePreference(userId);
           if (sitePref.success && sitePref.currentSite) {
-            currentSite = sitePref.currentSite;
+            currentOrganizationId = sitePref.currentSite;
           }
         } catch {
           // ignore preference errors
         }
       }
-      if (!currentSite && organizations.length > 0) {
-        currentSite = organizations[0].site;
+      if (!currentOrganizationId && organizations.length > 0) {
+        currentOrganizationId = organizations[0].site;
       }
 
       // Find current org modules
-      const currentOrg = organizations.find(o => o.site === currentSite);
+      const currentOrg = organizations.find(o => o.site === currentOrganizationId);
       const orgModules = currentOrg?.modules || [];
 
       // Enrich modules with registry data
       let enrichedModules: EnrichedModule[] = orgModules.map(m => ({ ...m }));
       try {
-        if (currentSite) {
-          const allModules = await HrmAccessService.fetchAllModules(currentSite);
+        if (currentOrganizationId) {
+          const allModules = await HrmAccessService.fetchAllModules(currentOrganizationId);
           enrichedModules = orgModules.map(m => {
             const registry = allModules.find(r => r.moduleCode === m.moduleCode);
             return {
@@ -144,7 +144,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         isLoading: false,
         isReady: true,
         userId,
-        currentSite,
+        currentOrganizationId,
         organizations,
         currentOrgModules: enrichedModules,
         modulesByCategory: groupByCategory(enrichedModules),
@@ -156,15 +156,15 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     }
   },
 
-  switchOrganization: (site: string) => {
+  switchOrganization: (organizationId: string) => {
     const { organizations, userId } = get();
-    const org = organizations.find(o => o.site === site);
+    const org = organizations.find(o => o.site === organizationId);
     if (!org) return;
 
     const enrichedModules: EnrichedModule[] = org.modules.map(m => ({ ...m }));
 
     set({
-      currentSite: site,
+      currentOrganizationId: organizationId,
       currentOrgModules: enrichedModules,
       modulesByCategory: groupByCategory(enrichedModules),
       permissionsByModule: buildPermissionsMap(enrichedModules),
@@ -172,17 +172,17 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     });
 
     // Fire-and-forget persist
-    HrmAccessService.updateDefaultSite(userId, site).catch(err => {
+    HrmAccessService.updateDefaultSite(userId, organizationId).catch(err => {
       console.warn('Failed to persist default site:', err);
     });
   },
 
   loadSectionPermissions: async (moduleCode: string) => {
-    const { sectionPermissionCache, currentSite, userId } = get();
+    const { sectionPermissionCache, currentOrganizationId, userId } = get();
     if (sectionPermissionCache[moduleCode]) return;
 
     try {
-      const response = await HrmAccessService.fetchEffectivePermissions(currentSite, userId, moduleCode);
+      const response = await HrmAccessService.fetchEffectivePermissions(currentOrganizationId, userId, moduleCode);
       const perms = response.permissions.filter(p => p.moduleCode === moduleCode);
 
       const sectionPerms: ModuleSectionPermissions = {};
@@ -199,14 +199,37 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
 
-      // Override module-level permissions using the root object (e.g.,
-      // employee_module, leave_module). The root object is always the FIRST
-      // entry in the module's registry. Its V/A/E/D becomes the TRUE
-      // module-level permission, correcting the inflated actions array from
-      // userModulesByOrganization.
+      // Root object cascade: the root object (e.g. employee_module,
+      // leave_module) perms cascade to ALL child objects in the module.
+      // Explicit child grants merge ON TOP of root perms (union).
+      // This ensures: root VIEW → all children inherit VIEW;
+      // root V/A/E/D (admin) → all children get full access.
       const rootCode = getRootObjectCode(moduleCode);
-      const rootPerms = rootCode ? sectionPerms[rootCode] : undefined;
-      const correctedModulePerms: ModulePermissions = rootPerms
+      const rootPerms: ModulePermissions = rootCode && sectionPerms[rootCode]
+        ? sectionPerms[rootCode]
+        : { canView: false, canAdd: false, canEdit: false, canDelete: false };
+
+      // Cascade root to every registered object for this module
+      const allObjectCodes = getObjectCodesForModule(moduleCode);
+      for (const code of allObjectCodes) {
+        if (code === rootCode) continue; // root stays as-is
+        const existing = sectionPerms[code];
+        if (existing) {
+          // Merge: explicit grants + root cascade (union)
+          sectionPerms[code] = {
+            canView: existing.canView || rootPerms.canView,
+            canAdd: existing.canAdd || rootPerms.canAdd,
+            canEdit: existing.canEdit || rootPerms.canEdit,
+            canDelete: existing.canDelete || rootPerms.canDelete,
+          };
+        } else {
+          // No explicit grant — inherit root perms
+          sectionPerms[code] = { ...rootPerms };
+        }
+      }
+
+      // Correct module-level permissions from root object
+      const correctedModulePerms: ModulePermissions = rootPerms.canView || rootPerms.canAdd || rootPerms.canEdit || rootPerms.canDelete
         ? { ...rootPerms }
         : {
             canView: (get().permissionsByModule[moduleCode]?.canView) ?? false,

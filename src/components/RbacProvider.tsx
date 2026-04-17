@@ -25,9 +25,9 @@ export default function RbacProvider({ children }: { children: React.ReactNode }
       const decoded: DecodedToken = jwtDecode<DecodedToken>(decryptedToken);
       const username = decoded.preferred_username;
       const cookies = parseCookies();
-      const initialSite = cookies.site || undefined;
+      const initialOrganizationId = cookies.site || undefined;
 
-      initialize(username, initialSite).then(() => {
+      initialize(username, initialOrganizationId).then(() => {
         setInitialized(true);
       });
     } catch (err) {

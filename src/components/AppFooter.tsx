@@ -7,10 +7,10 @@ import styles from './AppFooter.module.css';
 
 const AppFooter: React.FC = () => {
   const { t } = useTranslation();
-  const currentSite = useHrmRbacStore(s => s.currentSite);
+  const currentOrganizationId = useHrmRbacStore(s => s.currentOrganizationId);
   const organizations = useHrmRbacStore(s => s.organizations);
   const orgDisplayName =
-    organizations.find(o => o.site === currentSite)?.organizationName || currentSite || '';
+    organizations.find(o => o.site === currentOrganizationId)?.organizationName || currentOrganizationId || '';
 
   return (
     <footer className={styles.footer}>

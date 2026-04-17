@@ -10,7 +10,7 @@ import type {
 } from '../types/rbac.types';
 
 export interface RbacContextType {
-  currentSite: string;
+  currentOrganizationId: string;
   userId: string;
   organizations: OrganizationModules[];
   currentOrgModules: EnrichedModule[];
@@ -30,7 +30,7 @@ export function RbacContextProvider({ children }: { children: React.ReactNode })
   const store = useHrmRbacStore();
 
   const value: RbacContextType = {
-    currentSite: store.currentSite,
+    currentOrganizationId: store.currentOrganizationId,
     userId: store.userId,
     organizations: store.organizations,
     currentOrgModules: store.currentOrgModules,

@@ -71,7 +71,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   const { updateThemeFromSite } = useAppTheme();
 
   // Derive from RBAC context
-  const site = rbac.currentSite;
+  const site = rbac.currentOrganizationId;
   const availableSites = rbac.organizations.map((org) => org.site);
   const currentOrg = rbac.organizations.find(o => o.site === site);
   const orgDisplayName = currentOrg?.organizationName || site || '';
@@ -230,7 +230,7 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     }
   }, [isAuthenticated, token]);
  
-  // Fetch site details (theme/logo) from RBAC currentSite
+  // Fetch site details (theme/logo) from RBAC currentOrganizationId
   useEffect(() => {
     const loadSiteDetails = async () => {
       if (site) {
