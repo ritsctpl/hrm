@@ -1,13 +1,13 @@
 // API request types for Performance Appraisal module
 
 export interface ListCyclesRequest {
-  site: string;
+  organizationId: string;
   status?: string;
   cycleType?: string;
 }
 
 export interface CreateGoalRequest {
-  site: string;
+  organizationId: string;
   cycleId: string;
   employeeId: string;
   employeeName?: string;
@@ -30,7 +30,7 @@ export interface KeyResultRequest {
 }
 
 export interface SubmitSelfAssessmentRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   employeeId: string;
   overallRating: number;
@@ -42,7 +42,7 @@ export interface SubmitSelfAssessmentRequest {
 }
 
 export interface SubmitManagerAssessmentRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   managerId: string;
   overallRating: number;
@@ -73,7 +73,7 @@ export interface CompetencyRatingInput {
 }
 
 export interface RateGoalRequest {
-  site: string;
+  organizationId: string;
   goalId: string;
   selfRating?: number;
   selfComments?: string;
@@ -83,7 +83,7 @@ export interface RateGoalRequest {
 }
 
 export interface UpdateGoalProgressRequest {
-  site: string;
+  organizationId: string;
   goalId: string;
   updatedBy: string;
   currentValue: number;
@@ -92,7 +92,7 @@ export interface UpdateGoalProgressRequest {
 }
 
 export interface CalibrateRatingRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   calibratedRating: number;
   calibrationNotes: string;
@@ -101,7 +101,7 @@ export interface CalibrateRatingRequest {
 }
 
 export interface SignOffRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   signingUserId: string;
   role: "EMPLOYEE" | "MANAGER" | "HR";
@@ -110,7 +110,7 @@ export interface SignOffRequest {
 }
 
 export interface RequestPeerFeedbackRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   peerIds: string[];
   anonymous?: boolean;
@@ -118,7 +118,7 @@ export interface RequestPeerFeedbackRequest {
 }
 
 export interface SubmitPeerFeedbackRequest {
-  site: string;
+  organizationId: string;
   reviewId: string;
   peerId: string;
   peerName?: string;
@@ -130,7 +130,7 @@ export interface SubmitPeerFeedbackRequest {
 }
 
 export interface CreateCompetencyRequest {
-  site: string;
+  organizationId: string;
   name: string;
   category: string;
   description: string;
@@ -140,7 +140,7 @@ export interface CreateCompetencyRequest {
 }
 
 export interface UpdateCompetencyRequest {
-  site: string;
+  organizationId: string;
   name?: string;
   category?: string;
   description?: string;
@@ -150,14 +150,14 @@ export interface UpdateCompetencyRequest {
 }
 
 export interface BulkInitiateReviewsRequest {
-  site: string;
+  organizationId: string;
   cycleId: string;
   employeeIds: string[];
   initiatedBy: string;
 }
 
 export interface CreateCalibrationSessionRequest {
-  site: string;
+  organizationId: string;
   cycleId: string;
   department: string;
   scheduledDate: string;

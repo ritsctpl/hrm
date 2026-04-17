@@ -1,7 +1,7 @@
 // api.types.ts — Raw API request shapes for payslip module
 
 export interface GeneratePayslipsRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   payrollYear: number;
   payrollMonth: number;
@@ -10,7 +10,7 @@ export interface GeneratePayslipsRequest {
 }
 
 export interface RegeneratePayslipRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   payrollYear: number;
   payrollMonth: number;
@@ -18,7 +18,7 @@ export interface RegeneratePayslipRequest {
 }
 
 export interface DownloadPayslipRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   payrollYear: number;
   payrollMonth: number;
@@ -28,18 +28,18 @@ export interface DownloadPayslipRequest {
 }
 
 export interface DownloadPayslipByHrRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   requestedBy: string;
 }
 
 export interface DownloadAllZipRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
 }
 
 export interface PayslipSearchRequest {
-  site: string;
+  organizationId: string;
   employeeId?: string;
   employeeNumber?: string;
   employeeName?: string;
@@ -49,7 +49,7 @@ export interface PayslipSearchRequest {
 }
 
 export interface PayslipTemplateRequest {
-  site: string;
+  organizationId: string;
   templateCode: string;
   templateName: string;
   companyName?: string;
@@ -72,7 +72,7 @@ export interface PayslipTemplateRequest {
 
 export interface UpdatePayslipTemplateRequest {
   handle: string;
-  site?: string;
+  organizationId?: string;
   templateName?: string;
   companyName?: string;
   companyAddress?: string;
@@ -84,19 +84,19 @@ export interface UpdatePayslipTemplateRequest {
 }
 
 export interface SetActiveTemplateRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   updatedBy: string;
 }
 
 export interface EmailPayslipsRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   triggeredBy: string;
 }
 
 export interface SavePasswordConfigRequest {
-  site: string;
+  organizationId: string;
   enabled: boolean;
   pattern: string;
   updatedBy?: string;
@@ -114,7 +114,7 @@ export interface PasswordConfig {
 }
 
 export interface RevokePayslipRequest {
-  site: string;
+  organizationId: string;
   payslipId: string;
   reason: string;
   revokedBy: string;
@@ -122,7 +122,7 @@ export interface RevokePayslipRequest {
 
 export interface UploadTemplateLogoRequest {
   templateId: string;
-  site: string;
+  organizationId: string;
   logoUrl: string;
   updatedBy?: string;
 }

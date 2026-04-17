@@ -13,7 +13,7 @@ export type AssignmentStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED';
 // ---- Module Registry ----
 
 export interface ModuleRegistryRequest {
-  site: string;
+  organizationId: string;
   moduleCode: string;
   moduleName: string;
   moduleCategory?: string;
@@ -45,7 +45,7 @@ export interface ModuleRegistryResponse {
 // ---- Permission ----
 
 export interface PermissionRequest {
-  site: string;
+  organizationId: string;
   moduleCode: string;
   objectName?: string | null;
   action: PermissionAction;
@@ -69,7 +69,7 @@ export interface PermissionResponse {
 // ---- Role ----
 
 export interface RoleRequest {
-  site: string;
+  organizationId: string;
   roleCode: string;
   roleName: string;
   roleScope?: RoleScope;
@@ -100,7 +100,7 @@ export interface RoleResponse {
 // ---- Role Permissions ----
 
 export interface AssignPermissionsRequest {
-  site: string;
+  organizationId: string;
   roleCode: string;
   permissions: PermissionAssignmentEntry[];
   assignedBy: string;
@@ -130,7 +130,7 @@ export interface RolePermissionResponse {
 // ---- User Role Assignment ----
 
 export interface UserRoleAssignmentRequest {
-  site: string;
+  organizationId: string;
   userId: string;
   roleCode: string;
   effectiveFrom: string;
@@ -178,7 +178,7 @@ export interface EffectivePermissionEntry {
 // ---- Access Check ----
 
 export interface AccessCheckRequest {
-  site: string;
+  organizationId: string;
   userId: string;
   moduleCode: string;
   objectName?: string | null;
@@ -231,7 +231,7 @@ export interface ImportRowError {
 // ---- Role Clone ----
 
 export interface RoleCloneRequest {
-  site: string;
+  organizationId: string;
   sourceRoleId: string;
   newRoleName: string;
   performedBy: string;

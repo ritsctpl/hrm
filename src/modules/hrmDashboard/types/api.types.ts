@@ -1,19 +1,19 @@
 export interface GetEmployeeDashboardPayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
   month?: string;
   year?: string;
 }
 
 export interface GetManagerDashboardPayload {
-  site: string;
+  organizationId: string;
   managerId: string;
   cycleId?: string;
   month?: string;
 }
 
 export interface GetHrDashboardPayload {
-  site: string;
+  organizationId: string;
   requestedBy: string;
   department?: string;
   businessUnit?: string;
@@ -23,7 +23,7 @@ export interface GetHrDashboardPayload {
 }
 
 export interface GetAdminDashboardPayload {
-  site: string;
+  organizationId: string;
   requestedBy: string;
   department?: string;
   businessUnit?: string;
@@ -33,7 +33,7 @@ export interface GetAdminDashboardPayload {
 }
 
 export interface GetWidgetDataPayload {
-  site: string;
+  organizationId: string;
   widgetCode: string;
   viewerId: string;
   viewerRole: string;
@@ -42,14 +42,14 @@ export interface GetWidgetDataPayload {
 }
 
 export interface GetLayoutPayload {
-  site: string;
+  organizationId: string;
   ownerId: string;
   ownerType: string;
   roleType?: string;
 }
 
 export interface SaveLayoutPayload {
-  site: string;
+  organizationId: string;
   ownerId: string;
   ownerType: string;
   roleType?: string;
@@ -79,36 +79,36 @@ export interface WidgetPlacementRequest {
 }
 
 export interface ResetLayoutPayload {
-  site: string;
+  organizationId: string;
   ownerId: string;
   ownerType: string;
   roleType?: string;
 }
 
 export interface GetAlertsPayload {
-  site: string;
+  organizationId: string;
   userId: string;
   role: string;
 }
 
 export interface DismissAlertPayload {
-  site: string;
+  organizationId: string;
   alertHandle: string;
   dismissedBy: string;
 }
 
 export interface GenerateAlertsPayload {
-  site: string;
+  organizationId: string;
 }
 
 export interface ListWidgetsPayload {
-  site: string;
+  organizationId: string;
   role?: string;
   category?: string;
 }
 
 export interface WidgetDefinitionRequest {
-  site: string;
+  organizationId: string;
   widgetHandle?: string;
   widgetCode: string;
   widgetName: string;
@@ -128,25 +128,25 @@ export interface WidgetDefinitionRequest {
 }
 
 export interface DeleteWidgetPayload {
-  site: string;
+  organizationId: string;
   widgetId: string;
   deletedBy: string;
 }
 
 export interface RefreshSnapshotPayload {
-  site: string;
+  organizationId: string;
   snapshotType: string;
   scopeId?: string;
 }
 
 export interface GetSnapshotPayload {
-  site: string;
+  organizationId: string;
   snapshotType: string;
   scopeId?: string;
 }
 
 export interface ScheduleSnapshotPayload {
-  site: string;
+  organizationId: string;
   cronExpression: string;
   enabled: boolean;
   updatedBy: string;

@@ -1,11 +1,11 @@
 import type { TravelMode, TravelStatus, TravelType } from "./domain.types";
 
 export interface SiteRequest {
-  site: string;
+  organizationId: string;
 }
 
 export interface TravelListRequest {
-  site: string;
+  organizationId: string;
   employeeId?: string;
   status?: TravelStatus;
   travelType?: TravelType;
@@ -15,7 +15,7 @@ export interface TravelListRequest {
 }
 
 export interface TravelApproverInboxRequest {
-  site: string;
+  organizationId: string;
   empId: string;
   inboxType?: "PENDING" | "ESCALATED" | "DECIDED";
   travelType?: TravelType;
@@ -25,12 +25,12 @@ export interface TravelApproverInboxRequest {
 }
 
 export interface GetTravelByHandleRequest {
-  site?: string;
+  organizationId?: string;
   handle: string;
 }
 
 export interface TravelRequestCreatePayload {
-  site: string;
+  organizationId: string;
   travelType: TravelType;
   purpose: string;
   destinationCity: string;
@@ -49,7 +49,7 @@ export interface TravelRequestCreatePayload {
 
 export interface TravelRequestUpdatePayload {
   handle: string;
-  site: string;
+  organizationId: string;
   travelType: TravelType;
   purpose: string;
   destinationCity: string;
@@ -67,13 +67,13 @@ export interface TravelRequestUpdatePayload {
 }
 
 export interface TravelSubmitRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   submittedBy: string;
 }
 
 export interface TravelApprovalPayload {
-  site: string;
+  organizationId: string;
   travelRequestHandle: string;
   action: "APPROVE";
   remarks?: string;
@@ -83,7 +83,7 @@ export interface TravelApprovalPayload {
 }
 
 export interface TravelRejectPayload {
-  site: string;
+  organizationId: string;
   travelRequestHandle: string;
   action: "REJECT";
   remarks: string;
@@ -93,26 +93,26 @@ export interface TravelRejectPayload {
 }
 
 export interface TravelCancelRequest {
-  site?: string;
+  organizationId?: string;
   handle: string;
   cancelledBy: string;
   reason: string;
 }
 
 export interface TravelRecallRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   reason: string;
 }
 
 export interface CoTravellerSearchRequest {
-  site: string;
+  organizationId: string;
   empId: string;
   query?: string;
 }
 
 export interface TravelPolicyUpdatePayload {
-  site: string;
+  organizationId: string;
   travelType: TravelType;
   allowedModes: TravelMode[];
   escalationWindowDays: number;
@@ -124,7 +124,7 @@ export interface TravelPolicyUpdatePayload {
 // ── Catalog ─────────────────────────────────────────────────────────
 
 export interface TravelCatalogSaveRequest {
-  site: string;
+  organizationId: string;
   travelType: TravelType;
   allowedModes: TravelMode[];
   escalationWindowDays: number;
@@ -135,33 +135,33 @@ export interface TravelCatalogSaveRequest {
 }
 
 export interface TravelCatalogGetRequest {
-  site: string;
+  organizationId: string;
   travelType: TravelType;
 }
 
 export interface TravelCatalogModesRequest {
-  site: string;
+  organizationId: string;
   travelType: TravelType;
 }
 
 // ── Reports ─────────────────────────────────────────────────────────
 
 export interface TravelReportByTypeDateRequest {
-  site: string;
+  organizationId: string;
   fromDate: string;
   toDate: string;
   travelType?: TravelType;
 }
 
 export interface TravelReportPendingAgingRequest {
-  site: string;
+  organizationId: string;
   empId: string;
 }
 
 // ── Travel Advance ──────────────────────────────────────────────────
 
 export interface TravelAdvanceRequestPayload {
-  site: string;
+  organizationId: string;
   travelHandle: string;
   employeeId: string;
   amount: number;
@@ -171,21 +171,21 @@ export interface TravelAdvanceRequestPayload {
 }
 
 export interface TravelAdvanceApproveRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   approvedBy: string;
   remarks?: string;
 }
 
 export interface TravelAdvanceSettleRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   expenseHandle: string;
   settledBy: string;
 }
 
 export interface TravelAdvanceRetrieveRequest {
-  site: string;
+  organizationId: string;
   handle: string;
 }
 

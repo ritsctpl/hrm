@@ -11,7 +11,7 @@ export type StatutoryLinkage = 'PF' | 'ESI' | 'PT' | 'NONE';
 export type CompensationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
 export interface PayComponentRequest {
-  site: string;
+  organizationId: string;
   componentCode: string;
   componentName: string;
   componentType: ComponentType;
@@ -36,7 +36,7 @@ export interface PayComponentRequest {
 }
 
 export interface DeactivateComponentRequest {
-  site: string;
+  organizationId: string;
   componentCode: string;
   updatedBy: string;
 }
@@ -51,7 +51,7 @@ export interface SalaryStructureComponentRequest {
 }
 
 export interface SalaryStructureRequest {
-  site: string;
+  organizationId: string;
   structureCode: string;
   structureName: string;
   description: string;
@@ -70,7 +70,7 @@ export interface CompensationComponentRequest {
 }
 
 export interface EmployeeCompensationRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   effectiveFrom: string;
   structureCode: string;
@@ -82,13 +82,13 @@ export interface EmployeeCompensationRequest {
 export type PreviewCompensationRequest = EmployeeCompensationRequest;
 
 export interface SubmitForApprovalRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   submittedBy: string;
 }
 
 export interface CompensationApprovalRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   action: 'APPROVE' | 'REJECT';
   remarks: string;
@@ -98,7 +98,7 @@ export interface CompensationApprovalRequest {
 // ─── Update Employee Compensation ────────────────────────────────────────────
 
 export interface UpdateEmployeeCompensationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   employeeId?: string;
   effectiveFrom?: string;
@@ -110,7 +110,7 @@ export interface UpdateEmployeeCompensationRequest {
 // ─── Bulk Import ─────────────────────────────────────────────────────────────
 
 export interface BulkImportCompensationRequest {
-  site: string;
+  organizationId: string;
   entries: {
     employeeId: string;
     effectiveFrom: string;

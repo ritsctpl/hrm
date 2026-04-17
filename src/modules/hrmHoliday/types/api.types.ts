@@ -16,7 +16,7 @@ export interface HolidayApiResponse<T> {
 // ── Request DTOs ────────────────────────────────────────────────────
 
 export interface CreateHolidayGroupRequest {
-  site: string;
+  organizationId: string;
   groupCode?: string;
   groupName: string;
   year: number;
@@ -26,7 +26,7 @@ export interface CreateHolidayGroupRequest {
 }
 
 export interface UpdateHolidayGroupRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   groupName?: string;
   description?: string;
@@ -36,7 +36,7 @@ export interface UpdateHolidayGroupRequest {
 }
 
 export interface HolidayGroupSearchRequest {
-  site: string;
+  organizationId: string;
   year?: number;
   buHandle?: string;
   deptHandle?: string;
@@ -48,26 +48,26 @@ export interface HolidayGroupSearchRequest {
 }
 
 export interface HolidayFetchRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   requestingRole?: string;
 }
 
 export interface HolidayListRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   category?: string;
   month?: number;
 }
 
 export interface HolidayGroupDeleteRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   deletedBy: string;
 }
 
 export interface CreateHolidayRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   name: string;
   date: string;
@@ -84,7 +84,7 @@ export interface CreateHolidayRequest {
 }
 
 export interface UpdateHolidayRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   name?: string;
   date?: string;
@@ -101,41 +101,41 @@ export interface UpdateHolidayRequest {
 }
 
 export interface BulkCreateHolidayRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   holidays: CreateHolidayRequest[];
   createdBy: string;
 }
 
 export interface HolidayDeleteRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   deletedBy: string;
 }
 
 export interface PublishGroupRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   comment?: string;
   publishedBy: string;
 }
 
 export interface LockGroupRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   reason: string;
   lockedBy: string;
 }
 
 export interface UnlockGroupRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   reason: string;
   unlockedBy: string;
 }
 
 export interface AddBuMappingRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   buHandle?: string;
   deptHandle?: string;
@@ -144,19 +144,19 @@ export interface AddBuMappingRequest {
 }
 
 export interface MappingRemoveRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   mappingHandle: string;
   removedBy: string;
 }
 
 export interface MappingListRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
 }
 
 export interface ImportHolidayRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   dryRun: boolean;
   importedBy: string;
@@ -176,12 +176,12 @@ export interface HolidayImportRow {
 }
 
 export interface HolidayExportRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
 }
 
 export interface DuplicateGroupRequest {
-  site: string;
+  organizationId: string;
   sourceGroupHandle: string;
   targetYear: number;
   newGroupName: string;
@@ -190,7 +190,7 @@ export interface DuplicateGroupRequest {
 }
 
 export interface MyCalendarRequest {
-  site: string;
+  organizationId: string;
   employeeId?: string;
   buHandle: string;
   deptHandle?: string;
@@ -200,7 +200,7 @@ export interface MyCalendarRequest {
 }
 
 export interface CreateCategoryRequest {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   displayName: string;
   colorHex: string;
@@ -211,7 +211,7 @@ export interface CreateCategoryRequest {
 }
 
 export interface UpdateCategoryRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   displayName?: string;
   colorHex?: string;
@@ -222,24 +222,24 @@ export interface UpdateCategoryRequest {
 }
 
 export interface CategoryListRequest {
-  site: string;
+  organizationId: string;
   activeOnly?: boolean;
 }
 
 export interface CategoryDeactivateRequest {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   modifiedBy: string;
 }
 
 export interface HolidayGroupStatsRequest {
-  site: string;
+  organizationId: string;
   year: number;
   buHandle?: string;
 }
 
 export interface HolidayAuditLogRequest {
-  site: string;
+  organizationId: string;
   groupHandle: string;
   from?: string;
   to?: string;

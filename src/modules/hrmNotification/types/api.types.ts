@@ -16,24 +16,24 @@ export interface NotificationResponse {
 }
 
 export interface GetMyNotificationsPayload {
-  site: string;
+  organizationId: string;
   recipientId: string;
   page?: number;
   size?: number;
 }
 
 export interface MarkReadPayload {
-  site: string;
+  organizationId: string;
   notificationId: string;
 }
 
 export interface MarkAllReadPayload {
-  site: string;
+  organizationId: string;
   recipientId: string;
 }
 
 export interface CountUnreadPayload {
-  site: string;
+  organizationId: string;
   recipientId: string;
 }
 
@@ -42,7 +42,7 @@ export interface UnreadCountResponse {
 }
 
 export interface SendNotificationPayload {
-  site: string;
+  organizationId: string;
   recipientId: string;
   type: string;
   title: string;

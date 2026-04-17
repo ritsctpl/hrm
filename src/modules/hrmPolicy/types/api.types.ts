@@ -1,7 +1,7 @@
 import { PolicyDocType, PolicyStatus, ContentType, AcknowledgmentFrequency } from "./domain.types";
 
 export interface GetPoliciesPayload {
-  site: string;
+  organizationId: string;
   status?: PolicyStatus;
   documentType?: PolicyDocType;
   categoryHandle?: string;
@@ -10,17 +10,17 @@ export interface GetPoliciesPayload {
 }
 
 export interface GetPolicyDetailPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
 }
 
 export interface GetPolicyByCodePayload {
-  site: string;
+  organizationId: string;
   policyCode: string;
 }
 
 export interface AcknowledgePolicyPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   employeeId: string;
   acknowledgedVia: "WEB" | "MOBILE" | "EMAIL";
@@ -29,7 +29,7 @@ export interface AcknowledgePolicyPayload {
 }
 
 export interface WaiveAcknowledgmentPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   employeeId: string;
   waivedBy: string;
@@ -37,7 +37,7 @@ export interface WaiveAcknowledgmentPayload {
 }
 
 export interface CreatePolicyPayload {
-  site: string;
+  organizationId: string;
   title: string;
   description?: string;
   documentType: PolicyDocType;
@@ -66,7 +66,7 @@ export interface CreatePolicyPayload {
 }
 
 export interface UpdatePdfPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   fileName: string;
   pdfBase64: string;
@@ -78,75 +78,75 @@ export interface UpdatePolicyPayload extends Partial<CreatePolicyPayload> {
 }
 
 export interface PublishPolicyPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   publishedBy: string;
   scheduledPublishDate?: string;
 }
 
 export interface SubmitForReviewPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   submittedBy: string;
 }
 
 export interface ApprovePolicyPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   approvedBy: string;
   approverComments?: string;
 }
 
 export interface RetirePolicyPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   retiredBy: string;
   reason: string;
 }
 
 export interface SupersedePolicyPayload {
-  site: string;
+  organizationId: string;
   oldPolicyHandle: string;
   newPolicyHandle: string;
   updatedBy: string;
 }
 
 export interface DeletePolicyPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
   deletedBy: string;
 }
 
 export interface GetVersionHistoryPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
 }
 
 export interface GetAcknowledgmentReportPayload {
-  site: string;
+  organizationId: string;
   policyHandle: string;
 }
 
 export interface GetEmployeeAcknowledgmentsPayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
 }
 
 export interface GetMyPoliciesPayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
   department?: string;
   role?: string;
 }
 
 export interface GetEmployeePolicyPortalPayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
   department?: string;
 }
 
 export interface CreateCategoryPayload {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   categoryName: string;
   description?: string;
@@ -157,7 +157,7 @@ export interface CreateCategoryPayload {
 }
 
 export interface UpdateCategoryPayload {
-  site: string;
+  organizationId: string;
   categoryId: string;
   name?: string;
   description?: string;
@@ -165,13 +165,13 @@ export interface UpdateCategoryPayload {
 }
 
 export interface DeleteCategoryPayload {
-  site: string;
+  organizationId: string;
   categoryId: string;
   deletedBy: string;
 }
 
 export interface DownloadPolicyFilePayload {
-  site: string;
+  organizationId: string;
   policyId: string;
   version?: string;
 }

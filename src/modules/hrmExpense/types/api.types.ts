@@ -1,11 +1,11 @@
 import type { ExpenseType, PaymentMode } from "./domain.types";
 
 export interface SiteRequest {
-  site: string;
+  organizationId: string;
 }
 
 export interface ExpenseListRequest {
-  site: string;
+  organizationId: string;
   employeeId?: string;
   expenseType?: ExpenseType;
   status?: string;
@@ -15,7 +15,7 @@ export interface ExpenseListRequest {
 }
 
 export interface ExpenseApproverInboxRequest {
-  site: string;
+  organizationId: string;
   empId: string;
 }
 
@@ -36,7 +36,7 @@ export interface ExpenseItemDto {
 }
 
 export interface ExpenseCreatePayload {
-  site: string;
+  organizationId: string;
   expenseType: ExpenseType;
   purpose: string;
   travelRequestHandle?: string;
@@ -55,7 +55,7 @@ export interface ExpenseCreatePayload {
 export interface ExpenseUpdatePayload {
   handle: string;
   data: {
-    site: string;
+    organizationId: string;
     expenseType: ExpenseType;
     purpose: string;
     currency: string;
@@ -71,13 +71,13 @@ export interface ExpenseUpdatePayload {
 }
 
 export interface ExpenseSubmitRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   submittedBy: string;
 }
 
 export interface ExpenseApprovalPayload {
-  site: string;
+  organizationId: string;
   expenseRequestHandle: string;
   action: "APPROVE" | "REJECT";
   remarks?: string;
@@ -86,7 +86,7 @@ export interface ExpenseApprovalPayload {
 }
 
 export interface ExpenseRejectPayload {
-  site: string;
+  organizationId: string;
   expenseRequestHandle: string;
   action: "REJECT";
   remarks: string;
@@ -95,7 +95,7 @@ export interface ExpenseRejectPayload {
 }
 
 export interface ExpenseFinanceSanctionPayload {
-  site: string;
+  organizationId: string;
   expenseRequestHandle: string;
   action: "APPROVE";
   sanctionedAmount?: number;
@@ -108,7 +108,7 @@ export interface ExpenseFinanceSanctionPayload {
 }
 
 export interface ExpensePaymentPayload {
-  site: string;
+  organizationId: string;
   expenseRequestHandle: string;
   action: "PAY";
   paymentReference: string;
@@ -121,26 +121,26 @@ export interface ExpensePaymentPayload {
 }
 
 export interface ExpenseCancelRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   reason: string;
 }
 
 export interface ExpenseRecallRequest {
-  site: string;
+  organizationId: string;
   expenseId: string;
   recalledBy: string;
   reason: string;
 }
 
 export interface ExpenseDeleteRequest {
-  site: string;
+  organizationId: string;
   expenseId: string;
   deletedBy: string;
 }
 
 export interface MileageCalculateRequest {
-  site: string;
+  organizationId: string;
   categoryId: string;
   distanceKm: number;
 }
@@ -162,7 +162,7 @@ export interface MarkOriginalsReceivedRequest {
 // ── Unsettled Advances ──────────────────────────────────────────────
 
 export interface GetUnsettledAdvancesRequest {
-  site: string;
+  organizationId: string;
   empId: string;
 }
 
@@ -179,7 +179,7 @@ export interface UnsettledAdvance {
 // ── Category ──────────────────────────────────────────────────
 
 export interface ExpenseCategorySavePayload {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   categoryName: string;
   description?: string;
@@ -192,7 +192,7 @@ export interface ExpenseCategorySavePayload {
 }
 
 export interface ExpenseCategoryDeleteRequest {
-  site: string;
+  organizationId: string;
   categoryId: string;
   deletedBy: string;
 }
@@ -200,7 +200,7 @@ export interface ExpenseCategoryDeleteRequest {
 // ── Export ──────────────────────────────────────────────────
 
 export interface ExpenseExportRequest {
-  site: string;
+  organizationId: string;
   startDate: string;
   endDate: string;
   status?: string;

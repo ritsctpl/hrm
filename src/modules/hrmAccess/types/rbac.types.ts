@@ -69,7 +69,7 @@ export interface UpdateDefaultSiteResponse {
 // ---- Create Employee With User ----
 
 export interface CreateEmployeeWithUserRequest {
-  site: string;
+  organizationId: string;
   fullName: string;
   workEmail: string;
   phone?: string;
@@ -102,7 +102,7 @@ export interface CreateEmployeeWithUserResponse {
 // ---- System Initialize ----
 
 export interface SystemInitializeRequest {
-  site: string;
+  organizationId: string;
   adminUsername: string;
   adminPassword: string;
   adminEmail: string;

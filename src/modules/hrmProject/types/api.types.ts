@@ -1,7 +1,7 @@
 // src/modules/hrmProject/types/api.types.ts
 
 export interface ProjectRequest {
-  site: string;
+  organizationId: string;
   projectName: string;
   description?: string;
   projectType: 'INTERNAL' | 'EXTERNAL';
@@ -24,7 +24,7 @@ export interface MilestoneRequest {
 }
 
 export interface ProjectStatusUpdateRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   status: 'DRAFT' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
   reason?: string;
@@ -32,7 +32,7 @@ export interface ProjectStatusUpdateRequest {
 }
 
 export interface MilestoneStatusUpdateRequest {
-  site: string;
+  organizationId: string;
   projectHandle: string;
   milestoneId: string;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
@@ -107,7 +107,7 @@ export interface ProjectAttachmentResponse {
 }
 
 export interface AllocationRequest {
-  site: string;
+  organizationId: string;
   projectHandle: string;
   employeeId: string;
   employeeName?: string;
@@ -155,7 +155,7 @@ export interface AllocationDayResponse {
 }
 
 export interface AllocationApprovalRequest {
-  site: string;
+  organizationId: string;
   allocationHandle: string;
   action: 'APPROVED' | 'REJECTED';
   remarks?: string;
@@ -163,7 +163,7 @@ export interface AllocationApprovalRequest {
 }
 
 export interface CapacityCheckRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   startDate: string;
   endDate: string;
@@ -260,7 +260,7 @@ export interface ResourceCalendarResponse {
 // ─── Client Types ────────────────────────────────────────────────────────────
 
 export interface ClientRequest {
-  site: string;
+  organizationId: string;
   clientCode: string;
   clientName: string;
   contactPerson?: string;
@@ -289,7 +289,7 @@ export interface ClientResponse {
 // ─── Billing Types ───────────────────────────────────────────────────────────
 
 export interface BillingConfigRequest {
-  site: string;
+  organizationId: string;
   projectHandle: string;
   billingModel: 'TIME_AND_MATERIAL' | 'FIXED_PRICE' | 'MILESTONE' | 'RETAINER';
   currency: string;

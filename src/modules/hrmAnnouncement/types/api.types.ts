@@ -1,7 +1,7 @@
 import { AnnouncementPriority, AnnouncementCategory, AnnouncementStatus } from "./domain.types";
 
 export interface GetAnnouncementsPayload {
-  site: string;
+  organizationId: string;
   employeeId?: string;
   department?: string;
   role?: string;
@@ -13,12 +13,12 @@ export interface GetAnnouncementsPayload {
 }
 
 export interface GetAnnouncementDetailPayload {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
 }
 
 export interface ListAnnouncementsPayload {
-  site: string;
+  organizationId: string;
   status?: string;
   category?: string;
   page?: number;
@@ -26,14 +26,14 @@ export interface ListAnnouncementsPayload {
 }
 
 export interface MarkReadPayload {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
   employeeId: string;
   readVia?: string;
 }
 
 export interface CreateAnnouncementPayload {
-  site: string;
+  organizationId: string;
   title: string;
   content: string;
   category: AnnouncementCategory;
@@ -53,34 +53,34 @@ export interface CreateAnnouncementPayload {
 }
 
 export interface UpdateAnnouncementPayload extends Partial<CreateAnnouncementPayload> {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
 }
 
 export interface PublishAnnouncementPayload {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
   publishedBy?: string;
 }
 
 export interface WithdrawAnnouncementPayload {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
   withdrawnBy?: string;
   reason?: string;
 }
 
 export interface DeleteAnnouncementPayload {
-  site: string;
+  organizationId: string;
   announcementId: string;
   deletedBy: string;
 }
 
 export interface GetEngagementPayload {
-  site: string;
+  organizationId: string;
   announcementHandle: string;
 }
 
 export interface GetPinnedPayload {
-  site: string;
+  organizationId: string;
 }

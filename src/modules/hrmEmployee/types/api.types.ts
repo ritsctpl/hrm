@@ -17,7 +17,7 @@ import type {
 
 /** Directory search request payload */
 export interface EmployeeSearchRequest {
-  site: string;
+  organizationId: string;
   keyword?: string;
   department?: string;
   role?: string;
@@ -59,7 +59,7 @@ export interface EmployeeDirectoryRow {
 
 /** Create employee (onboarding) */
 export interface CreateEmployeeRequest {
-  site: string;
+  organizationId: string;
   employeeCode?: string;
   firstName: string;
   lastName: string;
@@ -87,7 +87,7 @@ export interface CreateEmployeeRequest {
 
 /** Update basic details */
 export interface UpdateBasicRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   fullName?: string;
   phone?: string;
@@ -98,7 +98,7 @@ export interface UpdateBasicRequest {
 
 /** Update official details */
 export interface UpdateOfficialRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   firstName: string;
   lastName: string;
@@ -114,7 +114,7 @@ export interface UpdateOfficialRequest {
 
 /** Update personal details */
 export interface UpdatePersonalRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   dateOfBirth?: string;
   gender?: Gender;
@@ -127,7 +127,7 @@ export interface UpdatePersonalRequest {
 
 /** Update contact details */
 export interface UpdateContactRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   presentAddress?: {
     address: string;
@@ -149,7 +149,7 @@ export interface UpdateContactRequest {
 
 /** Skill operation request */
 export interface SkillOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   skill?: Skill;
   skillId?: string;
@@ -159,7 +159,7 @@ export interface SkillOperationRequest {
 
 /** Experience operation request */
 export interface ExperienceOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   experience: PreviousExperience;
   expId?: string;
@@ -168,7 +168,7 @@ export interface ExperienceOperationRequest {
 
 /** Education operation request */
 export interface EducationOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   entry: EducationEntry;
   eduId?: string;
@@ -177,7 +177,7 @@ export interface EducationOperationRequest {
 
 /** Training operation request */
 export interface TrainingOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   certification: import('./domain.types').TrainingCert;
   trainId?: string;
@@ -186,7 +186,7 @@ export interface TrainingOperationRequest {
 
 /** Document upload metadata */
 export interface DocumentUploadMetadata {
-  site: string;
+  organizationId: string;
   employeeHandle: string;
   documentType: string;
   documentName: string;
@@ -197,7 +197,7 @@ export interface DocumentUploadMetadata {
 
 /** Document delete request */
 export interface DocumentDeleteRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   docId: string;
   deletedBy: string;
@@ -205,7 +205,7 @@ export interface DocumentDeleteRequest {
 
 /** Change status request */
 export interface ChangeStatusRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   newStatus: EmployeeStatus;
   reason: string;
@@ -215,7 +215,7 @@ export interface ChangeStatusRequest {
 
 /** Change manager request */
 export interface ChangeManagerRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   newManagerHandle: string;
   effectiveDate?: string;
@@ -225,7 +225,7 @@ export interface ChangeManagerRequest {
 
 /** Delete employee request */
 export interface DeleteEmployeeRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   deletedBy: string;
   reason?: string;
@@ -233,7 +233,7 @@ export interface DeleteEmployeeRequest {
 
 /** Bulk import */
 export interface BulkImportRequest {
-  site: string;
+  organizationId: string;
   employees: CreateEmployeeRequest[];
   dryRun?: boolean;
   importedBy: string;
@@ -258,7 +258,7 @@ export interface BulkImportError {
 
 /** Bulk assign manager request */
 export interface BulkAssignManagerRequest {
-  site: string;
+  organizationId: string;
   handles: string[];
   managerHandle: string;
   modifiedBy: string;
@@ -266,7 +266,7 @@ export interface BulkAssignManagerRequest {
 
 /** Bulk change department request */
 export interface BulkChangeDepartmentRequest {
-  site: string;
+  organizationId: string;
   handles: string[];
   department: string;
   modifiedBy: string;
@@ -274,7 +274,7 @@ export interface BulkChangeDepartmentRequest {
 
 /** Bulk assign BU request */
 export interface BulkAssignBuRequest {
-  site: string;
+  organizationId: string;
   handles: string[];
   buHandle: string;
   modifiedBy: string;
@@ -343,14 +343,14 @@ export interface AuditLogResponse {
 
 /** Onboarding initiate request */
 export interface InitiateOnboardingRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   initiatedBy: string;
 }
 
 /** Onboarding item update request */
 export interface UpdateOnboardingItemRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   itemId: string;
   isCompleted: boolean;
@@ -359,7 +359,7 @@ export interface UpdateOnboardingItemRequest {
 
 /** Dependent operation request */
 export interface DependentOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   dependent: import('./domain.types').Dependent;
   dependentId?: string;
@@ -368,7 +368,7 @@ export interface DependentOperationRequest {
 
 /** Visa operation request */
 export interface VisaOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   visa: import('./domain.types').VisaEntry;
   visaId?: string;
@@ -377,7 +377,7 @@ export interface VisaOperationRequest {
 
 /** Bank account operation request */
 export interface BankAccountOperationRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   bankAccount: import('./domain.types').BankAccount;
   bankAccountId?: string;

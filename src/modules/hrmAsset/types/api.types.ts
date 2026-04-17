@@ -24,7 +24,7 @@ export interface AttributeSchemaDto {
 }
 
 export interface AssetCategoryPayload {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   categoryName: string;
   description?: string;
@@ -50,7 +50,7 @@ export interface AssetCategoryResponse {
 }
 
 export interface CreateAssetPayload {
-  site: string;
+  organizationId: string;
   categoryCode: string;
   assetName: string;
   assetId?: string;
@@ -65,7 +65,7 @@ export interface CreateAssetPayload {
 }
 
 export interface UpdateAssetPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   assetName?: string;
   purchaseValueINR?: number;
@@ -133,7 +133,7 @@ export interface AssetListResponse {
 }
 
 export interface UpdateAssetStatusPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   newStatus: string;
   remarks?: string;
@@ -141,7 +141,7 @@ export interface UpdateAssetStatusPayload {
 }
 
 export interface AssignAssetPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   employeeId: string;
   employeeName: string;
@@ -152,7 +152,7 @@ export interface AssignAssetPayload {
 }
 
 export interface ReturnAssetPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   returnDate: string;
   checklistCompleted: boolean;
@@ -162,7 +162,7 @@ export interface ReturnAssetPayload {
 }
 
 export interface MaintenanceEventPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   maintenanceDate: string;
   vendor?: string;
@@ -188,7 +188,7 @@ export interface AssetMaintenanceResponse {
 }
 
 export interface DepreciationRunPayload {
-  site: string;
+  organizationId: string;
   asOfDate: string;
   categoryCode?: string;
   prorateMidYear: boolean;
@@ -226,7 +226,7 @@ export interface AssetDepreciationSnapshotResponse {
 }
 
 export interface ChargeRecoveryPayload {
-  site: string;
+  organizationId: string;
   assetId: string;
   action: 'CONFIRM' | 'CLOSE';
   financeConfirmedBy?: string;
@@ -234,7 +234,7 @@ export interface ChargeRecoveryPayload {
 }
 
 export interface ExitClearancePayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
 }
 
@@ -280,7 +280,7 @@ export interface AssetCustodyResponse {
 }
 
 export interface CreateAssetRequestPayload {
-  site: string;
+  organizationId: string;
   employeeId: string;
   employeeName: string;
   categoryCode: string;
@@ -326,7 +326,7 @@ export interface AssetRequestResponse {
 }
 
 export interface ApproveRejectAssetRequestPayload {
-  site: string;
+  organizationId: string;
   requestId: string;
   action: 'APPROVE_SUPERVISOR' | 'REJECT_SUPERVISOR' | 'APPROVE_ADMIN' | 'REJECT_ADMIN';
   actorEmployeeId: string;
@@ -336,7 +336,7 @@ export interface ApproveRejectAssetRequestPayload {
 }
 
 export interface AllocateAssetPayload {
-  site: string;
+  organizationId: string;
   requestId: string;
   assetId: string;
   allocatedBy: string;

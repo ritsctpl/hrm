@@ -1,7 +1,7 @@
 // src/modules/hrmTimesheet/types/api.types.ts
 
 export interface TimesheetRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   date: string;
   lines: TimesheetLineRequest[];
@@ -75,14 +75,14 @@ export interface WeeklyTimesheetResponse {
 }
 
 export interface TimesheetSubmitRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   timesheetHandle: string;
   submittedBy: string;
 }
 
 export interface WeeklyBulkSubmitRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   weekStartDate: string;
   submittedBy: string;
@@ -96,7 +96,7 @@ export interface BulkSubmitResponse {
 }
 
 export interface TimesheetApprovalRequest {
-  site: string;
+  organizationId: string;
   timesheetHandle: string;
   action: 'APPROVED' | 'REJECTED';
   remarks?: string;
@@ -105,7 +105,7 @@ export interface TimesheetApprovalRequest {
 }
 
 export interface BulkTimesheetApprovalRequest {
-  site: string;
+  organizationId: string;
   timesheetHandles: string[];
   action: 'APPROVED' | 'REJECTED';
   remarks?: string;
@@ -121,7 +121,7 @@ export interface BulkApprovalResponse {
 }
 
 export interface TimesheetReopenRequest {
-  site: string;
+  organizationId: string;
   timesheetHandle: string;
   reopenedBy: string;
   reason: string;
@@ -218,7 +218,7 @@ export interface HolidayWorkingSummary {
 // ─── Lock Period Types ───────────────────────────────────────────────────────
 
 export interface TimesheetLockPeriodRequest {
-  site: string;
+  organizationId: string;
   lockDate: string;
   reason?: string;
   createdBy: string;

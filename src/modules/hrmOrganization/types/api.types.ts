@@ -29,7 +29,7 @@ export interface ApiResponse<T> {
 // Company Profile API Types
 // ============================================
 export interface CompanyProfileRequest {
-  site: string;
+  organizationId: string;
   companyName?: string;
   legalName: string;
   registrationNumber?: string;
@@ -67,11 +67,11 @@ export interface CompanyLogoUploadResponse {
 // Business Unit API Types
 // ============================================
 export interface BusinessUnitRetrieveAllRequest {
-  site: string;
+  organizationId: string;
 }
 
 export interface BusinessUnitRequest {
-  site: string;
+  organizationId: string;
   companyHandle: string;
   buCode: string;
   buName: string;
@@ -100,7 +100,7 @@ export interface BusinessUnitRequest {
 export type BusinessUnitResponse = BusinessUnit;
 
 export interface BusinessUnitDeleteRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   deletedBy: string;
 }
@@ -109,12 +109,12 @@ export interface BusinessUnitDeleteRequest {
 // Department API Types
 // ============================================
 export interface DepartmentRetrieveAllRequest {
-  site: string;
+  organizationId: string;
   buHandle: string;
 }
 
 export interface DepartmentRequest {
-  site: string;
+  organizationId: string;
   buHandle: string;
   companyHandle?: string;
   deptCode: string;
@@ -137,7 +137,7 @@ export interface DepartmentHierarchyResponse {
 }
 
 export interface DepartmentDeleteRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   deletedBy: string;
 }
@@ -146,7 +146,7 @@ export interface DepartmentDeleteRequest {
 // Location API Types
 // ============================================
 export interface LocationRequest {
-  site: string;
+  organizationId: string;
   code: string;
   name: string;
   type?: string;

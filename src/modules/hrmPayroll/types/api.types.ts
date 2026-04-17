@@ -1,5 +1,5 @@
 export interface CreatePayrollRunRequest {
-  site: string;
+  organizationId: string;
   company: string;
   payrollYear: number;
   payrollMonth: number;
@@ -8,7 +8,7 @@ export interface CreatePayrollRunRequest {
 }
 
 export interface LopInputRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   employeeId: string;
   lopDays: number;
@@ -24,7 +24,7 @@ export type AdjustmentType =
   | 'OTHER';
 
 export interface PayrollAdjustmentRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   employeeId: string;
   adjustmentType: AdjustmentType;
@@ -34,7 +34,7 @@ export interface PayrollAdjustmentRequest {
 }
 
 export interface RunCalculationRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   performedBy: string;
 }
@@ -42,7 +42,7 @@ export interface RunCalculationRequest {
 export type PayrollApprovalAction = 'VALIDATE' | 'APPROVE' | 'FINALIZE' | 'PUBLISH';
 
 export interface PayrollApprovalRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   action: PayrollApprovalAction;
   performedBy: string;
@@ -52,7 +52,7 @@ export interface PayrollApprovalRequest {
 // ─── Tax Declaration Types ───────────────────────────────────────────────────
 
 export interface TaxDeclarationRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   financialYear: string;
   regime: 'OLD' | 'NEW';
@@ -91,7 +91,7 @@ export interface TaxDeclarationResponse {
 }
 
 export interface TaxDeclarationApprovalRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   financialYear: string;
   approvedBy: string;
@@ -100,7 +100,7 @@ export interface TaxDeclarationApprovalRequest {
 // ─── Loan Types ──────────────────────────────────────────────────────────────
 
 export interface LoanRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   loanType: string;
   principalAmount: number;
@@ -132,7 +132,7 @@ export interface LoanResponse {
 }
 
 export interface LoanStatusUpdateRequest {
-  site: string;
+  organizationId: string;
   loanHandle: string;
   status: 'ACTIVE' | 'CLOSED' | 'CANCELLED';
   performedBy: string;
@@ -166,7 +166,7 @@ export interface PayrollSummaryResponse {
 // ─── Variance Report Types ──────────────────────────────────────────────────
 
 export interface VarianceReportRequest {
-  site: string;
+  organizationId: string;
   currentRunId: string;
   previousRunId: string;
 }
@@ -188,7 +188,7 @@ export interface VarianceReportEntry {
 // ─── Bank File Types ────────────────────────────────────────────────────────
 
 export interface GenerateBankFileRequest {
-  site: string;
+  organizationId: string;
   payrollRunId: string;
   bankFormat?: 'NEFT' | 'RTGS' | 'IMPS';
 }
@@ -196,7 +196,7 @@ export interface GenerateBankFileRequest {
 // ─── Payroll Schedule Types ─────────────────────────────────────────────────
 
 export interface PayrollScheduleRequest {
-  site: string;
+  organizationId: string;
   name: string;
   frequency: 'MONTHLY' | 'BIWEEKLY';
   payDay: number;
@@ -223,7 +223,7 @@ export interface PayrollScheduleResponse {
 
 export interface UpdateStatutoryConfigRequest {
   handle: string;
-  site?: string;
+  organizationId?: string;
   configType?: 'PF' | 'ESI' | 'PT';
   pfEmployeeRate?: number;
   pfEmployerRate?: number;

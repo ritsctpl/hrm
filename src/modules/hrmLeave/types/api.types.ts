@@ -18,7 +18,7 @@ export interface LeaveType {
 }
 
 export interface LeaveTypeRequest {
-  site: string;
+  organizationId: string;
   handle?: string;
   code: string;
   name: string;
@@ -68,7 +68,7 @@ export interface LeavePolicy {
 }
 
 export interface LeavePolicyRequest {
-  site: string;
+  organizationId: string;
   leaveTypeId: string;
   leaveTypeCode: string;
   buId?: string;
@@ -119,13 +119,13 @@ export interface LeaveBalanceResponse {
 }
 
 export interface BalanceQueryRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   year: number;
 }
 
 export interface RecalculateRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   leaveTypeCode: string;
   year: number;
@@ -134,7 +134,7 @@ export interface RecalculateRequest {
 // ── Accrual ───────────────────────────────────────────────────────────
 
 export interface AccrualRunRequest {
-  site: string;
+  organizationId: string;
   periodStart: string;
   periodEnd: string;
   quarter: string;
@@ -186,13 +186,13 @@ export interface AccrualBatch {
 }
 
 export interface RollbackRequest {
-  site: string;
+  organizationId: string;
   batchId: string;
   requestedBy: string;
 }
 
 export interface YearQueryRequest {
-  site: string;
+  organizationId: string;
   year: number;
 }
 
@@ -216,7 +216,7 @@ export interface LedgerHistoryResponse {
 }
 
 export interface LedgerHistoryRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   year: number;
   leaveTypeCode?: string;
@@ -225,7 +225,7 @@ export interface LedgerHistoryRequest {
 // ── Manual Adjustment ─────────────────────────────────────────────────
 
 export interface ManualAdjustmentRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   leaveTypeCode: string;
   quantity: number;
@@ -238,14 +238,14 @@ export interface ManualAdjustmentRequest {
 }
 
 export interface BulkAdjustmentRequest {
-  site: string;
+  organizationId: string;
   adjustments: ManualAdjustmentRequest[];
 }
 
 // ── Comp-Off ──────────────────────────────────────────────────────────
 
 export interface CompOffCreditRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   workedOnDate: string;
   quantity: number;
@@ -258,7 +258,7 @@ export interface CompOffCreditRequest {
 // ── Year-End ──────────────────────────────────────────────────────────
 
 export interface YearEndRequest {
-  site: string;
+  organizationId: string;
   year: number;
   triggeredBy: string;
 }
@@ -266,7 +266,7 @@ export interface YearEndRequest {
 // ── Payroll Export ────────────────────────────────────────────────────
 
 export interface PayrollExportRequest {
-  site: string;
+  organizationId: string;
   year: number;
   month: number;
   format: "CSV" | "XLSX";
@@ -274,7 +274,7 @@ export interface PayrollExportRequest {
 }
 
 export interface LockMonthRequest {
-  site: string;
+  organizationId: string;
   year: number;
   month: number;
   lockedBy: string;
@@ -283,14 +283,14 @@ export interface LockMonthRequest {
 // ── Reports ───────────────────────────────────────────────────────────
 
 export interface ReportQueryRequest {
-  site: string;
+  organizationId: string;
   year: number;
   buId?: string;
   deptId?: string;
 }
 
 export interface LeaveAvailedReportRequest {
-  site: string;
+  organizationId: string;
   fromDate: string;
   toDate: string;
   leaveTypeCode?: string;
@@ -299,7 +299,7 @@ export interface LeaveAvailedReportRequest {
 // ── Leave Request ─────────────────────────────────────────────────────
 
 export interface LeaveRequestCreateDto {
-  site: string;
+  organizationId: string;
   employeeId: string;
   leaveTypeCode: string;
   startDate: string;
@@ -389,7 +389,7 @@ export type LeaveRequestStatus =
 export type LeaveRequestResponse = LeaveRequest;
 
 export interface ApprovalActionRequest {
-  site: string;
+  organizationId: string;
   requestId: string;
   actorId: string;
   actorRole: string;
@@ -398,29 +398,29 @@ export interface ApprovalActionRequest {
 }
 
 export interface CancelLeaveRequest {
-  site: string;
+  organizationId: string;
   requestId: string;
   reason: string;
   cancelledBy: string;
 }
 
 export interface EmployeeQueryRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
 }
 
 export interface GetByIdRequest {
-  site: string;
+  organizationId: string;
   id: string;
 }
 
 export interface ApproverInboxRequest {
-  site: string;
+  organizationId: string;
   approverId: string;
 }
 
 export interface GlobalQueueRequest {
-  site: string;
+  organizationId: string;
   buId?: string;
   deptId?: string;
   status?: string;
@@ -431,29 +431,29 @@ export interface GlobalQueueRequest {
 }
 
 export interface SiteRequest {
-  site: string;
+  organizationId: string;
 }
 
 export interface LeavePolicyQueryRequest {
-  site: string;
+  organizationId: string;
   leaveTypeId: string;
 }
 
 // ── Leave Type Retrieve / Delete / Toggle ────────────────────────────
 
 export interface LeaveTypeByCodeRequest {
-  site: string;
+  organizationId: string;
   code: string;
 }
 
 export interface DeleteLeaveTypeRequest {
-  site: string;
+  organizationId: string;
   leaveTypeId: string;
   deletedBy: string;
 }
 
 export interface ActivateDeactivateLeaveTypeRequest {
-  site: string;
+  organizationId: string;
   handle: string;
   activeStatus: boolean;
   modifiedBy?: string;
@@ -462,7 +462,7 @@ export interface ActivateDeactivateLeaveTypeRequest {
 // ── Policy Delete ────────────────────────────────────────────────────
 
 export interface DeletePolicyRequest {
-  site: string;
+  organizationId: string;
   policyId: string;
   deletedBy: string;
 }
@@ -470,7 +470,7 @@ export interface DeletePolicyRequest {
 // ── Effective Policy ─────────────────────────────────────────────────
 
 export interface EffectivePolicyRequest {
-  site: string;
+  organizationId: string;
   leaveTypeId: string;
   buId?: string;
   deptId?: string;
@@ -479,7 +479,7 @@ export interface EffectivePolicyRequest {
 // ── Balance By Type ──────────────────────────────────────────────────
 
 export interface BalanceByTypeRequest {
-  site: string;
+  organizationId: string;
   employeeId: string;
   leaveTypeCode: string;
   year: number;
@@ -488,7 +488,7 @@ export interface BalanceByTypeRequest {
 // ── Team Calendar ────────────────────────────────────────────────────
 
 export interface TeamCalendarRequest {
-  site: string;
+  organizationId: string;
   managerId: string;
   month: number;
   year: number;
@@ -507,7 +507,7 @@ export interface TeamCalendarEntry {
 // ── Amend Leave Request ──────────────────────────────────────────────
 
 export interface AmendLeaveRequestPayload {
-  site: string;
+  organizationId: string;
   handle: string;
   startDate?: string;
   endDate?: string;
@@ -521,7 +521,7 @@ export interface AmendLeaveRequestPayload {
 // ── Approval Config ──────────────────────────────────────────────────
 
 export interface LeaveApprovalConfig {
-  site: string;
+  organizationId: string;
   levels: ApprovalLevel[];
   autoEscalateDays: number;
   notifyHrOnEscalation: boolean;
@@ -535,7 +535,7 @@ export interface ApprovalLevel {
 }
 
 export interface SaveApprovalConfigRequest {
-  site: string;
+  organizationId: string;
   levels: ApprovalLevel[];
   autoEscalateDays: number;
   notifyHrOnEscalation: boolean;
@@ -545,7 +545,7 @@ export interface SaveApprovalConfigRequest {
 // ── Export Leave Report ──────────────────────────────────────────────
 
 export interface ExportLeaveReportRequest {
-  site: string;
+  organizationId: string;
   reportType: string;
   fromDate?: string;
   toDate?: string;
