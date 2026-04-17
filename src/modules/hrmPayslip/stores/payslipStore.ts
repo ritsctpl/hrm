@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { parseCookies } from "nookies";
 import { message } from "antd";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
 import type {
   PayslipListItem,
@@ -85,7 +86,6 @@ interface PayslipState {
   reset: () => void;
 }
 
-const getSite = () => parseCookies().site ?? "";
 const getUser = () => parseCookies().user ?? "";
 const getEmployeeId = () => parseCookies().employeeId ?? "";
 
@@ -116,9 +116,9 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   loadGenerationContext: async (year, month) => {
     try {
       const [template, payslips] = await Promise.all([
-        HrmPayslipService.getActiveTemplate(getSite()),
+        HrmPayslipService.getActiveTemplate(getOrganizationId()),
         HrmPayslipService.searchPayslips({
-          site: getSite(),
+          organizationId: getOrganizationId(),
           payrollYear: year,
           payrollMonth: month,
           requestedBy: getUser(),
@@ -141,7 +141,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     set({ generating: true, generationResult: null });
     try {
       const result = await HrmPayslipService.generatePayslips({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         payrollRunId: generationRunId ?? "",
         payrollYear: generationYear,
         payrollMonth: generationMonth,
@@ -164,7 +164,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     const { generationYear, generationMonth } = get();
     try {
       await HrmPayslipService.regeneratePayslip({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         employeeId,
         payrollYear: generationYear,
         payrollMonth: generationMonth,
@@ -182,7 +182,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       // Note: downloadPayslipByHr uses handle-based lookup per API.
       // If only employeeId is available, use downloadMyPayslip instead.
       const blob = await HrmPayslipService.downloadMyPayslip({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         employeeId,
         payrollYear,
         payrollMonth,
@@ -204,7 +204,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     const { generationYear, generationMonth, generationRunId } = get();
     try {
       const blob = await HrmPayslipService.downloadAllPayslipsZip({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         payrollRunId: generationRunId ?? "",
       });
       const url = URL.createObjectURL(blob);
@@ -229,7 +229,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
 
   loadMyPayslips: async () => {
     try {
-      const data = await HrmPayslipService.getMyPayslips(getSite(), getEmployeeId());
+      const data = await HrmPayslipService.getMyPayslips(getOrganizationId(), getEmployeeId());
       set({ myPayslipList: data });
     } catch {
       // silent — empty list shown
@@ -245,7 +245,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   downloadMyPayslip: async (year, month) => {
     try {
       const blob = await HrmPayslipService.downloadMyPayslip({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         employeeId: getEmployeeId(),
         payrollYear: year,
         payrollMonth: month,
@@ -287,7 +287,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     set({ repositoryLoading: true });
     try {
       const data = await HrmPayslipService.searchPayslips({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         payrollYear: repositoryYear ?? undefined,
         payrollMonth: repositoryMonth ?? undefined,
         employeeName: repositoryEmployeeSearch || undefined,
@@ -309,7 +309,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   fetchTemplates: async () => {
     set({ templatesLoading: true });
     try {
-      const data = await HrmPayslipService.getAllTemplates(getSite());
+      const data = await HrmPayslipService.getAllTemplates(getOrganizationId());
       set({ templates: data });
     } catch {
       message.error("Failed to load templates");
@@ -325,7 +325,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       if (template.handle) {
         await HrmPayslipService.updateTemplate({
           handle: template.handle,
-          site: getSite(),
+          organizationId: getOrganizationId(),
           templateName: template.templateName,
           companyName: template.companyName,
           companyAddress: template.companyAddress,
@@ -338,7 +338,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       } else {
         await HrmPayslipService.createTemplate({
           ...template,
-          site: getSite(),
+          organizationId: getOrganizationId(),
           createdBy: getUser(),
         });
       }
@@ -352,7 +352,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   setActiveTemplateFlag: async (handle) => {
     try {
       await HrmPayslipService.setActiveTemplate({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         handle,
         updatedBy: getUser(),
       });

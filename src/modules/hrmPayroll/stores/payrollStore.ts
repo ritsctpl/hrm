@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { parseCookies } from 'nookies';
 import { message } from 'antd';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmPayrollService } from '../services/payrollService';
 import type {
   PayrollRunSummary,
@@ -21,7 +22,6 @@ export interface PayrollAdjustmentDraft {
   amount: number;
 }
 
-const getSite = () => parseCookies().site ?? '';
 const getUser = () => parseCookies().userId ?? parseCookies().user ?? '';
 
 interface PayrollState {
@@ -96,7 +96,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   fetchAllRuns: async () => {
     set({ dashboardLoading: true });
     try {
-      const data = await HrmPayrollService.fetchAllRuns(getSite());
+      const data = await HrmPayrollService.fetchAllRuns(getOrganizationId());
       set({ allRuns: data, currentRun: data[0] ?? null });
     } catch {
       // silently handle — component shows empty state
@@ -107,7 +107,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
 
   fetchCurrentRun: async (runId) => {
     try {
-      const data = await HrmPayrollService.getPayrollRun(getSite(), runId);
+      const data = await HrmPayrollService.getPayrollRun(getOrganizationId(), runId);
       set({ currentRun: data });
     } catch {
       // ignore
@@ -141,8 +141,8 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
 
   createPayrollRun: async (year, month, payDate) => {
     const summary = await HrmPayrollService.createPayrollRun({
-      site: getSite(),
-      company: getSite(),
+      organizationId: getOrganizationId(),
+      company: getOrganizationId(),
       payrollYear: year,
       payrollMonth: month,
       payDate,
@@ -157,7 +157,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
     if (!wizardRunId) return;
     for (const [employeeId, lopDays] of Object.entries(lopInputs)) {
       await HrmPayrollService.updateLop({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         payrollRunId: wizardRunId,
         employeeId,
         lopDays,
@@ -171,7 +171,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
     if (!wizardRunId) return;
     for (const adj of adjustments) {
       await HrmPayrollService.addAdjustment({
-        site: getSite(),
+        organizationId: getOrganizationId(),
         payrollRunId: wizardRunId,
         employeeId: adj.employeeId,
         adjustmentType: adj.adjustmentType as import('../types/api.types').AdjustmentType,
@@ -187,7 +187,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
     if (!wizardRunId) return;
     set({ computationProgress: 0, processedCount: 0, errorCount: 0 });
     const summary = await HrmPayrollService.runCalculation({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       payrollRunId: wizardRunId,
       performedBy: getUser(),
     });
@@ -204,7 +204,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
     const { wizardRunId } = get();
     if (!wizardRunId) return;
     const updated = await HrmPayrollService.approvePayrollRun({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       payrollRunId: wizardRunId,
       action: 'APPROVE',
       performedBy: getUser(),
@@ -217,7 +217,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   finalizeRun: async () => {
     const { wizardRunId } = get();
     if (!wizardRunId) return;
-    const updated = await HrmPayrollService.finalizePayrollRun(getSite(), wizardRunId, getUser());
+    const updated = await HrmPayrollService.finalizePayrollRun(getOrganizationId(), wizardRunId, getUser());
     set({ wizardRunSummary: updated });
     message.success('Payroll finalized and locked');
   },
@@ -225,7 +225,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   publishRun: async () => {
     const { wizardRunId } = get();
     if (!wizardRunId) return;
-    const updated = await HrmPayrollService.publishPayrollRun(getSite(), wizardRunId, getUser());
+    const updated = await HrmPayrollService.publishPayrollRun(getOrganizationId(), wizardRunId, getUser());
     set({ wizardRunSummary: updated });
     message.success('Payroll published to employees');
     await get().fetchAllRuns();
@@ -242,7 +242,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   fetchReviewEntries: async (runId) => {
     set({ reviewLoading: true });
     try {
-      const data = await HrmPayrollService.getPayrollEntries(getSite(), runId);
+      const data = await HrmPayrollService.getPayrollEntries(getOrganizationId(), runId);
       set({ reviewEntries: data });
     } catch {
       // handled by component
@@ -263,7 +263,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   fetchTaxConfig: async (financialYearStart, regime) => {
     set({ taxConfigLoading: true });
     try {
-      const data = await HrmPayrollService.getTaxConfiguration(getSite(), financialYearStart, regime);
+      const data = await HrmPayrollService.getTaxConfiguration(getOrganizationId(), financialYearStart, regime);
       set({ taxConfig: data });
     } finally {
       set({ taxConfigLoading: false });
@@ -271,7 +271,7 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
   },
 
   fetchStatutoryConfig: async (configType) => {
-    const data = await HrmPayrollService.getStatutoryConfig(getSite(), configType);
+    const data = await HrmPayrollService.getStatutoryConfig(getOrganizationId(), configType);
     if (configType === 'PF') set({ pfConfig: data });
     else if (configType === 'ESI') set({ esiConfig: data });
     else set({ ptConfig: data });

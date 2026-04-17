@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { parseCookies } from 'nookies';
 import { message } from 'antd';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmCompensationService } from '../services/compensationService';
 import type {
   PayComponent,
@@ -15,11 +16,6 @@ import type {
   SalaryRevisionRow,
 } from '../types/domain.types';
 import type { CompensationTabKey, RevisionMode, PayComponentFormState } from '../types/ui.types';
-
-const getSite = (): string => {
-  const cookies = parseCookies();
-  return cookies.site ?? '';
-};
 
 const getUser = (): string => {
   const cookies = parseCookies();
@@ -98,7 +94,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   fetchPayComponents: async () => {
     set({ componentsLoading: true, componentsError: null });
     try {
-      const data = await HrmCompensationService.fetchAllPayComponents(getSite());
+      const data = await HrmCompensationService.fetchAllPayComponents(getOrganizationId());
       set({ payComponents: data });
     } catch {
       set({ componentsError: 'Failed to load pay components' });
@@ -110,10 +106,10 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   selectComponent: (component) => set({ selectedComponent: component }),
 
   savePayComponent: async (data, handle) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const user = getUser();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = { ...(data as any), site };
+    const payload = { ...(data as any), organizationId };
     if (handle) {
       await HrmCompensationService.updatePayComponent({ ...payload, handle, modifiedBy: user });
     } else {
@@ -125,7 +121,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
 
   deletePayComponent: async (componentCode) => {
     await HrmCompensationService.deactivatePayComponent({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       componentCode,
       updatedBy: getUser(),
     });
@@ -144,7 +140,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   fetchSalaryStructures: async () => {
     set({ structuresLoading: true });
     try {
-      const data = await HrmCompensationService.fetchAllSalaryStructures(getSite());
+      const data = await HrmCompensationService.fetchAllSalaryStructures(getOrganizationId());
       set({ salaryStructures: data });
     } finally {
       set({ structuresLoading: false });
@@ -154,12 +150,12 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   selectStructure: (structure) => set({ selectedStructure: structure }),
 
   saveSalaryStructure: async (req) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const user = getUser();
     if (req.handle) {
-      await HrmCompensationService.updateSalaryStructure({ ...req, site, modifiedBy: user });
+      await HrmCompensationService.updateSalaryStructure({ ...req, organizationId, modifiedBy: user });
     } else {
-      await HrmCompensationService.createSalaryStructure({ ...req, site, createdBy: user });
+      await HrmCompensationService.createSalaryStructure({ ...req, organizationId, createdBy: user });
     }
     message.success('Salary structure saved');
     await get().fetchSalaryStructures();
@@ -179,7 +175,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   loadEmployeeCompensation: async (employeeId) => {
     set({ assignmentLoading: true, currentCompensation: null });
     try {
-      const data = await HrmCompensationService.getActiveCompensation(getSite(), employeeId);
+      const data = await HrmCompensationService.getActiveCompensation(getOrganizationId(), employeeId);
       set({ currentCompensation: data });
     } catch {
       // Employee may have no existing compensation — that's ok
@@ -189,7 +185,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   },
 
   fetchCompensationHistory: async (employeeId) => {
-    const data = await HrmCompensationService.getCompensationHistory(getSite(), employeeId);
+    const data = await HrmCompensationService.getCompensationHistory(getOrganizationId(), employeeId);
     set({ compensationHistory: data });
   },
 
@@ -209,7 +205,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
 
   submitCompensationForApproval: async (handle) => {
     await HrmCompensationService.submitCompensationForApproval({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       handle,
       submittedBy: getUser(),
     });
@@ -237,7 +233,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
       const selected = revisionRows.filter((r) => selectedRevisionIds.includes(r.employeeId));
       for (const row of selected) {
         const created = await HrmCompensationService.createEmployeeCompensation({
-          site: getSite(),
+          organizationId: getOrganizationId(),
           employeeId: row.employeeId,
           effectiveFrom: row.effectiveFrom,
           structureCode: '',
@@ -246,7 +242,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
           createdBy: getUser(),
         });
         await HrmCompensationService.submitCompensationForApproval({
-          site: getSite(),
+          organizationId: getOrganizationId(),
           handle: created.handle,
           submittedBy: getUser(),
         });
@@ -266,7 +262,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   fetchPendingApprovals: async () => {
     set({ approvalsLoading: true });
     try {
-      const data = await HrmCompensationService.getPendingApprovals(getSite());
+      const data = await HrmCompensationService.getPendingApprovals(getOrganizationId());
       set({ pendingApprovals: data });
     } finally {
       set({ approvalsLoading: false });
@@ -275,7 +271,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
 
   approveCompensation: async (handle, remarks) => {
     await HrmCompensationService.approveRejectCompensation({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       handle,
       action: 'APPROVE',
       remarks,
@@ -287,7 +283,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
 
   rejectCompensation: async (handle, reason) => {
     await HrmCompensationService.approveRejectCompensation({
-      site: getSite(),
+      organizationId: getOrganizationId(),
       handle,
       action: 'REJECT',
       remarks: reason,
