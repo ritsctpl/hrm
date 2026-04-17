@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, message } from "antd";
 import { parseCookies } from "nookies";
 import CommonAppBar from "@/components/CommonAppBar";
@@ -20,7 +21,7 @@ import styles from "./styles/PolicyLanding.module.css";
 
 const HrmPolicyLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const userId = cookies.rl_user_id ?? "system";  // ← Use rl_user_id instead of userId
 
   const { fetchEffectivePermissions } = usePermissionsStore();
@@ -78,15 +79,14 @@ const HrmPolicyLanding: React.FC = () => {
 
   // Fetch effective permissions when module loads
   useEffect(() => {
-    fetchEffectivePermissions(site, userId, 'HRM_POLICY');
-  }, [site, userId]);
+    fetchEffectivePermissions(organizationId, userId, 'HRM_POLICY');
+  }, [organizationId, userId]);
 
   // Fetch full policy details when opening viewer
   const handlePolicyClick = async (policy: PolicyDocument) => {
     openPolicyViewer(policy); // Show viewer with basic data first
     try {
-      const fullPolicy = await HrmPolicyService.getPolicyDetail({ 
-        site, 
+      const fullPolicy = await HrmPolicyService.getPolicyDetail({ organizationId, 
         policyHandle: policy.handle 
       });
       setSelectedPolicy(fullPolicy); // Update with full data including pdfBase64
@@ -127,22 +127,19 @@ const HrmPolicyLanding: React.FC = () => {
       
       // Workflow: DRAFT → submitForReview → REVIEW → approve → APPROVED → publish → PUBLISHED
       if (policy.status === "DRAFT") {
-        await HrmPolicyService.submitForReview({ 
-          site, 
+        await HrmPolicyService.submitForReview({ organizationId, 
           policyHandle, 
           submittedBy: user 
         });
         message.success("Policy submitted for review");
       } else if (policy.status === "REVIEW") {
-        await HrmPolicyService.approvePolicy({ 
-          site, 
+        await HrmPolicyService.approvePolicy({ organizationId, 
           policyHandle, 
           approvedBy: user 
         });
         message.success("Policy approved successfully");
       } else if (policy.status === "APPROVED") {
-        await HrmPolicyService.publishPolicy({ 
-          site, 
+        await HrmPolicyService.publishPolicy({ organizationId, 
           policyHandle, 
           publishedBy: user 
         });
@@ -173,7 +170,7 @@ const HrmPolicyLanding: React.FC = () => {
     setArchiving(true);
     try {
       const user = cookies.userId ?? "system";
-      await HrmPolicyService.retirePolicy({ site, policyHandle, retiredBy: user, reason: "Retired by admin" });
+      await HrmPolicyService.retirePolicy({ organizationId, policyHandle, retiredBy: user, reason: "Retired by admin" });
       message.success("Policy retired");
       loadAdminPolicies();
     } catch {
@@ -186,7 +183,7 @@ const HrmPolicyLanding: React.FC = () => {
   const handleDelete = async (policyHandle: string) => {
     try {
       const user = cookies.userId ?? "system";
-      await HrmPolicyService.deletePolicy({ site, policyHandle, deletedBy: user });
+      await HrmPolicyService.deletePolicy({ organizationId, policyHandle, deletedBy: user });
       message.success("Policy deleted successfully");
       loadAdminPolicies();
       loadPolicies();
@@ -204,8 +201,7 @@ const HrmPolicyLanding: React.FC = () => {
   const handleSupersede = async (oldPolicyHandle: string, newPolicyHandle: string) => {
     try {
       const user = cookies.userId ?? "system";
-      await HrmPolicyService.supersedePolicy({
-        site,
+      await HrmPolicyService.supersedePolicy({ organizationId,
         oldPolicyHandle,
         newPolicyHandle,
         updatedBy: user,
@@ -283,7 +279,7 @@ const HrmPolicyLanding: React.FC = () => {
           loading={adminPoliciesLoading}
           showFormDrawer={showFormDrawer}
           editPolicy={editPolicy}
-          site={site}
+          organizationId={organizationId}
           searchText={adminSearchText}
           filterCategoryId={adminFilterCategoryId}
           filterDocType={adminFilterDocType}
@@ -337,7 +333,7 @@ const HrmPolicyLanding: React.FC = () => {
         open={showFormDrawer}
         editPolicy={editPolicy}
         categories={categories}
-        site={site}
+        organizationId={organizationId}
         onClose={closeFormDrawer}
         onSaved={handleAdminDrawerSaved}
       />
@@ -345,7 +341,7 @@ const HrmPolicyLanding: React.FC = () => {
       <SupersedePolicyModal
         open={showSupersedeModal}
         policies={adminPolicies}
-        site={site}
+        organizationId={organizationId}
         onClose={closeSupersedeModal}
         onSupersede={handleSupersede}
       />

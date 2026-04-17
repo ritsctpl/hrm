@@ -10,7 +10,7 @@ const AppFooter: React.FC = () => {
   const currentOrganizationId = useHrmRbacStore(s => s.currentOrganizationId);
   const organizations = useHrmRbacStore(s => s.organizations);
   const orgDisplayName =
-    organizations.find(o => o.site === currentOrganizationId)?.organizationName || currentOrganizationId || '';
+    organizations.find(o => o.organizationId === currentOrganizationId)?.organizationName || currentOrganizationId || '';
 
   return (
     <footer className={styles.footer}>

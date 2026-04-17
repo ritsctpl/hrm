@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeService";
 import type { EmployeeDirectoryRow } from "@/modules/hrmEmployee/types/api.types";
 
@@ -20,11 +21,11 @@ export function useEmployeeOptions(): {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const site = parseCookies().site;
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
     let cancelled = false;
     setLoading(true);
-    HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 })
+    HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 })
       .then((res) => {
         if (cancelled) return;
         const rows = res.employees || [];

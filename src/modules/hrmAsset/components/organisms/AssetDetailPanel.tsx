@@ -5,6 +5,7 @@ import { Tabs, Button, Space, Spin, Popconfirm, message } from 'antd';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import AssetOverviewTab from './AssetOverviewTab';
 import AssetAttributesTab from './AssetAttributesTab';
 import AssetAttachmentsTab from './AssetAttachmentsTab';
@@ -61,12 +62,12 @@ export default function AssetDetailPanel({
 
   useEffect(() => {
     if (!selectedAsset) return;
-    const { site } = parseCookies();
+    const organizationId = getOrganizationId();
 
     const loadCustody = async () => {
       setLoadingCustody(true);
       try {
-        const history = await HrmAssetService.getCustodyHistory(site ?? '', selectedAsset.assetId);
+        const history = await HrmAssetService.getCustodyHistory(organizationId, selectedAsset.assetId);
         setCustodyHistory(history);
       } catch {
         setCustodyHistory([]);
@@ -78,7 +79,7 @@ export default function AssetDetailPanel({
     const loadMaintenance = async () => {
       setLoadingMaintenance(true);
       try {
-        const history = await HrmAssetService.getMaintenanceHistory(site ?? '', selectedAsset.assetId);
+        const history = await HrmAssetService.getMaintenanceHistory(organizationId, selectedAsset.assetId);
         setMaintenanceHistory(history);
       } catch {
         setMaintenanceHistory([]);
@@ -90,7 +91,7 @@ export default function AssetDetailPanel({
     const loadDepreciation = async () => {
       setLoadingDepreciation(true);
       try {
-        const history = await HrmAssetService.getDepreciationHistory(site ?? '', selectedAsset.assetId);
+        const history = await HrmAssetService.getDepreciationHistory(organizationId, selectedAsset.assetId);
         setDepreciationHistory(history);
       } catch {
         setDepreciationHistory([]);
@@ -106,10 +107,10 @@ export default function AssetDetailPanel({
 
   const handleDeleteAsset = async () => {
     if (!selectedAsset) return;
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       await HrmAssetService.updateStatus({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         assetId: selectedAsset.assetId,
         newStatus: 'RETIRED',
         updatedBy: userId ?? '',

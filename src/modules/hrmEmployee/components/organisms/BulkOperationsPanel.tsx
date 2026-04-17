@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Drawer, Tabs, Select, Button, message, Alert, Input } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmEmployeeStore } from '../../stores/hrmEmployeeStore';
@@ -36,7 +37,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
     try {
       const cookies = parseCookies();
       const result = await HrmEmployeeService.bulkAssignManager({
-        site: cookies.site,
+        organizationId: getOrganizationId(),
         handles: selectedHandles,
         managerHandle: managerHandle.trim(),
         modifiedBy: cookies.username || 'system',
@@ -60,7 +61,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
     try {
       const cookies = parseCookies();
       const result = await HrmEmployeeService.bulkChangeDepartment({
-        site: cookies.site,
+        organizationId: getOrganizationId(),
         handles: selectedHandles,
         department: department.trim(),
         modifiedBy: cookies.username || 'system',
@@ -84,7 +85,7 @@ const BulkOperationsPanel: React.FC<Props> = ({ open, onClose }) => {
     try {
       const cookies = parseCookies();
       const result = await HrmEmployeeService.bulkAssignBu({
-        site: cookies.site,
+        organizationId: getOrganizationId(),
         handles: selectedHandles,
         buHandle: businessUnit.trim(),
         modifiedBy: cookies.username || 'system',

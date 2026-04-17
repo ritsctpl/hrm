@@ -9,7 +9,7 @@ import { HrmHolidayService } from '../services/hrmHolidayService';
 import { useHrmHolidayStore } from '../stores/hrmHolidayStore';
 import type { HolidayListRequest } from '../types/api.types';
 
-export function useHolidayDetail(site: string, groupHandle: string) {
+export function useHolidayDetail(organizationId: string, groupHandle: string) {
   const {
     setHolidays,
     setHolidaysLoading,
@@ -25,8 +25,7 @@ export function useHolidayDetail(site: string, groupHandle: string) {
       setHolidaysLoading(true);
       setHolidaysError(null);
       try {
-        const res = await HrmHolidayService.listHolidays({
-          site,
+        const res = await HrmHolidayService.listHolidays({ organizationId,
           groupHandle,
           ...params,
         });
@@ -54,13 +53,13 @@ export function useHolidayDetail(site: string, groupHandle: string) {
         setHolidaysLoading(false);
       }
     },
-    [site, groupHandle, setHolidays, setHolidaysLoading, setHolidaysError]
+    [organizationId, groupHandle, setHolidays, setHolidaysLoading, setHolidaysError]
   );
 
   const loadAuditLogs = useCallback(async () => {
     setAuditLogsLoading(true);
     try {
-      const res = await HrmHolidayService.getGroupAuditLog({ site, groupHandle });
+      const res = await HrmHolidayService.getGroupAuditLog({ organizationId, groupHandle });
       if (res.success) {
         setAuditLogs(res.data);
       }
@@ -69,12 +68,12 @@ export function useHolidayDetail(site: string, groupHandle: string) {
     } finally {
       setAuditLogsLoading(false);
     }
-  }, [site, groupHandle, setAuditLogs, setAuditLogsLoading]);
+  }, [organizationId, groupHandle, setAuditLogs, setAuditLogsLoading]);
 
   const loadCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
-      const res = await HrmHolidayService.listCategories({ site, activeOnly: true });
+      const res = await HrmHolidayService.listCategories({ organizationId, activeOnly: true });
       if (res.success) {
         const mapped = res.data.map((c) => ({
           ...c,
@@ -86,7 +85,7 @@ export function useHolidayDetail(site: string, groupHandle: string) {
     } finally {
       setCategoriesLoading(false);
     }
-  }, [site, setCategories, setCategoriesLoading]);
+  }, [organizationId, setCategories, setCategoriesLoading]);
 
   return { loadHolidays, loadAuditLogs, loadCategories };
 }

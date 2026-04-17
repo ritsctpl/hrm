@@ -3,36 +3,36 @@ import { notification } from 'antd';
 import { useHrmAccessStore } from '../stores/hrmAccessStore';
 import { HrmAccessService } from '../services/hrmAccessService';
 
-export function usePermissions(site: string) {
+export function usePermissions(organizationId: string) {
   const store = useHrmAccessStore();
 
   const loadModulesAndPermissions = useCallback(async () => {
-    if (!site) return;
+    if (!organizationId) return;
     try {
       const [modules, permissions] = await Promise.all([
-        HrmAccessService.fetchAllModules(site),
-        HrmAccessService.fetchAllPermissions(site),
+        HrmAccessService.fetchAllModules(organizationId),
+        HrmAccessService.fetchAllPermissions(organizationId),
       ]);
       store.setAllModules(modules);
       store.setAllPermissions(permissions);
     } catch {
       notification.error({ message: 'Failed to load modules/permissions.' });
     }
-  }, [site, store]);
+  }, [organizationId, store]);
 
   const loadPermissionsMatrix = useCallback(
     async (moduleFilter: string | null, roleFilter: string | null) => {
-      if (!site) return;
+      if (!organizationId) return;
       store.setMatrixLoading(true);
       try {
-        await HrmAccessService.fetchPermissionsMatrix(site, moduleFilter, roleFilter);
+        await HrmAccessService.fetchPermissionsMatrix(organizationId, moduleFilter, roleFilter);
         store.setMatrixLoading(false);
       } catch {
         notification.error({ message: 'Failed to load permissions matrix.' });
         store.setMatrixLoading(false);
       }
     },
-    [site, store]
+    [organizationId, store]
   );
 
   return { loadModulesAndPermissions, loadPermissionsMatrix };

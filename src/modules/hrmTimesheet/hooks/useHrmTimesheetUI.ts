@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../services/hrmTimesheetService';
 import { mapTimesheetResponse, useHrmTimesheetData } from './useHrmTimesheetData';
@@ -11,8 +12,8 @@ import { resolveEmployeeId } from '../utils/resolveEmployeeId';
 export function useHrmTimesheetUI() {
   const store = useHrmTimesheetStore();
   const { loadWeeklyTimesheets, loadDayTimesheet, loadPendingApprovals } = useHrmTimesheetData();
+  const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const { site } = cookies;
   const employeeId = resolveEmployeeId(cookies);
   const approverName =
     (cookies as Record<string, string | undefined>).employeeName ??
@@ -28,8 +29,7 @@ export function useHrmTimesheetUI() {
     }
     store.setSavingTimesheet(true);
     try {
-      await HrmTimesheetService.saveTimesheet({
-        site,
+      await HrmTimesheetService.saveTimesheet({ organizationId,
         employeeId,
         date: store.selectedDate,
         lines: lines.map((l) => ({
@@ -53,7 +53,7 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setSavingTimesheet(false);
     }
-  }, [site, employeeId, store.selectedDate, store.currentDayTimesheet, loadDayTimesheet, loadWeeklyTimesheets]);
+  }, [organizationId, employeeId, store.selectedDate, store.currentDayTimesheet, loadDayTimesheet, loadWeeklyTimesheets]);
 
   const submitTimesheet = useCallback(async () => {
     const handle = store.currentDayTimesheet?.handle;
@@ -63,8 +63,7 @@ export function useHrmTimesheetUI() {
     }
     store.setSubmittingTimesheet(true);
     try {
-      await HrmTimesheetService.submitTimesheet({
-        site,
+      await HrmTimesheetService.submitTimesheet({ organizationId,
         employeeId,
         timesheetHandle: handle,
         submittedBy: employeeId,
@@ -78,13 +77,12 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setSubmittingTimesheet(false);
     }
-  }, [site, employeeId, store.selectedDate, store.currentDayTimesheet, loadDayTimesheet, loadWeeklyTimesheets]);
+  }, [organizationId, employeeId, store.selectedDate, store.currentDayTimesheet, loadDayTimesheet, loadWeeklyTimesheets]);
 
   const submitWeek = useCallback(async () => {
     store.setSubmittingWeek(true);
     try {
-      const result = await HrmTimesheetService.bulkSubmitWeekly({
-        site,
+      const result = await HrmTimesheetService.bulkSubmitWeekly({ organizationId,
         employeeId,
         weekStartDate: store.selectedWeekStart,
         submittedBy: employeeId,
@@ -104,13 +102,12 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setSubmittingWeek(false);
     }
-  }, [site, employeeId, store.selectedWeekStart, loadWeeklyTimesheets]);
+  }, [organizationId, employeeId, store.selectedWeekStart, loadWeeklyTimesheets]);
 
   const approveTimesheet = useCallback(async (handle: string, action: 'APPROVED' | 'REJECTED', remarks: string) => {
     store.setApprovingTimesheet(true);
     try {
-      await HrmTimesheetService.approveOrReject({
-        site,
+      await HrmTimesheetService.approveOrReject({ organizationId,
         timesheetHandle: handle,
         action,
         remarks,
@@ -126,7 +123,7 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setApprovingTimesheet(false);
     }
-  }, [site, employeeId, approverName, loadPendingApprovals]);
+  }, [organizationId, employeeId, approverName, loadPendingApprovals]);
 
   const bulkApproveTimesheets = useCallback(async (handles: string[], action: 'APPROVED' | 'REJECTED', remarks: string) => {
     if (handles.length === 0) {
@@ -135,8 +132,7 @@ export function useHrmTimesheetUI() {
     }
     store.setApprovingTimesheet(true);
     try {
-      const result = await HrmTimesheetService.bulkApproveOrReject({
-        site,
+      const result = await HrmTimesheetService.bulkApproveOrReject({ organizationId,
         timesheetHandles: handles,
         action,
         remarks,
@@ -152,13 +148,12 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setApprovingTimesheet(false);
     }
-  }, [site, employeeId, approverName, loadPendingApprovals]);
+  }, [organizationId, employeeId, approverName, loadPendingApprovals]);
 
   const reopenTimesheet = useCallback(async (handle: string, reason: string) => {
     store.setApprovingTimesheet(true);
     try {
-      await HrmTimesheetService.reopenTimesheet({
-        site,
+      await HrmTimesheetService.reopenTimesheet({ organizationId,
         timesheetHandle: handle,
         reopenedBy: employeeId,
         reason,
@@ -172,12 +167,12 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setApprovingTimesheet(false);
     }
-  }, [site, employeeId, loadPendingApprovals]);
+  }, [organizationId, employeeId, loadPendingApprovals]);
 
   const copyFromPreviousDay = useCallback(async () => {
     store.setSavingTimesheet(true);
     try {
-      const data = await HrmTimesheetService.copyFromPreviousDay(site, employeeId, store.selectedDate, employeeId);
+      const data = await HrmTimesheetService.copyFromPreviousDay(organizationId, employeeId, store.selectedDate, employeeId);
       store.setCurrentDayTimesheet(mapTimesheetResponse(data));
       message.success('Copied from previous day');
     } catch (err) {
@@ -185,7 +180,7 @@ export function useHrmTimesheetUI() {
     } finally {
       store.setSavingTimesheet(false);
     }
-  }, [site, employeeId, store.selectedDate]);
+  }, [organizationId, employeeId, store.selectedDate]);
 
   return {
     saveTimesheet,

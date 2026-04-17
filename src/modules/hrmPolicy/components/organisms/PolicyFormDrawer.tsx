@@ -19,7 +19,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
   open,
   editPolicy,
   categories,
-  site,
+  organizationId,
   onClose,
   onSaved,
 }) => {
@@ -75,7 +75,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
       
       const payload = {
         ...values,
-        site,
+        organizationId,
         effectiveFrom: values.effectiveFrom?.format("YYYY-MM-DD"),
         reviewDate: values.reviewDate?.format("YYYY-MM-DD"),
       };
@@ -98,8 +98,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
             reader.readAsDataURL(pdfFile);
           });
           
-          await HrmPolicyService.updatePdf({
-            site,
+          await HrmPolicyService.updatePdf({ organizationId,
             policyHandle: editPolicy.handle,
             fileName: pdfFile.name,
             pdfBase64,
@@ -126,8 +125,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
             reader.readAsDataURL(pdfFile);
           });
           
-          await HrmPolicyService.updatePdf({
-            site,
+          await HrmPolicyService.updatePdf({ organizationId,
             policyHandle: createdPolicy.handle,
             fileName: pdfFile.name,
             pdfBase64,

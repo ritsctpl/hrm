@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
 import ModuleRegistryTemplate from './components/templates/ModuleRegistryTemplate';
 import RoleManagementTemplate from './components/templates/RoleManagementTemplate';
@@ -16,8 +17,8 @@ import { HrmAccessService } from './services/hrmAccessService';
 import styles from './styles/HrmAccess.module.css';
 
 const HrmAccessLanding: React.FC = () => {
+  const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
 
   const userId = cookies.userId ?? '';
   const userName = cookies.userName ?? '';
@@ -30,13 +31,13 @@ const HrmAccessLanding: React.FC = () => {
     useHrmAccessStore();
 
   useEffect(() => {
-    if (!site) return;
+    if (!organizationId) return;
 
     setRoleLoading(true);
     Promise.all([
-      HrmAccessService.fetchAllRoles(site),
-      HrmAccessService.fetchAllModules(site),
-      HrmAccessService.fetchAllPermissions(site),
+      HrmAccessService.fetchAllRoles(organizationId),
+      HrmAccessService.fetchAllModules(organizationId),
+      HrmAccessService.fetchAllPermissions(organizationId),
     ])
       .then(([roles, modules, permissions]) => {
         setRoles(roles);
@@ -45,43 +46,43 @@ const HrmAccessLanding: React.FC = () => {
       })
       .catch(() => setRoleLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
+  }, [organizationId]);
 
   const tabItems = [
     {
       key: 'modules',
       label: 'Modules',
-      children: <ModuleRegistryTemplate site={site} user={user} />,
+      children: <ModuleRegistryTemplate organizationId={organizationId} user={user} />,
     },
     {
       key: 'roleManagement',
       label: 'Roles',
-      children: <RoleManagementTemplate site={site} user={user} />,
+      children: <RoleManagementTemplate organizationId={organizationId} user={user} />,
     },
     {
       key: 'permissionMatrix',
       label: 'Permissions Matrix',
-      children: <PermissionMatrixTemplate site={site} isActive={activeMainTab === 'permissionMatrix'} />,
+      children: <PermissionMatrixTemplate organizationId={organizationId} isActive={activeMainTab === 'permissionMatrix'} />,
     },
     {
       key: 'userRoleAssignment',
       label: 'User Assignments',
-      children: <UserRoleAssignmentTemplate site={site} user={user} />,
+      children: <UserRoleAssignmentTemplate organizationId={organizationId} user={user} />,
     },
     {
       key: 'importExport',
       label: 'Import / Export',
-      children: <ImportExportTemplate site={site} user={user} />,
+      children: <ImportExportTemplate organizationId={organizationId} user={user} />,
     },
     // {
     //   key: 'reports',
     //   label: 'Reports',
-    //   children: <RbacReportsTemplate site={site} />,
+    //   children: <RbacReportsTemplate organizationId={organizationId} />,
     // },
     // {
     //   key: 'audit',
     //   label: 'Audit Log',
-    //   children: <RbacAuditLogTemplate site={site} />,
+    //   children: <RbacAuditLogTemplate organizationId={organizationId} />,
     // },
   ];
 

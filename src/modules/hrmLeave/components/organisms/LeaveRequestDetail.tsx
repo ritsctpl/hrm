@@ -15,7 +15,7 @@ const { Title, Text } = Typography;
 
 const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
   request,
-  site,
+  organizationId,
   permissions,
   onApproved,
   onRejected,

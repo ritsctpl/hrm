@@ -9,7 +9,7 @@ import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
-const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited }) => {
+const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ organizationId, onCredited }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
   const [form] = Form.useForm();
@@ -20,8 +20,7 @@ const CompOffCreditForm: React.FC<CompOffCreditFormProps> = ({ site, onCredited 
     try {
       const values = await form.validateFields();
       setLoading(true);
-      await HrmLeaveService.creditCompOff({
-        site,
+      await HrmLeaveService.creditCompOff({ organizationId,
         employeeId: values.employeeId,
         workedOnDate: values.workedOnDate.format("YYYY-MM-DD"),
         quantity: parseFloat(values.quantity),

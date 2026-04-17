@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import { Tabs, Button, Modal, Badge, Drawer, Table, Input, Form, Empty, Popconfirm, message } from 'antd';
 import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmProjectStore } from './stores/hrmProjectStore';
 import { useProjectData } from './hooks/useProjectData';
@@ -35,18 +36,18 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
   const [editingClient, setEditingClient] = React.useState<ClientRecord | null>(null);
   const [formOpen, setFormOpen] = React.useState(false);
   const [form] = Form.useForm();
-  const site = parseCookies().site ?? '';
+  const organizationId = getOrganizationId();
   const user = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
 
   const loadClients = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await HrmProjectService.listClients(site);
+      const data = await HrmProjectService.listClients(organizationId);
       setClients(Array.isArray(data) ? data : []);
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   useEffect(() => { if (open) loadClients(); }, [open, loadClients]);
 
@@ -57,10 +58,10 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
     try {
       const values = await form.validateFields();
       if (editingClient?.handle) {
-        await HrmProjectService.updateClient(editingClient.handle, { ...values, site, modifiedBy: user });
+        await HrmProjectService.updateClient(editingClient.handle, { ...values, organizationId, modifiedBy: user });
         message.success('Client updated');
       } else {
-        await HrmProjectService.createClient({ ...values, site, createdBy: user });
+        await HrmProjectService.createClient({ ...values, organizationId, createdBy: user });
         message.success('Client created');
       }
       setFormOpen(false);
@@ -70,7 +71,7 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
 
   const handleDelete = async (record: ClientRecord) => {
     try {
-      await HrmProjectService.deleteClient(site, record.handle ?? '', user);
+      await HrmProjectService.deleteClient(organizationId, record.handle ?? '', user);
       message.success('Client deleted');
       loadClients();
     } catch { message.error('Delete failed'); }

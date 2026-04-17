@@ -15,7 +15,7 @@ const { TextArea } = Input;
 const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
   open,
   editAnnouncement,
-  site,
+  organizationId,
   onClose,
   onSaved,
 }) => {
@@ -47,7 +47,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       setSaving(true);
       const payload = {
         ...values,
-        site,
+        organizationId,
         scheduledPublishAt: values.scheduledPublishAt?.toISOString(),
         expiresAt: values.expiresAt?.toISOString(),
       };

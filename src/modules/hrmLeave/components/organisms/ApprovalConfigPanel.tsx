@@ -30,10 +30,10 @@ const ROLE_OPTIONS = [
 ];
 
 interface ApprovalConfigPanelProps {
-  site: string;
+  organizationId: string;
 }
 
-const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ site }) => {
+const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ organizationId }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
   const [form] = Form.useForm();
@@ -44,7 +44,7 @@ const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ site }) => {
   const loadConfig = async () => {
     setLoading(true);
     try {
-      const cfg = await HrmLeaveService.getApprovalConfig({ site });
+      const cfg = await HrmLeaveService.getApprovalConfig({ organizationId });
       if (cfg) {
         form.setFieldsValue({
           autoEscalateDays: cfg.autoEscalateDays,
@@ -63,9 +63,9 @@ const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ site }) => {
   };
 
   useEffect(() => {
-    if (site) loadConfig();
+    if (organizationId) loadConfig();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
+  }, [organizationId]);
 
   const handleAddLevel = () => {
     const nextLevel = levels.length + 1;
@@ -88,7 +88,7 @@ const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ site }) => {
       const values = await form.validateFields();
       setSaving(true);
       const payload = {
-        site,
+        organizationId,
         levels,
         autoEscalateDays: values.autoEscalateDays,
         notifyHrOnEscalation: values.notifyHrOnEscalation,

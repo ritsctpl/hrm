@@ -19,6 +19,7 @@ import { HrmCompensationService } from '../../services/compensationService';
 import type { CompensationComponent, EmployeeCompensationResponse } from '../../types/domain.types';
 import type { EmployeeCompensationRequest } from '../../types/api.types';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import EarningsGrid from './EarningsGrid';
 import DeductionsGrid from './DeductionsGrid';
 import CompensationSummaryBar from '../molecules/CompensationSummaryBar';
@@ -78,8 +79,8 @@ const EmployeeCompensationForm: React.FC = () => {
       // Load structure and build component rows from defaults
       try {
         const cookies = parseCookies();
-        const site = cookies.site ?? '';
-        const structure = await HrmCompensationService.getSalaryStructure(site, code);
+        const organizationId = getOrganizationId();
+        const structure = await HrmCompensationService.getSalaryStructure(organizationId, code);
         // We only have SalaryStructureComponents — build CompensationComponent stubs for the grid
         const earnings: CompensationComponent[] = structure.components
           .map((sc, idx) => ({
@@ -106,7 +107,7 @@ const EmployeeCompensationForm: React.FC = () => {
   const buildRequest = useCallback((): EmployeeCompensationRequest => {
     const cookies = parseCookies();
     return {
-      site: cookies.site ?? '',
+      organizationId: getOrganizationId(),
       employeeId: selectedEmployeeId ?? '',
       effectiveFrom,
       structureCode,

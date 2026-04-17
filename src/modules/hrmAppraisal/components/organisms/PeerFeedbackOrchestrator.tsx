@@ -10,6 +10,7 @@ import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import type { PeerFeedbackEntry } from "../../types/domain.types";
 import { HrmAppraisalService } from "../../services/hrmAppraisalService";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 import styles from "../../styles/Feedback360.module.css";
 
@@ -43,11 +44,11 @@ const PeerFeedbackOrchestrator: React.FC = () => {
 
   const handleSendRequests = async () => {
     if (!myReview) return;
-    const site = parseCookies().site ?? "";
+    const organizationId = getOrganizationId();
     const requestedBy = parseCookies().employeeId ?? "";
     try {
       await HrmAppraisalService.requestPeerFeedback(
-        site,
+        organizationId,
         myReview.reviewId,
         selectedPeers,
         anonymous,

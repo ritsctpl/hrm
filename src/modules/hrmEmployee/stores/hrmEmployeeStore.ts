@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../services/hrmEmployeeService';
 import { mapDirectoryRowToSummary, buildCreateRequest, validateOnboardingStep, mapApiProfileToEmployeeProfile, buildUpdateContactPayload, buildUpdateBasicPayload, buildUpdatePersonalPayload, buildUpdateOfficialPayload } from '../utils/transformations';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
@@ -128,16 +129,15 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
     set({ directory: { ...state.directory, isLoading: true } });
 
     try {
-      const site = parseCookies().site;
-      if (!site) throw new Error('Site not found in cookies');
+      const organizationId = getOrganizationId();
+      if (!organizationId) throw new Error('Site not found in cookies');
 
       const { searchKeyword, departmentFilter, statusFilter, buFilter, currentPage, pageSize } =
         get().directory;
 
       const response = searchKeyword
-        ? await HrmEmployeeService.searchByKeyword(site, searchKeyword)
-        : await HrmEmployeeService.fetchDirectory({
-            site,
+        ? await HrmEmployeeService.searchByKeyword(organizationId, searchKeyword)
+        : await HrmEmployeeService.fetchDirectory({ organizationId,
             keyword: searchKeyword || undefined,
             department: departmentFilter || undefined,
             isActive: statusFilter,
@@ -200,10 +200,10 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
     set({ profile: { ...get().profile, isLoading: true, errors: {} } });
 
     try {
-      const site = parseCookies().site;
-      if (!site) throw new Error('Site not found in cookies');
+      const organizationId = getOrganizationId();
+      if (!organizationId) throw new Error('Site not found in cookies');
 
-      const raw = await HrmEmployeeService.fetchProfile(site, handle);
+      const raw = await HrmEmployeeService.fetchProfile(organizationId, handle);
       const data = mapApiProfileToEmployeeProfile(raw as unknown as Record<string, unknown>);
       set({ profile: { ...get().profile, data, isLoading: false } });
     } catch (error) {
@@ -228,37 +228,37 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
     set({ profile: { ...get().profile, isSaving: true, errors: {} } });
 
     try {
-      const site = parseCookies().site;
-      if (!site) throw new Error('Site not found in cookies');
+      const organizationId = getOrganizationId();
+      if (!organizationId) throw new Error('Site not found in cookies');
 
       const cookies = parseCookies();
       const modifiedBy = cookies.username || 'system';
-      const basePayload = { site, handle: profile.handle, modifiedBy, ...data };
+      const basePayload = { organizationId, handle: profile.handle, modifiedBy, ...data };
 
       switch (section) {
         case 'basic': {
-          const basicPayload = buildUpdateBasicPayload(site, profile.handle, data, modifiedBy);
+          const basicPayload = buildUpdateBasicPayload(organizationId, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateBasicDetails(
             basicPayload as unknown as Parameters<typeof HrmEmployeeService.updateBasicDetails>[0]
           );
           break;
         }
         case 'official': {
-          const officialPayload = buildUpdateOfficialPayload(site, profile.handle, data, modifiedBy);
+          const officialPayload = buildUpdateOfficialPayload(organizationId, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateOfficialDetails(
             officialPayload as unknown as Parameters<typeof HrmEmployeeService.updateOfficialDetails>[0]
           );
           break;
         }
         case 'personal': {
-          const personalPayload = buildUpdatePersonalPayload(site, profile.handle, data, modifiedBy);
+          const personalPayload = buildUpdatePersonalPayload(organizationId, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updatePersonalDetails(
             personalPayload as unknown as Parameters<typeof HrmEmployeeService.updatePersonalDetails>[0]
           );
           break;
         }
         case 'contact': {
-          const contactPayload = buildUpdateContactPayload(site, profile.handle, data, modifiedBy);
+          const contactPayload = buildUpdateContactPayload(organizationId, profile.handle, data, modifiedBy);
           await HrmEmployeeService.updateContactDetails(
             contactPayload as unknown as Parameters<typeof HrmEmployeeService.updateContactDetails>[0]
           );
@@ -323,8 +323,8 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
     set({ onboarding: { ...onboarding, isSaving: true, errors: {} } });
 
     try {
-      const site = parseCookies().site;
-      if (!site) throw new Error('Site not found in cookies');
+      const organizationId = getOrganizationId();
+      if (!organizationId) throw new Error('Site not found in cookies');
 
       const cookies = parseCookies();
       const createdBy = cookies.username || 'system';
@@ -336,7 +336,7 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       try {
         // Import organization service dynamically to avoid circular dependencies
         const { HrmOrganizationService } = await import('../../hrmOrganization/services/hrmOrganizationService');
-        const companyData = await HrmOrganizationService.fetchBySite(site);
+        const companyData = await HrmOrganizationService.fetchBySite(organizationId);
         
         // Handle both single object and array responses
         const company = Array.isArray(companyData) ? companyData[0] : companyData;
@@ -349,7 +349,7 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
         // Continue without organization data - backend may handle it
       }
       
-      const payload = buildCreateRequest(onboarding.draft, site, createdBy, organizationHandle, organizationName);
+      const payload = buildCreateRequest(onboarding.draft, organizationId, createdBy, organizationHandle, organizationName);
 
       await HrmEmployeeService.createEmployee(payload);
       message.success('Employee created successfully');

@@ -78,7 +78,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        {permissions.canAddEmploymentDetails && (
+        {permissions.canAddSkills && (
           <Button
             type="primary"
             size="small"
@@ -97,7 +97,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             <EmpSkillTag
               key={skill.skillId}
               skill={skill}
-              removable={permissions.canDeleteEmploymentDetails}
+              removable={permissions.canDeleteSkills}
               onRemove={handleRemove}
             />
           ))}

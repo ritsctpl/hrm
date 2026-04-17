@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmTravelService } from "../services/hrmTravelService";
@@ -8,7 +9,7 @@ import { useHrmTravelStore } from "../stores/hrmTravelStore";
 
 export function useTravelData() {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
 
   const {
@@ -30,8 +31,7 @@ export function useTravelData() {
     setListLoading(true);
     setError(null);
     try {
-      const data = await HrmTravelService.getMyRequests({
-        site,
+      const data = await HrmTravelService.getMyRequests({ organizationId,
         employeeId,
         status: statusFilter as never,
         travelType: typeFilter as never,
@@ -46,13 +46,12 @@ export function useTravelData() {
     } finally {
       setListLoading(false);
     }
-  }, [site, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
 
   const loadApproverInbox = useCallback(async () => {
     setInboxLoading(true);
     try {
-      const data = await HrmTravelService.getApproverInbox({
-        site,
+      const data = await HrmTravelService.getApproverInbox({ organizationId,
         empId: employeeId,
         inboxType: activeInboxTab === "pending" ? "PENDING" : activeInboxTab === "escalated" ? "ESCALATED" : "DECIDED",
       });
@@ -62,33 +61,32 @@ export function useTravelData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [site, employeeId, activeInboxTab]);
+  }, [organizationId, employeeId, activeInboxTab]);
 
   const loadRequestDetail = useCallback(async (handle: string) => {
     setDetailLoading(true);
     try {
-      const data = await HrmTravelService.getRequestByHandle({ site, handle });
+      const data = await HrmTravelService.getRequestByHandle({ organizationId, handle });
       setSelectedRequest(data);
     } catch {
       message.error("Failed to load request details.");
     } finally {
       setDetailLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadPolicies = useCallback(async () => {
     try {
-      const data = await HrmTravelService.getPolicies({ site });
+      const data = await HrmTravelService.getPolicies({ organizationId });
       useHrmTravelStore.getState().setPolicies(data);
     } catch {
       // non-critical, silently fail
     }
-  }, [site]);
+  }, [organizationId]);
 
   const exportRequests = useCallback(async () => {
     try {
-      const blob = await HrmTravelService.exportRequests({
-        site,
+      const blob = await HrmTravelService.exportRequests({ organizationId,
         employeeId,
         status: statusFilter as never,
         travelType: typeFilter as never,
@@ -106,7 +104,7 @@ export function useTravelData() {
     } catch {
       message.error("Failed to export travel requests.");
     }
-  }, [site, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
 
   return { loadMyRequests, loadApproverInbox, loadRequestDetail, loadPolicies, exportRequests };
 }

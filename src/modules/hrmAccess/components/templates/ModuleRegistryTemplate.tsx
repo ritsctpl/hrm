@@ -12,7 +12,7 @@ import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
 
 interface Props {
-  site: string;
+  organizationId: string;
   user: { id: string; name: string } | null;
 }
 
@@ -32,7 +32,7 @@ const MODULE_TYPES = [
   { label: 'PLUGIN', value: 'PLUGIN' },
 ];
 
-const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
+const ModuleRegistryTemplate: React.FC<Props> = ({ organizationId, user }) => {
   const { permission, setAllModules } = useHrmAccessStore();
   const modules = permission.allModules;
   const [loading, setLoading] = useState(false);
@@ -45,13 +45,13 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
 
   // Load modules only once on mount
   useEffect(() => {
-    if (!site || hasLoadedRef.current) return;
+    if (!organizationId || hasLoadedRef.current) return;
     
     hasLoadedRef.current = true;
     const loadModules = async () => {
       setLoading(true);
       try {
-        const data = await HrmAccessService.fetchAllModules(site);
+        const data = await HrmAccessService.fetchAllModules(organizationId);
         setAllModules(data);
       } catch {
         message.error('Failed to load modules');
@@ -62,14 +62,14 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
 
     loadModules();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
+  }, [organizationId]);
 
   // Refresh modules - always fetch all and filter client-side
   const refreshModules = async () => {
-    if (!site) return;
+    if (!organizationId) return;
     setLoading(true);
     try {
-      const data = await HrmAccessService.fetchAllModules(site);
+      const data = await HrmAccessService.fetchAllModules(organizationId);
       setAllModules(data);
     } catch {
       message.error('Failed to load modules');
@@ -104,7 +104,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       const values = await form.validateFields();
       if (editingHandle) {
         // Update the module
-        await HrmAccessService.updateModule(editingHandle, { ...values, site });
+        await HrmAccessService.updateModule(editingHandle, { ...values, organizationId });
         
         // Handle permission objects synchronization
         if (values.defaultPermissionObjects && values.defaultPermissionObjects.length > 0) {
@@ -127,7 +127,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
               );
               await Promise.all(
                 permissionsToDelete.map(perm =>
-                  HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+                  HrmAccessService.deletePermission(organizationId, perm.handle, user?.id ?? 'system')
                 )
               );
             }
@@ -135,7 +135,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             // Create new objects
             if (objectsToCreate.length > 0) {
               await HrmAccessService.createPermissionsForModule(
-                site,
+                organizationId,
                 values.moduleCode,
                 objectsToCreate,
                 user?.id ?? 'system'
@@ -154,7 +154,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
             if (existingPermissions.length > 0) {
               await Promise.all(
                 existingPermissions.map(perm =>
-                  HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+                  HrmAccessService.deletePermission(organizationId, perm.handle, user?.id ?? 'system')
                 )
               );
             }
@@ -166,7 +166,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         }
       } else {
         const payload = {
-          site,
+          organizationId,
           moduleCode: values.moduleCode,
           moduleName: values.moduleName,
           moduleCategory: values.moduleCategory,
@@ -185,7 +185,7 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
         if (values.defaultPermissionObjects && values.defaultPermissionObjects.length > 0) {
           try {
             await HrmAccessService.createPermissionsForModule(
-              site,
+              organizationId,
               values.moduleCode,
               values.defaultPermissionObjects,
               user?.id ?? 'system'
@@ -217,13 +217,13 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ site, user }) => {
       if (permissions && permissions.length > 0) {
         await Promise.all(
           permissions.map((perm) =>
-            HrmAccessService.deletePermission(site, perm.handle, user?.id ?? 'system')
+            HrmAccessService.deletePermission(organizationId, perm.handle, user?.id ?? 'system')
           )
         );
       }
       
       // Then deactivate the module
-      await HrmAccessService.deactivateModule(site, handle, user?.id ?? 'system');
+      await HrmAccessService.deactivateModule(organizationId, handle, user?.id ?? 'system');
       message.success('Module and all associated permissions deleted');
       refreshModules();
     } catch (error) {

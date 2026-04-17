@@ -10,6 +10,7 @@ import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import { HrmAppraisalService } from "../../services/hrmAppraisalService";
 import { RATING_LABELS } from "../../utils/appraisalConstants";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import type { AppraisalHistory } from "../../types/domain.types";
 import styles from "../../styles/AppraisalSummary.module.css";
 
@@ -19,7 +20,7 @@ const AppraisalSummaryTemplate: React.FC = () => {
   const [history, setHistory] = useState<Array<{ cycleLabel: string; rating: number }>>([]);
 
   useEffect(() => {
-    const site = parseCookies().site ?? "";
+    const organizationId = getOrganizationId();
     const employeeId = parseCookies().employeeId ?? "";
 
     if (activeCycle?.cycleId) {
@@ -27,7 +28,7 @@ const AppraisalSummaryTemplate: React.FC = () => {
     }
 
     if (employeeId) {
-      HrmAppraisalService.getAppraisalHistory(site, employeeId).then((history: AppraisalHistory) => {
+      HrmAppraisalService.getAppraisalHistory(organizationId, employeeId).then((history: AppraisalHistory) => {
         const points = history.reviews
           .filter((r) => r.finalRating > 0)
           .map((r) => ({

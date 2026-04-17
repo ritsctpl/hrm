@@ -25,7 +25,7 @@ import styles from "../../styles/HrmLeave.module.css";
 const { Title } = Typography;
 
 interface LeaveAvailedReportPanelProps {
-  site: string;
+  organizationId: string;
 }
 
 interface FormValues {
@@ -35,7 +35,7 @@ interface FormValues {
   department?: string;
 }
 
-const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site }) => {
+const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organizationId }) => {
   const [form] = Form.useForm<FormValues>();
   const [rows, setRows] = useState<LedgerHistoryResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site 
   const buildPayload = (values: FormValues) => {
     const [from, to] = values.dateRange;
     return {
-      site,
+      organizationId,
       fromDate: from.format("YYYY-MM-DD"),
       toDate: to.format("YYYY-MM-DD"),
       leaveTypeCode: values.leaveTypeCode || undefined,
@@ -71,8 +71,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ site 
       const values = await form.validateFields();
       setExporting(true);
       const [from, to] = values.dateRange;
-      const blob = await HrmLeaveService.exportLeaveReport({
-        site,
+      const blob = await HrmLeaveService.exportLeaveReport({ organizationId,
         reportType: "LEAVE_AVAILED",
         fromDate: from.format("YYYY-MM-DD"),
         toDate: to.format("YYYY-MM-DD"),

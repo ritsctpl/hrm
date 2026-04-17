@@ -11,7 +11,6 @@ import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
-import { useCan } from '../../../hrmAccess/hooks/useCan';
 import { formatDate } from '../../utils/transformations';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { PreviousExperience } from '../../types/domain.types';
@@ -23,10 +22,6 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
 }) => {
   const { previousExperience } = profile;
   const permissions = useEmployeePermissions();
-  // Self-service users (module canEdit only) must not be able to mutate
-  // career history. Only admins (canAdd OR canDelete) can add/edit/delete.
-  const modulePerms = useCan('HRM_EMPLOYEE');
-  const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
   const [addOpen, setAddOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -148,7 +143,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        {isAdmin && permissions.canAddExperience && (
+        {permissions.canAddExperience && (
           <Button
             type="primary"
             size="small"
@@ -180,7 +175,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                 icon={<EyeOutlined />}
                 onClick={() => handleView(exp)}
               />
-              {isAdmin && permissions.canEditExperience && (
+              {permissions.canEditExperience && (
                 <Button
                   type="text"
                   size="small"
@@ -188,7 +183,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
                   onClick={() => handleEdit(exp)}
                 />
               )}
-              {isAdmin && permissions.canDeleteExperience && (
+              {permissions.canDeleteExperience && (
                 <Popconfirm
                   title="Delete Experience"
                   description="Are you sure you want to delete this experience?"

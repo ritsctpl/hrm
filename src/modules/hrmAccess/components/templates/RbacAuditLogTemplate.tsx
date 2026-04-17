@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { RbacAuditLogDto } from '../../types/api.types';
 
 interface Props {
-  site: string;
+  organizationId: string;
 }
 
 const ENTITY_TYPES = [
@@ -25,7 +25,7 @@ const ACTION_COLORS: Record<string, string> = {
   DEACTIVATE: 'orange',
 };
 
-const RbacAuditLogTemplate: React.FC<Props> = ({ site }) => {
+const RbacAuditLogTemplate: React.FC<Props> = ({ organizationId }) => {
   const [data, setData] = useState<RbacAuditLogDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [entityType, setEntityType] = useState<string>('ROLE');
@@ -38,7 +38,7 @@ const RbacAuditLogTemplate: React.FC<Props> = ({ site }) => {
     setLoading(true);
     try {
       const result = await HrmAccessService.fetchAuditLog(
-        site,
+        organizationId,
         entityType,
         entityHandle.trim() || '',
         p,

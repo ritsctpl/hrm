@@ -9,6 +9,7 @@ import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import type { CompanyFinancialYearSectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -72,13 +73,12 @@ const CompanyFinancialYearSection: React.FC<CompanyFinancialYearSectionProps> = 
       return;
     }
     const cookies = parseCookies();
-    const site = cookies.site || '';
+    const organizationId = getOrganizationId();
     const userId = cookies.rl_user_id || cookies.userId || 'system';
 
     setSaving(true);
     try {
-      await HrmOrganizationService.updateFinancialYear({
-        site,
+      await HrmOrganizationService.updateFinancialYear({ organizationId,
         handle: data.handle,
         financialYearStartMonth: startMonth,
         financialYearEndMonth: endMonth,

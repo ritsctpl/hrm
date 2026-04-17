@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmNotificationService } from '../services/hrmNotificationService';
 import { useHrmNotificationStore } from '../stores/hrmNotificationStore';
 import type { Notification } from '../types/domain.types';
@@ -14,19 +15,19 @@ export function useNotificationData() {
   const getSiteAndUser = () => {
     const cookies = parseCookies();
     return {
-      site: cookies.site ?? '',
+      organizationId: getOrganizationId(),
       recipientId: cookies.employeeId ?? cookies.userId ?? '',
     };
   };
 
   const loadNotifications = useCallback(
     async (page: number, replace: boolean) => {
-      const { site, recipientId } = getSiteAndUser();
+      const { organizationId, recipientId } = getSiteAndUser();
       const { filterType, filterRead } = useHrmNotificationStore.getState();
       store.setLoadingNotifications(true);
       try {
         const data = await HrmNotificationService.getMyNotifications(
-          site,
+          organizationId,
           recipientId,
           page,
           PAGE_SIZE,
@@ -54,10 +55,10 @@ export function useNotificationData() {
   );
 
   const loadPopoverNotifications = useCallback(async () => {
-    const { site, recipientId } = getSiteAndUser();
+    const { organizationId, recipientId } = getSiteAndUser();
     store.setLoadingPopover(true);
     try {
-      const data = await HrmNotificationService.getMyNotifications(site, recipientId, 0, 5);
+      const data = await HrmNotificationService.getMyNotifications(organizationId, recipientId, 0, 5);
       const mapped: Notification[] = data.map((d) => ({
         ...d,
         type: d.type,
@@ -71,9 +72,9 @@ export function useNotificationData() {
   }, []);
 
   const loadUnreadCount = useCallback(async () => {
-    const { site, recipientId } = getSiteAndUser();
+    const { organizationId, recipientId } = getSiteAndUser();
     try {
-      const count = await HrmNotificationService.getUnreadCount(site, recipientId);
+      const count = await HrmNotificationService.getUnreadCount(organizationId, recipientId);
       store.setUnreadCount(count);
     } catch {
       // silent — polling errors should not surface to user
@@ -81,9 +82,9 @@ export function useNotificationData() {
   }, []);
 
   const handleMarkRead = useCallback(async (notificationId: string) => {
-    const { site } = getSiteAndUser();
+    const { organizationId } = getSiteAndUser();
     try {
-      await HrmNotificationService.markAsRead(site, notificationId);
+      await HrmNotificationService.markAsRead(organizationId, notificationId);
       store.markNotificationRead(notificationId);
       store.decrementUnreadCount();
     } catch {
@@ -92,12 +93,12 @@ export function useNotificationData() {
   }, []);
 
   const handleMarkAllRead = useCallback(async () => {
-    const { site, recipientId } = getSiteAndUser();
+    const { organizationId, recipientId } = getSiteAndUser();
     store.setMarkingAllRead(true);
     try {
-      await HrmNotificationService.markAllAsRead(site, recipientId);
+      await HrmNotificationService.markAllAsRead(organizationId, recipientId);
       store.markAllRead();
-      const count = await HrmNotificationService.getUnreadCount(site, recipientId);
+      const count = await HrmNotificationService.getUnreadCount(organizationId, recipientId);
       store.setUnreadCount(count);
     } catch {
       message.error('Failed to mark all as read');

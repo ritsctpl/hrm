@@ -4,6 +4,7 @@ import { Button, Space, message } from 'antd';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 
 interface QrDownloadButtonProps {
   assetId: string;
@@ -12,9 +13,9 @@ interface QrDownloadButtonProps {
 
 export default function QrDownloadButton({ assetId, qrUrl }: QrDownloadButtonProps) {
   const handleGenerate = async () => {
-    const { site } = parseCookies();
+    const organizationId = getOrganizationId();
     try {
-      await HrmAssetService.generateQRCode(site ?? '', assetId);
+      await HrmAssetService.generateQRCode(organizationId, assetId);
       message.success('QR code generated');
     } catch {
       message.error('Failed to generate QR code');

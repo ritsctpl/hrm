@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Drawer, Button, Select, Checkbox, Divider, message, Typography, Spin } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import BuMappingRow from '../molecules/BuMappingRow';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import { HrmOrganizationService } from '../../../hrmOrganization/services/hrmOrganizationService';
@@ -38,7 +39,7 @@ export default function BuMappingPanel({
   const { addMapping, removeMapping } = useHrmHolidayStore();
 
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   // Fetch Companies when panel opens
@@ -74,7 +75,7 @@ export default function BuMappingPanel({
   const loadCompanies = async () => {
     setLoadingCompanies(true);
     try {
-      const response = await HrmOrganizationService.fetchBySite(site);
+      const response = await HrmOrganizationService.fetchBySite(organizationId);
       
       // Handle different response structures
       let companyData: any[] = [];
@@ -104,7 +105,7 @@ export default function BuMappingPanel({
   const loadBusinessUnits = async (compHandle: string) => {
     setLoadingBUs(true);
     try {
-      const data = await HrmOrganizationService.fetchBusinessUnits(site, compHandle);
+      const data = await HrmOrganizationService.fetchBusinessUnits(organizationId, compHandle);
       setBusinessUnits(data || []);
     } catch (error) {
       console.error('Failed to load business units:', error);
@@ -118,7 +119,7 @@ export default function BuMappingPanel({
   const loadDepartments = async (buHandle: string) => {
     setLoadingDepts(true);
     try {
-      const data = await HrmOrganizationService.fetchDepartments(site, buHandle);
+      const data = await HrmOrganizationService.fetchDepartments(organizationId, buHandle);
       setDepartments(data || []);
     } catch (error) {
       console.error('Failed to load departments:', error);
@@ -132,8 +133,7 @@ export default function BuMappingPanel({
   const loadMappings = async () => {
     setLoadingMappings(true);
     try {
-      const res = await HrmHolidayService.listMappings({
-        site,
+      const res = await HrmHolidayService.listMappings({ organizationId,
         groupHandle,
       });
       
@@ -151,7 +151,7 @@ export default function BuMappingPanel({
           try {
             // Fetch BU details if buName is null
             if (!mapping.buName && mapping.buHandle) {
-              const buDetails = await HrmOrganizationService.fetchBusinessUnit(site, mapping.buHandle);
+              const buDetails = await HrmOrganizationService.fetchBusinessUnit(organizationId, mapping.buHandle);
               if (buDetails) {
                 mapping.buName = `${buDetails.buCode} - ${buDetails.buName}`;
               }
@@ -159,7 +159,7 @@ export default function BuMappingPanel({
             
             // Fetch Dept details if deptName is null and deptHandle exists
             if (!mapping.deptName && mapping.deptHandle) {
-              const deptDetails = await HrmOrganizationService.fetchDepartment(site, mapping.deptHandle);
+              const deptDetails = await HrmOrganizationService.fetchDepartment(organizationId, mapping.deptHandle);
               if (deptDetails) {
                 mapping.deptName = `${deptDetails.deptCode} - ${deptDetails.deptName}`;
               }
@@ -193,8 +193,7 @@ export default function BuMappingPanel({
     }
     setAdding(true);
     try {
-      const res = await HrmHolidayService.addMapping({
-        site,
+      const res = await HrmHolidayService.addMapping({ organizationId,
         groupHandle,
         buHandle,
         deptHandle,
@@ -244,8 +243,7 @@ export default function BuMappingPanel({
   const handleRemove = async (mappingHandle: string) => {
     setRemoving(mappingHandle);
     try {
-      const res = await HrmHolidayService.removeMapping({
-        site,
+      const res = await HrmHolidayService.removeMapping({ organizationId,
         groupHandle,
         mappingHandle,
         removedBy: userId,

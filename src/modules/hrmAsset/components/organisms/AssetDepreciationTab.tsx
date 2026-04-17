@@ -29,11 +29,11 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
   } = useHrmAssetStore();
 
   const handleRunDepreciation = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     setRunningDepreciation(true);
     try {
       const result = await HrmAssetService.runDepreciation({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         runBy: userId ?? '',
         asOfDate: new Date().toISOString().split('T')[0],
         prorateMidYear: false,

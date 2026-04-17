@@ -11,7 +11,7 @@ const { Option } = Select;
 interface SupersedePolicyModalProps {
   open: boolean;
   policies: PolicyDocument[];
-  site: string;
+  organizationId: string;
   onClose: () => void;
   onSupersede: (oldPolicyHandle: string, newPolicyHandle: string) => Promise<void>;
 }
@@ -19,7 +19,7 @@ interface SupersedePolicyModalProps {
 const SupersedePolicyModal: React.FC<SupersedePolicyModalProps> = ({
   open,
   policies,
-  site,
+  organizationId,
   onClose,
   onSupersede,
 }) => {

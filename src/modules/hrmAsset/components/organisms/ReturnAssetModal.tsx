@@ -17,11 +17,11 @@ export default function ReturnAssetModal() {
   const [form] = Form.useForm();
 
   const handleOk = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       const values = await form.validateFields();
       await HrmAssetService.returnAsset({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         assetId: selectedAsset!.assetId,
         returnedBy: userId ?? '',
         returnDate: dayjs(values.returnDate).format('YYYY-MM-DD'),

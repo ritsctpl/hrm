@@ -27,7 +27,7 @@ export interface ProjectAttachment {
 
 export interface Project {
   handle: string;
-  site: string;
+  organizationId: string;
   projectCode: string;
   projectName: string;
   description?: string;
@@ -66,7 +66,7 @@ export interface AllocationDay {
 
 export interface ResourceAllocation {
   handle: string;
-  site: string;
+  organizationId: string;
   projectHandle: string;
   projectCode: string;
   projectName: string;
@@ -90,7 +90,7 @@ export interface ResourceAllocation {
 
 export interface AllocationApproval {
   handle: string;
-  site: string;
+  organizationId: string;
   allocationHandle: string;
   approverEmployeeId: string;
   approverName: string;

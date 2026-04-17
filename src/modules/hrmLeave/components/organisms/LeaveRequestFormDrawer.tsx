@@ -31,7 +31,7 @@ const { Text } = Typography;
 const { Dragger } = Upload;
 
 interface LeaveRequestFormDrawerProps {
-  site: string;
+  organizationId: string;
   employeeId: string;
   balances: LeaveBalance[];
   /** When true, the drawer renders an Employee picker so HR can choose which user to apply for. */
@@ -78,8 +78,7 @@ const getLeaveIcon = (code: string): string => {
 const formatDateLabel = (iso: string | null): string =>
   iso ? dayjs(iso).format("MMMM D") : "—";
 
-const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
-  site,
+const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organizationId,
   employeeId,
   balances,
   allowEmployeeSelection = false,
@@ -221,10 +220,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
   // user's profile when the drawer opens so the choice cards always have
   // something to render and the Applying-as field knows the real name.
   useEffect(() => {
-    if (!showLeaveForm || !site) return;
+    if (!showLeaveForm || !organizationId) return;
     let cancelled = false;
     setLeaveTypesLoading(true);
-    HrmLeaveService.getAllLeaveTypes({ site })
+    HrmLeaveService.getAllLeaveTypes({ organizationId })
       .then((res) => {
         if (cancelled) return;
         setLeaveTypes(res ?? []);
@@ -236,8 +235,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         if (!cancelled) setLeaveTypesLoading(false);
       });
     if (effectiveEmployeeId) {
-      HrmLeaveService.getEmployeeBalances({
-        site,
+      HrmLeaveService.getEmployeeBalances({ organizationId,
         employeeId: effectiveEmployeeId,
         year: new Date().getFullYear(),
       })
@@ -248,7 +246,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
         .catch(() => {
           if (!cancelled) setFetchedBalances([]);
         });
-      HrmEmployeeService.fetchProfile(site, effectiveEmployeeId)
+      HrmEmployeeService.fetchProfile(organizationId, effectiveEmployeeId)
         .then((raw) => {
           if (cancelled) return;
           const rawObj = raw as unknown as Record<string, unknown>;
@@ -269,7 +267,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, effectiveEmployeeId, setLeaveTypes]);
+  }, [showLeaveForm, organizationId, effectiveEmployeeId, setLeaveTypes]);
 
   // Merge prop balances + drawer-fetched balances + configured leave types.
   // The drawer-fetched balances cover the case where the parent never loaded
@@ -313,14 +311,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
 
   // Load published holidays for the user's BU once the drawer opens.
   useEffect(() => {
-    if (!showLeaveForm || !site) return;
+    if (!showLeaveForm || !organizationId) return;
     if (!buHandle) {
       setHolidays([]);
       return;
     }
     let cancelled = false;
-    HrmHolidayService.getPublishedHolidaysForBu({
-      site,
+    HrmHolidayService.getPublishedHolidaysForBu({ organizationId,
       buHandle,
       year: new Date().getFullYear(),
     })
@@ -335,15 +332,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, buHandle]);
+  }, [showLeaveForm, organizationId, buHandle]);
 
   // Load team calendar so we can show overlapping team-out-of-office.
   useEffect(() => {
-    if (!showLeaveForm || !site || !leaveFormState.startDate) return;
+    if (!showLeaveForm || !organizationId || !leaveFormState.startDate) return;
     let cancelled = false;
     const start = dayjs(leaveFormState.startDate);
-    HrmLeaveService.getTeamCalendar({
-      site,
+    HrmLeaveService.getTeamCalendar({ organizationId,
       managerId: cookies.supervisorId ?? effectiveEmployeeId,
       month: start.month() + 1,
       year: start.year(),
@@ -358,7 +354,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [showLeaveForm, site, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
+  }, [showLeaveForm, organizationId, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -470,7 +466,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({
     setSubmitting(true);
     try {
       const payload = {
-        site,
+        organizationId,
         employeeId: effectiveEmployeeId,
         leaveTypeCode: leaveFormState.leaveTypeCode,
         startDate: leaveFormState.startDate!,

@@ -10,11 +10,11 @@ import type { PermissionsMatrixResponse } from '../../types/api.types';
 import styles from '../../styles/PermissionMatrix.module.css';
 
 interface PermissionMatrixTemplateProps {
-  site: string;
+  organizationId: string;
   isActive?: boolean;
 }
 
-const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ site, isActive }) => {
+const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ organizationId, isActive }) => {
   const store = useHrmAccessStore();
   const { permissionMatrix, permission, role } = store;
 
@@ -22,10 +22,10 @@ const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ sit
 
   // Reload matrix data when tab becomes active
   useEffect(() => {
-    if (!site || !isActive) return;
+    if (!organizationId || !isActive) return;
 
     store.setMatrixLoading(true);
-    HrmAccessService.fetchPermissionsMatrix(site, null, null)
+    HrmAccessService.fetchPermissionsMatrix(organizationId, null, null)
       .then((data) => {
         setRawMatrixData(data);
         store.setMatrixLoading(false);
@@ -34,15 +34,15 @@ const PermissionMatrixTemplate: React.FC<PermissionMatrixTemplateProps> = ({ sit
         notification.error({ message: 'Failed to load permission matrix.' });
         store.setMatrixLoading(false);
       });
-  }, [site, isActive]);
+  }, [organizationId, isActive]);
 
   const handleExport = async () => {
     try {
-      const blob = await HrmAccessService.exportRoles(site, 'csv');
+      const blob = await HrmAccessService.exportRoles(organizationId, 'csv');
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `permissions-matrix-${site}.csv`;
+      link.download = `permissions-matrix-${organizationId}.csv`;
       link.click();
       URL.revokeObjectURL(url);
     } catch {

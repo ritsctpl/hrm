@@ -118,13 +118,13 @@ export function isValidPhone(phone: string): boolean {
  */
 export function buildCreateRequest(
   draft: Partial<CreateEmployeeRequest>,
-  site: string,
+  organizationId: string,
   createdBy: string,
   organizationHandle?: string,
   organizationName?: string
 ): CreateEmployeeRequest {
   return {
-    site,
+    organizationId,
     firstName: draft.firstName || '',
     lastName: draft.lastName || '',
     fullName: `${draft.firstName || ''} ${draft.lastName || ''}`.trim() || undefined,
@@ -317,13 +317,13 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
  * NOTE: workEmail is NOT included as it's not accepted by update-basic endpoint
  */
 export function buildUpdateBasicPayload(
-  site: string,
+  organizationId: string,
   handle: string,
   basicData: Record<string, unknown>,
   modifiedBy: string
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = {
-    site,
+    organizationId,
     handle,
     fullName: basicData.fullName || undefined,
     phone: basicData.phone || undefined,
@@ -354,13 +354,13 @@ export function buildUpdateBasicPayload(
  * Output: Flat structure with all fields at top level
  */
 export function buildUpdateContactPayload(
-  site: string,
+  organizationId: string,
   handle: string,
   contactData: Record<string, unknown>,
   modifiedBy: string
 ): Record<string, unknown> {
   return {
-    site,
+    organizationId,
     handle,
     presentAddress: contactData.presentAddress || undefined,
     permanentAddress: contactData.permanentAddress || undefined,
@@ -378,13 +378,13 @@ export function buildUpdateContactPayload(
  * Maps UI fields to backend expected fields and includes reportingManagerName
  */
 export function buildUpdateOfficialPayload(
-  site: string,
+  organizationId: string,
   handle: string,
   officialData: Record<string, unknown>,
   modifiedBy: string
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = {
-    site,
+    organizationId,
     handle,
     firstName: officialData.firstName || undefined,
     lastName: officialData.lastName || undefined,
@@ -410,7 +410,7 @@ export function buildUpdateOfficialPayload(
  * Converts govtIds object to array format with idType, idNumber, verified fields
  */
 export function buildUpdatePersonalPayload(
-  site: string,
+  organizationId: string,
   handle: string,
   personalData: Record<string, unknown>,
   modifiedBy: string
@@ -430,7 +430,7 @@ export function buildUpdatePersonalPayload(
   }
 
   return {
-    site,
+    organizationId,
     handle,
     dateOfBirth: personalData.dateOfBirth || undefined,
     gender: personalData.gender || undefined,

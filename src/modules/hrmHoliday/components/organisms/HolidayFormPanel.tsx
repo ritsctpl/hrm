@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Drawer, Form, Button, Space, message, Typography } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import HolidayFormFields from '../molecules/HolidayFormFields';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
@@ -53,7 +54,7 @@ export default function HolidayFormPanel({
 
   const handleSubmit = async () => {
     const cookies = parseCookies();
-    const site = cookies.site ?? '';
+    const organizationId = getOrganizationId();
     const userId = cookies.userId ?? '';
 
     try {
@@ -63,8 +64,7 @@ export default function HolidayFormPanel({
       const dateStr = values.date ? dayjs(values.date).format('YYYY-MM-DD') : '';
 
       if (isEdit && holiday) {
-        const res = await HrmHolidayService.updateHoliday({
-          site,
+        const res = await HrmHolidayService.updateHoliday({ organizationId,
           handle: holiday.handle,
           name: values.name,
           date: dateStr,
@@ -91,8 +91,7 @@ export default function HolidayFormPanel({
           message.error(res?.message || 'Failed to update holiday');
         }
       } else {
-        const res = await HrmHolidayService.createHoliday({
-          site,
+        const res = await HrmHolidayService.createHoliday({ organizationId,
           groupHandle,
           name: values.name,
           date: dateStr,

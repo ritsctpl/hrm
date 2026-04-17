@@ -4,6 +4,7 @@ import { Radio, Select, DatePicker, Button, Table, Space, Descriptions, Statisti
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmProjectService } from '../../services/hrmProjectService';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { REPORT_TYPE_OPTIONS } from '../../utils/projectConstants';
@@ -12,7 +13,7 @@ import styles from '../../styles/HrmProject.module.css';
 
 export default function ProjectReportPanel() {
   const { projects, loadingReport, setLoadingReport } = useHrmProjectStore();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
   const [reportType, setReportType] = useState<'allocationVsActual' | 'utilization' | 'capacityDemand'>('allocationVsActual');
   const [selectedProject, setSelectedProject] = useState('');
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
@@ -24,7 +25,7 @@ export default function ProjectReportPanel() {
     setLoadingReport(true);
     try {
       if (reportType === 'allocationVsActual' && selectedProject) {
-        const data = await HrmProjectService.getAllocationVsActual(site, selectedProject);
+        const data = await HrmProjectService.getAllocationVsActual(organizationId, selectedProject);
         setAllocationReport({
           projectHandle: data.projectHandle,
           projectCode: data.projectCode,
@@ -38,7 +39,7 @@ export default function ProjectReportPanel() {
           employeeBreakdown: data.employeeBreakdown,
         });
       } else if (reportType === 'utilization') {
-        const data = await HrmProjectService.getResourceUtilization(site, startDate, endDate);
+        const data = await HrmProjectService.getResourceUtilization(organizationId, startDate, endDate);
         setUtilizationReport(data);
       }
     } catch (err) {

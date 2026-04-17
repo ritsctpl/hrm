@@ -16,7 +16,7 @@ interface PolicyAdminTemplateProps {
   loading: boolean;
   showFormDrawer: boolean;
   editPolicy: PolicyDocument | null;
-  site: string;
+  organizationId: string;
   searchText?: string;
   filterCategoryId?: string;
   filterDocType?: string;
@@ -43,7 +43,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   loading,
   showFormDrawer,
   editPolicy,
-  site,
+  organizationId,
   searchText = "",
   filterCategoryId = "",
   filterDocType = "",
@@ -169,7 +169,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       open={showFormDrawer}
       editPolicy={editPolicy}
       categories={categories}
-      site={site}
+      organizationId={organizationId}
       onClose={onDrawerClose}
       onSaved={onDrawerSaved}
     />

@@ -183,10 +183,10 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
   const modulePerms = useCan('HRM_EMPLOYEE');
   const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
 
-  // Self-service edit requires BOTH being yourself AND having module-level
-  // EDIT. A VIEW-only user must NOT be able to edit anything, not even
-  // their own contact.
-  const canSelfEdit = isSelf && modulePerms.canEdit;
+  // Self-service editing is now controlled at the OBJECT level. Each
+  // section wraps its Edit button in <Can I="edit" object="..."> so the
+  // backend grant on the exact object decides visibility. The `isSelf`
+  // guard ensures non-admin users can only edit their own profile.
 
   // Tab visibility — strict rule per user requirement:
   //   - Overview: always visible to anyone past the access gate.
@@ -249,7 +249,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection 
+            <ProfileSection
               title="Basic Details"
               sectionKey="basic"
               onEditSection={setEditingSection}
@@ -259,25 +259,27 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onCancel={handleCancelSection}
               tabRef={basicDetailsRef}
               editObject="employee_record"
-              editPassIf={isAdmin || canSelfEdit}
+              editPassIf={isAdmin}
               action={
-                <Can I="edit" object="employee_record" passIf={isAdmin || canSelfEdit}>
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      onEdit();
-                      setEditingSection('basic');
-                    }}
-                  >
-                    Edit
-                  </Button>
-                </Can>
+                (isAdmin || isSelf) && (
+                  <Can I="edit" object="employee_record" passIf={isAdmin}>
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        onEdit();
+                        setEditingSection('basic');
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Can>
+                )
               }
             >
               <BasicDetailsTab ref={basicDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection 
+            <ProfileSection
               title="Official Details"
               sectionKey="official"
               onEditSection={setEditingSection}
@@ -286,7 +288,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={officialDetailsRef}
-              editObject="employee_record"
+              editObject="employee_official"
               editPassIf={isAdmin}
               action={
                 isAdmin && (
@@ -305,7 +307,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             >
               <OfficialDetailsTab ref={officialDetailsRef} {...tabProps} onEdit={onEdit} />
             </ProfileSection>
-            <ProfileSection 
+            <ProfileSection
               title="Personal Details"
               sectionKey="personal"
               onEditSection={setEditingSection}
@@ -314,20 +316,22 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={personalDetailsRef}
-              editObject="employee_record"
+              editObject="employee_personal"
               editPassIf={isAdmin}
               action={
-                isAdmin && (
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      onEdit();
-                      setEditingSection('personal');
-                    }}
-                  >
-                    Edit
-                  </Button>
+                (isAdmin || isSelf) && (
+                  <Can I="edit" object="employee_personal" passIf={isAdmin}>
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        onEdit();
+                        setEditingSection('personal');
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Can>
                 )
               }
             >
@@ -344,7 +348,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
         
         content = (
           <div style={{ padding: 16, overflowY: 'auto' }}>
-            <ProfileSection 
+            <ProfileSection
               title="Contact Details"
               sectionKey="contact"
               onEditSection={setEditingSection}
@@ -353,20 +357,22 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
               onSave={handleSaveSection}
               onCancel={handleCancelSection}
               tabRef={contactDetailsRef}
-              editObject="employee_record"
-              editPassIf={isAdmin || canSelfEdit}
+              editObject="employee_contact"
+              editPassIf={isAdmin}
               action={
-                (isAdmin || canSelfEdit) && (
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      onEdit();
-                      setEditingSection('contact');
-                    }}
-                  >
-                    Edit
-                  </Button>
+                (isAdmin || isSelf) && (
+                  <Can I="edit" object="employee_contact" passIf={isAdmin}>
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        onEdit();
+                        setEditingSection('contact');
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Can>
                 )
               }
             >

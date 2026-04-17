@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Empty, Spin, Typography } from "antd";
-import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import LeaveRequestRow from "../molecules/LeaveRequestRow";
 import AmendLeavePanel from "./AmendLeavePanel";
 import { LeaveRequestsTableProps } from "../../types/ui.types";
@@ -17,8 +17,7 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
   selectedHandle,
   onRowClick,
 }) => {
-  const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
 
   const [amendOpen, setAmendOpen] = useState(false);
   const [amendTarget, setAmendTarget] = useState<LeaveRequest | null>(null);
@@ -65,7 +64,7 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
       ))}
       <AmendLeavePanel
         open={amendOpen}
-        site={site}
+        organizationId={organizationId}
         request={amendTarget}
         onClose={handleAmendClose}
         onAmended={handleAmendClose}

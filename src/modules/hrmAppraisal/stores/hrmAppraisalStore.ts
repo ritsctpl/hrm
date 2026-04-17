@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { parseCookies } from "nookies";
 import { message } from "antd";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmAppraisalService } from "../services/hrmAppraisalService";
 import type {
   AppraisalCycle,
@@ -80,7 +81,7 @@ interface HrmAppraisalState {
   reset: () => void;
 }
 
-const getSite = (): string => parseCookies()["site"] ?? "";
+// getSite removed — use getOrganizationId() from cookieUtils
 const getEmployee = (): string => parseCookies()["employeeId"] ?? "";
 
 export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
@@ -114,10 +115,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   error: null,
 
   fetchCycles: async () => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     set({ loadingCycles: true, error: null });
     try {
-      const cycles = await HrmAppraisalService.listCycles(site);
+      const cycles = await HrmAppraisalService.listCycles(organizationId);
       const active =
         cycles.find((c) =>
           ["GOAL_SETTING", "IN_PROGRESS", "CALIBRATION"].includes(c.status)
@@ -136,11 +137,11 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchMyGoals: async (cycleId) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const employeeId = getEmployee();
     set({ loadingGoals: true, error: null });
     try {
-      const goals = await HrmAppraisalService.getEmployeeGoals(site, employeeId, cycleId);
+      const goals = await HrmAppraisalService.getEmployeeGoals(organizationId, employeeId, cycleId);
       set({ myGoals: goals });
     } catch {
       set({ error: "Failed to load goals" });
@@ -150,11 +151,11 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchMyReview: async (cycleId) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const employeeId = getEmployee();
     set({ loadingReview: true, error: null });
     try {
-      const reviews = await HrmAppraisalService.getCycleReviews(site, cycleId, "");
+      const reviews = await HrmAppraisalService.getCycleReviews(organizationId, cycleId, "");
       const mine = reviews.find((r) => r.employeeId === employeeId) ?? null;
       set({ myReview: mine });
     } catch {
@@ -165,11 +166,11 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchTeamReviews: async (cycleId) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const managerId = getEmployee();
     set({ loadingTeamReviews: true, error: null });
     try {
-      const reviews = await HrmAppraisalService.getTeamReviews(site, managerId, cycleId);
+      const reviews = await HrmAppraisalService.getTeamReviews(organizationId, managerId, cycleId);
       set({ teamReviews: reviews });
     } catch {
       set({ error: "Failed to load team reviews" });
@@ -179,10 +180,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchCalibrationReviews: async (cycleId, department) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     set({ loadingCalibration: true, error: null });
     try {
-      const reviews = await HrmAppraisalService.getCycleReviews(site, cycleId, department);
+      const reviews = await HrmAppraisalService.getCycleReviews(organizationId, cycleId, department);
       set({ calibrationReviews: reviews });
     } catch {
       set({ error: "Failed to load calibration data" });
@@ -192,9 +193,9 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchRatingDistribution: async (cycleId, department) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     try {
-      const dist = await HrmAppraisalService.getRatingDistribution(site, cycleId, department);
+      const dist = await HrmAppraisalService.getRatingDistribution(organizationId, cycleId, department);
       set({ ratingDistribution: dist });
     } catch {
       set({ error: "Failed to load rating distribution" });
@@ -202,10 +203,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   fetchMyFeedback: async () => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const employeeId = getEmployee();
     try {
-      const feedback = await HrmAppraisalService.getReceivedFeedback(site, employeeId);
+      const feedback = await HrmAppraisalService.getReceivedFeedback(organizationId, employeeId);
       set({ myFeedback: feedback });
     } catch {
       set({ error: "Failed to load feedback" });
@@ -213,12 +214,12 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   createGoal: async (payload) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     set({ savingGoal: true, error: null });
     try {
       await HrmAppraisalService.createGoal({
         ...(payload as AppraisalGoal),
-        site,
+        organizationId,
         createdBy: getEmployee(),
       } as unknown as import("../types/api.types").CreateGoalRequest);
       message.success("Goal created");
@@ -232,10 +233,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   updateGoal: async (payload) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     set({ savingGoal: true, error: null });
     try {
-      await HrmAppraisalService.updateGoal({ ...payload, site });
+      await HrmAppraisalService.updateGoal({ ...payload, organizationId });
       message.success("Goal updated");
       set({ goalFormOpen: false });
       await get().fetchMyGoals(payload.cycleId);
@@ -247,10 +248,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   deleteGoal: async (goalId) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const employeeId = getEmployee();
     try {
-      await HrmAppraisalService.deleteGoal(site, goalId, employeeId);
+      await HrmAppraisalService.deleteGoal(organizationId, goalId, employeeId);
       message.success("Goal deleted");
       const cycle = get().activeCycle;
       if (cycle) await get().fetchMyGoals(cycle.cycleId);
@@ -260,10 +261,10 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   submitGoals: async (cycleId) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const employeeId = getEmployee();
     try {
-      await HrmAppraisalService.submitGoals(site, employeeId, cycleId, employeeId);
+      await HrmAppraisalService.submitGoals(organizationId, employeeId, cycleId, employeeId);
       message.success("Goals submitted for approval");
       await get().fetchMyGoals(cycleId);
     } catch {
@@ -274,10 +275,9 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   submitSelfAssessment: async (reviewId, data) => {
     set({ submittingAssessment: true });
     try {
-      const site = getSite();
+      const organizationId = getOrganizationId();
       const employeeId = getEmployee();
-      await HrmAppraisalService.submitSelfAssessment({
-        site,
+      await HrmAppraisalService.submitSelfAssessment({ organizationId,
         reviewId,
         employeeId,
         ...(data as object),
@@ -295,10 +295,9 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   submitManagerAssessment: async (reviewId, data) => {
     set({ submittingAssessment: true });
     try {
-      const site = getSite();
+      const organizationId = getOrganizationId();
       const managerId = getEmployee();
-      await HrmAppraisalService.submitManagerAssessment({
-        site,
+      await HrmAppraisalService.submitManagerAssessment({ organizationId,
         reviewId,
         managerId,
         ...(data as object),
@@ -315,9 +314,8 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
 
   submitPeerFeedback: async (reviewId, data) => {
     try {
-      const site = getSite();
-      await HrmAppraisalService.submitPeerFeedback({
-        site,
+      const organizationId = getOrganizationId();
+      await HrmAppraisalService.submitPeerFeedback({ organizationId,
         reviewId,
         ...(data as object),
       } as import("../types/api.types").SubmitPeerFeedbackRequest);
@@ -328,12 +326,11 @@ export const useHrmAppraisalStore = create<HrmAppraisalState>((set, get) => ({
   },
 
   calibrateRating: async (reviewId, calibratedRating, notes) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const calibratedBy = getEmployee();
     set({ savingCalibration: true });
     try {
-      await HrmAppraisalService.calibrateRating({
-        site,
+      await HrmAppraisalService.calibrateRating({ organizationId,
         reviewId,
         calibratedRating,
         calibrationNotes: notes,

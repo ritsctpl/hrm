@@ -6,6 +6,7 @@ import Can from "../../../hrmAccess/components/Can";
 import { useHrmAppraisalStore } from "../../stores/hrmAppraisalStore";
 import { HrmAppraisalService } from "../../services/hrmAppraisalService";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 
 const CycleConfigForm: React.FC = () => {
@@ -15,10 +16,9 @@ const CycleConfigForm: React.FC = () => {
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
-      const site = parseCookies().site ?? "";
+      const organizationId = getOrganizationId();
       await HrmAppraisalService.createCycle({
-        ...values,
-        site,
+        ...values, organizationId,
         periodStart: values.period?.[0]?.format("YYYY-MM-DD"),
         periodEnd: values.period?.[1]?.format("YYYY-MM-DD"),
       });

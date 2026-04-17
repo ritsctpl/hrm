@@ -16,7 +16,7 @@ import type { Role } from '../../types/domain.types';
 import type { RoleManagementTemplateProps } from '../../types/ui.types';
 import styles from '../../styles/RoleManagement.module.css';
 
-const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, user }) => {
+const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ organizationId, user }) => {
   const store = useHrmAccessStore();
   const { role, permission } = store;
   const [cloneModalOpen, setCloneModalOpen] = useState(false);
@@ -27,7 +27,7 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
     store.selectRole(selectedRole);
     store.setLoadingPermissions(true);
     try {
-      const rolePerms = await HrmAccessService.fetchPermissionsForRole(site, selectedRole.roleCode);
+      const rolePerms = await HrmAccessService.fetchPermissionsForRole(organizationId, selectedRole.roleCode);
       store.setRolePermissions(rolePerms);
     } catch {
       notification.error({ message: 'Failed to load permissions.' });
@@ -41,23 +41,23 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
       store.setRoleErrors(errors);
       return;
     }
-    const payload = mapRoleDraftToRequest(role.draft!, site, user?.id ?? '');
+    const payload = mapRoleDraftToRequest(role.draft!, organizationId, user?.id ?? '');
     const isActiveValue = role.draft?.isActive ?? true;
     store.setRoleSaving(true);
     try {
       if (role.isCreating) {
         await HrmAccessService.createRole(payload);
-        await HrmAccessService.toggleRoleStatus(site, payload.roleCode, isActiveValue, user?.id ?? '');
+        await HrmAccessService.toggleRoleStatus(organizationId, payload.roleCode, isActiveValue, user?.id ?? '');
         notification.success({ message: 'Role created successfully.' });
-        const refreshed = await HrmAccessService.fetchAllRoles(site);
+        const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
         store.setRoles(refreshed);
         store.clearRoleDraft();
         store.selectRole(null);
       } else {
         await HrmAccessService.updateRole(role.selected!.handle, payload, user?.id ?? '');
-        await HrmAccessService.toggleRoleStatus(site, payload.roleCode, isActiveValue, user?.id ?? '');
+        await HrmAccessService.toggleRoleStatus(organizationId, payload.roleCode, isActiveValue, user?.id ?? '');
         notification.success({ message: 'Role updated successfully.' });
-        const refreshed = await HrmAccessService.fetchAllRoles(site);
+        const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
         store.setRoles(refreshed);
       }
     } catch (err: unknown) {
@@ -70,19 +70,19 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
   const handleSavePermissions = async () => {
     if (!role.selected) return;
     const payload = buildPermissionAssignRequest(
-      site,
+      organizationId,
       role.selected.roleCode,
       permission.selectedPermissionHandles,
       user?.id ?? ''
     );
     store.setSavingPermissions(true);
     try {
-      await HrmAccessService.removeAllPermissionsFromRole(site, role.selected.roleCode, user?.id ?? '');
+      await HrmAccessService.removeAllPermissionsFromRole(organizationId, role.selected.roleCode, user?.id ?? '');
       if (payload.permissions.length > 0) {
         await HrmAccessService.assignPermissionsToRole(payload);
       }
       notification.success({ message: 'Permissions saved.' });
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to save permissions.' });
@@ -107,10 +107,10 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
       okType: 'danger',
       onOk: async () => {
         try {
-          await HrmAccessService.revokeByRole(site, targetRole.roleCode);
-          await HrmAccessService.deleteRole(site, targetRole.roleCode, user?.id ?? '');
+          await HrmAccessService.revokeByRole(organizationId, targetRole.roleCode);
+          await HrmAccessService.deleteRole(organizationId, targetRole.roleCode, user?.id ?? '');
           notification.success({ message: 'Role deleted successfully' });
-          const refreshed = await HrmAccessService.fetchAllRoles(site);
+          const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
           store.setRoles(refreshed);
           if (role.selected?.handle === targetRole.handle) {
             store.selectRole(null);
@@ -130,7 +130,7 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
   const handleSearch = async () => {
     store.setRoleLoading(true);
     try {
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
     } catch {
       notification.error({ message: 'Failed to load roles' });
@@ -143,11 +143,11 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ site, u
     if (!role.selected || !cloneNewName.trim()) return;
     setCloning(true);
     try {
-      await HrmAccessService.cloneRole(site, role.selected.roleCode, cloneNewName.trim(), user?.id ?? '');
+      await HrmAccessService.cloneRole(organizationId, role.selected.roleCode, cloneNewName.trim(), user?.id ?? '');
       notification.success({ message: 'Role cloned successfully.' });
       setCloneModalOpen(false);
       setCloneNewName('');
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to clone role.' });

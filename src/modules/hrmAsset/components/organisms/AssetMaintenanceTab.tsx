@@ -25,12 +25,12 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
   const [form] = Form.useForm();
 
   const handleSave = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setSaving(true);
       const res = await HrmAssetService.addMaintenanceEvent({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         assetId: asset.assetId,
         maintenanceDate: dayjs(values.maintenanceDate).format('YYYY-MM-DD'),
         vendor: values.vendor,

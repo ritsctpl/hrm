@@ -8,9 +8,9 @@ import { useHolidayDetail } from '../../hooks/useHolidayDetail';
 import type { AuditLogDrawerProps } from '../../types/ui.types';
 import styles from '../../styles/HolidayDetail.module.css';
 
-export default function AuditLogDrawer({ groupHandle, site }: AuditLogDrawerProps) {
+export default function AuditLogDrawer({ groupHandle, organizationId }: AuditLogDrawerProps) {
   const { auditLogs, auditLogsLoading } = useHrmHolidayStore();
-  const { loadAuditLogs } = useHolidayDetail(site, groupHandle);
+  const { loadAuditLogs } = useHolidayDetail(organizationId, groupHandle);
 
   useEffect(() => {
     loadAuditLogs();

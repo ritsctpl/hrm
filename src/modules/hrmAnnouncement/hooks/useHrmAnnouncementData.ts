@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmAnnouncementService } from "../services/hrmAnnouncementService";
@@ -20,21 +21,20 @@ export const useHrmAnnouncementData = () => {
   } = useHrmAnnouncementStore();
 
   const cookies = parseCookies();
-  const site = cookies.site ?? "RITS";
+  const organizationId = getOrganizationId();
   const employeeId = cookies.userId ?? "";
 
   const loadFeed = useCallback(async () => {
     setFeedLoading(true);
     try {
       const [feed, pinned] = await Promise.all([
-        HrmAnnouncementService.getFeed({
-          site,
+        HrmAnnouncementService.getFeed({ organizationId,
           employeeId,
           category: filterCategory as never || undefined,
           priority: filterPriority as never || undefined,
           status: "PUBLISHED",
         }),
-        HrmAnnouncementService.getPinned(site),
+        HrmAnnouncementService.getPinned(organizationId),
       ]);
       setFeed(feed);
       setPinnedAnnouncements(pinned);
@@ -43,31 +43,31 @@ export const useHrmAnnouncementData = () => {
     } finally {
       setFeedLoading(false);
     }
-  }, [site, employeeId, filterCategory, filterPriority]);
+  }, [organizationId, employeeId, filterCategory, filterPriority]);
 
   const loadAdminAnnouncements = useCallback(async () => {
     setAdminLoading(true);
     try {
-      const data = await HrmAnnouncementService.listAnnouncements({ site });
+      const data = await HrmAnnouncementService.listAnnouncements({ organizationId });
       setAdminAnnouncements(data);
     } catch {
       message.error("Failed to load admin announcements");
     } finally {
       setAdminLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadEngagementStats = useCallback(async (announcementHandle: string) => {
     setEngagementLoading(true);
     try {
-      const stats = await HrmAnnouncementService.getEngagementStats({ site, announcementHandle });
+      const stats = await HrmAnnouncementService.getEngagementStats({ organizationId, announcementHandle });
       setEngagementStats(stats);
     } catch {
       // silent
     } finally {
       setEngagementLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
-  return { site, employeeId, loadFeed, loadAdminAnnouncements, loadEngagementStats };
+  return { organizationId, employeeId, loadFeed, loadAdminAnnouncements, loadEngagementStats };
 };

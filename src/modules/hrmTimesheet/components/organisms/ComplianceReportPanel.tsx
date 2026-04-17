@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
 import type { SubmissionComplianceReport } from '../../types/api.types';
@@ -19,14 +20,14 @@ export default function ComplianceReportPanel() {
     setReportPeriodStart, setReportPeriodEnd,
     loadingReport, setLoadingReport,
   } = useHrmTimesheetStore();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
   const [report, setReport] = useState<SubmissionComplianceReport | null>(null);
   const [department, setDepartment] = useState('');
 
   async function handleGenerate() {
     setLoadingReport(true);
     try {
-      const data = await HrmTimesheetService.getComplianceReport(site, reportPeriodStart, reportPeriodEnd, department || undefined);
+      const data = await HrmTimesheetService.getComplianceReport(organizationId, reportPeriodStart, reportPeriodEnd, department || undefined);
       setReport(data);
     } catch (err) {
       message.error('Failed to generate compliance report');

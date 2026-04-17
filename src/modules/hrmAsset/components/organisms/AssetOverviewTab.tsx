@@ -32,10 +32,10 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
   const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
 
   const handleStatusChange = async (newStatus: string) => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       await HrmAssetService.updateStatus({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         assetId: asset.assetId,
         newStatus,
         updatedBy: userId ?? '',

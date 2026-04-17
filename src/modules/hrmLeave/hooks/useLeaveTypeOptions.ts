@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmLeaveService } from "../services/hrmLeaveService";
 import type { LeaveType } from "../types/api.types";
 
@@ -20,11 +21,11 @@ export function useLeaveTypeOptions(): {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const site = parseCookies().site;
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
     let cancelled = false;
     setLoading(true);
-    HrmLeaveService.getAllLeaveTypes({ site })
+    HrmLeaveService.getAllLeaveTypes({ organizationId })
       .then((res) => {
         if (cancelled) return;
         const list = res ?? [];

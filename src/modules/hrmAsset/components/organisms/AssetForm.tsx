@@ -68,7 +68,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
   };
 
   const handleSave = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       const values = await form.validateFields();
 
@@ -85,7 +85,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
 
       if (isEdit) {
         const updatePayload: UpdateAssetPayload = {
-          site: site ?? '',
+          organizationId: organizationId ?? '',
           assetId: editAsset!.assetId,
           assetName: values.assetName,
           purchaseValueINR: values.purchaseValueINR,
@@ -98,12 +98,12 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         };
         await HrmAssetService.updateAsset(updatePayload);
         // Reload full asset so store reflects all persisted fields, not a partial update response
-        const fresh = await HrmAssetService.getAsset(site ?? '', editAsset!.assetId);
+        const fresh = await HrmAssetService.getAsset(organizationId, editAsset!.assetId);
         updateAssetInList(fresh.assetId, fresh as Partial<Asset>);
         message.success('Asset updated');
       } else {
         const createPayload: CreateAssetPayload = {
-          site: site ?? '',
+          organizationId: organizationId ?? '',
           categoryCode: values.categoryCode,
           assetName: values.assetName,
           purchaseValueINR: values.purchaseValueINR,

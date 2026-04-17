@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmTravelService } from "../services/hrmTravelService";
@@ -10,7 +11,7 @@ import type { TravelMode, TravelType } from "../types/domain.types";
 
 export function useTravelMutations() {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const employeeId =
     cookies.employeeId ??
     cookies.employeeCode ??
@@ -37,7 +38,7 @@ export function useTravelMutations() {
     setSaving(true);
     try {
       const payload = {
-        site,
+        organizationId,
         travelType: form.travelType as TravelType,
         purpose: form.purpose,
         destinationCity: form.destinationCity,
@@ -72,12 +73,12 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const submitRequest = useCallback(async (handle: string) => {
     setSubmitting(true);
     try {
-      const updated = await HrmTravelService.submitRequest({ site, handle, submittedBy: employeeId });
+      const updated = await HrmTravelService.submitRequest({ organizationId, handle, submittedBy: employeeId });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Travel request submitted successfully.");
@@ -88,13 +89,12 @@ export function useTravelMutations() {
     } finally {
       setSubmitting(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const approveRequest = useCallback(async (handle: string, remarks?: string) => {
     setApproving(true);
     try {
-      const updated = await HrmTravelService.approveRequest({
-        site,
+      const updated = await HrmTravelService.approveRequest({ organizationId,
         travelRequestHandle: handle,
         action: "APPROVE",
         actorEmpId: employeeId,
@@ -113,13 +113,12 @@ export function useTravelMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const rejectRequest = useCallback(async (handle: string, remarks: string) => {
     setApproving(true);
     try {
-      const updated = await HrmTravelService.rejectRequest({
-        site,
+      const updated = await HrmTravelService.rejectRequest({ organizationId,
         travelRequestHandle: handle,
         action: "REJECT",
         actorEmpId: employeeId,
@@ -138,7 +137,7 @@ export function useTravelMutations() {
     } finally {
       setApproving(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const cancelRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
@@ -154,12 +153,12 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const recallRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
     try {
-      const updated = await HrmTravelService.recallRequest({ site, handle, reason });
+      const updated = await HrmTravelService.recallRequest({ organizationId, handle, reason });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Request recalled to draft.");
@@ -170,12 +169,12 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const deleteRequest = useCallback(async (handle: string) => {
     setSaving(true);
     try {
-      await HrmTravelService.deleteRequest({ site, requestId: handle, deletedBy: employeeId });
+      await HrmTravelService.deleteRequest({ organizationId, requestId: handle, deletedBy: employeeId });
       removeMyRequest(handle);
       setSelectedRequest(null);
       setScreenMode("list");
@@ -185,7 +184,7 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   return {
     saveDraft,

@@ -14,14 +14,14 @@ import styles from "./styles/HrmLeave.module.css";
 
 interface HrmLeaveScreenProps {
   request: LeaveRequest;
-  site: string;
+  organizationId: string;
   permissions: LeavePermissions;
   onActionComplete: () => void;
 }
 
 const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   request,
-  site,
+  organizationId,
   permissions,
   onActionComplete,
 }) => {
@@ -35,8 +35,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleApprove = async () => {
     setLoading(true);
     try {
-      await HrmLeaveService.approveRequest({
-        site,
+      await HrmLeaveService.approveRequest({ organizationId,
         requestId: request.handle,
         actorId,
         actorRole,
@@ -55,8 +54,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleReject = async (remarks: string) => {
     setLoading(true);
     try {
-      await HrmLeaveService.rejectRequest({
-        site,
+      await HrmLeaveService.rejectRequest({ organizationId,
         requestId: request.handle,
         actorId,
         actorRole,
@@ -76,7 +74,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleEscalate = async () => {
     setLoading(true);
     try {
-      await HrmLeaveService.escalateRequest({ site, requestId: request.handle });
+      await HrmLeaveService.escalateRequest({ organizationId, requestId: request.handle });
       updateGlobalQueueRequest(request.handle, { status: "ESCALATED" });
       message.success("Request escalated");
       onActionComplete();
@@ -90,8 +88,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleReassign = async (newApproverId: string) => {
     setLoading(true);
     try {
-      await HrmLeaveService.reassignRequest({
-        site,
+      await HrmLeaveService.reassignRequest({ organizationId,
         requestId: request.handle,
         actorId,
         actorRole,
@@ -109,8 +106,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleCancel = async () => {
     setLoading(true);
     try {
-      await HrmLeaveService.cancelLeaveRequest({
-        site,
+      await HrmLeaveService.cancelLeaveRequest({ organizationId,
         requestId: request.handle,
         reason: "Cancelled by employee",
         cancelledBy: actorId,
@@ -128,8 +124,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const handleOverride = async (approved: boolean, remarks: string) => {
     setLoading(true);
     try {
-      await HrmLeaveService.overrideRequest({
-        site,
+      await HrmLeaveService.overrideRequest({ organizationId,
         requestId: request.handle,
         actorId,
         actorRole,
@@ -152,7 +147,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
     <div className={styles.screen}>
       <LeaveRequestDetail
         request={request}
-        site={site}
+        organizationId={organizationId}
         permissions={permissions}
         onApproved={onActionComplete}
         onRejected={onActionComplete}

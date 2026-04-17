@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, Select, DatePicker, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
@@ -20,7 +21,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
@@ -34,8 +35,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       // Create holiday for each selected group
       const results = await Promise.allSettled(
         groupHandles.map(groupHandle =>
-          HrmHolidayService.createHoliday({
-            site,
+          HrmHolidayService.createHoliday({ organizationId,
             groupHandle,
             name: values.name,
             date: dateStr,

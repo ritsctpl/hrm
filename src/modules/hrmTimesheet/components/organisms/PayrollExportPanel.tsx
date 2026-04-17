@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
 import type { PayrollExportRow } from '../../types/api.types';
@@ -19,14 +20,14 @@ export default function PayrollExportPanel() {
     setReportPeriodStart, setReportPeriodEnd,
     loadingReport, setLoadingReport,
   } = useHrmTimesheetStore();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
   const [rows, setRows] = useState<PayrollExportRow[]>([]);
   const [department, setDepartment] = useState('');
 
   async function handleGenerate() {
     setLoadingReport(true);
     try {
-      const data = await HrmTimesheetService.exportPayroll(site, reportPeriodStart, reportPeriodEnd, department || undefined);
+      const data = await HrmTimesheetService.exportPayroll(organizationId, reportPeriodStart, reportPeriodEnd, department || undefined);
       setRows(data);
       if (data.length === 0) message.info('No data for selected period');
     } catch (err) {
@@ -87,7 +88,7 @@ export default function PayrollExportPanel() {
             icon={<DownloadOutlined />}
             onClick={async () => {
               try {
-                const csv = await HrmTimesheetService.exportCsv(site, reportPeriodStart, reportPeriodEnd, department || undefined);
+                const csv = await HrmTimesheetService.exportCsv(organizationId, reportPeriodStart, reportPeriodEnd, department || undefined);
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');

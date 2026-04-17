@@ -7,7 +7,7 @@ import { getAvatarInitials } from '../utils/rbacTransformations';
 import type { KeycloakUserSummaryUI } from '../types/ui.types';
 import { USER_SEARCH_DEBOUNCE_MS } from '../utils/rbacConstants';
 
-export function useUserRoleAssignment(site: string, userId: string) {
+export function useUserRoleAssignment(organizationId: string, userId: string) {
   const store = useHrmAccessStore();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -24,7 +24,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
       store.setSearchingUsers(true);
       timerRef.current = setTimeout(async () => {
         try {
-          const results = await HrmAccessService.searchKeycloakUsers(site, text.trim());
+          const results = await HrmAccessService.searchKeycloakUsers(organizationId, text.trim());
           const mapped: KeycloakUserSummaryUI[] = results.map((u) => ({
             id: u.id,
             displayName: `${u.firstName} ${u.lastName}`.trim() || u.username,
@@ -38,7 +38,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
         }
       }, USER_SEARCH_DEBOUNCE_MS);
     },
-    [site, store]
+    [organizationId, store]
   );
 
   const selectUser = useCallback(
@@ -46,14 +46,14 @@ export function useUserRoleAssignment(site: string, userId: string) {
       store.selectUser(userIdArg, userName, userEmail);
       store.setLoadingAssignments(true);
       try {
-        const assignments = await HrmAccessService.fetchAssignmentsForUser(site, userIdArg);
+        const assignments = await HrmAccessService.fetchAssignmentsForUser(organizationId, userIdArg);
         store.setUserAssignments(assignments);
       } catch {
         notification.error({ message: 'Failed to load user assignments.' });
         store.setLoadingAssignments(false);
       }
     },
-    [site, store]
+    [organizationId, store]
   );
 
   const assignRole = useCallback(async () => {
@@ -66,8 +66,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
     }
     store.setAssigning(true);
     try {
-      await HrmAccessService.assignRoleToUser({
-        site,
+      await HrmAccessService.assignRoleToUser({ organizationId,
         userId: userAssignment.selectedUserId!,
         roleCode: draft!.roleCode!,
         effectiveFrom: draft!.effectiveFrom!,
@@ -78,7 +77,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
       notification.success({ message: 'Role assigned.' });
       store.clearAssignmentDraft();
       const refreshed = await HrmAccessService.fetchAssignmentsForUser(
-        site,
+        organizationId,
         userAssignment.selectedUserEmail!  // Use email
       );
       store.setUserAssignments(refreshed);
@@ -87,7 +86,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
     } finally {
       store.setAssigning(false);
     }
-  }, [site, userId, store]);
+  }, [organizationId, userId, store]);
 
   const revokeRole = useCallback(
     async (assignmentHandle: string) => {
@@ -102,10 +101,10 @@ export function useUserRoleAssignment(site: string, userId: string) {
 
       store.setRevoking(true);
       try {
-        await HrmAccessService.revokeRoleFromUser(site, assignmentHandle, userId);
+        await HrmAccessService.revokeRoleFromUser(organizationId, assignmentHandle, userId);
         notification.success({ message: 'Role revoked.' });
         const refreshed = await HrmAccessService.fetchAssignmentsForUser(
-          site,
+          organizationId,
           userAssignment.selectedUserEmail!  // Use email
         );
         store.setUserAssignments(refreshed);
@@ -115,7 +114,7 @@ export function useUserRoleAssignment(site: string, userId: string) {
         store.setRevoking(false);
       }
     },
-    [site, userId, store]
+    [organizationId, userId, store]
   );
 
   return { handleSearchChange, selectUser, assignRole, revokeRole };

@@ -3,6 +3,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { Tabs, Table, Button, DatePicker, Popconfirm, Empty, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
@@ -18,7 +19,7 @@ import type { ReportTab } from '../../types/ui.types';
 /* ── Lock Period Manager (inline) ────────────────────────────── */
 interface LockPeriodRecord {
   handle?: string;
-  site: string;
+  organizationId: string;
   lockDate: string;
   createdBy: string;
   createdDateTime: string;
@@ -29,7 +30,7 @@ function LockPeriodManager() {
   const [loading, setLoading] = useState(false);
   const [newDate, setNewDate] = useState<dayjs.Dayjs | null>(null);
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const user = resolveEmployeeId(cookies) || 'system';
 
   // TODO(backend): no /lockPeriod/list endpoint exists. This loadPeriods is a
@@ -44,8 +45,7 @@ function LockPeriodManager() {
   const handleAdd = async () => {
     if (!newDate) return;
     try {
-      const saved = await HrmTimesheetService.saveLockPeriod({
-        site,
+      const saved = await HrmTimesheetService.saveLockPeriod({ organizationId,
         lockDate: newDate.format('YYYY-MM-DD'),
         createdBy: user,
       });
@@ -53,7 +53,7 @@ function LockPeriodManager() {
         ...prev,
         {
           handle: saved.handle,
-          site: saved.site,
+          organizationId: saved.organizationId,
           lockDate: saved.lockDate,
           createdBy: saved.createdBy,
           createdDateTime: saved.createdDateTime,
@@ -68,7 +68,7 @@ function LockPeriodManager() {
 
   const handleDelete = async (record: LockPeriodRecord) => {
     try {
-      await HrmTimesheetService.deleteLockPeriod(site, record.handle ?? '', user);
+      await HrmTimesheetService.deleteLockPeriod(organizationId, record.handle ?? '', user);
       setPeriods((prev) => prev.filter((p) => p.handle !== record.handle));
       message.success('Lock period deleted');
     } catch {

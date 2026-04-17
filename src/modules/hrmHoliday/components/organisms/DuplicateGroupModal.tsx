@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, Select, Checkbox, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { DuplicateGroupModalProps } from '../../types/ui.types';
 import type { DuplicateGroupResponse } from '../../types/api.types';
@@ -19,15 +20,14 @@ export default function DuplicateGroupModal({
   const [saving, setSaving] = useState(false);
   const yearOptions = getYearOptions(3).filter((y) => y.value !== sourceGroup.year);
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const res = await HrmHolidayService.duplicateGroup({
-        site,
+      const res = await HrmHolidayService.duplicateGroup({ organizationId,
         sourceGroupHandle: sourceGroup.handle,
         targetYear: values.targetYear,
         newGroupName: values.newGroupName,

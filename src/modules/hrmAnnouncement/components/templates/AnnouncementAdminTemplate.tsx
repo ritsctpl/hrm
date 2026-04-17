@@ -18,7 +18,7 @@ interface AnnouncementAdminTemplateProps {
   loading: boolean;
   showComposeDrawer: boolean;
   editAnnouncement: Announcement | null;
-  site: string;
+  organizationId: string;
   onEdit: (announcement: Announcement) => void;
   onPublish: (announcementId: string) => void;
   onWithdraw: (announcementId: string) => void;
@@ -33,7 +33,7 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
   loading,
   showComposeDrawer,
   editAnnouncement,
-  site,
+  organizationId,
   onEdit,
   onPublish,
   onWithdraw,
@@ -126,7 +126,7 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       <AnnouncementComposeDrawer
         open={showComposeDrawer}
         editAnnouncement={editAnnouncement}
-        site={site}
+        organizationId={organizationId}
         onClose={onDrawerClose}
         onSaved={onDrawerSaved}
       />

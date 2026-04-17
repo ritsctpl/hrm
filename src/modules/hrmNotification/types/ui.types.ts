@@ -12,7 +12,7 @@ export interface NotificationItemProps {
 }
 
 export interface NotificationBellProps {
-  site: string;
+  organizationId: string;
   recipientId: string;
 }
 

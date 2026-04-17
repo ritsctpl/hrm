@@ -12,7 +12,7 @@ import { HrmAccessService } from '../../services/hrmAccessService';
 import type { UserRoleAssignmentTemplateProps, KeycloakUserSummaryUI } from '../../types/ui.types';
 import styles from '../../styles/UserRoleAssignment.module.css';
 
-const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({ site, user }) => {
+const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({ organizationId, user }) => {
   const store = useHrmAccessStore();
   const { userAssignment } = store;
   const [selectedAssignmentHandle, setSelectedAssignmentHandle] = useState<string | null>(null);
@@ -26,7 +26,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
     const loadRoles = async () => {
       setRolesLoading(true);
       try {
-        const roles = await HrmAccessService.fetchAllRoles(site);
+        const roles = await HrmAccessService.fetchAllRoles(organizationId);
         setAllRoles(roles);
       } catch (err) {
         notification.error({ message: 'Failed to load roles.' });
@@ -35,16 +35,15 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       }
     };
     loadRoles();
-  }, [site]);
+  }, [organizationId]);
 
   // Load ALL employees ONCE on mount - cache locally
   useEffect(() => {
-    if (!site) return;
+    if (!organizationId) return;
     const loadAllEmployees = async () => {
       store.setSearchingUsers(true);
       try {
-        const response = await HrmAccessService.fetchEmployeeDirectory({
-          site,
+        const response = await HrmAccessService.fetchEmployeeDirectory({ organizationId,
           page: 0,
           size: 1000,
           searchTerm: '',
@@ -86,7 +85,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
 
     loadAllEmployees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
+  }, [organizationId]);
 
   // Local filter helper
   const filterEmployees = (query: string) => {
@@ -122,7 +121,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
 
     store.setLoadingAssignments(true);
     try {
-      const userAssignments = await HrmAccessService.fetchAssignmentsForUser(site, userEmail);
+      const userAssignments = await HrmAccessService.fetchAssignmentsForUser(organizationId, userEmail);
       store.setUserAssignments(userAssignments);
     } catch (err) {
       notification.error({ message: 'Failed to load user assignments.' });
@@ -145,7 +144,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
     store.setAssigning(true);
     try {
       const payload = {
-        site,
+        organizationId,
         userId: userAssignment.selectedUserEmail,  // Backend expects email in userId field
         userDisplayName: userAssignment.selectedUserName,
         userEmail: userAssignment.selectedUserEmail,
@@ -160,7 +159,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
       store.clearAssignmentDraft();
       
       // Reload assignments for selected user
-      const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserEmail);  // Use email
+      const updated = await HrmAccessService.fetchAssignmentsForUser(organizationId, userAssignment.selectedUserEmail);  // Use email
       store.setUserAssignments(updated);
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to assign role.' });
@@ -172,12 +171,12 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
   const handleRevokeAssignment = async (handle: string) => {
     store.setRevoking(true);
     try {
-      await HrmAccessService.revokeRoleFromUser(site, handle, user?.id ?? 'system');
+      await HrmAccessService.revokeRoleFromUser(organizationId, handle, user?.id ?? 'system');
       notification.success({ message: 'Role revoked successfully.' });
       
       // Reload assignments for selected user
       if (userAssignment.selectedUserEmail) {
-        const updated = await HrmAccessService.fetchAssignmentsForUser(site, userAssignment.selectedUserEmail);  // Use email
+        const updated = await HrmAccessService.fetchAssignmentsForUser(organizationId, userAssignment.selectedUserEmail);  // Use email
         store.setUserAssignments(updated);
       }
     } catch (err: unknown) {

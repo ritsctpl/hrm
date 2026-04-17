@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message, Modal } from 'antd';
 import CommonAppBar from '@/components/CommonAppBar';
 import HolidayGroupSearchBar from './components/molecules/HolidayGroupSearchBar';
@@ -21,7 +22,7 @@ import styles from './styles/HrmHoliday.module.css';
 
 export default function HrmHolidayLanding() {
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userRole = cookies.userRole ?? 'EMPLOYEE';
   const username = cookies.username ?? 'system';
 
@@ -53,15 +54,14 @@ export default function HrmHolidayLanding() {
   const permissions = useHolidayPermissions(userRole);
 
   const fetchGroups = async () => {
-    if (!site) {
+    if (!organizationId) {
       message.error('Site not configured. Please log in again.');
       return;
     }
     setGroupsLoading(true);
     setGroupsError(null);
     try {
-      const res = await HrmHolidayService.listGroups({
-        site,
+      const res = await HrmHolidayService.listGroups({ organizationId,
         year: searchParams.year,
         status: searchParams.status,
         requestingUserRole: '',
@@ -90,7 +90,7 @@ export default function HrmHolidayLanding() {
 
   useEffect(() => {
     fetchGroups();
-  }, [site, searchParams.year, searchParams.status, searchParams.buHandle, searchParams.search, userRole]);
+  }, [organizationId, searchParams.year, searchParams.status, searchParams.buHandle, searchParams.search, userRole]);
 
   const handleGroupCreated = (group: HolidayGroup) => {
     closeGroupCreateModal();
@@ -130,7 +130,7 @@ export default function HrmHolidayLanding() {
         try {
           await HrmHolidayService.deleteGroup({
             handle: selectedGroup.handle,
-            site,
+            organizationId,
             deletedBy: username,
           });
           
@@ -170,7 +170,7 @@ export default function HrmHolidayLanding() {
         />
 
         {selectedGroup ? (
-          <HrmHolidayScreen group={selectedGroup} site={site} permissions={permissions} />
+          <HrmHolidayScreen group={selectedGroup} organizationId={organizationId} permissions={permissions} />
         ) : (
           <div className={styles.emptyRight}>
             <p>Select a holiday group to view details</p>

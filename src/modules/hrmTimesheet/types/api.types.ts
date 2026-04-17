@@ -226,7 +226,7 @@ export interface TimesheetLockPeriodRequest {
 
 export interface TimesheetLockPeriodResponse {
   handle: string;
-  site: string;
+  organizationId: string;
   lockDate: string;
   reason?: string;
   active: number;

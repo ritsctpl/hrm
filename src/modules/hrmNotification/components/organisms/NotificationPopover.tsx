@@ -12,11 +12,11 @@ import type { Notification } from '../../types/domain.types';
 import styles from '../../styles/NotificationCentre.module.css';
 
 interface NotificationPopoverProps {
-  site: string;
+  organizationId: string;
   recipientId: string;
 }
 
-export default function NotificationPopover({ site, recipientId }: NotificationPopoverProps) {
+export default function NotificationPopover({ organizationId, recipientId }: NotificationPopoverProps) {
   const router = useRouter();
   const {
     popoverNotifications,
@@ -30,10 +30,10 @@ export default function NotificationPopover({ site, recipientId }: NotificationP
   const { loadPopoverNotifications, handleMarkRead, handleMarkAllRead } = useNotificationData();
 
   useEffect(() => {
-    if (isPopoverOpen && site && recipientId) {
+    if (isPopoverOpen && organizationId && recipientId) {
       loadPopoverNotifications();
     }
-  }, [isPopoverOpen, site, recipientId]);
+  }, [isPopoverOpen, organizationId, recipientId]);
 
   const handleViewAll = () => {
     setPopoverOpen(false);

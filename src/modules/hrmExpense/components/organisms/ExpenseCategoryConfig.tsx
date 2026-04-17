@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Table, Button, Modal, Form, Input, InputNumber, Checkbox, Switch, message, Popconfirm } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -16,7 +17,7 @@ interface Props {
 
 const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? "";
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
@@ -37,8 +38,7 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
     const values = await form.validateFields();
     setSaving(true);
     try {
-      await HrmExpenseService.saveCategory({
-        site,
+      await HrmExpenseService.saveCategory({ organizationId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
         description: values.description,
@@ -61,7 +61,7 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
 
   const handleDelete = async (categoryId: string) => {
     try {
-      await HrmExpenseService.deleteCategory({ site, categoryId, deletedBy: userId });
+      await HrmExpenseService.deleteCategory({ organizationId, categoryId, deletedBy: userId });
       message.success("Category deleted.");
       onRefresh();
     } catch {

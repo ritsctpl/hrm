@@ -65,6 +65,7 @@ export const APP_URL_TO_MODULE: Record<string, string> = {
   "/rits/hrm_payslip_app": "HRM_PAYSLIP",
   "/rits/hrm_policy_app": "HRM_POLICY",
   "/rits/hrm_project_app": "HRM_PROJECT",
+  "/rits/hrm_settings_app": "HRM_SETTINGS",
   "/rits/hrm_timesheet_app": "HRM_TIMESHEET",
   "/rits/hrm_travel_app": "HRM_TRAVEL",
 };
@@ -91,6 +92,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "access_permission", label: "Permissions" },
     { code: "access_user_assignment", label: "User Assignment" },
     { code: "access_permission_matrix", label: "Permission Matrix" },
+    { code: "access_import_export", label: "Import / Export" },
   ],
 
   // ── Announcement ────────────────────────────────────────────────────
@@ -165,6 +167,11 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "employee_reporting", label: "Reporting Structure" },
     { code: "employee_onboarding", label: "Onboarding" },
     { code: "employee_bulk_import", label: "Bulk Import" },
+    { code: "employee_offboarding", label: "Offboarding" },
+    { code: "employee_audit_log", label: "Audit Log" },
+    { code: "employee_alerts", label: "Alerts" },
+    { code: "employee_export", label: "Export" },
+    { code: "employee_field_schema", label: "Field Configuration" },
   ],
 
   // ── Expense ─────────────────────────────────────────────────────────
@@ -201,6 +208,11 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "leave_comp_off", label: "Comp Off" },
     { code: "leave_adjustment", label: "Ledger Adjustment" },
     { code: "leave_ledger", label: "Ledger" },
+    { code: "leave_report", label: "Reports" },
+    { code: "leave_year_end", label: "Year-End Operations" },
+    { code: "leave_payroll_export", label: "Payroll Export" },
+    { code: "leave_payroll_lock", label: "Payroll Lock" },
+    { code: "leave_approval_config", label: "Approval Config" },
   ],
 
   // ── Notification ────────────────────────────────────────────────────
@@ -239,6 +251,9 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_PAYSLIP: [
     { code: "payslip_module", label: "Module Access" },
     { code: "payslip_record", label: "Payslips" },
+    { code: "payslip_generate", label: "Generate" },
+    { code: "payslip_repository", label: "Repository" },
+    { code: "payslip_template", label: "Templates" },
     { code: "payslip_history", label: "History" },
     { code: "payslip_download", label: "Download" },
   ],
@@ -260,6 +275,20 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "project_member", label: "Members" },
     { code: "project_milestone", label: "Milestones" },
     { code: "project_time_log", label: "Time Logs" },
+    { code: "project_allocation", label: "Resource Allocation" },
+    { code: "project_approval", label: "Allocation Approvals" },
+    { code: "project_calendar", label: "Calendar" },
+    { code: "project_report", label: "Reports" },
+  ],
+
+  // ── Settings ────────────────────────────────────────────────────────
+  HRM_SETTINGS: [
+    { code: "settings_module", label: "Module Access" },
+    { code: "settings_profile", label: "Profile" },
+    { code: "settings_security", label: "Security" },
+    { code: "settings_notification", label: "Notifications" },
+    { code: "settings_preference", label: "Preferences" },
+    { code: "settings_support", label: "Support" },
   ],
 
   // ── Timesheet ───────────────────────────────────────────────────────

@@ -23,10 +23,10 @@ import styles from "../../styles/HrmLeave.module.css";
 const { Title, Text } = Typography;
 
 interface PayrollExportPanelProps {
-  site: string;
+  organizationId: string;
 }
 
-const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
+const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ organizationId }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
   const [exportForm] = Form.useForm();
@@ -53,8 +53,7 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
       const year = period.year();
       const month = period.month() + 1;
       setExporting(true);
-      const blob = await HrmLeaveService.exportPayroll({
-        site,
+      const blob = await HrmLeaveService.exportPayroll({ organizationId,
         year,
         month,
         format: "CSV",
@@ -76,8 +75,7 @@ const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ site }) => {
       const year = period.year();
       const month = period.month() + 1;
       setLocking(true);
-      await HrmLeaveService.lockPayrollMonth({
-        site,
+      await HrmLeaveService.lockPayrollMonth({ organizationId,
         year,
         month,
         lockedBy: userId,

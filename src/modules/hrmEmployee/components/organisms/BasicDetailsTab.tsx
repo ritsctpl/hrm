@@ -35,12 +35,13 @@ const BasicDetailsTab = forwardRef<BasicDetailsTabHandle, ProfileTabProps>(({
 }, ref) => {
   const { basicDetails, employeeCode } = profile;
   const isSelf = useIsSelf(basicDetails?.workEmail, employeeCode, profile?.handle);
-  // Self-edit requires module EDIT — VIEW-only users cannot update their
-  // own phone or photo. Admins (ADD or DELETE) can edit anyone.
+  // Object-level RBAC: use employee_record for basic details.
+  // Admin = module-level ADD/DELETE (root object). Self-edit is handled
+  // by <Can> checking if the user has employee_record EDIT grant.
   const modulePerms = useCan('HRM_EMPLOYEE');
   const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
-  const canSelfEdit = isSelf && modulePerms.canEdit;
-  const canEditBasic = isAdmin || canSelfEdit;
+  const objPerms = useCan('HRM_EMPLOYEE', 'employee_record');
+  const canEditBasic = isAdmin || (isSelf && objPerms.canEdit);
   // Keep the legacy hook around so any other consumers continue to work.
   const permissions = useEmployeePermissions();
   void permissions;

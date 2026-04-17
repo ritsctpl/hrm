@@ -20,7 +20,7 @@ export interface AnnouncementDetailPanelProps {
 export interface AnnouncementComposeDrawerProps {
   open: boolean;
   editAnnouncement?: Announcement | null;
-  site: string;
+  organizationId: string;
   onClose: () => void;
   onSaved: () => void;
 }

@@ -32,11 +32,11 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   } = useHrmAssetStore();
 
   const handleApproveSupervisor = async (requestId: string, remarks: string) => {
-    const { site, userId, employeeName } = parseCookies();
+    const { organizationId, userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         requestId,
         action: 'APPROVE_SUPERVISOR',
         actorEmployeeId: userId ?? '',
@@ -54,11 +54,11 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleRejectSupervisor = async (requestId: string, remarks: string) => {
-    const { site, userId, employeeName } = parseCookies();
+    const { organizationId, userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         requestId,
         action: 'REJECT_SUPERVISOR',
         actorEmployeeId: userId ?? '',
@@ -76,11 +76,11 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleApproveAdmin = async (requestId: string, remarks: string) => {
-    const { site, userId, employeeName } = parseCookies();
+    const { organizationId, userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         requestId,
         action: 'APPROVE_ADMIN',
         actorEmployeeId: userId ?? '',
@@ -98,11 +98,11 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleRejectAdmin = async (requestId: string, remarks: string) => {
-    const { site, userId, employeeName } = parseCookies();
+    const { organizationId, userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         requestId,
         action: 'REJECT_ADMIN',
         actorEmployeeId: userId ?? '',

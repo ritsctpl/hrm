@@ -3,29 +3,32 @@ import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 
 /**
  * Hook to manage Employee module permissions
- * Loads and provides access to all 12 object permissions (48 total flags)
+ * Loads and provides access to object-level permissions using the BACKEND
+ * object names from moduleObjectRegistry (e.g. `employee_record`,
+ * `employee_personal`).
  *
- * Objects:
- * 1. employee - Employee master record (directory access)
- * 2. personalDetails - Name, DOB, gender, marital status
- * 3. officialDetails - Employee code, joining date, department
- * 4. employmentDetails - Employment type, probation, confirmation
- * 5. compensation - Salary, CTC, pay structure
- * 6. bankDetails - Bank account information
- * 7. documents - ID proofs, certificates
- * 8. emergencyContact - Emergency contact information
- * 9. familyDetails - Spouse, children, dependents
- * 10. education - Educational qualifications
- * 11. experience - Work experience history
- * 12. reportingStructure - Reporting manager, hierarchy
+ * Object name mapping (registry → permission flag prefix):
+ *   employee_module              → (root object, used for module-level / isAdmin)
+ *   employee_record              → Employee
+ *   employee_personal            → PersonalDetails
+ *   employee_official            → OfficialDetails
+ *   employee_contact             → EmergencyContact (contact tab)
+ *   employee_compensation        → Compensation
+ *   employee_bank                → BankDetails
+ *   employee_document            → Documents
+ *   employee_education           → Education
+ *   employee_skill               → Skills
+ *   employee_job_history         → JobHistory
+ *   employee_experience          → Experience
+ *   employee_training            → Training
+ *   employee_asset               → Assets
+ *   employee_emergency_contact   → EmergencyContact
  *
  * Fallback semantics:
- *   - If the backend has published per-object grants (sectionPerms is non-empty),
- *     each object check is strict — missing object means no permission.
- *   - If the backend has NOT published per-object grants (sectionPerms is empty
- *     or null), every check falls back to the module-level grant. This keeps
- *     existing module-level admins working until the backend exposes per-object
- *     RBAC for HRM_EMPLOYEE.
+ *   - If section cache is loaded (non-null), lookup is strict per-object.
+ *     Missing object → denied (all false). This enforces object-level RBAC.
+ *   - If section cache is NOT loaded yet (null), fall back to module-level
+ *     so the UI doesn't flash buttons during initial load.
  */
 export const useEmployeePermissions = () => {
   const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
@@ -42,6 +45,8 @@ export const useEmployeePermissions = () => {
 
   // Memoize permissions to avoid recalculation
   const permissions = useMemo(() => {
+    const DENIED = { canView: false, canAdd: false, canEdit: false, canDelete: false };
+
     const moduleFallback = {
       canView: moduleLevelPerms?.canView ?? false,
       canAdd: moduleLevelPerms?.canAdd ?? false,
@@ -49,133 +54,143 @@ export const useEmployeePermissions = () => {
       canDelete: moduleLevelPerms?.canDelete ?? false,
     };
 
-    // Per-object resolver:
-    //   - If the backend has explicitly returned grants for this object name
-    //     (whether allow or deny), use them as-is.
-    //   - Otherwise fall back to the module-level grant. This keeps existing
-    //     module-wide admins working while the backend incrementally rolls
-    //     out per-object permissions for HRM_EMPLOYEE.
-    //
-    // Note: this hook intentionally uses Karthick's object-name vocabulary
-    // (`employee`, `personalDetails`, `compensation`, …). The codebase ALSO
-    // has a parallel <Can object="employee_record" …> system using the
-    // hrmEmployeeSectionMap names. Both live side-by-side until a single
-    // source of truth is consolidated — see TODO below.
-    //
-    // TODO(rbac-consolidation): Pick ONE pattern (either useCan + <Can> with
-    // hrmEmployeeSectionMap, or this hook with Karthick's names) and migrate
-    // the rest of the Employee module to it. The dual system is brittle.
+    // Root object cascade is handled centrally in loadSectionPermissions.
+    // By the time sectionPerms is available, all registered objects already
+    // have root perms merged in. Strict lookup is safe here.
     const resolveObject = (objectName: string) => {
-      const explicit = sectionPerms?.[objectName];
-      if (explicit) return explicit;
+      if (sectionPerms) {
+        return sectionPerms[objectName] || DENIED;
+      }
       return moduleFallback;
     };
 
-    const employeePerms = resolveObject('employee');
-    const personalDetailsPerms = resolveObject('personalDetails');
-    const officialDetailsPerms = resolveObject('officialDetails');
-    const employmentDetailsPerms = resolveObject('employmentDetails');
-    const compensationPerms = resolveObject('compensation');
-    const bankDetailsPerms = resolveObject('bankDetails');
-    const documentsPerms = resolveObject('documents');
-    const emergencyContactPerms = resolveObject('emergencyContact');
-    const familyDetailsPerms = resolveObject('familyDetails');
-    const educationPerms = resolveObject('education');
-    const experiencePerms = resolveObject('experience');
-    const reportingStructurePerms = resolveObject('reportingStructure');
+    // Resolve each object using the backend object names from moduleObjectRegistry
+    const employeePerms = resolveObject('employee_record');
+    const personalDetailsPerms = resolveObject('employee_personal');
+    const officialDetailsPerms = resolveObject('employee_official');
+    const contactPerms = resolveObject('employee_contact');
+    const compensationPerms = resolveObject('employee_compensation');
+    const bankDetailsPerms = resolveObject('employee_bank');
+    const documentsPerms = resolveObject('employee_document');
+    const emergencyContactPerms = resolveObject('employee_emergency_contact');
+    const educationPerms = resolveObject('employee_education');
+    const experiencePerms = resolveObject('employee_experience');
+    const skillPerms = resolveObject('employee_skill');
+    const jobHistoryPerms = resolveObject('employee_job_history');
+    const trainingPerms = resolveObject('employee_training');
+    const assetPerms = resolveObject('employee_asset');
+
+    // Legacy: employmentDetails = union of skill / job_history / training / asset.
+    // Used for Career tab visibility.
+    const employmentDetailsPerms = {
+      canView: skillPerms.canView || jobHistoryPerms.canView || trainingPerms.canView || assetPerms.canView,
+      canAdd: skillPerms.canAdd || jobHistoryPerms.canAdd || trainingPerms.canAdd || assetPerms.canAdd,
+      canEdit: skillPerms.canEdit || jobHistoryPerms.canEdit || trainingPerms.canEdit || assetPerms.canEdit,
+      canDelete: skillPerms.canDelete || jobHistoryPerms.canDelete || trainingPerms.canDelete || assetPerms.canDelete,
+    };
 
     return {
       // Employee (Directory) permissions
-      canViewEmployee: employeePerms?.canView ?? false,
-      canAddEmployee: employeePerms?.canAdd ?? false,
-      canEditEmployee: employeePerms?.canEdit ?? false,
-      canDeleteEmployee: employeePerms?.canDelete ?? false,
+      canViewEmployee: employeePerms.canView,
+      canAddEmployee: employeePerms.canAdd,
+      canEditEmployee: employeePerms.canEdit,
+      canDeleteEmployee: employeePerms.canDelete,
 
       // Personal Details permissions
-      canViewPersonalDetails: personalDetailsPerms?.canView ?? false,
-      canAddPersonalDetails: personalDetailsPerms?.canAdd ?? false,
-      canEditPersonalDetails: personalDetailsPerms?.canEdit ?? false,
-      canDeletePersonalDetails: personalDetailsPerms?.canDelete ?? false,
+      canViewPersonalDetails: personalDetailsPerms.canView,
+      canAddPersonalDetails: personalDetailsPerms.canAdd,
+      canEditPersonalDetails: personalDetailsPerms.canEdit,
+      canDeletePersonalDetails: personalDetailsPerms.canDelete,
 
       // Official Details permissions
-      canViewOfficialDetails: officialDetailsPerms?.canView ?? false,
-      canAddOfficialDetails: officialDetailsPerms?.canAdd ?? false,
-      canEditOfficialDetails: officialDetailsPerms?.canEdit ?? false,
-      canDeleteOfficialDetails: officialDetailsPerms?.canDelete ?? false,
+      canViewOfficialDetails: officialDetailsPerms.canView,
+      canAddOfficialDetails: officialDetailsPerms.canAdd,
+      canEditOfficialDetails: officialDetailsPerms.canEdit,
+      canDeleteOfficialDetails: officialDetailsPerms.canDelete,
 
-      // Employment Details permissions
-      canViewEmploymentDetails: employmentDetailsPerms?.canView ?? false,
-      canAddEmploymentDetails: employmentDetailsPerms?.canAdd ?? false,
-      canEditEmploymentDetails: employmentDetailsPerms?.canEdit ?? false,
-      canDeleteEmploymentDetails: employmentDetailsPerms?.canDelete ?? false,
+      // Employment Details (legacy — union of skill/job_history/training/asset)
+      canViewEmploymentDetails: employmentDetailsPerms.canView,
+      canAddEmploymentDetails: employmentDetailsPerms.canAdd,
+      canEditEmploymentDetails: employmentDetailsPerms.canEdit,
+      canDeleteEmploymentDetails: employmentDetailsPerms.canDelete,
+
+      // Skills permissions (object: employee_skill)
+      canViewSkills: skillPerms.canView,
+      canAddSkills: skillPerms.canAdd,
+      canEditSkills: skillPerms.canEdit,
+      canDeleteSkills: skillPerms.canDelete,
+
+      // Job History permissions (object: employee_job_history)
+      canViewJobHistory: jobHistoryPerms.canView,
+      canAddJobHistory: jobHistoryPerms.canAdd,
+      canEditJobHistory: jobHistoryPerms.canEdit,
+      canDeleteJobHistory: jobHistoryPerms.canDelete,
+
+      // Training permissions (object: employee_training)
+      canViewTraining: trainingPerms.canView,
+      canAddTraining: trainingPerms.canAdd,
+      canEditTraining: trainingPerms.canEdit,
+      canDeleteTraining: trainingPerms.canDelete,
+
+      // Asset permissions (object: employee_asset)
+      canViewAssets: assetPerms.canView,
+      canAddAssets: assetPerms.canAdd,
+      canEditAssets: assetPerms.canEdit,
+      canDeleteAssets: assetPerms.canDelete,
 
       // Compensation permissions
-      canViewCompensation: compensationPerms?.canView ?? false,
-      canAddCompensation: compensationPerms?.canAdd ?? false,
-      canEditCompensation: compensationPerms?.canEdit ?? false,
-      canDeleteCompensation: compensationPerms?.canDelete ?? false,
+      canViewCompensation: compensationPerms.canView,
+      canAddCompensation: compensationPerms.canAdd,
+      canEditCompensation: compensationPerms.canEdit,
+      canDeleteCompensation: compensationPerms.canDelete,
 
       // Bank Details permissions
-      canViewBankDetails: bankDetailsPerms?.canView ?? false,
-      canAddBankDetails: bankDetailsPerms?.canAdd ?? false,
-      canEditBankDetails: bankDetailsPerms?.canEdit ?? false,
-      canDeleteBankDetails: bankDetailsPerms?.canDelete ?? false,
+      canViewBankDetails: bankDetailsPerms.canView,
+      canAddBankDetails: bankDetailsPerms.canAdd,
+      canEditBankDetails: bankDetailsPerms.canEdit,
+      canDeleteBankDetails: bankDetailsPerms.canDelete,
 
       // Documents permissions
-      canViewDocuments: documentsPerms?.canView ?? false,
-      canAddDocuments: documentsPerms?.canAdd ?? false,
-      canEditDocuments: documentsPerms?.canEdit ?? false,
-      canDeleteDocuments: documentsPerms?.canDelete ?? false,
+      canViewDocuments: documentsPerms.canView,
+      canAddDocuments: documentsPerms.canAdd,
+      canEditDocuments: documentsPerms.canEdit,
+      canDeleteDocuments: documentsPerms.canDelete,
 
       // Emergency Contact permissions
-      canViewEmergencyContact: emergencyContactPerms?.canView ?? false,
-      canAddEmergencyContact: emergencyContactPerms?.canAdd ?? false,
-      canEditEmergencyContact: emergencyContactPerms?.canEdit ?? false,
-      canDeleteEmergencyContact: emergencyContactPerms?.canDelete ?? false,
-
-      // Family Details permissions
-      canViewFamilyDetails: familyDetailsPerms?.canView ?? false,
-      canAddFamilyDetails: familyDetailsPerms?.canAdd ?? false,
-      canEditFamilyDetails: familyDetailsPerms?.canEdit ?? false,
-      canDeleteFamilyDetails: familyDetailsPerms?.canDelete ?? false,
+      canViewEmergencyContact: emergencyContactPerms.canView || contactPerms.canView,
+      canAddEmergencyContact: emergencyContactPerms.canAdd || contactPerms.canAdd,
+      canEditEmergencyContact: emergencyContactPerms.canEdit || contactPerms.canEdit,
+      canDeleteEmergencyContact: emergencyContactPerms.canDelete || contactPerms.canDelete,
 
       // Education permissions
-      canViewEducation: educationPerms?.canView ?? false,
-      canAddEducation: educationPerms?.canAdd ?? false,
-      canEditEducation: educationPerms?.canEdit ?? false,
-      canDeleteEducation: educationPerms?.canDelete ?? false,
+      canViewEducation: educationPerms.canView,
+      canAddEducation: educationPerms.canAdd,
+      canEditEducation: educationPerms.canEdit,
+      canDeleteEducation: educationPerms.canDelete,
 
       // Experience permissions
-      canViewExperience: experiencePerms?.canView ?? false,
-      canAddExperience: experiencePerms?.canAdd ?? false,
-      canEditExperience: experiencePerms?.canEdit ?? false,
-      canDeleteExperience: experiencePerms?.canDelete ?? false,
-
-      // Reporting Structure permissions
-      canViewReportingStructure: reportingStructurePerms?.canView ?? false,
-      canAddReportingStructure: reportingStructurePerms?.canAdd ?? false,
-      canEditReportingStructure: reportingStructurePerms?.canEdit ?? false,
-      canDeleteReportingStructure: reportingStructurePerms?.canDelete ?? false,
+      canViewExperience: experiencePerms.canView,
+      canAddExperience: experiencePerms.canAdd,
+      canEditExperience: experiencePerms.canEdit,
+      canDeleteExperience: experiencePerms.canDelete,
 
       // Helper: Check if any profile tab should be visible
       canViewAnyProfileTab: [
-        personalDetailsPerms?.canView,
-        officialDetailsPerms?.canView,
-        employmentDetailsPerms?.canView,
-        compensationPerms?.canView,
-        bankDetailsPerms?.canView,
-        documentsPerms?.canView,
-        emergencyContactPerms?.canView,
-        familyDetailsPerms?.canView,
-        educationPerms?.canView,
-        experiencePerms?.canView,
-        reportingStructurePerms?.canView,
+        personalDetailsPerms.canView,
+        officialDetailsPerms.canView,
+        employmentDetailsPerms.canView,
+        compensationPerms.canView,
+        bankDetailsPerms.canView,
+        documentsPerms.canView,
+        emergencyContactPerms.canView || contactPerms.canView,
+        educationPerms.canView,
+        experiencePerms.canView,
       ].some(Boolean),
 
       // Raw permissions for advanced use
       raw: sectionPerms,
     };
-  }, [sectionPerms]);
+  }, [sectionPerms, moduleLevelPerms]);
 
   return permissions;
 };

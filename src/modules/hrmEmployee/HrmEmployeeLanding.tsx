@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useEmployeeDirectory } from './hooks/useHrmEmployeeData';
 import EmployeeDirectoryTemplate from './components/templates/EmployeeDirectoryTemplate';
@@ -70,9 +71,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
   useEffect(() => {
     const fetchBusinessUnits = async () => {
       try {
-        const site = parseCookies().site;
-        if (!site) return;
-        const data = await HrmOrganizationService.fetchBusinessUnitsBySite(site);
+        const organizationId = getOrganizationId();
+        if (!organizationId) return;
+        const data = await HrmOrganizationService.fetchBusinessUnitsBySite(organizationId);
         setBusinessUnitsData(
           (data || []).map((bu) => ({
             handle: bu.handle,

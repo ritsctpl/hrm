@@ -24,7 +24,7 @@ import type { HrmHolidayScreenProps } from './types/ui.types';
 import Can from '../hrmAccess/components/Can';
 import styles from './styles/HolidayDetail.module.css';
 
-export default function HrmHolidayScreen({ group, site, permissions }: HrmHolidayScreenProps) {
+export default function HrmHolidayScreen({ group, organizationId, permissions }: HrmHolidayScreenProps) {
   const {
     holidays,
     holidaysLoading,
@@ -57,7 +57,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
     setCalendarMonth,
   } = useHrmHolidayStore();
 
-  const { loadHolidays, loadCategories } = useHolidayDetail(site, group.handle);
+  const { loadHolidays, loadCategories } = useHolidayDetail(organizationId, group.handle);
 
   // Filter state for stats bar
   const [statsFilter, setStatsFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
@@ -92,7 +92,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
 
   const handlePublish = async (comment?: string) => {
     try {
-      await HrmHolidayService.publishGroup({ site, groupHandle: group.handle, comment, publishedBy: userId });
+      await HrmHolidayService.publishGroup({ organizationId, groupHandle: group.handle, comment, publishedBy: userId });
       updateGroupStatus(group.handle, 'PUBLISHED');
       closePublishModal();
       message.success('Holiday group published');
@@ -103,7 +103,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
 
   const handleDeleteHoliday = async (holiday: Holiday) => {
     try {
-      await HrmHolidayService.deleteHoliday({ site, handle: holiday.handle, deletedBy: userId });
+      await HrmHolidayService.deleteHoliday({ organizationId, handle: holiday.handle, deletedBy: userId });
       await loadHolidays({ groupHandle: group.handle, category: categoryFilter ?? undefined });
       message.success('Holiday deleted successfully');
     } catch {
@@ -113,7 +113,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
 
   const handleLock = async (reason: string) => {
     try {
-      await HrmHolidayService.lockGroup({ site, groupHandle: group.handle, reason, lockedBy: userId });
+      await HrmHolidayService.lockGroup({ organizationId, groupHandle: group.handle, reason, lockedBy: userId });
       updateGroupStatus(group.handle, 'LOCKED');
       closeLockModal();
       message.success('Holiday group locked');
@@ -124,7 +124,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
 
   const handleUnlock = async (reason: string) => {
     try {
-      await HrmHolidayService.unlockGroup({ site, groupHandle: group.handle, reason, unlockedBy: userId });
+      await HrmHolidayService.unlockGroup({ organizationId, groupHandle: group.handle, reason, unlockedBy: userId });
       updateGroupStatus(group.handle, 'PUBLISHED');
       closeUnlockModal();
       message.success('Holiday group unlocked');
@@ -164,7 +164,7 @@ export default function HrmHolidayScreen({ group, site, permissions }: HrmHolida
     {
       key: 'audit',
       label: 'Audit Log',
-      children: <AuditLogDrawer groupHandle={group.handle} site={site} />,
+      children: <AuditLogDrawer groupHandle={group.handle} organizationId={organizationId} />,
     },
   ];
 

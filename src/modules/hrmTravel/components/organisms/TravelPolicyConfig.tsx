@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Form, Checkbox, InputNumber, Input, Button, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmTravelService } from "../../services/hrmTravelService";
@@ -16,7 +17,7 @@ interface Props {
 
 const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
@@ -56,8 +57,7 @@ const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
     try {
       const types: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
       for (const t of types) {
-        await HrmTravelService.updatePolicy({
-          site,
+        await HrmTravelService.updatePolicy({ organizationId,
           travelType: t,
           allowedModes: values[`allowedModes_${t}`],
           escalationWindowDays: values[`escalationDays_${t}`],

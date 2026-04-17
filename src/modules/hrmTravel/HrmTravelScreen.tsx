@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Card, InputNumber, Select, Tag, message } from "antd";
 import {
   SaveOutlined,
@@ -54,7 +55,7 @@ const HrmTravelScreen: React.FC<Props> = ({
   onActionComplete,
 }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
 
   const { formState, updateFormState, activeDetailTab, setActiveDetailTab, approving, saving } =
@@ -87,11 +88,11 @@ const HrmTravelScreen: React.FC<Props> = ({
   // Load advance on mount for approved requests
   useEffect(() => {
     if (request?.handle && request.status === "APPROVED") {
-      HrmTravelService.retrieveAdvance({ site, handle: request.handle })
+      HrmTravelService.retrieveAdvance({ organizationId, handle: request.handle })
         .then(setAdvance)
         .catch(() => setAdvance(null));
     }
-  }, [request?.handle, request?.status, site]);
+  }, [request?.handle, request?.status, organizationId]);
 
   const handleSaveDraft = useCallback(async () => {
     await saveDraft(formState, request?.handle);
@@ -133,7 +134,7 @@ const HrmTravelScreen: React.FC<Props> = ({
     }
 
     try {
-      await HrmTravelService.uploadAttachment(handle, file, site);
+      await HrmTravelService.uploadAttachment(handle, file, organizationId);
       onActionComplete();
       message.success("Attachment uploaded.");
     } catch {
@@ -143,7 +144,7 @@ const HrmTravelScreen: React.FC<Props> = ({
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!request?.handle) return;
-    await HrmTravelService.deleteAttachment({ site, handle: request.handle, attachmentId });
+    await HrmTravelService.deleteAttachment({ organizationId, handle: request.handle, attachmentId });
     onActionComplete();
   };
 
@@ -152,8 +153,7 @@ const HrmTravelScreen: React.FC<Props> = ({
     if (!request?.handle || !advanceAmount) return;
     setAdvanceLoading(true);
     try {
-      const result = await HrmTravelService.requestAdvance({
-        site,
+      const result = await HrmTravelService.requestAdvance({ organizationId,
         travelHandle: request.handle,
         employeeId,
         amount: advanceAmount,

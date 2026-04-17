@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
 import type { HolidayWorkingSummary } from '../../types/api.types';
@@ -19,13 +20,13 @@ export default function HolidayWorkingReportPanel() {
     setReportPeriodStart, setReportPeriodEnd,
     loadingReport, setLoadingReport,
   } = useHrmTimesheetStore();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
   const [report, setReport] = useState<HolidayWorkingSummary | null>(null);
 
   async function handleGenerate() {
     setLoadingReport(true);
     try {
-      const data = await HrmTimesheetService.getHolidayWorkingSummary(site, reportPeriodStart, reportPeriodEnd);
+      const data = await HrmTimesheetService.getHolidayWorkingSummary(organizationId, reportPeriodStart, reportPeriodEnd);
       setReport(data);
       if (!data?.entries?.length) message.info('No holiday working entries for this period');
     } catch (err) {

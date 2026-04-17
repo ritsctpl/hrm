@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Typography, Select, InputNumber, Button } from "antd";
 import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
 import CommonAppBar from "@/components/CommonAppBar";
@@ -38,8 +39,8 @@ import styles from "./styles/HrmLeave.module.css";
 const { Text } = Typography;
 
 const HrmLeaveLanding: React.FC = () => {
+  const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
   const employeeId = cookies.employeeId ?? cookies.userId ?? "";
   const cookieRole = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
 
@@ -106,36 +107,36 @@ const HrmLeaveLanding: React.FC = () => {
   // Load data based on role on mount
   useEffect(() => {
     loadBalances();
-  }, [balancesYear, site, employeeId, loadBalances]);
+  }, [balancesYear, organizationId, employeeId, loadBalances]);
 
   useEffect(() => {
     if (role === "EMPLOYEE" || SUPERVISOR_ROLES.includes(role) || HR_ROLES.includes(role)) {
       loadMyRequests();
     }
-  }, [site, employeeId, role, loadMyRequests]);
+  }, [organizationId, employeeId, role, loadMyRequests]);
 
   useEffect(() => {
     if (SUPERVISOR_ROLES.includes(role) || HR_ROLES.includes(role)) {
       loadPendingForApprover();
     }
-  }, [site, employeeId, role, loadPendingForApprover]);
+  }, [organizationId, employeeId, role, loadPendingForApprover]);
 
   useEffect(() => {
     if (permissions.canViewAll) {
       loadGlobalQueue();
     }
-  }, [site, permissions.canViewAll, loadGlobalQueue]);
+  }, [organizationId, permissions.canViewAll, loadGlobalQueue]);
 
   useEffect(() => {
     if (permissions.canViewAll) {
       loadLeaveTypes();
       loadBalanceSummary(balancesYear);
     }
-  }, [site, balancesYear, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
+  }, [organizationId, balancesYear, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
 
   useEffect(() => {
     loadLedgerHistory();
-  }, [site, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, loadLedgerHistory]);
+  }, [organizationId, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, loadLedgerHistory]);
 
   const handleFilterChange = (filters: Record<string, string>) => {
     if (permissions.canViewAll) {
@@ -162,7 +163,7 @@ const HrmLeaveLanding: React.FC = () => {
   const rightPanel = selectedRequest ? (
     <HrmLeaveScreen
       request={selectedRequest}
-      site={site}
+      organizationId={organizationId}
       permissions={permissions}
       onActionComplete={handleActionComplete}
     />
@@ -213,7 +214,7 @@ const HrmLeaveLanding: React.FC = () => {
           />
           {showLeaveForm && (
             <LeaveRequestFormDrawer
-              site={site}
+              organizationId={organizationId}
               employeeId={employeeId}
               balances={balances}
               onSubmitted={() => {
@@ -266,7 +267,7 @@ const HrmLeaveLanding: React.FC = () => {
           <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
           {showLeaveForm && (
             <LeaveRequestFormDrawer
-              site={site}
+              organizationId={organizationId}
               employeeId={employeeId}
               balances={balances}
               onSubmitted={() => {
@@ -385,7 +386,7 @@ const HrmLeaveLanding: React.FC = () => {
             <span className={styles.ledgerCardTitle}>Manual Adjustment</span>
           </div>
           <div className={styles.ledgerCardBody}>
-            <ManualAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+            <ManualAdjustmentForm organizationId={organizationId} onAdjusted={() => loadLedgerHistory()} />
           </div>
         </div>
         <div className={styles.ledgerCard}>
@@ -393,7 +394,7 @@ const HrmLeaveLanding: React.FC = () => {
             <span className={styles.ledgerCardTitle}>Credit Comp Off</span>
           </div>
           <div className={styles.ledgerCardBody}>
-            <CompOffCreditForm site={site} onCredited={() => loadLedgerHistory()} />
+            <CompOffCreditForm organizationId={organizationId} onCredited={() => loadLedgerHistory()} />
           </div>
         </div>
         <div className={styles.ledgerCard}>
@@ -401,7 +402,7 @@ const HrmLeaveLanding: React.FC = () => {
             <span className={styles.ledgerCardTitle}>Bulk Adjustment</span>
           </div>
           <div className={styles.ledgerCardBody}>
-            <BulkAdjustmentForm site={site} onAdjusted={() => loadLedgerHistory()} />
+            <BulkAdjustmentForm organizationId={organizationId} onAdjusted={() => loadLedgerHistory()} />
           </div>
         </div>
       </div>
@@ -409,30 +410,30 @@ const HrmLeaveLanding: React.FC = () => {
   );
 
   const accrualPanel = (
-    <AccrualRunPanel site={site} onPosted={() => loadBalanceSummary(balancesYear)} />
+    <AccrualRunPanel organizationId={organizationId} onPosted={() => loadBalanceSummary(balancesYear)} />
   );
 
   const policyPanel = (
     <PolicySettingsTable
       leaveTypes={leaveTypes}
       loading={leaveTypesLoading}
-      site={site}
+      organizationId={organizationId}
       onRefresh={loadLeaveTypes}
     />
   );
 
   const yearEndPanel = (
     <YearEndOperationsPanel
-      site={site}
+      organizationId={organizationId}
       onProcessed={() => loadBalanceSummary(balancesYear)}
     />
   );
 
-  const payrollPanel = <PayrollExportPanel site={site} />;
+  const payrollPanel = <PayrollExportPanel organizationId={organizationId} />;
 
-  const reportsPanel = <LeaveAvailedReportPanel site={site} />;
+  const reportsPanel = <LeaveAvailedReportPanel organizationId={organizationId} />;
 
-  const approvalConfigPanel = <ApprovalConfigPanel site={site} />;
+  const approvalConfigPanel = <ApprovalConfigPanel organizationId={organizationId} />;
 
   return (
     <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
@@ -455,7 +456,7 @@ const HrmLeaveLanding: React.FC = () => {
         />
         {showLeaveForm && (
           <LeaveRequestFormDrawer
-            site={site}
+            organizationId={organizationId}
             employeeId={employeeId}
             balances={balances}
             allowEmployeeSelection

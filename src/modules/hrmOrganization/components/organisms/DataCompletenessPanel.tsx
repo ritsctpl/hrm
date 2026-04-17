@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { Table, Progress, Select, Button } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { HrmOrganizationService } from '../../services/hrmOrganizationService';
 import styles from '../../styles/HrmOrganization.module.css';
@@ -29,10 +30,10 @@ const DataCompletenessPanel: React.FC = () => {
   }, [entityTypeFilter, fetchDataCompleteness]);
 
   const handleExport = async () => {
-    const site = parseCookies().site ?? '';
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
     try {
-      const blob = await HrmOrganizationService.exportToCSV(site, entityTypeFilter || undefined);
+      const blob = await HrmOrganizationService.exportToCSV(organizationId, entityTypeFilter || undefined);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

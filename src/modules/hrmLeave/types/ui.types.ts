@@ -65,7 +65,7 @@ export interface ValidationSummaryPanelProps {
 
 export interface LeaveRequestDetailProps {
   request: LeaveRequest;
-  site: string;
+  organizationId: string;
   permissions: LeavePermissions;
   onApproved?: () => void;
   onRejected?: () => void;
@@ -94,17 +94,17 @@ export interface SlaCountdownBadgeProps {
 }
 
 export interface AccrualRunPanelProps {
-  site: string;
+  organizationId: string;
   onPosted: (batchId: string) => void;
 }
 
 export interface ManualAdjustmentFormProps {
-  site: string;
+  organizationId: string;
   onAdjusted: () => void;
 }
 
 export interface CompOffCreditFormProps {
-  site: string;
+  organizationId: string;
   onCredited: () => void;
 }
 
@@ -212,7 +212,7 @@ export interface BalanceSummaryTableProps {
 export interface PolicySettingsTableProps {
   leaveTypes: LeaveType[];
   loading: boolean;
-  site: string;
+  organizationId: string;
   onRefresh: () => void;
 }
 

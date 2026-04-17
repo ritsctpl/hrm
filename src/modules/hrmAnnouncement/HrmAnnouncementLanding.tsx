@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Tabs, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmAnnouncementStore } from './stores/hrmAnnouncementStore';
 import { HrmAnnouncementService } from './services/hrmAnnouncementService';
@@ -17,7 +18,7 @@ import styles from './styles/HrmAnnouncement.module.css';
 
 const HrmAnnouncementLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? 'RITS';
+  const organizationId = getOrganizationId();
   const employeeId = cookies.userId ?? '';
   const role = cookies.userRole ?? 'EMPLOYEE';
   const canAdmin = ANNOUNCEMENT_HR_ROLES.includes(role);
@@ -62,7 +63,7 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   const handleMarkRead = async (announcementHandle: string) => {
     try {
-      await HrmAnnouncementService.markRead({ site, announcementHandle, employeeId });
+      await HrmAnnouncementService.markRead({ organizationId, announcementHandle, employeeId });
       markAsRead(announcementHandle);
     } catch {
       // silent
@@ -91,7 +92,7 @@ const HrmAnnouncementLanding: React.FC = () => {
   const handlePublish = async (announcementHandle: string) => {
     setPublishing(true);
     try {
-      await HrmAnnouncementService.publishAnnouncement({ site, announcementHandle });
+      await HrmAnnouncementService.publishAnnouncement({ organizationId, announcementHandle });
       message.success('Announcement published');
       loadAdminAnnouncements();
       loadFeed();
@@ -105,8 +106,7 @@ const HrmAnnouncementLanding: React.FC = () => {
   const handleWithdraw = async (announcementHandle: string) => {
     setWithdrawing(true);
     try {
-      await HrmAnnouncementService.withdrawAnnouncement({
-        site,
+      await HrmAnnouncementService.withdrawAnnouncement({ organizationId,
         announcementHandle,
         reason: 'Withdrawn by admin',
       });
@@ -180,7 +180,7 @@ const HrmAnnouncementLanding: React.FC = () => {
           loading={adminLoading}
           showComposeDrawer={showComposeDrawer}
           editAnnouncement={editAnnouncement}
-          site={site}
+          organizationId={organizationId}
           onEdit={(a: Announcement) => openComposeDrawer(a)}
           onPublish={handlePublish}
           onWithdraw={handleWithdraw}

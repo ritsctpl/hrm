@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
@@ -8,7 +9,7 @@ import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
 
 export function useExpenseData() {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const employeeId =
     cookies.employeeId ??
     cookies.employeeCode ??
@@ -39,8 +40,7 @@ export function useExpenseData() {
     setListLoading(true);
     setError(null);
     try {
-      const data = await HrmExpenseService.getMyExpenses({
-        site,
+      const data = await HrmExpenseService.getMyExpenses({ organizationId,
         employeeId,
         status: statusFilter as never,
         expenseType: typeFilter as never,
@@ -55,13 +55,12 @@ export function useExpenseData() {
     } finally {
       setListLoading(false);
     }
-  }, [site, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
 
   const loadSupervisorInbox = useCallback(async () => {
     setInboxLoading(true);
     try {
-      const data = await HrmExpenseService.getSupervisorInbox({
-        site,
+      const data = await HrmExpenseService.getSupervisorInbox({ organizationId,
         empId: employeeId,
       });
       setSupervisorInbox(data);
@@ -70,19 +69,19 @@ export function useExpenseData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const loadFinanceInbox = useCallback(async () => {
     setInboxLoading(true);
     try {
-      const data = await HrmExpenseService.getFinanceInbox({ site });
+      const data = await HrmExpenseService.getFinanceInbox({ organizationId });
       setFinanceInbox(data);
     } catch {
       message.error("Failed to load finance inbox.");
     } finally {
       setInboxLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadExpenseDetail = useCallback(async (handle: string) => {
     setDetailLoading(true);
@@ -94,30 +93,29 @@ export function useExpenseData() {
     } finally {
       setDetailLoading(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadCategories = useCallback(async () => {
     try {
-      const data = await HrmExpenseService.getCategories({ site });
+      const data = await HrmExpenseService.getCategories({ organizationId });
       setCategories(data);
     } catch {
       // non-critical, silently fail
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadMileageConfig = useCallback(async () => {
     try {
-      const data = await HrmExpenseService.getMileageConfig({ site });
+      const data = await HrmExpenseService.getMileageConfig({ organizationId });
       setMileageConfig(data);
     } catch {
       // non-critical
     }
-  }, [site]);
+  }, [organizationId]);
 
   const exportExpenses = useCallback(async () => {
     try {
-      const blob = await HrmExpenseService.exportExpenses({
-        site,
+      const blob = await HrmExpenseService.exportExpenses({ organizationId,
         startDate: dateRange?.[0] ?? "",
         endDate: dateRange?.[1] ?? "",
         status: statusFilter || undefined,
@@ -132,16 +130,16 @@ export function useExpenseData() {
     } catch {
       message.error("Failed to export expense reports.");
     }
-  }, [site, statusFilter, dateRange]);
+  }, [organizationId, statusFilter, dateRange]);
 
   const loadUnsettledAdvances = useCallback(async () => {
     try {
-      const data = await HrmExpenseService.getUnsettledAdvances({ site, empId: employeeId });
+      const data = await HrmExpenseService.getUnsettledAdvances({ organizationId, empId: employeeId });
       return data;
     } catch {
       return [];
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   return {
     loadMyExpenses,

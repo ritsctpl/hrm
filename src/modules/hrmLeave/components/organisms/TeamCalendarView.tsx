@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Calendar, Badge, Spin } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -17,7 +18,7 @@ interface TeamCalendarViewProps {
 
 const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const supervisorId = cookies.userId ?? "";
 
   const now = dayjs();
@@ -29,11 +30,10 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
   useEffect(() => {
     let cancelled = false;
     const loadCalendar = async () => {
-      if (!site || !supervisorId) return;
+      if (!organizationId || !supervisorId) return;
       setLoading(true);
       try {
-        const data = await HrmLeaveService.getTeamCalendar({
-          site,
+        const data = await HrmLeaveService.getTeamCalendar({ organizationId,
           managerId: supervisorId,
           month: month + 1,
           year,
@@ -49,7 +49,7 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
     return () => {
       cancelled = true;
     };
-  }, [site, supervisorId, month, year]);
+  }, [organizationId, supervisorId, month, year]);
 
   const entriesByDate = useMemo(() => {
     const map: Record<string, TeamCalendarEntry[]> = {};

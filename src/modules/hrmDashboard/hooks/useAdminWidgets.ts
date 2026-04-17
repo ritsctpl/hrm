@@ -1,20 +1,21 @@
 import { useCallback } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmDashboardService } from '../services/hrmDashboardService';
 import { useHrmDashboardStore } from '../stores/hrmDashboardStore';
 
 export function useAdminWidgets() {
   const store = useHrmDashboardStore();
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   const loadAdminData = useCallback(async () => {
-    if (!site) return;
+    if (!organizationId) return;
 
     store.setLoadingAdminData(true);
     try {
-      const res = await HrmDashboardService.getAdminDashboard({ site, requestedBy: userId });
+      const res = await HrmDashboardService.getAdminDashboard({ organizationId, requestedBy: userId });
       if (res?.widgets) {
         store.setDashboardWidgets(res.widgets);
       }
@@ -29,7 +30,7 @@ export function useAdminWidgets() {
     } finally {
       store.setLoadingAdminData(false);
     }
-  }, [site, userId]);
+  }, [organizationId, userId]);
 
   return { loadAdminData };
 }

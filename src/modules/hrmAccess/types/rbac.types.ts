@@ -11,7 +11,7 @@ export interface ModuleAccess {
 }
 
 export interface OrganizationModules {
-  site: string;
+  organizationId: string;
   organizationName: string;
   modules: ModuleAccess[];
 }

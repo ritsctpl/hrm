@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Calendar, Badge, Tooltip } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -20,7 +21,7 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
   teamView,
 }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const buHandle = cookies.buHandle ?? "";
 
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
@@ -28,10 +29,9 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
   useEffect(() => {
     let cancelled = false;
     const loadHolidays = async () => {
-      if (!site || !buHandle) return;
+      if (!organizationId || !buHandle) return;
       try {
-        const res = await HrmHolidayService.getPublishedHolidaysForBu({
-          site,
+        const res = await HrmHolidayService.getPublishedHolidaysForBu({ organizationId,
           buHandle,
           year,
         });
@@ -46,7 +46,7 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [site, buHandle, year]);
+  }, [organizationId, buHandle, year]);
 
   const holidaysByDate = useMemo(() => {
     const map: Record<string, HolidayResponse[]> = {};

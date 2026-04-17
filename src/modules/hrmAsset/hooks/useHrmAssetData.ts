@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from 'antd';
 import { HrmAssetService } from '../services/hrmAssetService';
 import { useHrmAssetStore } from '../stores/hrmAssetStore';
@@ -17,7 +18,7 @@ export function useHrmAssetData() {
   const loadDashboard = useCallback(async () => {
     store.setLoadingDashboard(true);
     try {
-      const data = await HrmAssetService.getDashboard(getSite());
+      const data = await HrmAssetService.getDashboard(getOrganizationId());
       store.setDashboard(data);
     } catch {
       // empty state shown in component
@@ -29,7 +30,7 @@ export function useHrmAssetData() {
   const loadCategories = useCallback(async () => {
     store.setLoadingCategories(true);
     try {
-      const data = await HrmAssetService.getAllCategories(getSite());
+      const data = await HrmAssetService.getAllCategories(getOrganizationId());
       const categories = Array.isArray(data) ? data : [];
       // Deduplicate by categoryCode (defensive against backend duplicates)
       const seen = new Set<string>();
@@ -49,7 +50,7 @@ export function useHrmAssetData() {
   const loadAssets = useCallback(async () => {
     store.setLoadingAssets(true);
     try {
-      const data = await HrmAssetService.getAllAssets(getSite());
+      const data = await HrmAssetService.getAllAssets(getOrganizationId());
       store.setAssets(data as unknown as Parameters<typeof store.setAssets>[0]);
     } catch {
       message.error('Failed to load assets');
@@ -61,7 +62,7 @@ export function useHrmAssetData() {
   const loadMyRequests = useCallback(async () => {
     store.setLoadingRequests(true);
     try {
-      const data = await HrmAssetService.getRequestsByEmployee(getSite(), getUserId());
+      const data = await HrmAssetService.getRequestsByEmployee(getOrganizationId(), getUserId());
       store.setMyRequests(data as unknown as Parameters<typeof store.setMyRequests>[0]);
     } catch {
       // silent
@@ -74,9 +75,9 @@ export function useHrmAssetData() {
     store.setLoadingRequests(true);
     try {
       const [supervisor, admin, allocation] = await Promise.allSettled([
-        HrmAssetService.getPendingForSupervisor(getSite(), getSupervisorId()),
-        HrmAssetService.getPendingForAdmin(getSite()),
-        HrmAssetService.getPendingAllocation(getSite()),
+        HrmAssetService.getPendingForSupervisor(getOrganizationId(), getSupervisorId()),
+        HrmAssetService.getPendingForAdmin(getOrganizationId()),
+        HrmAssetService.getPendingAllocation(getOrganizationId()),
       ]);
       if (supervisor.status === 'fulfilled') {
         store.setPendingSupervisorRequests(supervisor.value as unknown as Parameters<typeof store.setPendingSupervisorRequests>[0]);
@@ -96,12 +97,12 @@ export function useHrmAssetData() {
     store.setLoadingCustody(true);
     store.setLoadingMaintenance(true);
     store.setLoadingDepreciation(true);
-    const site = getSite();
+    const organizationId = getOrganizationId();
     try {
       const [custody, maintenance, depreciation] = await Promise.allSettled([
-        HrmAssetService.getCustodyHistory(site, assetId),
-        HrmAssetService.getMaintenanceHistory(site, assetId),
-        HrmAssetService.getDepreciationHistory(site, assetId),
+        HrmAssetService.getCustodyHistory(organizationId, assetId),
+        HrmAssetService.getMaintenanceHistory(organizationId, assetId),
+        HrmAssetService.getDepreciationHistory(organizationId, assetId),
       ]);
       if (custody.status === 'fulfilled') store.setCustodyHistory(custody.value as unknown as Parameters<typeof store.setCustodyHistory>[0]);
       if (maintenance.status === 'fulfilled') store.setMaintenanceHistory(maintenance.value as unknown as Parameters<typeof store.setMaintenanceHistory>[0]);

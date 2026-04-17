@@ -21,11 +21,11 @@ import styles from "../../styles/HrmLeave.module.css";
 const { Text } = Typography;
 
 interface BulkAdjustmentFormProps {
-  site: string;
+  organizationId: string;
   onAdjusted?: () => void;
 }
 
-const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjusted }) => {
+const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ organizationId, onAdjusted }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
   const [form] = Form.useForm();
@@ -50,10 +50,8 @@ const BulkAdjustmentForm: React.FC<BulkAdjustmentFormProps> = ({ site, onAdjuste
       const quantity = Math.abs(delta);
       const transactionDate = values.effectiveDate.format("YYYY-MM-DD");
       setLoading(true);
-      await HrmLeaveService.bulkAdjustment({
-        site,
-        adjustments: employeeIds.map((employeeId) => ({
-          site,
+      await HrmLeaveService.bulkAdjustment({ organizationId,
+        adjustments: employeeIds.map((employeeId) => ({ organizationId,
           employeeId,
           leaveTypeCode: values.leaveTypeCode,
           quantity,

@@ -25,12 +25,12 @@ export default function AssetRequestForm() {
   };
 
   const handleSubmit = async () => {
-    const { site, userId, employeeName, supervisorId, supervisorName } = parseCookies();
+    const { organizationId, userId, employeeName, supervisorId, supervisorName } = parseCookies();
     try {
       const values = await form.validateFields();
       setSavingRequest(true);
       const res = await HrmAssetService.createAssetRequest({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         employeeId: userId ?? '',
         employeeName: employeeName ?? '',
         categoryCode: values.categoryCode,

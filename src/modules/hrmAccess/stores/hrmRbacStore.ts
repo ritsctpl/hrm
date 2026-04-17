@@ -115,11 +115,11 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
       if (!currentOrganizationId && organizations.length > 0) {
-        currentOrganizationId = organizations[0].site;
+        currentOrganizationId = organizations[0].organizationId;
       }
 
       // Find current org modules
-      const currentOrg = organizations.find(o => o.site === currentOrganizationId);
+      const currentOrg = organizations.find(o => o.organizationId === currentOrganizationId);
       const orgModules = currentOrg?.modules || [];
 
       // Enrich modules with registry data
@@ -158,7 +158,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
 
   switchOrganization: (organizationId: string) => {
     const { organizations, userId } = get();
-    const org = organizations.find(o => o.site === organizationId);
+    const org = organizations.find(o => o.organizationId === organizationId);
     if (!org) return;
 
     const enrichedModules: EnrichedModule[] = org.modules.map(m => ({ ...m }));

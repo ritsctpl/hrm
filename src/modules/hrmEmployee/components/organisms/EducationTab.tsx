@@ -10,7 +10,6 @@ import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
-import { useCan } from '../../../hrmAccess/hooks/useCan';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EducationEntry } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
@@ -21,10 +20,6 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 }) => {
   const { education } = profile;
   const permissions = useEmployeePermissions();
-  // Self-service users (module canEdit only) must not be able to mutate
-  // education entries. Only admins (canAdd OR canDelete) can add/edit/delete.
-  const modulePerms = useCan('HRM_EMPLOYEE');
-  const isAdmin = modulePerms.canAdd || modulePerms.canDelete;
   const [addOpen, setAddOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -148,7 +143,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        {isAdmin && permissions.canAddEducation && (
+        {permissions.canAddEducation && (
           <Button
             type="primary"
             size="small"
@@ -180,7 +175,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                 icon={<EyeOutlined />}
                 onClick={() => handleView(edu)}
               />
-              {isAdmin && permissions.canEditEducation && (
+              {permissions.canEditEducation && (
                 <Button
                   type="text"
                   size="small"
@@ -188,7 +183,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
                   onClick={() => handleEdit(edu)}
                 />
               )}
-              {isAdmin && permissions.canDeleteEducation && (
+              {permissions.canDeleteEducation && (
                 <Popconfirm
                   title="Delete Education"
                   description="Are you sure you want to delete this education entry?"

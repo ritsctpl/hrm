@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Form, Input, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
 import { groupFormRules } from '../../utils/validations';
@@ -30,14 +31,13 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
 
   const handleOk = async () => {
     const cookies = parseCookies();
-    const site = cookies.site ?? '';
+    const organizationId = getOrganizationId();
     const userId = cookies.userId ?? '';
 
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const res = await HrmHolidayService.updateGroup({
-        site,
+      const res = await HrmHolidayService.updateGroup({ organizationId,
         handle: group.handle,
         groupName: values.groupName,
         description: values.description,

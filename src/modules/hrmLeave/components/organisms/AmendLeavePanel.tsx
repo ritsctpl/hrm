@@ -24,7 +24,7 @@ const { RangePicker } = DatePicker;
 
 interface AmendLeavePanelProps {
   open: boolean;
-  site: string;
+  organizationId: string;
   request: LeaveRequest | null;
   onClose: () => void;
   onAmended?: (updated: LeaveRequest) => void;
@@ -32,7 +32,7 @@ interface AmendLeavePanelProps {
 
 const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   open,
-  site,
+  organizationId,
   request,
   onClose,
   onAmended,
@@ -107,7 +107,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       const totalDays = end.diff(start, "day") + 1;
       setSubmitting(true);
       const payload = {
-        site,
+        organizationId,
         handle: request.handle,
         startDate: start.format("YYYY-MM-DD"),
         endDate: end.format("YYYY-MM-DD"),

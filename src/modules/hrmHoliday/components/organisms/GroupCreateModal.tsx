@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, Select, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { GroupCreateModalProps } from '../../types/ui.types';
 import type { HolidayGroup } from '../../types/domain.types';
@@ -16,15 +17,14 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
   const [saving, setSaving] = useState(false);
   const yearOptions = getYearOptions(3);
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const res = await HrmHolidayService.createGroup({
-        site,
+      const res = await HrmHolidayService.createGroup({ organizationId,
         groupName: values.groupName,
         year: values.year,
         description: values.description,

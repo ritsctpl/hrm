@@ -41,7 +41,7 @@ export interface MilestoneStatusUpdateRequest {
 
 export interface ProjectResponse {
   handle: string;
-  site: string;
+  organizationId: string;
   projectCode: string;
   projectName: string;
   description?: string;
@@ -122,7 +122,7 @@ export interface AllocationRequest {
 
 export interface AllocationResponse {
   handle: string;
-  site: string;
+  organizationId: string;
   projectHandle: string;
   projectCode: string;
   projectName: string;
@@ -272,7 +272,7 @@ export interface ClientRequest {
 
 export interface ClientResponse {
   handle: string;
-  site: string;
+  organizationId: string;
   clientCode: string;
   clientName: string;
   contactPerson?: string;

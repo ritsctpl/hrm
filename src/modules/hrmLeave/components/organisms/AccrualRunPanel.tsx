@@ -78,7 +78,7 @@ const extractError = (err: unknown, fallback: string): string => {
   return fallback;
 };
 
-const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => {
+const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPosted }) => {
   const cookies = parseCookies();
   const userId = cookies.userId ?? "";
   const currentYear = new Date().getFullYear();
@@ -102,7 +102,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
   const loadBatches = async (year: number) => {
     setBatchesLoading(true);
     try {
-      const data = await HrmLeaveService.getAccrualBatches({ site, year });
+      const data = await HrmLeaveService.getAccrualBatches({ organizationId, year });
       setBatches(Array.isArray(data) ? data : []);
     } catch {
       setBatches([]);
@@ -112,15 +112,14 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
   };
 
   useEffect(() => {
-    if (site) loadBatches(batchYear);
+    if (organizationId) loadBatches(batchYear);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site, batchYear]);
+  }, [organizationId, batchYear]);
 
   const handleRollback = async (batch: AccrualBatch) => {
     setRollingBackId(batch.handle);
     try {
-      await HrmLeaveService.rollbackAccrual({
-        site,
+      await HrmLeaveService.rollbackAccrual({ organizationId,
         batchId: batch.handle,
         requestedBy: userId,
       });
@@ -156,8 +155,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
 
     try {
       setAccrualLoading(true);
-      const res = await HrmLeaveService.previewAccrual({
-        site,
+      const res = await HrmLeaveService.previewAccrual({ organizationId,
         periodStart: values.periodStart.format("YYYY-MM-DD"),
         periodEnd: values.periodEnd.format("YYYY-MM-DD"),
         quarter: values.quarter,
@@ -189,8 +187,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ site, onPosted }) => 
     setPosting(true);
     try {
       const values = form.getFieldsValue();
-      const batch = await HrmLeaveService.postAccrual({
-        site,
+      const batch = await HrmLeaveService.postAccrual({ organizationId,
         periodStart: values.periodStart.format("YYYY-MM-DD"),
         periodEnd: values.periodEnd.format("YYYY-MM-DD"),
         quarter: values.quarter,

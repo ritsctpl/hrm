@@ -143,16 +143,16 @@ export interface UserRoleHistoryPanelProps {
 // ---- Templates ----
 
 export interface RoleManagementTemplateProps {
-  site: string;
+  organizationId: string;
   user: { id: string; name: string } | null;
 }
 
 export interface PermissionMatrixTemplateProps {
-  site: string;
+  organizationId: string;
 }
 
 export interface UserRoleAssignmentTemplateProps {
-  site: string;
+  organizationId: string;
   user: { id: string; name: string } | null;
 }
 

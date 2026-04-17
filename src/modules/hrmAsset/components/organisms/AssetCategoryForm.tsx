@@ -32,12 +32,12 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
   };
 
   const handleSave = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setSaving(true);
       const payload = {
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
         description: values.description,

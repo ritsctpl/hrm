@@ -6,34 +6,34 @@ import { validateRole } from '../utils/rbacValidations';
 import { mapRoleDraftToRequest, buildPermissionAssignRequest } from '../utils/rbacTransformations';
 import type { Role } from '../types/domain.types';
 
-export function useRoleManagement(site: string, userId: string) {
+export function useRoleManagement(organizationId: string, userId: string) {
   const store = useHrmAccessStore();
 
   const loadRoles = useCallback(async () => {
-    if (!site) return;
+    if (!organizationId) return;
     store.setRoleLoading(true);
     try {
-      const roles = await HrmAccessService.fetchAllRoles(site);
+      const roles = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(roles);
     } catch {
       notification.error({ message: 'Failed to load roles.' });
       store.setRoleLoading(false);
     }
-  }, [site, store]);
+  }, [organizationId, store]);
 
   const selectRole = useCallback(
     async (selectedRole: Role) => {
       store.selectRole(selectedRole);
       store.setLoadingPermissions(true);
       try {
-        const perms = await HrmAccessService.fetchPermissionsForRole(site, selectedRole.roleCode);
+        const perms = await HrmAccessService.fetchPermissionsForRole(organizationId, selectedRole.roleCode);
         store.setRolePermissions(perms);
       } catch {
         notification.error({ message: 'Failed to load permissions.' });
         store.setLoadingPermissions(false);
       }
     },
-    [site, store]
+    [organizationId, store]
   );
 
   const saveRole = useCallback(async () => {
@@ -43,7 +43,7 @@ export function useRoleManagement(site: string, userId: string) {
       store.setRoleErrors(errors);
       return;
     }
-    const payload = mapRoleDraftToRequest(role.draft!, site, userId);
+    const payload = mapRoleDraftToRequest(role.draft!, organizationId, userId);
     store.setRoleSaving(true);
     try {
       if (role.isCreating) {
@@ -53,7 +53,7 @@ export function useRoleManagement(site: string, userId: string) {
         await HrmAccessService.updateRole(role.selected!.handle, payload, userId);
         notification.success({ message: 'Role updated.' });
       }
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
       store.clearRoleDraft();
     } catch (err: unknown) {
@@ -61,41 +61,41 @@ export function useRoleManagement(site: string, userId: string) {
     } finally {
       store.setRoleSaving(false);
     }
-  }, [site, userId, store]);
+  }, [organizationId, userId, store]);
 
   const savePermissions = useCallback(async () => {
     const { role, permission } = useHrmAccessStore.getState();
     if (!role.selected) return;
     const payload = buildPermissionAssignRequest(
-      site,
+      organizationId,
       role.selected.roleCode,
       permission.selectedPermissionHandles,
       userId
     );
     store.setSavingPermissions(true);
     try {
-      await HrmAccessService.removeAllPermissionsFromRole(site, role.selected.roleCode, userId);
+      await HrmAccessService.removeAllPermissionsFromRole(organizationId, role.selected.roleCode, userId);
       if (payload.permissions.length > 0) {
         await HrmAccessService.assignPermissionsToRole(payload);
       }
       notification.success({ message: 'Permissions saved.' });
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
     } catch (err: unknown) {
       notification.error({ message: (err as Error).message ?? 'Failed to save permissions.' });
     } finally {
       store.setSavingPermissions(false);
     }
-  }, [site, userId, store]);
+  }, [organizationId, userId, store]);
 
   const deleteRole = useCallback(async () => {
     const { role } = useHrmAccessStore.getState();
     if (!role.selected || role.selected.isSystemRole) return;
     store.setRoleDeleting(true);
     try {
-      await HrmAccessService.deleteRole(site, role.selected.roleCode, userId);
+      await HrmAccessService.deleteRole(organizationId, role.selected.roleCode, userId);
       notification.success({ message: 'Role deleted.' });
-      const refreshed = await HrmAccessService.fetchAllRoles(site);
+      const refreshed = await HrmAccessService.fetchAllRoles(organizationId);
       store.setRoles(refreshed);
       store.selectRole(null);
     } catch (err: unknown) {
@@ -103,7 +103,7 @@ export function useRoleManagement(site: string, userId: string) {
     } finally {
       store.setRoleDeleting(false);
     }
-  }, [site, userId, store]);
+  }, [organizationId, userId, store]);
 
   return { loadRoles, selectRole, saveRole, savePermissions, deleteRole };
 }

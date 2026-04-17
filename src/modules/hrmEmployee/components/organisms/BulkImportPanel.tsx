@@ -9,6 +9,7 @@ import { Modal, Upload, Button, Alert, Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import Can from '../../../hrmAccess/components/Can';
 import type { BulkImportPanelProps } from '../../types/ui.types';
@@ -31,12 +32,11 @@ const BulkImportPanel: React.FC<BulkImportPanelProps> = ({ open, onClose }) => {
     setImporting(true);
     try {
       const cookies = parseCookies();
-      const site = cookies.site;
+      const organizationId = getOrganizationId();
       const importedBy = cookies.username || 'system';
 
       // Placeholder: actual implementation would parse CSV/Excel to CreateEmployeeRequest[]
-      const response = await HrmEmployeeService.bulkImport({
-        site,
+      const response = await HrmEmployeeService.bulkImport({ organizationId,
         employees: [],
         importedBy,
       });

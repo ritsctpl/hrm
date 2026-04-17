@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { parseCookies } from "nookies";
 import { message } from "antd";
 import { HrmTravelService } from "../services/hrmTravelService";
@@ -8,7 +9,7 @@ import { useHrmTravelStore } from "../stores/hrmTravelStore";
 
 export function useCoTravellerSearch() {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const employeeId =
     cookies.empId        ??
     cookies.employeeId   ??
@@ -39,8 +40,7 @@ export function useCoTravellerSearch() {
     debounceRef.current = setTimeout(async () => {
       setCoTravellerSearchLoading(true);
       try {
-        const data = await HrmTravelService.searchCoTravellers({
-          site,
+        const data = await HrmTravelService.searchCoTravellers({ organizationId,
           empId: employeeId,
           query: trimmed,
         });
@@ -51,7 +51,7 @@ export function useCoTravellerSearch() {
         setCoTravellerSearchLoading(false);
       }
     }, 300);
-  }, [site, employeeId, setEligibleCoTravellers, setCoTravellerSearchLoading]);
+  }, [organizationId, employeeId, setEligibleCoTravellers, setCoTravellerSearchLoading]);
 
   return { searchCoTravellers };
 }

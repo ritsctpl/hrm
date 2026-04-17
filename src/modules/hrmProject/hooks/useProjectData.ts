@@ -1,7 +1,7 @@
 'use client';
 // src/modules/hrmProject/hooks/useProjectData.ts
 import { useCallback } from 'react';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
 import type { Project, ResourceAllocation } from '../types/domain.types';
@@ -13,7 +13,7 @@ import type {
 function mapProjectResponse(r: ProjectResponse): Project {
   return {
     handle: r.handle,
-    site: r.site,
+    organizationId: r.organizationId,
     projectCode: r.projectCode,
     projectName: r.projectName,
     description: r.description,
@@ -56,7 +56,7 @@ function mapProjectResponse(r: ProjectResponse): Project {
 function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
   return {
     handle: r.handle,
-    site: r.site,
+    organizationId: r.organizationId,
     projectHandle: r.projectHandle,
     projectCode: r.projectCode,
     projectName: r.projectName,
@@ -81,20 +81,20 @@ function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
 
 export function useProjectData() {
   const store = useHrmProjectStore();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
 
   const loadProjects = useCallback(async () => {
     store.setLoadingProjects(true);
     try {
       const [projectsResult, kpisResult] = await Promise.allSettled([
         HrmProjectService.listProjects(
-          site,
+          organizationId,
           store.filterBU || undefined,
           store.filterDept || undefined,
           store.filterStatus || undefined,
           store.filterPM || undefined
         ),
-        HrmProjectService.getProjectKpis(site),
+        HrmProjectService.getProjectKpis(organizationId),
       ]);
 
       if (projectsResult.status === "fulfilled") {
@@ -102,7 +102,7 @@ export function useProjectData() {
         store.setProjects(
           projects.map((p) => ({
           handle: p.handle,
-          site,
+          organizationId,
           projectCode: p.projectCode,
           projectName: p.projectName,
           projectType: p.projectType as Project['projectType'],
@@ -153,11 +153,11 @@ export function useProjectData() {
     } finally {
       store.setLoadingProjects(false);
     }
-  }, [site, store.filterBU, store.filterDept, store.filterStatus, store.filterPM]);
+  }, [organizationId, store.filterBU, store.filterDept, store.filterStatus, store.filterPM]);
 
   const loadProjectDetail = useCallback(async (handle: string) => {
     try {
-      const data = await HrmProjectService.getProject(site, handle);
+      const data = await HrmProjectService.getProject(organizationId, handle);
       const project = mapProjectResponse(data);
       store.setSelectedProject(project);
       // Update in list too
@@ -167,36 +167,36 @@ export function useProjectData() {
     } catch (error) {
       console.error('Failed to load project detail:', error);
     }
-  }, [site, store.projects]);
+  }, [organizationId, store.projects]);
 
   const loadAllocations = useCallback(async (projectHandle: string) => {
     store.setLoadingAllocations(true);
     try {
-      const data = await HrmProjectService.getAllocationsByProject(site, projectHandle);
+      const data = await HrmProjectService.getAllocationsByProject(organizationId, projectHandle);
       store.setProjectAllocations(data.map(mapAllocationResponse));
     } catch (error) {
       console.error('Failed to load allocations:', error);
     } finally {
       store.setLoadingAllocations(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadPendingAllocations = useCallback(async () => {
     store.setLoadingApprovals(true);
     try {
-      const data = await HrmProjectService.getPendingApprovals(site);
+      const data = await HrmProjectService.getPendingApprovals(organizationId);
       store.setPendingAllocations(data.map(mapAllocationResponse));
     } catch (error) {
       console.error('Failed to load pending allocations:', error);
     } finally {
       store.setLoadingApprovals(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const checkCapacity = useCallback(async (employeeId: string, startDate: string, endDate: string) => {
     store.setLoadingCapacity(true);
     try {
-      const data = await HrmProjectService.checkCapacity({ site, employeeId, startDate, endDate });
+      const data = await HrmProjectService.checkCapacity({ organizationId, employeeId, startDate, endDate });
       store.setCapacityCheck({
         employeeId: data.employeeId,
         employeeName: data.employeeName,
@@ -210,13 +210,13 @@ export function useProjectData() {
     } finally {
       store.setLoadingCapacity(false);
     }
-  }, [site]);
+  }, [organizationId]);
 
   const loadCalendar = useCallback(async () => {
     store.setLoadingCalendar(true);
     try {
       const data = await HrmProjectService.getResourceCalendar(
-        site,
+        organizationId,
         store.calendarWeekStart,
         store.calendarBU || undefined,
         store.calendarDept || undefined
@@ -240,7 +240,7 @@ export function useProjectData() {
     } finally {
       store.setLoadingCalendar(false);
     }
-  }, [site, store.calendarWeekStart, store.calendarBU, store.calendarDept]);
+  }, [organizationId, store.calendarWeekStart, store.calendarBU, store.calendarDept]);
 
   return {
     loadProjects,

@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
 import Can from '../../../hrmAccess/components/Can';
 import { ONBOARDING_STEPS } from '../../utils/constants';
@@ -682,8 +683,8 @@ const OnboardingWizard: React.FC = () => {
     const loadBusinessUnits = async () => {
       if (selectedCompany) {
         try {
-          const site = parseCookies().site;
-          const data = await HrmOrganizationService.fetchBusinessUnits(site, selectedCompany);
+          const organizationId = getOrganizationId();
+          const data = await HrmOrganizationService.fetchBusinessUnits(organizationId, selectedCompany);
           const buOptions = (data || []).map((bu) => ({
             label: `${bu.buCode} - ${bu.buName}`,
             value: bu.handle,
@@ -704,8 +705,8 @@ const OnboardingWizard: React.FC = () => {
     const loadDepartments = async () => {
       if (selectedBU) {
         try {
-          const site = parseCookies().site;
-          const data = await HrmOrganizationService.fetchDepartments(site, selectedBU);
+          const organizationId = getOrganizationId();
+          const data = await HrmOrganizationService.fetchDepartments(organizationId, selectedBU);
           const deptOptions = (data || []).map((dept) => ({
             label: `${dept.deptCode} - ${dept.deptName}`,
             value: dept.handle,
@@ -724,15 +725,15 @@ const OnboardingWizard: React.FC = () => {
   const fetchDropdownOptions = async () => {
     setLoadingOptions(true);
     try {
-      const site = parseCookies().site;
-      if (!site) {
+      const organizationId = getOrganizationId();
+      if (!organizationId) {
         message.error('Site not found');
         return;
       }
 
       // Fetch companies/organizations
       try {
-        const response = await HrmOrganizationService.fetchBySite(site);
+        const response = await HrmOrganizationService.fetchBySite(organizationId);
         const companyData = Array.isArray(response) ? response : [response];
         const companyOptions = companyData.map((company) => ({
           label: company.companyName || company.legalName || company.tradeName || company.handle,
@@ -745,7 +746,7 @@ const OnboardingWizard: React.FC = () => {
 
       // Fetch locations
       try {
-        const locationsData = await HrmOrganizationService.fetchAllLocations(site);
+        const locationsData = await HrmOrganizationService.fetchAllLocations(organizationId);
         setLocations(
           locationsData.map((loc) => ({
             label: loc.name || loc.code || loc.id,
@@ -758,7 +759,7 @@ const OnboardingWizard: React.FC = () => {
 
       // Fetch employees for reporting manager dropdown
       try {
-        const employeesData = await HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 });
+        const employeesData = await HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 });
         setEmployees(
           (employeesData.employees || []).map((emp) => ({
             label: `${emp.fullName} (${emp.employeeCode})`,
@@ -814,10 +815,10 @@ const OnboardingWizard: React.FC = () => {
       setCheckingEmail(true);
       try {
         const cookies = parseCookies();
-        const site = cookies.site || 'RITS';
+        const organizationId = getOrganizationId();
         
         console.log('Checking email availability for:', draft.workEmail);
-        const result = await HrmEmployeeService.checkEmailAvailability(site, draft.workEmail);
+        const result = await HrmEmployeeService.checkEmailAvailability(organizationId, draft.workEmail);
         console.log('Email check result:', result);
         
         // If email is NOT available (already taken), show error and stop

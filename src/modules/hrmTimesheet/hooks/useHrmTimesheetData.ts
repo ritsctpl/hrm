@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../services/hrmTimesheetService';
 import { resolveEmployeeId } from '../utils/resolveEmployeeId';
@@ -50,13 +51,13 @@ export function mapTimesheetResponse(r: import('../types/api.types').TimesheetRe
 export function useHrmTimesheetData() {
   const store = useHrmTimesheetStore();
   const cookies = parseCookies();
-  const { site } = cookies;
+  const organizationId = getOrganizationId();
   const employeeId = resolveEmployeeId(cookies);
 
   const loadWeeklyTimesheets = useCallback(async () => {
     store.setLoadingWeek(true);
     try {
-      const data = await HrmTimesheetService.getWeeklyTimesheet(site, employeeId, store.selectedWeekStart);
+      const data = await HrmTimesheetService.getWeeklyTimesheet(organizationId, employeeId, store.selectedWeekStart);
       store.setWeeklyTimesheets(data.dailyTimesheets.map(mapTimesheetResponse));
       store.setWeekSummary({
         employeeId: data.employeeId,
@@ -76,12 +77,12 @@ export function useHrmTimesheetData() {
     } finally {
       store.setLoadingWeek(false);
     }
-  }, [site, employeeId, store.selectedWeekStart]);
+  }, [organizationId, employeeId, store.selectedWeekStart]);
 
   const loadDayTimesheet = useCallback(async (date: string) => {
     store.setLoadingDay(true);
     try {
-      const data = await HrmTimesheetService.getTimesheetByDate(site, employeeId, date);
+      const data = await HrmTimesheetService.getTimesheetByDate(organizationId, employeeId, date);
       store.setCurrentDayTimesheet(mapTimesheetResponse(data));
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -93,19 +94,19 @@ export function useHrmTimesheetData() {
     } finally {
       store.setLoadingDay(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const loadPendingApprovals = useCallback(async () => {
     store.setLoadingApprovals(true);
     try {
-      const data = await HrmTimesheetService.getPendingApprovals(site, employeeId);
+      const data = await HrmTimesheetService.getPendingApprovals(organizationId, employeeId);
       store.setPendingApprovals(data.map(mapTimesheetResponse));
     } catch (err) {
       console.error('Failed to load pending approvals:', err);
     } finally {
       store.setLoadingApprovals(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   const loadTeamTimesheets = useCallback(async () => {
     store.setLoadingTeam(true);
@@ -113,7 +114,7 @@ export function useHrmTimesheetData() {
       const endDate = new Date(store.selectedWeekStart);
       endDate.setDate(endDate.getDate() + 6);
       const data = await HrmTimesheetService.getTeamTimesheets(
-        site,
+        organizationId,
         employeeId,
         store.selectedWeekStart,
         endDate.toISOString().slice(0, 10)
@@ -135,11 +136,11 @@ export function useHrmTimesheetData() {
     } finally {
       store.setLoadingTeam(false);
     }
-  }, [site, employeeId, store.selectedWeekStart]);
+  }, [organizationId, employeeId, store.selectedWeekStart]);
 
   const loadUnplannedCategories = useCallback(async () => {
     try {
-      const data = await HrmTimesheetService.getUnplannedCategories(site);
+      const data = await HrmTimesheetService.getUnplannedCategories(organizationId);
       store.setUnplannedCategories(data.map((c) => ({
         handle: c.handle,
         site: c.site,
@@ -151,7 +152,7 @@ export function useHrmTimesheetData() {
     } catch (err) {
       console.error('Failed to load unplanned categories:', err);
     }
-  }, [site]);
+  }, [organizationId]);
 
   return {
     loadWeeklyTimesheets,

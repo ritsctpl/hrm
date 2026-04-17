@@ -7,17 +7,17 @@ import NotificationPopover from './NotificationPopover';
 import styles from '../../styles/NotificationBell.module.css';
 
 interface NotificationBellProps {
-  site: string;
+  organizationId: string;
   recipientId: string;
 }
 
-export default function NotificationBell({ site, recipientId }: NotificationBellProps) {
+export default function NotificationBell({ organizationId, recipientId }: NotificationBellProps) {
   const { unreadCount, isPopoverOpen, setPopoverOpen } = useHrmNotificationStore();
 
   return (
     <Popover
       content={
-        <NotificationPopover site={site} recipientId={recipientId} />
+        <NotificationPopover organizationId={organizationId} recipientId={recipientId} />
       }
       trigger="click"
       open={isPopoverOpen}

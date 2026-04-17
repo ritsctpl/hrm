@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Drawer, Form, Input, DatePicker, Select, Button, Space, message, Spin, Empty } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
@@ -26,10 +27,10 @@ export default function AllocationPanel() {
 
   const loadInStoreAssets = async () => {
     if (!selectedRequest) return;
-    const { site } = parseCookies();
+    const organizationId = getOrganizationId();
     setLoadingAssets(true);
     try {
-      const assets = await HrmAssetService.getInStoreByCategory(site ?? '', selectedRequest.categoryCode);
+      const assets = await HrmAssetService.getInStoreByCategory(organizationId, selectedRequest.categoryCode);
       setInStoreAssets(assets);
     } catch {
       message.error('Failed to load available assets');
@@ -45,12 +46,12 @@ export default function AllocationPanel() {
   };
 
   const handleAllocate = async () => {
-    const { site, userId } = parseCookies();
+    const { organizationId, userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setAllocatingAsset(true);
       await HrmAssetService.allocateAsset({
-        site: site ?? '',
+        organizationId: organizationId ?? '',
         requestId: selectedRequest!.requestId,
         assetId: values.assetId,
         allocationDate: dayjs(values.allocationDate).format('YYYY-MM-DD'),

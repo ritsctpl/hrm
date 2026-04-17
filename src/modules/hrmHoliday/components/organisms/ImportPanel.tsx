@@ -5,6 +5,7 @@ import { Drawer, Button, Upload, Typography, Alert, Divider, Space, message } fr
 import type { UploadFile } from 'antd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import ImportPreviewRow from '../molecules/ImportPreviewRow';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import { useHrmHolidayStore } from '../../stores/hrmHolidayStore';
@@ -28,7 +29,7 @@ export default function ImportPanel({
   const { importResult, setImportResult, setImportLoading } = useHrmHolidayStore();
 
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const userId = cookies.userId ?? '';
 
   const parseFile = async (file: File): Promise<HolidayImportRow[]> => {
@@ -66,8 +67,7 @@ export default function ImportPanel({
     setValidating(true);
     setImportLoading(true);
     try {
-      const res = await HrmHolidayService.importHolidays({
-        site,
+      const res = await HrmHolidayService.importHolidays({ organizationId,
         groupHandle,
         dryRun: true,
         importedBy: userId,
@@ -96,8 +96,7 @@ export default function ImportPanel({
   const handleCommit = async () => {
     setCommitting(true);
     try {
-      const res = await HrmHolidayService.importHolidays({
-        site,
+      const res = await HrmHolidayService.importHolidays({ organizationId,
         groupHandle,
         dryRun: false,
         importedBy: userId,

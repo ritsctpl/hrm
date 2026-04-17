@@ -50,25 +50,28 @@ export function useCan(moduleCode?: string, objectName?: string): ModulePermissi
   //      This enforces per-object grants: an object without an explicit
   //      grant is treated as denied even when the module-level grant is
   //      broader. The only escape hatch is the <Can passIf> prop.
-  //   2. Cache not loaded yet → transient; fall back to module-level so
-  //      the UI doesn't flicker buttons in/out during the initial load.
-  //      Once loadSectionPermissions completes, rule 1 takes over.
+  //   2. Cache not loaded yet → return EMPTY so buttons don't flash
+  //      based on inflated module-level perms. Once section cache loads,
+  //      rule 1 takes over. Root object cascade is already applied in
+  //      the cache by loadSectionPermissions, so strict lookup is safe.
   if (objectName && resolvedCode) {
     if (cacheForModule !== undefined) {
       return cacheForModule[objectName] || EMPTY;
     }
-    return moduleFromStore || EMPTY;
+    return EMPTY;
   }
 
   // Module-level check (no object specified): resolve via the root object
   // (e.g., employee_module) when the section cache is loaded. This gives
   // strict module-level V/A/E/D from the root object's grants instead of
   // the inflated actions from userModulesByOrganization.
+  // Before cache loads, return EMPTY so isAdmin etc. start false.
   if (!objectName && resolvedCode) {
     const rootCode = getRootObjectCode(resolvedCode);
     if (rootCode && cacheForModule !== undefined) {
       return cacheForModule[rootCode] || EMPTY;
     }
+    if (rootCode) return EMPTY;
   }
 
   if (!moduleCode && ctx) {

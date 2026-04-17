@@ -8,11 +8,11 @@ import { HrmAccessService } from '../../services/hrmAccessService';
 import type { ImportRowError } from '../../types/api.types';
 
 interface Props {
-  site: string;
+  organizationId: string;
   user: { id: string; name: string } | null;
 }
 
-const ImportExportTemplate: React.FC<Props> = ({ site, user }) => {
+const ImportExportTemplate: React.FC<Props> = ({ organizationId, user }) => {
   const [importType, setImportType] = useState<'roles' | 'userAssignments'>('roles');
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -27,7 +27,7 @@ const ImportExportTemplate: React.FC<Props> = ({ site, user }) => {
     }
     setPreviewing(true);
     try {
-      const result = await HrmAccessService.previewImport(site, selectedFile);
+      const result = await HrmAccessService.previewImport(organizationId, selectedFile);
       setPreviewData(result.errors ?? []);
       setPreviewStats({
         total: result.totalRows,
@@ -46,8 +46,8 @@ const ImportExportTemplate: React.FC<Props> = ({ site, user }) => {
     setImporting(true);
     try {
       const result = importType === 'roles'
-        ? await HrmAccessService.importRoles(site, selectedFile, user?.id ?? '')
-        : await HrmAccessService.importUserAssignments(site, selectedFile, user?.id ?? '');
+        ? await HrmAccessService.importRoles(organizationId, selectedFile, user?.id ?? '')
+        : await HrmAccessService.importUserAssignments(organizationId, selectedFile, user?.id ?? '');
       message.success(
         `Import complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`
       );
@@ -63,7 +63,7 @@ const ImportExportTemplate: React.FC<Props> = ({ site, user }) => {
 
   const handleExportRoles = async (format: 'csv' | 'json') => {
     try {
-      const blob = await HrmAccessService.exportRoles(site, format);
+      const blob = await HrmAccessService.exportRoles(organizationId, format);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -78,7 +78,7 @@ const ImportExportTemplate: React.FC<Props> = ({ site, user }) => {
 
   const handleExportPermissions = async (format: 'csv' | 'json') => {
     try {
-      const blob = await HrmAccessService.exportRolePermissions(site, format);
+      const blob = await HrmAccessService.exportRolePermissions(organizationId, format);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

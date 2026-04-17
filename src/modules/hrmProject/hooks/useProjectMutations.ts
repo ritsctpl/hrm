@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
 import { useProjectData } from './useProjectData';
@@ -11,13 +12,12 @@ import type { ProjectFormValues, AllocationFormValues } from '../types/ui.types'
 export function useProjectMutations() {
   const store = useHrmProjectStore();
   const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
-  const { site } = parseCookies();
+  const organizationId = getOrganizationId();
 
   const createProject = useCallback(async (values: ProjectFormValues, createdBy: string) => {
     store.setSavingProject(true);
     try {
-      await HrmProjectService.createProject({
-        site,
+      await HrmProjectService.createProject({ organizationId,
         projectName: values.projectName,
         projectType: values.projectType,
         clientName: values.clientName,
@@ -44,12 +44,12 @@ export function useProjectMutations() {
     } finally {
       store.setSavingProject(false);
     }
-  }, [site, loadProjects]);
+  }, [organizationId, loadProjects]);
 
   const updateProject = useCallback(async (handle: string, values: Partial<ProjectFormValues>, modifiedBy: string) => {
     store.setSavingProject(true);
     try {
-      await HrmProjectService.updateProject(handle, { ...values, site, modifiedBy } as any);
+      await HrmProjectService.updateProject(handle, { ...values, organizationId, modifiedBy } as any);
       message.success('Project updated successfully');
       store.closeProjectForm();
       await loadProjects();
@@ -63,12 +63,12 @@ export function useProjectMutations() {
     } finally {
       store.setSavingProject(false);
     }
-  }, [site, loadProjects]);
+  }, [organizationId, loadProjects]);
 
   const deleteProject = useCallback(async (handle: string) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     try {
-      await HrmProjectService.deleteProject(site, handle, userId);
+      await HrmProjectService.deleteProject(organizationId, handle, userId);
       message.success('Project deleted');
       store.removeProjectFromList(handle);
       await loadProjects();
@@ -76,7 +76,7 @@ export function useProjectMutations() {
       message.error('Cannot delete project (may have approved allocations)');
       console.error(error);
     }
-  }, [site, loadProjects]);
+  }, [organizationId, loadProjects]);
 
   const updateProjectStatus = useCallback(async (
     handle: string,
@@ -85,14 +85,14 @@ export function useProjectMutations() {
     modifiedBy: string
   ) => {
     try {
-      await HrmProjectService.updateProjectStatus({ site, handle, status, reason, modifiedBy });
+      await HrmProjectService.updateProjectStatus({ organizationId, handle, status, reason, modifiedBy });
       message.success('Project status updated');
       await loadProjects();
     } catch (error) {
       message.error('Failed to update project status');
       console.error(error);
     }
-  }, [site, loadProjects]);
+  }, [organizationId, loadProjects]);
 
   const createAllocation = useCallback(async (
     projectHandle: string,
@@ -101,8 +101,7 @@ export function useProjectMutations() {
   ) => {
     store.setSavingAllocation(true);
     try {
-      await HrmProjectService.createAllocation({
-        site,
+      await HrmProjectService.createAllocation({ organizationId,
         projectHandle,
         employeeId: values.employeeId,
         hoursPerDay: values.hoursPerDay,
@@ -122,31 +121,31 @@ export function useProjectMutations() {
     } finally {
       store.setSavingAllocation(false);
     }
-  }, [site, loadAllocations]);
+  }, [organizationId, loadAllocations]);
 
   const submitAllocation = useCallback(async (handle: string, projectHandle: string) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     try {
-      await HrmProjectService.submitAllocation(site, handle, userId);
+      await HrmProjectService.submitAllocation(organizationId, handle, userId);
       message.success('Allocation submitted for approval');
       await loadAllocations(projectHandle);
     } catch (error) {
       message.error('Failed to submit allocation');
       console.error(error);
     }
-  }, [site, loadAllocations]);
+  }, [organizationId, loadAllocations]);
 
   const cancelAllocation = useCallback(async (handle: string, projectHandle: string) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     try {
-      await HrmProjectService.cancelAllocation(site, handle, userId);
+      await HrmProjectService.cancelAllocation(organizationId, handle, userId);
       message.success('Allocation cancelled');
       await loadAllocations(projectHandle);
     } catch (error) {
       message.error('Failed to cancel allocation');
       console.error(error);
     }
-  }, [site, loadAllocations]);
+  }, [organizationId, loadAllocations]);
 
   const approveAllocation = useCallback(async (
     allocationHandle: string,
@@ -156,8 +155,7 @@ export function useProjectMutations() {
   ) => {
     store.setApprovingAllocation(true);
     try {
-      await HrmProjectService.approveOrRejectAllocation({
-        site,
+      await HrmProjectService.approveOrRejectAllocation({ organizationId,
         allocationHandle,
         action,
         remarks,
@@ -171,7 +169,7 @@ export function useProjectMutations() {
     } finally {
       store.setApprovingAllocation(false);
     }
-  }, [site, loadPendingAllocations]);
+  }, [organizationId, loadPendingAllocations]);
 
   const addMilestone = useCallback(async (
     projectHandle: string,
@@ -207,14 +205,14 @@ export function useProjectMutations() {
     modifiedBy: string
   ) => {
     try {
-      await HrmProjectService.updateMilestoneStatus({ site, projectHandle, milestoneId, status, modifiedBy });
+      await HrmProjectService.updateMilestoneStatus({ organizationId, projectHandle, milestoneId, status, modifiedBy });
       message.success('Milestone status updated');
       await loadProjectDetail(projectHandle);
     } catch (error) {
       message.error('Failed to update milestone status');
       console.error(error);
     }
-  }, [site, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail]);
 
   return {
     createProject,

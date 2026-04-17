@@ -1,20 +1,21 @@
 import { useCallback } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmDashboardService } from '../services/hrmDashboardService';
 import { useHrmDashboardStore } from '../stores/hrmDashboardStore';
 
 export function useEmployeeWidgets() {
   const store = useHrmDashboardStore();
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const employeeId = cookies.employeeId ?? cookies.userId ?? '';
 
   const loadEmployeeData = useCallback(async () => {
-    if (!site || !employeeId) return;
+    if (!organizationId || !employeeId) return;
 
     store.setLoadingProfile(true);
     try {
-      const res = await HrmDashboardService.getEmployeeDashboard({ site, employeeId });
+      const res = await HrmDashboardService.getEmployeeDashboard({ organizationId, employeeId });
       // The backend returns { widgets: DashboardWidget[], layout, alerts, ... }
       // Store the full response; components should read from widgets array
       if (res?.widgets) {
@@ -31,7 +32,7 @@ export function useEmployeeWidgets() {
     } finally {
       store.setLoadingProfile(false);
     }
-  }, [site, employeeId]);
+  }, [organizationId, employeeId]);
 
   return { loadEmployeeData };
 }

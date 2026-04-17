@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Spin, Empty, Button, Tag, Tooltip, Avatar, Segmented } from 'antd';
 import {
   ApartmentOutlined,
@@ -359,14 +360,14 @@ const OrgHierarchyChart: React.FC = () => {
   // hierarchy call.
   useEffect(() => {
     const cookies = parseCookies();
-    const site = cookies.site || '';
-    if (!site || !orgName) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId || !orgName) return;
     let cancelled = false;
     Promise.all([
-      HrmEmployeeService.fetchDirectory({ site, page: 0, size: 500 }).catch(
+      HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 500 }).catch(
         () => ({ employees: [] } as { employees: EmployeeDirectoryRow[] }),
       ),
-      HrmEmployeeService.fetchEmployeeHierarchy(site, orgName).catch(
+      HrmEmployeeService.fetchEmployeeHierarchy(organizationId, orgName).catch(
         () => [] as EmployeeHierarchyNode[],
       ),
     ]).then(([dirRes, hier]) => {

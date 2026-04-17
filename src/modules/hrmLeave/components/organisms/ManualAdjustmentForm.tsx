@@ -10,8 +10,7 @@ import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
-const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
-  site,
+const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizationId,
   onAdjusted,
 }) => {
   const cookies = parseCookies();
@@ -25,8 +24,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({
     try {
       const values = await form.validateFields();
       setLoading(true);
-      await HrmLeaveService.postManualAdjustment({
-        site,
+      await HrmLeaveService.postManualAdjustment({ organizationId,
         employeeId: values.employeeId,
         leaveTypeCode: values.leaveTypeCode,
         quantity: parseFloat(values.quantity),

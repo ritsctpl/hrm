@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Drawer, Table, Button, Select, Empty, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import type { AuditLogEntry } from '../../types/domain.types';
 
@@ -35,9 +36,9 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
       setLoadingEmployees(true);
       try {
         const cookies = parseCookies();
-        const site = cookies.site;
-        if (!site) return;
-        const response = await HrmEmployeeService.fetchDirectory({ site, page: 0, size: 1000 });
+        const organizationId = getOrganizationId();
+        if (!organizationId) return;
+        const response = await HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 });
         const options = (response.employees || []).map((emp) => ({
           value: emp.handle,
           label: `${emp.employeeCode} - ${emp.fullName}`,
@@ -60,8 +61,8 @@ const EmployeeAuditLogPanel: React.FC<Props> = ({ open, onClose, employeeHandle 
     setLoading(true);
     try {
       const cookies = parseCookies();
-      const site = cookies.site;
-      const result = await HrmEmployeeService.getAuditLog(site, handle.trim(), p, 20);
+      const organizationId = getOrganizationId();
+      const result = await HrmEmployeeService.getAuditLog(organizationId, handle.trim(), p, 20);
       setData(result.content);
       setTotal(result.totalElements);
       setPage(p);

@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmOrganizationService } from '../services/hrmOrganizationService';
 import { validateCompanyProfile, validateBusinessUnit } from '../utils/validations';
 import type {
@@ -187,10 +188,7 @@ const initialHierarchyState: HierarchyState = {
 // ============================================
 // Helper
 // ============================================
-function getSite(): string {
-  const cookies = parseCookies();
-  return cookies.site || '';
-}
+// getSite removed — use getOrganizationId() from cookieUtils
 
 function getUserId(): string {
   const cookies = parseCookies();
@@ -268,8 +266,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Company List
   // ------------------------------------------
   fetchCompanyList: async () => {
-    const site = getSite();
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
 
     set((state) => ({
       companyList: { ...state.companyList, isLoading: true },
@@ -279,11 +277,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       let data;
       // TODO: Uncomment fetchAllCompanies when API is ready
       // try {
-      //   data = await HrmOrganizationService.fetchAllCompanies(site);
+      //   data = await HrmOrganizationService.fetchAllCompanies(organizationId);
       // } catch {
-      //   data = await HrmOrganizationService.fetchBySite(site);
+      //   data = await HrmOrganizationService.fetchBySite(organizationId);
       // }
-      data = await HrmOrganizationService.fetchBySite(site);
+      data = await HrmOrganizationService.fetchBySite(organizationId);
       
       // Backend may return single object or array
       const rawItems = Array.isArray(data) ? data : data ? [data] : [];
@@ -311,12 +309,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   deleteCompany: async (handle) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
-    if (!site || !userId) return;
+    if (!organizationId || !userId) return;
 
     try {
-      const response = await HrmOrganizationService.deleteCompany(site, handle, userId);
+      const response = await HrmOrganizationService.deleteCompany(organizationId, handle, userId);
       
       // Check if response has error code or error message
       if (response?.errorCode || response?.message_details?.msg_type === 'E') {
@@ -346,16 +344,16 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   fetchCompanyProfile: async (handle?: string) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const targetHandle = handle || get().selectedCompanyHandle;
-    if (!site || !targetHandle) return;
+    if (!organizationId || !targetHandle) return;
 
     set((state) => ({
       companyProfile: { ...state.companyProfile, isLoading: true, errors: {} },
     }));
 
     try {
-      const data = await HrmOrganizationService.fetchCompanyByHandle(site, targetHandle);
+      const data = await HrmOrganizationService.fetchCompanyByHandle(organizationId, targetHandle);
       
       // If logoBase64 contains base64 (starts with data:), use it as logoUrl for preview
       const processedData = { ...data };
@@ -414,10 +412,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveCompanyProfile: async () => {
     const { companyProfile, selectedCompanyHandle } = get();
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
 
-    if (!companyProfile.draft || !site) return;
+    if (!companyProfile.draft || !organizationId) return;
 
     // Validate before saving
     const validationErrors = validateCompanyProfile(companyProfile.draft);
@@ -470,7 +468,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       // Create payload with all required fields
       // NOTE: Backend expects 'gstIn' field name (camelCase)
       const payload: any = {
-        site,
+        organizationId,
         legalName: companyProfile.draft.legalName || '',
         tradeName: companyProfile.draft.tradeName || undefined,
         industryType: companyProfile.draft.industryType || companyProfile.draft.industry || '',
@@ -561,11 +559,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Business Units
   // ------------------------------------------
   fetchBusinessUnits: async () => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const { companyProfile, selectedCompanyHandle } = get();
     const companyHandle = companyProfile.data?.handle || (selectedCompanyHandle !== 'new' ? selectedCompanyHandle : null);
 
-    if (!site || !companyHandle) {
+    if (!organizationId || !companyHandle) {
       return;
     }
 
@@ -574,7 +572,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      const list = await HrmOrganizationService.fetchBusinessUnits(site, companyHandle);
+      const list = await HrmOrganizationService.fetchBusinessUnits(organizationId, companyHandle);
       set((state) => ({
         businessUnit: { ...state.businessUnit, list, isLoading: false },
       }));
@@ -629,11 +627,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveBusinessUnit: async () => {
     const { businessUnit, companyProfile, selectedCompanyHandle } = get();
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
     const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
-    if (!businessUnit.draft || !site || !companyHandle) return;
+    if (!businessUnit.draft || !organizationId || !companyHandle) return;
 
     // Validate before saving
     const validationErrors = validateBusinessUnit(businessUnit.draft);
@@ -654,7 +652,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const payload: BusinessUnitRequest = {
-        site,
+        organizationId,
         companyHandle,
         buCode: businessUnit.draft.buCode || '',
         buName: businessUnit.draft.buName || '',
@@ -731,12 +729,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteBusinessUnit: async (handle) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
-    if (!site) return;
+    if (!organizationId) return;
 
     try {
-      const response = await HrmOrganizationService.deleteBusinessUnit(site, handle, userId);
+      const response = await HrmOrganizationService.deleteBusinessUnit(organizationId, handle, userId);
       
       // Check if response has error code or error message
       if (response?.errorCode || response?.message_details?.msg_type === 'E') {
@@ -797,8 +795,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Departments
   // ------------------------------------------
   fetchDepartments: async (buHandle) => {
-    const site = getSite();
-    if (!site || !buHandle) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId || !buHandle) return;
 
     set((state) => ({
       department: {
@@ -811,8 +809,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const [list, hierarchy] = await Promise.all([
-        HrmOrganizationService.fetchDepartments(site, buHandle),
-        HrmOrganizationService.fetchDepartmentHierarchy(site, buHandle),
+        HrmOrganizationService.fetchDepartments(organizationId, buHandle),
+        HrmOrganizationService.fetchDepartmentHierarchy(organizationId, buHandle),
       ]);
 
       set((state) => ({
@@ -891,11 +889,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveDepartment: async () => {
     const { department, businessUnit } = get();
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
     const buHandle = department.selectedBuHandle;
 
-    if (!department.draft || !site || !buHandle) return;
+    if (!department.draft || !organizationId || !buHandle) return;
 
     // Get the selected business unit to access companyHandle
     const selectedBu = businessUnit.list.find((bu) => bu.handle === buHandle);
@@ -907,7 +905,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const payload: DepartmentRequest = {
-        site,
+        organizationId,
         buHandle,
         companyHandle: selectedBu.companyHandle,
         deptCode: department.draft.deptCode || '',
@@ -954,7 +952,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const { department: updatedDept } = get();
       if (updatedDept.selectedBuHandle) {
         const hierarchy = await HrmOrganizationService.fetchDepartmentHierarchy(
-          site,
+          organizationId,
           updatedDept.selectedBuHandle
         );
         set((state) => ({
@@ -979,12 +977,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteDepartment: async (handle) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
-    if (!site) return;
+    if (!organizationId) return;
 
     try {
-      const response = await HrmOrganizationService.deleteDepartment(site, handle, userId);
+      const response = await HrmOrganizationService.deleteDepartment(organizationId, handle, userId);
       
       // Check if response has error code or error message
       if (response?.errorCode || response?.message_details?.msg_type === 'E') {
@@ -1011,7 +1009,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const { department } = get();
       if (department.selectedBuHandle) {
         const hierarchy = await HrmOrganizationService.fetchDepartmentHierarchy(
-          site,
+          organizationId,
           department.selectedBuHandle
         );
         set((state) => ({
@@ -1057,15 +1055,15 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Locations
   // ------------------------------------------
   fetchLocations: async () => {
-    const site = getSite();
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
 
     set((state) => ({
       location: { ...state.location, isLoading: true, errors: {} },
     }));
 
     try {
-      const list = await HrmOrganizationService.fetchAllLocations(site);
+      const list = await HrmOrganizationService.fetchAllLocations(organizationId);
       set((state) => ({
         location: { ...state.location, list, isLoading: false },
       }));
@@ -1120,10 +1118,10 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveLocation: async () => {
     const { location } = get();
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
 
-    if (!location.draft || !site) return;
+    if (!location.draft || !organizationId) return;
 
     // Validate location data
     const { validateLocation } = await import('../utils/validations');
@@ -1146,7 +1144,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const payload: LocationRequest = {
-        site,
+        organizationId,
         code: location.draft.code || '',
         name: location.draft.name || '',
         addressLine1: location.draft.addressLine1 || '',
@@ -1206,12 +1204,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteLocation: async (id) => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const userId = getUserId();
-    if (!site) return;
+    if (!organizationId) return;
 
     try {
-      await HrmOrganizationService.deleteLocation(site, id, userId);
+      await HrmOrganizationService.deleteLocation(organizationId, id, userId);
       set((state) => ({
         location: {
           ...state.location,
@@ -1256,18 +1254,18 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Hierarchy
   // ------------------------------------------
   fetchHierarchy: async () => {
-    const site = getSite();
+    const organizationId = getOrganizationId();
     const { companyProfile, selectedCompanyHandle } = get();
     const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
-    if (!site || !companyHandle) return;
+    if (!organizationId || !companyHandle) return;
 
     set((state) => ({
       hierarchy: { ...state.hierarchy, isLoading: true },
     }));
 
     try {
-      const data = await HrmOrganizationService.fetchOrgHierarchy(site, companyHandle);
+      const data = await HrmOrganizationService.fetchOrgHierarchy(organizationId, companyHandle);
       set({
         hierarchy: {
           data: data as unknown as OrgHierarchy,
@@ -1288,8 +1286,8 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Audit Log
   // ------------------------------------------
   fetchAuditLog: async (entityType?: string, entityHandle?: string) => {
-    const site = getSite();
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
 
     set((state) => ({
       auditLog: { ...state.auditLog, isLoading: true },
@@ -1297,7 +1295,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const entries = await HrmOrganizationService.fetchAuditLog(
-        site,
+        organizationId,
         entityType || '',
         entityHandle || ''
       );
@@ -1325,15 +1323,15 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Data Completeness
   // ------------------------------------------
   fetchDataCompleteness: async (entityType?: string) => {
-    const site = getSite();
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
 
     set((state) => ({
       dataCompleteness: { ...state.dataCompleteness, isLoading: true },
     }));
 
     try {
-      const rows = await HrmOrganizationService.generateDataCompletenessReport(site, entityType);
+      const rows = await HrmOrganizationService.generateDataCompletenessReport(organizationId, entityType);
       set((state) => ({
         dataCompleteness: { ...state.dataCompleteness, rows: Array.isArray(rows) ? rows : [], isLoading: false },
       }));

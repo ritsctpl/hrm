@@ -9,7 +9,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { UserAccessReportResponse, UserRoleAssignmentResponse } from '../../types/api.types';
 
 interface Props {
-  site: string;
+  organizationId: string;
 }
 
 interface UserOption {
@@ -18,7 +18,7 @@ interface UserOption {
   email: string;
 }
 
-const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
+const RbacReportsTemplate: React.FC<Props> = ({ organizationId }) => {
   const [userAccessData, setUserAccessData] = useState<UserAccessReportResponse[]>([]);
   const [orphanedData, setOrphanedData] = useState<UserRoleAssignmentResponse[]>([]);
   const [loadingAccess, setLoadingAccess] = useState(false);
@@ -31,13 +31,12 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
   useEffect(() => {
     loadUsers('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site]);
+  }, [organizationId]);
 
   const loadUsers = async (query: string) => {
     setSearchingUsers(true);
     try {
-      const response = await HrmAccessService.fetchEmployeeDirectory({
-        site,
+      const response = await HrmAccessService.fetchEmployeeDirectory({ organizationId,
         page: 0,
         size: 100,
         searchTerm: query,
@@ -67,7 +66,7 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
     }
     setLoadingAccess(true);
     try {
-      const data = await HrmAccessService.getUserAccessReport(site, selectedUserEmail);
+      const data = await HrmAccessService.getUserAccessReport(organizationId, selectedUserEmail);
       setUserAccessData(data);
     } catch {
       message.error('Failed to load user access report');
@@ -79,7 +78,7 @@ const RbacReportsTemplate: React.FC<Props> = ({ site }) => {
   const loadOrphanedReport = async () => {
     setLoadingOrphaned(true);
     try {
-      const data = await HrmAccessService.getOrphanedExpiredAssignments(site);
+      const data = await HrmAccessService.getOrphanedExpiredAssignments(organizationId);
       setOrphanedData(data);
     } catch {
       message.error('Failed to load orphaned/expired report');

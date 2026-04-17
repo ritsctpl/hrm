@@ -10,12 +10,11 @@ import styles from "../../styles/HrmLeave.module.css";
 const { Title, Text } = Typography;
 
 interface YearEndOperationsPanelProps {
-  site: string;
+  organizationId: string;
   onProcessed?: () => void;
 }
 
-const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
-  site,
+const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({ organizationId,
   onProcessed,
 }) => {
   const cookies = parseCookies();
@@ -33,8 +32,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
   const handleCarryForward = async () => {
     setCarryLoading(true);
     try {
-      await HrmLeaveService.processCarryForward({
-        site,
+      await HrmLeaveService.processCarryForward({ organizationId,
         year: carryYear,
         triggeredBy: userId,
       });
@@ -50,8 +48,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
   const handleLapse = async () => {
     setLapseLoading(true);
     try {
-      await HrmLeaveService.processLapse({
-        site,
+      await HrmLeaveService.processLapse({ organizationId,
         year: lapseYear,
         triggeredBy: userId,
       });
@@ -67,8 +64,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
   const handleEncashment = async () => {
     setEncashLoading(true);
     try {
-      await HrmLeaveService.processEncashment({
-        site,
+      await HrmLeaveService.processEncashment({ organizationId,
         year: encashYear,
         triggeredBy: userId,
       });
@@ -103,7 +99,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
               <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run carry forward?"
-                  description={`Process carry forward for ${site} / ${carryYear}`}
+                  description={`Process carry forward for ${organizationId} / ${carryYear}`}
                   onConfirm={handleCarryForward}
                   okText="Run"
                   cancelText="Cancel"
@@ -133,7 +129,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
               <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run lapse?"
-                  description={`Process lapse for ${site} / ${lapseYear}`}
+                  description={`Process lapse for ${organizationId} / ${lapseYear}`}
                   onConfirm={handleLapse}
                   okText="Run"
                   cancelText="Cancel"
@@ -163,7 +159,7 @@ const YearEndOperationsPanel: React.FC<YearEndOperationsPanelProps> = ({
               <Can I="add" object="leave_year_end" passIf={true}>
                 <Popconfirm
                   title="Run encashment?"
-                  description={`Process encashment for ${site} / ${encashYear}`}
+                  description={`Process encashment for ${organizationId} / ${encashYear}`}
                   onConfirm={handleEncashment}
                   okText="Run"
                   cancelText="Cancel"

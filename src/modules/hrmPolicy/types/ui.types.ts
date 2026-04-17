@@ -36,7 +36,7 @@ export interface PolicyFormDrawerProps {
   open: boolean;
   editPolicy?: PolicyDocument | null;
   categories: PolicyCategory[];
-  site: string;
+  organizationId: string;
   onClose: () => void;
   onSaved: () => void;
 }

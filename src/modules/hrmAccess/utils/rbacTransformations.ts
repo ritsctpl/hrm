@@ -3,11 +3,11 @@ import type { RoleRequest, AssignPermissionsRequest, PermissionsMatrixResponse }
 
 export function mapRoleDraftToRequest(
   draft: Partial<Role>,
-  site: string,
+  organizationId: string,
   userId: string
 ): RoleRequest {
   return {
-    site,
+    organizationId,
     roleCode: draft.roleCode ?? '',
     roleName: draft.roleName ?? '',
     roleScope: draft.roleScope ?? 'GLOBAL',
@@ -19,13 +19,13 @@ export function mapRoleDraftToRequest(
 }
 
 export function buildPermissionAssignRequest(
-  site: string,
+  organizationId: string,
   roleCode: string,
   selectedHandles: Set<string>,
   userId: string
 ): AssignPermissionsRequest {
   return {
-    site,
+    organizationId,
     roleCode,
     permissions: Array.from(selectedHandles).map((handle) => ({
       permissionHandle: handle,

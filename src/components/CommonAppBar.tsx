@@ -72,8 +72,8 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
 
   // Derive from RBAC context
   const site = rbac.currentOrganizationId;
-  const availableSites = rbac.organizations.map((org) => org.site);
-  const currentOrg = rbac.organizations.find(o => o.site === site);
+  const availableSites = rbac.organizations.map((org) => org.organizationId);
+  const currentOrg = rbac.organizations.find(o => o.organizationId === site);
   const orgDisplayName = currentOrg?.organizationName || site || '';
   const allActivities = rbac.currentOrgModules.map((m) => ({
     description: m.moduleName,

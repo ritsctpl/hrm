@@ -160,12 +160,12 @@ export interface HolidayListTableProps {
 
 export interface AuditLogDrawerProps {
   groupHandle: string;
-  site: string;
+  organizationId: string;
 }
 
 export interface HrmHolidayScreenProps {
   group: HolidayGroup;
-  site: string;
+  organizationId: string;
   permissions: HolidayPermissions;
 }
 

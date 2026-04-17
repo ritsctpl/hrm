@@ -40,7 +40,7 @@ const { Title, Text } = Typography;
 const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   leaveTypes,
   loading,
-  site,
+  organizationId,
   onRefresh,
 }) => {
   const cookies = parseCookies();
@@ -66,9 +66,9 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       const values = await typeForm.validateFields();
       setSaving(true);
       if (editingType) {
-        await HrmLeaveService.updateLeaveType({ site, ...values });
+        await HrmLeaveService.updateLeaveType({ organizationId, ...values });
       } else {
-        await HrmLeaveService.createLeaveType({ site, ...values });
+        await HrmLeaveService.createLeaveType({ organizationId, ...values });
       }
       message.success("Leave type saved");
       setTypeModalOpen(false);
@@ -84,8 +84,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const handleDeleteType = async (row: LeaveType) => {
     setDeletingHandle(row.handle);
     try {
-      await HrmLeaveService.deleteLeaveType({
-        site,
+      await HrmLeaveService.deleteLeaveType({ organizationId,
         leaveTypeId: row.handle,
         deletedBy: userId,
       });
@@ -101,8 +100,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const handleToggleActive = async (row: LeaveType, checked: boolean) => {
     setTogglingHandle(row.handle);
     try {
-      await HrmLeaveService.activateDeactivateLeaveType({
-        site,
+      await HrmLeaveService.activateDeactivateLeaveType({ organizationId,
         handle: row.handle,
         activeStatus: checked,
         modifiedBy: userId,
@@ -119,8 +117,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const loadPolicies = async (type: LeaveType) => {
     setPoliciesLoading(true);
     try {
-      const data = await HrmLeaveService.getPoliciesByLeaveType({
-        site,
+      const data = await HrmLeaveService.getPoliciesByLeaveType({ organizationId,
         leaveTypeId: type.handle,
       });
       setPolicies(Array.isArray(data) ? data : []);
@@ -171,8 +168,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     try {
       const values = await policyForm.validateFields();
       setPolicySaving(true);
-      await HrmLeaveService.createOrUpdatePolicy({
-        site,
+      await HrmLeaveService.createOrUpdatePolicy({ organizationId,
         leaveTypeId: policyDrawerType.handle,
         leaveTypeCode: policyDrawerType.code,
         buId: values.buId,
@@ -212,8 +208,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const handleDeletePolicy = async (policy: LeavePolicy) => {
     if (!policyDrawerType) return;
     try {
-      await HrmLeaveService.deletePolicy({
-        site,
+      await HrmLeaveService.deletePolicy({ organizationId,
         policyId: policy.handle,
         deletedBy: userId,
       });

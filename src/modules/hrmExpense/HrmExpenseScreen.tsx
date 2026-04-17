@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Button, Descriptions, Modal, Input, Space, Typography } from "antd";
 import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
@@ -43,7 +44,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
   onActionComplete,
 }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
 
   const {
     formState,
@@ -90,11 +91,11 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   useEffect(() => {
     if (isFinance && expense?.employeeId) {
-      HrmExpenseService.getEmployeeBankDetails({ site, employeeId: expense.employeeId })
+      HrmExpenseService.getEmployeeBankDetails({ organizationId, employeeId: expense.employeeId })
         .then(setBankDetails)
         .catch(() => setBankDetails(null));
     }
-  }, [isFinance, expense?.employeeId, site]);
+  }, [isFinance, expense?.employeeId, organizationId]);
 
   const handleSaveDraft = useCallback(async () => {
     await saveDraft(formState, expense?.handle);
@@ -113,7 +114,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   const handleUploadAttachment = async (file: File) => {
     if (!expense?.handle) return;
-    await HrmExpenseService.uploadAttachment(expense.handle, file, site, 0);
+    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, 0);
     onActionComplete();
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { Button, Space, Typography, Tag, Divider, message, Spin } from "antd";
 import { ArrowLeftOutlined, DownloadOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
@@ -23,7 +24,7 @@ interface HrmPolicyScreenProps {
 
 const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = false, onBack }) => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const role = cookies.userRole ?? "EMPLOYEE";
   const canAdmin = POLICY_HR_ROLES.includes(role);
 
@@ -84,7 +85,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
     const loadHistory = async () => {
       setVersionHistoryLoading(true);
       try {
-        const data = await HrmPolicyService.getVersionHistory({ site, policyHandle: policy.handle });
+        const data = await HrmPolicyService.getVersionHistory({ organizationId, policyHandle: policy.handle });
         setVersionHistory(data);
       } catch {
         // silent
@@ -98,7 +99,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
       const loadReport = async () => {
         setAckReportLoading(true);
         try {
-          const data = await HrmPolicyService.getAcknowledgmentReport({ site, policyHandle: policy.handle });
+          const data = await HrmPolicyService.getAcknowledgmentReport({ organizationId, policyHandle: policy.handle });
           setAckReport(data);
         } catch {
           // silent
@@ -108,7 +109,7 @@ const HrmPolicyScreen: React.FC<HrmPolicyScreenProps> = ({ policy, loading = fal
       };
       loadReport();
     }
-  }, [policy.handle, site, canAdmin]);
+  }, [policy.handle, organizationId, canAdmin]);
 
   const handleSendReminder = async () => {
     // Note: The backend has waiveAcknowledgment, not a "send reminder" endpoint.
