@@ -25,13 +25,13 @@ import type {
 const BASE = "/hrm-service/payslip";
 
 export class HrmPayslipService {
-  static async getActiveTemplate(site: string): Promise<PayslipTemplate> {
-    const res = await api.post<PayslipTemplate>(`${BASE}/getActivePayslipTemplate`, { site });
+  static async getActiveTemplate(organizationId: string): Promise<PayslipTemplate> {
+    const res = await api.post<PayslipTemplate>(`${BASE}/getActivePayslipTemplate`, { organizationId });
     return res.data;
   }
 
-  static async getAllTemplates(site: string): Promise<PayslipTemplate[]> {
-    const res = await api.post<PayslipTemplate[]>(`${BASE}/getAllPayslipTemplates`, { site });
+  static async getAllTemplates(organizationId: string): Promise<PayslipTemplate[]> {
+    const res = await api.post<PayslipTemplate[]>(`${BASE}/getAllPayslipTemplates`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -68,8 +68,8 @@ export class HrmPayslipService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getMyPayslips(site: string, employeeId: string): Promise<PayslipListItem[]> {
-    const res = await api.post<PayslipListItem[]>(`${BASE}/getMyPayslips`, { site, employeeId });
+  static async getMyPayslips(organizationId: string, employeeId: string): Promise<PayslipListItem[]> {
+    const res = await api.post<PayslipListItem[]>(`${BASE}/getMyPayslips`, { organizationId, employeeId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -95,7 +95,7 @@ export class HrmPayslipService {
   static async uploadTemplateLogo(payload: UploadTemplateLogoRequest): Promise<PayslipTemplate> {
     const params = new URLSearchParams();
     params.append("templateId", payload.templateId);
-    params.append("site", payload.site);
+    params.append("organizationId", payload.organizationId);
     params.append("logoUrl", payload.logoUrl);
     if (payload.updatedBy) params.append("updatedBy", payload.updatedBy);
     const res = await api.post<PayslipTemplate>(
@@ -110,18 +110,18 @@ export class HrmPayslipService {
     await api.post(`${BASE}/passwordConfig`, payload);
   }
 
-  static async getPasswordConfig(site: string): Promise<PasswordConfig> {
-    const res = await api.post<PasswordConfig>(`${BASE}/getPasswordConfig`, { site });
+  static async getPasswordConfig(organizationId: string): Promise<PasswordConfig> {
+    const res = await api.post<PasswordConfig>(`${BASE}/getPasswordConfig`, { organizationId });
     return res.data;
   }
 
   static async revokePayslip(
-    site: string,
+    organizationId: string,
     payslipId: string,
     revokedBy: string,
     reason: string
   ): Promise<void> {
-    await api.post(`${BASE}/revokePayslip`, { site, payslipId, revokedBy, reason });
+    await api.post(`${BASE}/revokePayslip`, { organizationId, payslipId, revokedBy, reason });
   }
 }
 

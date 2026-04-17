@@ -44,8 +44,8 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async fetchAllModules(site: string): Promise<ModuleRegistryResponse[]> {
-    const res = await api.post(`${BASE}/module/retrieveAll`, { site });
+  static async fetchAllModules(organizationId: string): Promise<ModuleRegistryResponse[]> {
+    const res = await api.post(`${BASE}/module/retrieveAll`, { organizationId });
     return res.data;
   }
 
@@ -64,8 +64,8 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async deactivateModule(site: string, handle: string, performedBy: string): Promise<void> {
-    await api.post(`${BASE}/module/deactivate`, { site, handle, performedBy });
+  static async deactivateModule(organizationId: string, handle: string, performedBy: string): Promise<void> {
+    await api.post(`${BASE}/module/deactivate`, { organizationId, handle, performedBy });
   }
 
   // ---- Permissions ----
@@ -76,13 +76,13 @@ export class HrmAccessService {
   }
 
   static async createPermissionsForModule(
-    site: string,
+    organizationId: string,
     moduleCode: string,
     objectNames: string[],
     createdBy: string
   ): Promise<PermissionResponse[]> {
     const res = await api.post(`${BASE}/permission/createForModule`, {
-      site,
+      organizationId,
       moduleCode,
       objectNames,
       createdBy,
@@ -100,13 +100,13 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async fetchAllPermissions(site: string): Promise<PermissionResponse[]> {
-    const res = await api.post(`${BASE}/permission/retrieveAll`, { site });
+  static async fetchAllPermissions(organizationId: string): Promise<PermissionResponse[]> {
+    const res = await api.post(`${BASE}/permission/retrieveAll`, { organizationId });
     return res.data;
   }
 
-  static async deletePermission(site: string, handle: string, performedBy: string): Promise<void> {
-    await api.post(`${BASE}/permission/delete`, { site, handle, performedBy });
+  static async deletePermission(organizationId: string, handle: string, performedBy: string): Promise<void> {
+    await api.post(`${BASE}/permission/delete`, { organizationId, handle, performedBy });
   }
 
   // ---- Roles ----
@@ -116,20 +116,20 @@ export class HrmAccessService {
     return res.data;
   }
 
-  static async fetchRole(site: string, roleCode: string): Promise<RoleResponse> {
-    const res = await api.post(`${BASE}/role/retrieve`, { site, roleCode });
+  static async fetchRole(organizationId: string, roleCode: string): Promise<RoleResponse> {
+    const res = await api.post(`${BASE}/role/retrieve`, { organizationId, roleCode });
     return res.data;
   }
 
-  static async fetchAllRoles(site: string): Promise<RoleResponse[]> {
-    const res = await api.post(`${BASE}/role/retrieveAll`, { site, size: 1000, page: 0 });
+  static async fetchAllRoles(organizationId: string): Promise<RoleResponse[]> {
+    const res = await api.post(`${BASE}/role/retrieveAll`, { organizationId, size: 1000, page: 0 });
     if (Array.isArray(res.data)) return res.data;
     if (res.data?.content && Array.isArray(res.data.content)) return res.data.content;
     return [];
   }
 
-  static async fetchActiveRoles(site: string): Promise<RoleResponse[]> {
-    const res = await api.post(`${BASE}/role/retrieveActive`, { site });
+  static async fetchActiveRoles(organizationId: string): Promise<RoleResponse[]> {
+    const res = await api.post(`${BASE}/role/retrieveActive`, { organizationId });
     return res.data;
   }
 
@@ -143,17 +143,17 @@ export class HrmAccessService {
   }
 
   static async toggleRoleStatus(
-    site: string,
+    organizationId: string,
     roleCode: string,
     isActive: boolean,
     performedBy: string
   ): Promise<RoleResponse> {
-    const res = await api.post(`${BASE}/role/toggleStatus`, { site, roleCode, isActive, performedBy });
+    const res = await api.post(`${BASE}/role/toggleStatus`, { organizationId, roleCode, isActive, performedBy });
     return res.data;
   }
 
-  static async deleteRole(site: string, roleCode: string, performedBy: string): Promise<void> {
-    await api.post(`${BASE}/role/delete`, { site, roleCode, performedBy });
+  static async deleteRole(organizationId: string, roleCode: string, performedBy: string): Promise<void> {
+    await api.post(`${BASE}/role/delete`, { organizationId, roleCode, performedBy });
   }
 
   // ---- Role Permissions ----
@@ -166,31 +166,31 @@ export class HrmAccessService {
   }
 
   static async fetchPermissionsForRole(
-    site: string,
+    organizationId: string,
     roleCode: string
   ): Promise<RolePermissionResponse[]> {
-    const res = await api.post(`${BASE}/rolePermission/retrieveAll`, { site, roleCode });
+    const res = await api.post(`${BASE}/rolePermission/retrieveAll`, { organizationId, roleCode });
     return res.data;
   }
 
   static async removePermissionFromRole(
-    site: string,
+    organizationId: string,
     rolePermissionHandle: string,
     performedBy: string
   ): Promise<void> {
     await api.post(`${BASE}/rolePermission/remove`, {
-      site,
+      organizationId,
       rolePermissionHandle,
       performedBy,
     });
   }
 
   static async removeAllPermissionsFromRole(
-    site: string,
+    organizationId: string,
     roleCode: string,
     performedBy: string
   ): Promise<void> {
-    await api.post(`${BASE}/rolePermission/removeAll`, { site, roleCode, performedBy });
+    await api.post(`${BASE}/rolePermission/removeAll`, { organizationId, roleCode, performedBy });
   }
 
   // ---- User Role Assignments ----
@@ -203,39 +203,39 @@ export class HrmAccessService {
   }
 
   static async fetchAssignmentsForUser(
-    site: string,
+    organizationId: string,
     userId: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { site, userId });
+    const res = await api.post(`${BASE}/assignment/retrieveForUser`, { organizationId, userId });
     return res.data;
   }
 
-  static async fetchAllUserAssignments(site: string): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/assignment/retrieveAll`, { site });
+  static async fetchAllUserAssignments(organizationId: string): Promise<UserRoleAssignmentResponse[]> {
+    const res = await api.post(`${BASE}/assignment/retrieveAll`, { organizationId });
     // Handle both array and paginated response
     return Array.isArray(res.data) ? res.data : res.data?.content ?? [];
   }
 
   static async fetchUsersWithRole(
-    site: string,
+    organizationId: string,
     roleCode: string
   ): Promise<UserRoleAssignmentResponse[]> {
     const res = await api.get(`${BASE}/assignment/byRole`, {
-      params: { site, roleCode },
+      params: { organizationId, roleCode },
     });
     return res.data?.data ?? res.data ?? [];
   }
 
-  static async revokeByRole(site: string, roleCode: string): Promise<void> {
-    await api.post(`${BASE}/assignment/revokeByRole`, { site, roleCode });
+  static async revokeByRole(organizationId: string, roleCode: string): Promise<void> {
+    await api.post(`${BASE}/assignment/revokeByRole`, { organizationId, roleCode });
   }
 
   static async revokeRoleFromUser(
-    site: string,
+    organizationId: string,
     assignmentHandle: string,
     revokedBy: string
   ): Promise<void> {
-    await api.post(`${BASE}/assignment/revoke`, { site, assignmentHandle, revokedBy });
+    await api.post(`${BASE}/assignment/revoke`, { organizationId, assignmentHandle, revokedBy });
   }
 
   static async updateAssignment(
@@ -249,11 +249,11 @@ export class HrmAccessService {
   // ---- Effective Permissions ----
 
   static async fetchEffectivePermissions(
-    site: string,
+    organizationId: string,
     userId: string,
     moduleCode?: string
   ): Promise<EffectivePermissionsResponse> {
-    const payload: any = { site, userId };
+    const payload: any = { organizationId, userId };
     if (moduleCode) {
       payload.moduleCode = moduleCode;
     }
@@ -300,24 +300,24 @@ export class HrmAccessService {
   // ---- Permission Matrix ----
 
   static async fetchPermissionsMatrix(
-    site: string,
+    organizationId: string,
     moduleCode: string | null,
     roleCode: string | null
   ): Promise<PermissionsMatrixResponse[]> {
-    const res = await api.post(`${BASE}/report/permissionsMatrix`, { site, moduleCode, roleCode });
+    const res = await api.post(`${BASE}/report/permissionsMatrix`, { organizationId, moduleCode, roleCode });
     return res.data;
   }
 
   // ---- Import / Export ----
 
-  static async exportRoles(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
-    const res = await api.post(`${BASE}/export/roles`, { site, format }, { responseType: 'blob' });
+  static async exportRoles(organizationId: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
+    const res = await api.post(`${BASE}/export/roles`, { organizationId, format }, { responseType: 'blob' });
     return res.data;
   }
 
-  static async importRoles(site: string, file: File, importedBy: string): Promise<ImportResultResponse> {
+  static async importRoles(organizationId: string, file: File, importedBy: string): Promise<ImportResultResponse> {
     const formData = new FormData();
-    formData.append('site', site);
+    formData.append('organizationId', organizationId);
     formData.append('file', file);
     formData.append('importedBy', importedBy);
     const res = await api.post(`${BASE}/import/roles`, formData, {
@@ -327,12 +327,12 @@ export class HrmAccessService {
   }
 
   static async importUserAssignments(
-    site: string,
+    organizationId: string,
     file: File,
     importedBy: string
   ): Promise<ImportResultResponse> {
     const formData = new FormData();
-    formData.append('site', site);
+    formData.append('organizationId', organizationId);
     formData.append('file', file);
     formData.append('importedBy', importedBy);
     const res = await api.post(`${BASE}/import/userAssignments`, formData, {
@@ -344,13 +344,13 @@ export class HrmAccessService {
   // ---- Role Clone ----
 
   static async cloneRole(
-    site: string,
+    organizationId: string,
     sourceRoleId: string,
     newRoleName: string,
     performedBy: string
   ): Promise<RoleResponse> {
     const res = await api.post(`${BASE}/role/clone`, {
-      site,
+      organizationId,
       sourceRoleId,
       newRoleName,
       performedBy,
@@ -360,9 +360,9 @@ export class HrmAccessService {
 
   // ---- Import Preview ----
 
-  static async previewImport(site: string, file: File): Promise<ImportPreviewResponse> {
+  static async previewImport(organizationId: string, file: File): Promise<ImportPreviewResponse> {
     const formData = new FormData();
-    formData.append('site', site);
+    formData.append('organizationId', organizationId);
     formData.append('file', file);
     const res = await api.post(`${BASE}/import/preview`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -372,10 +372,10 @@ export class HrmAccessService {
 
   // ---- Export Role Permissions ----
 
-  static async exportRolePermissions(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
+  static async exportRolePermissions(organizationId: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
     const res = await api.post(
       `${BASE}/export/rolePermissions`,
-      { site, format },
+      { organizationId, format },
       { responseType: 'blob' }
     );
     return res.data;
@@ -383,10 +383,10 @@ export class HrmAccessService {
 
   // ---- Export User Assignments ----
 
-  static async exportUserAssignments(site: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
+  static async exportUserAssignments(organizationId: string, format: 'csv' | 'json' = 'csv'): Promise<Blob> {
     const res = await api.post(
       `${BASE}/export/userAssignments`,
-      { site, format },
+      { organizationId, format },
       { responseType: 'blob' }
     );
     return res.data;
@@ -395,12 +395,12 @@ export class HrmAccessService {
   // ---- Reports ----
 
   static async getUserAccessReport(
-    site: string,
+    organizationId: string,
     userId?: string | null,
     moduleCode?: string | null
   ): Promise<UserAccessReportResponse[]> {
     const res = await api.post(`${BASE}/report/userAccess`, {
-      site,
+      organizationId,
       ...(userId ? { userId } : {}),
       ...(moduleCode ? { moduleCode } : {}),
     });
@@ -408,16 +408,16 @@ export class HrmAccessService {
   }
 
   static async getOrphanedExpiredAssignments(
-    site: string
+    organizationId: string
   ): Promise<UserRoleAssignmentResponse[]> {
-    const res = await api.post(`${BASE}/report/orphanedExpired`, { site });
+    const res = await api.post(`${BASE}/report/orphanedExpired`, { organizationId });
     return res.data;
   }
 
   // ---- User Search (Top 50) ----
 
   static async searchKeycloakUsers(
-    site: string,
+    organizationId: string,
     query: string
   ): Promise<{ id: string; username: string; firstName: string; lastName: string; email: string }[]> {
     try {
@@ -457,7 +457,7 @@ export class HrmAccessService {
   // ---- Employee Directory (New) ----
 
   static async fetchEmployeeDirectory(payload: {
-    site?: string;
+    organizationId?: string;
     page?: number;
     size?: number;
     searchTerm?: string;
@@ -501,13 +501,13 @@ export class HrmAccessService {
   // ---- Audit ----
 
   static async fetchAuditLog(
-    site: string,
+    organizationId: string,
     entityType: string,
     entityHandle: string | null,
     page: number,
     size: number
   ): Promise<{ content: RbacAuditLogDto[]; totalElements: number }> {
-    const res = await api.post(`${BASE}/audit/retrieve`, { site, entityType, entityHandle, page, size });
+    const res = await api.post(`${BASE}/audit/retrieve`, { organizationId, entityType, entityHandle, page, size });
     return res.data;
   }
 }

@@ -30,13 +30,13 @@ export class HrmAppraisalService {
 
   // ── Cycles ──
 
-  static async listCycles(site: string, status?: string, cycleType?: string): Promise<AppraisalCycle[]> {
-    const res = await api.post<AppraisalCycle[]>(`${this.BASE}/listCycles`, { site, status, cycleType });
+  static async listCycles(organizationId: string, status?: string, cycleType?: string): Promise<AppraisalCycle[]> {
+    const res = await api.post<AppraisalCycle[]>(`${this.BASE}/listCycles`, { organizationId, status, cycleType });
     return res.data ?? [];
   }
 
-  static async getCycle(site: string, cycleId: string): Promise<AppraisalCycle> {
-    const res = await api.post<AppraisalCycle>(`${this.BASE}/getCycle`, { site, cycleId });
+  static async getCycle(organizationId: string, cycleId: string): Promise<AppraisalCycle> {
+    const res = await api.post<AppraisalCycle>(`${this.BASE}/getCycle`, { organizationId, cycleId });
     return res.data;
   }
 
@@ -51,13 +51,13 @@ export class HrmAppraisalService {
   }
 
   static async activatePhase(
-    site: string,
+    organizationId: string,
     cycleId: string,
     phaseId: string,
     updatedBy: string
   ): Promise<AppraisalCycle> {
     const res = await api.post<AppraisalCycle>(`${this.BASE}/activatePhase`, {
-      site,
+      organizationId,
       cycleId,
       phaseId,
       updatedBy,
@@ -66,13 +66,13 @@ export class HrmAppraisalService {
   }
 
   static async closePhase(
-    site: string,
+    organizationId: string,
     cycleId: string,
     phaseId: string,
     updatedBy: string
   ): Promise<AppraisalCycle> {
     const res = await api.post<AppraisalCycle>(`${this.BASE}/closePhase`, {
-      site,
+      organizationId,
       cycleId,
       phaseId,
       updatedBy,
@@ -81,12 +81,12 @@ export class HrmAppraisalService {
   }
 
   static async closeCycle(
-    site: string,
+    organizationId: string,
     cycleId: string,
     closedBy: string
   ): Promise<AppraisalCycle> {
     const res = await api.post<AppraisalCycle>(`${this.BASE}/closeCycle`, {
-      site,
+      organizationId,
       cycleId,
       closedBy,
     });
@@ -94,12 +94,12 @@ export class HrmAppraisalService {
   }
 
   static async archiveCycle(
-    site: string,
+    organizationId: string,
     cycleId: string,
     archivedBy: string
   ): Promise<AppraisalCycle> {
     const res = await api.post<AppraisalCycle>(`${this.BASE}/archiveCycle`, {
-      site,
+      organizationId,
       cycleId,
       archivedBy,
     });
@@ -113,27 +113,27 @@ export class HrmAppraisalService {
     return res.data;
   }
 
-  static async updateGoal(request: Partial<AppraisalGoal> & { site: string }): Promise<AppraisalGoal> {
+  static async updateGoal(request: Partial<AppraisalGoal> & { organizationId: string }): Promise<AppraisalGoal> {
     const res = await api.post<AppraisalGoal>(`${this.BASE}/updateGoal`, request);
     return res.data;
   }
 
-  static async getGoal(site: string, goalId: string): Promise<AppraisalGoal> {
-    const res = await api.post<AppraisalGoal>(`${this.BASE}/getGoal`, { site, goalId });
+  static async getGoal(organizationId: string, goalId: string): Promise<AppraisalGoal> {
+    const res = await api.post<AppraisalGoal>(`${this.BASE}/getGoal`, { organizationId, goalId });
     return res.data;
   }
 
-  static async deleteGoal(site: string, goalId: string, deletedBy: string): Promise<void> {
-    await api.post(`${this.BASE}/deleteGoal`, { site, goalId, deletedBy });
+  static async deleteGoal(organizationId: string, goalId: string, deletedBy: string): Promise<void> {
+    await api.post(`${this.BASE}/deleteGoal`, { organizationId, goalId, deletedBy });
   }
 
   static async getEmployeeGoals(
-    site: string,
+    organizationId: string,
     employeeId: string,
     cycleId: string
   ): Promise<AppraisalGoal[]> {
     const res = await api.post<AppraisalGoal[]>(`${this.BASE}/getEmployeeGoals`, {
-      site,
+      organizationId,
       employeeId,
       cycleId,
     });
@@ -141,12 +141,12 @@ export class HrmAppraisalService {
   }
 
   static async getTeamGoals(
-    site: string,
+    organizationId: string,
     managerId: string,
     cycleId: string
   ): Promise<AppraisalGoal[]> {
     const res = await api.post<AppraisalGoal[]>(`${this.BASE}/getTeamGoals`, {
-      site,
+      organizationId,
       managerId,
       cycleId,
     });
@@ -154,21 +154,21 @@ export class HrmAppraisalService {
   }
 
   static async submitGoals(
-    site: string,
+    organizationId: string,
     employeeId: string,
     cycleId: string,
     submittedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/submitGoals`, { site, employeeId, cycleId, submittedBy });
+    await api.post(`${this.BASE}/submitGoals`, { organizationId, employeeId, cycleId, submittedBy });
   }
 
   static async approveGoals(
-    site: string,
+    organizationId: string,
     employeeId: string,
     cycleId: string,
     approvedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/approveGoals`, { site, employeeId, cycleId, approvedBy });
+    await api.post(`${this.BASE}/approveGoals`, { organizationId, employeeId, cycleId, approvedBy });
   }
 
   static async updateGoalProgress(request: UpdateGoalProgressRequest): Promise<AppraisalGoal> {
@@ -183,23 +183,23 @@ export class HrmAppraisalService {
 
   // ── Reviews ──
 
-  static async initiateReview(request: Partial<AppraisalReview> & { site: string; initiatedBy: string }): Promise<AppraisalReview> {
+  static async initiateReview(request: Partial<AppraisalReview> & { organizationId: string; initiatedBy: string }): Promise<AppraisalReview> {
     const res = await api.post<AppraisalReview>(`${this.BASE}/initiateReview`, request);
     return res.data;
   }
 
-  static async getReview(site: string, reviewId: string): Promise<AppraisalReview> {
-    const res = await api.post<AppraisalReview>(`${this.BASE}/getReview`, { site, reviewId });
+  static async getReview(organizationId: string, reviewId: string): Promise<AppraisalReview> {
+    const res = await api.post<AppraisalReview>(`${this.BASE}/getReview`, { organizationId, reviewId });
     return res.data;
   }
 
   static async getTeamReviews(
-    site: string,
+    organizationId: string,
     managerId: string,
     cycleId: string
   ): Promise<AppraisalReview[]> {
     const res = await api.post<AppraisalReview[]>(`${this.BASE}/getTeamReviews`, {
-      site,
+      organizationId,
       managerId,
       cycleId,
     });
@@ -207,12 +207,12 @@ export class HrmAppraisalService {
   }
 
   static async getCycleReviews(
-    site: string,
+    organizationId: string,
     cycleId: string,
     department?: string
   ): Promise<AppraisalReview[]> {
     const res = await api.post<AppraisalReview[]>(`${this.BASE}/getCycleReviews`, {
-      site,
+      organizationId,
       cycleId,
       department,
     });
@@ -230,14 +230,14 @@ export class HrmAppraisalService {
   }
 
   static async requestPeerFeedback(
-    site: string,
+    organizationId: string,
     reviewId: string,
     peerIds: string[],
     anonymous: boolean,
     requestedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/requestPeerFeedback`, {
-      site,
+      organizationId,
       reviewId,
       peerIds,
       anonymous,
@@ -261,23 +261,23 @@ export class HrmAppraisalService {
   }
 
   static async getAppraisalHistory(
-    site: string,
+    organizationId: string,
     employeeId: string
   ): Promise<AppraisalHistory> {
     const res = await api.post<AppraisalHistory>(`${this.BASE}/getAppraisalHistory`, {
-      site,
+      organizationId,
       employeeId,
     });
     return res.data;
   }
 
   static async getRatingDistribution(
-    site: string,
+    organizationId: string,
     cycleId: string,
     department?: string
   ): Promise<RatingDistribution> {
     const res = await api.post<RatingDistribution>(`${this.BASE}/getRatingDistribution`, {
-      site,
+      organizationId,
       cycleId,
       department,
     });
@@ -292,41 +292,41 @@ export class HrmAppraisalService {
   }
 
   static async getReceivedFeedback(
-    site: string,
+    organizationId: string,
     employeeId: string
   ): Promise<FeedbackEntry[]> {
     const res = await api.post<FeedbackEntry[]>(`${this.BASE}/getReceivedFeedback`, {
-      site,
+      organizationId,
       employeeId,
     });
     return res.data ?? [];
   }
 
   static async getGivenFeedback(
-    site: string,
+    organizationId: string,
     employeeId: string
   ): Promise<FeedbackEntry[]> {
     const res = await api.post<FeedbackEntry[]>(`${this.BASE}/getGivenFeedback`, {
-      site,
+      organizationId,
       employeeId,
     });
     return res.data ?? [];
   }
 
   static async acknowledgeFeedback(
-    site: string,
+    organizationId: string,
     feedbackId: string,
     employeeId: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/acknowledgeFeedback`, { site, feedbackId, employeeId });
+    await api.post(`${this.BASE}/acknowledgeFeedback`, { organizationId, feedbackId, employeeId });
   }
 
   static async deleteFeedback(
-    site: string,
+    organizationId: string,
     feedbackId: string,
     deletedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/deleteFeedback`, { site, feedbackId, deletedBy });
+    await api.post(`${this.BASE}/deleteFeedback`, { organizationId, feedbackId, deletedBy });
   }
 
   // ── PIP ──
@@ -336,8 +336,8 @@ export class HrmAppraisalService {
     return res.data;
   }
 
-  static async getPip(site: string, pipId: string): Promise<PipRecord> {
-    const res = await api.post<PipRecord>(`${this.BASE}/getPip`, { site, pipId });
+  static async getPip(organizationId: string, pipId: string): Promise<PipRecord> {
+    const res = await api.post<PipRecord>(`${this.BASE}/getPip`, { organizationId, pipId });
     return res.data;
   }
 
@@ -347,14 +347,14 @@ export class HrmAppraisalService {
   }
 
   static async closePip(
-    site: string,
+    organizationId: string,
     pipId: string,
     outcome: string,
     outcomeNotes: string,
     closedBy: string
   ): Promise<PipRecord> {
     const res = await api.post<PipRecord>(`${this.BASE}/closePip`, {
-      site,
+      organizationId,
       pipId,
       outcome,
       outcomeNotes,
@@ -363,17 +363,17 @@ export class HrmAppraisalService {
     return res.data;
   }
 
-  static async getActivePips(site: string): Promise<PipRecord[]> {
-    const res = await api.post<PipRecord[]>(`${this.BASE}/getActivePips`, { site });
+  static async getActivePips(organizationId: string): Promise<PipRecord[]> {
+    const res = await api.post<PipRecord[]>(`${this.BASE}/getActivePips`, { organizationId });
     return res.data ?? [];
   }
 
   static async getEmployeePips(
-    site: string,
+    organizationId: string,
     employeeId: string
   ): Promise<PipRecord[]> {
     const res = await api.post<PipRecord[]>(`${this.BASE}/getEmployeePips`, {
-      site,
+      organizationId,
       employeeId,
     });
     return res.data ?? [];
@@ -388,13 +388,13 @@ export class HrmAppraisalService {
     return res.data;
   }
 
-  static async getCompetency(site: string, handle: string): Promise<CompetencyDefinition> {
-    const res = await api.post<CompetencyDefinition>(`${this.BASE}/competency/retrieve`, { site, handle });
+  static async getCompetency(organizationId: string, handle: string): Promise<CompetencyDefinition> {
+    const res = await api.post<CompetencyDefinition>(`${this.BASE}/competency/retrieve`, { organizationId, handle });
     return res.data;
   }
 
-  static async listCompetencies(site: string): Promise<CompetencyDefinition[]> {
-    const res = await api.post<CompetencyDefinition[]>(`${this.BASE}/competency/list`, { site });
+  static async listCompetencies(organizationId: string): Promise<CompetencyDefinition[]> {
+    const res = await api.post<CompetencyDefinition[]>(`${this.BASE}/competency/list`, { organizationId });
     return res.data ?? [];
   }
 
@@ -410,11 +410,11 @@ export class HrmAppraisalService {
   }
 
   static async deleteCompetency(
-    site: string,
+    organizationId: string,
     handle: string,
     deletedBy: string
   ): Promise<void> {
-    await api.post(`${this.BASE}/competency/delete`, { site, handle, deletedBy });
+    await api.post(`${this.BASE}/competency/delete`, { organizationId, handle, deletedBy });
   }
 
   // ── Bulk / Export / Calibration Sessions ──
@@ -427,11 +427,11 @@ export class HrmAppraisalService {
   }
 
   static async exportReviews(
-    site: string,
+    organizationId: string,
     cycleId: string,
     format?: string
   ): Promise<Blob> {
-    const res = await api.post(`${this.BASE}/export`, { site, cycleId, format }, {
+    const res = await api.post(`${this.BASE}/export`, { organizationId, cycleId, format }, {
       responseType: "blob",
     });
     return res.data as Blob;
@@ -448,11 +448,11 @@ export class HrmAppraisalService {
   }
 
   static async getCalibrationSession(
-    site: string,
+    organizationId: string,
     sessionId: string
   ): Promise<CalibrationSession> {
     const res = await api.post<CalibrationSession>(`${this.BASE}/getCalibrationSession`, {
-      site,
+      organizationId,
       sessionId,
     });
     return res.data;

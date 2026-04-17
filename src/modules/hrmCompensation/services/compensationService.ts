@@ -29,13 +29,13 @@ export class HrmCompensationService {
   // Pay Components
   // ============================================================
 
-  static async fetchAllPayComponents(site: string): Promise<PayComponent[]> {
-    const res = await api.post<PayComponent[]>(`${BASE}/getAllPayComponents`, { site });
+  static async fetchAllPayComponents(organizationId: string): Promise<PayComponent[]> {
+    const res = await api.post<PayComponent[]>(`${BASE}/getAllPayComponents`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPayComponent(site: string, componentCode: string): Promise<PayComponent> {
-    const res = await api.post<PayComponent>(`${BASE}/getPayComponent`, { site, componentCode });
+  static async getPayComponent(organizationId: string, componentCode: string): Promise<PayComponent> {
+    const res = await api.post<PayComponent>(`${BASE}/getPayComponent`, { organizationId, componentCode });
     return res.data;
   }
 
@@ -55,21 +55,21 @@ export class HrmCompensationService {
     await api.post(`${BASE}/deactivatePayComponent`, payload);
   }
 
-  static async deletePayComponent(site: string, componentId: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/deletePayComponent`, { site, componentId, deletedBy });
+  static async deletePayComponent(organizationId: string, componentId: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deletePayComponent`, { organizationId, componentId, deletedBy });
   }
 
   // ============================================================
   // Salary Structures
   // ============================================================
 
-  static async fetchAllSalaryStructures(site: string): Promise<SalaryStructure[]> {
-    const res = await api.post<SalaryStructure[]>(`${BASE}/getAllSalaryStructures`, { site });
+  static async fetchAllSalaryStructures(organizationId: string): Promise<SalaryStructure[]> {
+    const res = await api.post<SalaryStructure[]>(`${BASE}/getAllSalaryStructures`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getSalaryStructure(site: string, structureCode: string): Promise<SalaryStructure> {
-    const res = await api.post<SalaryStructure>(`${BASE}/getSalaryStructure`, { site, structureCode });
+  static async getSalaryStructure(organizationId: string, structureCode: string): Promise<SalaryStructure> {
+    const res = await api.post<SalaryStructure>(`${BASE}/getSalaryStructure`, { organizationId, structureCode });
     return res.data;
   }
 
@@ -90,11 +90,11 @@ export class HrmCompensationService {
   // ============================================================
 
   static async getActiveCompensation(
-    site: string,
+    organizationId: string,
     employeeId: string,
   ): Promise<EmployeeCompensationResponse> {
     const res = await api.post<EmployeeCompensationResponse>(`${BASE}/getActiveCompensation`, {
-      site,
+      organizationId,
       employeeId,
     });
     return res.data;
@@ -131,12 +131,12 @@ export class HrmCompensationService {
   }
 
   static async getCompensationHistory(
-    site: string,
+    organizationId: string,
     employeeId: string,
   ): Promise<EmployeeCompensationResponse[]> {
     const res = await api.post<EmployeeCompensationResponse[]>(
       `${BASE}/getCompensationHistory`,
-      { site, employeeId },
+      { organizationId, employeeId },
     );
     return Array.isArray(res.data) ? res.data : [];
   }
@@ -145,10 +145,10 @@ export class HrmCompensationService {
   // Approvals
   // ============================================================
 
-  static async getPendingApprovals(site: string): Promise<EmployeeCompensationResponse[]> {
+  static async getPendingApprovals(organizationId: string): Promise<EmployeeCompensationResponse[]> {
     const res = await api.post<EmployeeCompensationResponse[]>(
       `${BASE}/getPendingCompensationApprovals`,
-      { site },
+      { organizationId },
     );
     return Array.isArray(res.data) ? res.data : [];
   }
@@ -164,12 +164,12 @@ export class HrmCompensationService {
   }
 
   static async getSalaryBreakdown(
-    site: string,
+    organizationId: string,
     employeeId: string,
   ): Promise<EmployeeCompensationResponse> {
     const res = await api.post<EmployeeCompensationResponse>(
       `${BASE}/getSalaryBreakdown`,
-      { site, employeeId },
+      { organizationId, employeeId },
     );
     return res.data;
   }
@@ -178,12 +178,12 @@ export class HrmCompensationService {
   // Salary Structure Delete / Deactivate
   // ============================================================
 
-  static async deleteSalaryStructure(site: string, structureId: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/deleteSalaryStructure`, { site, structureId, deletedBy });
+  static async deleteSalaryStructure(organizationId: string, structureId: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deleteSalaryStructure`, { organizationId, structureId, deletedBy });
   }
 
-  static async deactivateSalaryStructure(site: string, structureId: string, updatedBy: string): Promise<void> {
-    await api.post(`${BASE}/deactivateSalaryStructure`, { site, structureId, updatedBy });
+  static async deactivateSalaryStructure(organizationId: string, structureId: string, updatedBy: string): Promise<void> {
+    await api.post(`${BASE}/deactivateSalaryStructure`, { organizationId, structureId, updatedBy });
   }
 
   // ============================================================
@@ -205,13 +205,13 @@ export class HrmCompensationService {
   // ============================================================
 
   static async getCompensationOnDate(
-    site: string,
+    organizationId: string,
     employeeId: string,
     date: string,
   ): Promise<EmployeeCompensationResponse> {
     const res = await api.post<EmployeeCompensationResponse>(
       `${BASE}/getCompensationOnDate`,
-      { site, employeeId, date },
+      { organizationId, employeeId, date },
     );
     return res.data;
   }
@@ -232,14 +232,14 @@ export class HrmCompensationService {
   // ============================================================
 
   static async revisionReport(
-    site: string,
+    organizationId: string,
     startDate: string,
     endDate: string,
     department?: string,
   ): Promise<RevisionReportResponse> {
     const res = await api.post<RevisionReportResponse>(
       `${BASE}/revisionReport`,
-      { site, startDate, endDate, department },
+      { organizationId, startDate, endDate, department },
     );
     return res.data;
   }

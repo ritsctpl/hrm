@@ -140,7 +140,7 @@ export class HrmTravelService {
     return mapTravelRequest(data);
   }
 
-  static async deleteRequest(payload: { site: string; requestId: string; deletedBy: string }): Promise<void> {
+  static async deleteRequest(payload: { organizationId: string; requestId: string; deletedBy: string }): Promise<void> {
     await api.post(`${this.BASE}/delete`, payload);
   }
 
@@ -184,18 +184,18 @@ export class HrmTravelService {
   }
 
   // ── Attachments ──────────────────────────────────────────────────────
-  static async uploadAttachment(handle: string, file: File, site: string): Promise<{ attachmentId: string; fileName: string }> {
+  static async uploadAttachment(handle: string, file: File, organizationId: string): Promise<{ attachmentId: string; fileName: string }> {
     const form = new FormData();
     form.append("file", file);
     form.append("handle", handle);
-    form.append("site", site);
+    form.append("organizationId", organizationId);
     const { data } = await api.post(`${this.BASE}/attachments/upload`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data;
   }
 
-  static async deleteAttachment(payload: { site: string; handle: string; attachmentId: string }): Promise<void> {
+  static async deleteAttachment(payload: { organizationId: string; handle: string; attachmentId: string }): Promise<void> {
     await api.post(`${this.BASE}/attachments/delete`, payload);
   }
 

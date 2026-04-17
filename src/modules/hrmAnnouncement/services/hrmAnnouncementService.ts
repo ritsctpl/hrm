@@ -21,8 +21,8 @@ export class HrmAnnouncementService {
     return res.data;
   }
 
-  static async getPinned(site: string): Promise<Announcement[]> {
-    const res = await api.post(`${BASE}/getPinnedAnnouncements`, { site });
+  static async getPinned(organizationId: string): Promise<Announcement[]> {
+    const res = await api.post(`${BASE}/getPinnedAnnouncements`, { organizationId });
     return res.data;
   }
 
@@ -67,11 +67,11 @@ export class HrmAnnouncementService {
     await api.post(`${BASE}/deleteAnnouncement`, payload);
   }
 
-  static async processScheduledPublishing(site: string): Promise<void> {
-    await api.post(`${BASE}/processScheduledPublishing`, { site });
+  static async processScheduledPublishing(organizationId: string): Promise<void> {
+    await api.post(`${BASE}/processScheduledPublishing`, { organizationId });
   }
 
-  static async processExpiredAnnouncements(site: string): Promise<void> {
-    await api.post(`${BASE}/processExpiredAnnouncements`, { site });
+  static async processExpiredAnnouncements(organizationId: string): Promise<void> {
+    await api.post(`${BASE}/processExpiredAnnouncements`, { organizationId });
   }
 }

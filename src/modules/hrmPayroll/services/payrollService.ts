@@ -27,13 +27,13 @@ const BASE = '/hrm-service/payroll';
 
 export class HrmPayrollService {
 
-  static async fetchAllRuns(site: string): Promise<PayrollRunSummary[]> {
-    const res = await api.post<PayrollRunSummary[]>(`${BASE}/getAllPayrollRuns`, { site });
+  static async fetchAllRuns(organizationId: string): Promise<PayrollRunSummary[]> {
+    const res = await api.post<PayrollRunSummary[]>(`${BASE}/getAllPayrollRuns`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPayrollRun(site: string, payrollRunId: string): Promise<PayrollRunSummary> {
-    const res = await api.post<PayrollRunSummary>(`${BASE}/getPayrollRun`, { site, payrollRunId });
+  static async getPayrollRun(organizationId: string, payrollRunId: string): Promise<PayrollRunSummary> {
+    const res = await api.post<PayrollRunSummary>(`${BASE}/getPayrollRun`, { organizationId, payrollRunId });
     return res.data;
   }
 
@@ -43,12 +43,12 @@ export class HrmPayrollService {
   }
 
   static async validatePayrollRun(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     performedBy: string
   ): Promise<PayrollRunSummary> {
     const res = await api.post<PayrollRunSummary>(`${BASE}/validatePayrollRun`, {
-      site,
+      organizationId,
       payrollRunId,
       performedBy,
     });
@@ -70,13 +70,13 @@ export class HrmPayrollService {
   }
 
   static async recalculateEmployee(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     employeeId: string,
     performedBy: string
   ): Promise<PayrollEntry> {
     const res = await api.post<PayrollEntry>(`${BASE}/recalculateEmployee`, {
-      site,
+      organizationId,
       payrollRunId,
       employeeId,
       performedBy,
@@ -84,18 +84,18 @@ export class HrmPayrollService {
     return res.data;
   }
 
-  static async getPayrollEntries(site: string, payrollRunId: string): Promise<PayrollEntry[]> {
-    const res = await api.post<PayrollEntry[]>(`${BASE}/getPayrollEntries`, { site, payrollRunId });
+  static async getPayrollEntries(organizationId: string, payrollRunId: string): Promise<PayrollEntry[]> {
+    const res = await api.post<PayrollEntry[]>(`${BASE}/getPayrollEntries`, { organizationId, payrollRunId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getEmployeeEntry(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     employeeId: string
   ): Promise<PayrollEntry> {
     const res = await api.post<PayrollEntry>(`${BASE}/getEmployeePayrollEntry`, {
-      site,
+      organizationId,
       payrollRunId,
       employeeId,
     });
@@ -108,12 +108,12 @@ export class HrmPayrollService {
   }
 
   static async finalizePayrollRun(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     performedBy: string
   ): Promise<PayrollRunSummary> {
     const res = await api.post<PayrollRunSummary>(`${BASE}/finalizePayrollRun`, {
-      site,
+      organizationId,
       payrollRunId,
       performedBy,
     });
@@ -121,34 +121,34 @@ export class HrmPayrollService {
   }
 
   static async publishPayrollRun(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     performedBy: string
   ): Promise<PayrollRunSummary> {
     const res = await api.post<PayrollRunSummary>(`${BASE}/publishPayrollRun`, {
-      site,
+      organizationId,
       payrollRunId,
       performedBy,
     });
     return res.data;
   }
 
-  static async exportPayrollRegister(site: string, runId: string): Promise<Blob> {
+  static async exportPayrollRegister(organizationId: string, runId: string): Promise<Blob> {
     const res = await api.post(
       `${BASE}/exportPayrollRegister`,
-      { site, runId },
+      { organizationId, runId },
       { responseType: 'blob' }
     );
     return res.data as Blob;
   }
 
   static async getTaxConfiguration(
-    site: string,
+    organizationId: string,
     financialYearStart: number,
     regime: 'OLD' | 'NEW'
   ): Promise<TaxConfiguration> {
     const res = await api.post<TaxConfiguration>(`${BASE}/getTaxConfiguration`, {
-      site,
+      organizationId,
       financialYearStart,
       regime,
     });
@@ -161,11 +161,11 @@ export class HrmPayrollService {
   }
 
   static async getStatutoryConfig(
-    site: string,
+    organizationId: string,
     configType: 'PF' | 'ESI' | 'PT'
   ): Promise<StatutoryConfig> {
     const res = await api.post<StatutoryConfig>(`${BASE}/getStatutoryConfig`, {
-      site,
+      organizationId,
       configType,
     });
     return res.data;
@@ -178,22 +178,22 @@ export class HrmPayrollService {
 
   // ─── Delete / Revert Payroll Run ───────────────────────────────────────────
 
-  static async deletePayrollRun(site: string, payrollRunId: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/deletePayrollRun`, { site, payrollRunId, deletedBy });
+  static async deletePayrollRun(organizationId: string, payrollRunId: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/deletePayrollRun`, { organizationId, payrollRunId, deletedBy });
   }
 
   static async excludeEmployee(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     employeeId: string,
     reason: string,
     excludedBy: string
   ): Promise<void> {
-    await api.post(`${BASE}/excludeEmployee`, { site, payrollRunId, employeeId, reason, excludedBy });
+    await api.post(`${BASE}/excludeEmployee`, { organizationId, payrollRunId, employeeId, reason, excludedBy });
   }
 
-  static async revertPayrollRun(site: string, payrollRunId: string, performedBy: string): Promise<PayrollRunSummary> {
-    const res = await api.post<PayrollRunSummary>(`${BASE}/revertPayrollRun`, { site, payrollRunId, performedBy });
+  static async revertPayrollRun(organizationId: string, payrollRunId: string, performedBy: string): Promise<PayrollRunSummary> {
+    const res = await api.post<PayrollRunSummary>(`${BASE}/revertPayrollRun`, { organizationId, payrollRunId, performedBy });
     return res.data;
   }
 
@@ -212,12 +212,12 @@ export class HrmPayrollService {
   }
 
   static async retrieveTaxDeclaration(
-    site: string,
+    organizationId: string,
     employeeId: string,
     financialYear: string
   ): Promise<TaxDeclarationResponse> {
     const res = await api.post<TaxDeclarationResponse>(`${BASE}/taxDeclaration/retrieve`, {
-      site,
+      organizationId,
       employeeId,
       financialYear,
     });
@@ -225,13 +225,13 @@ export class HrmPayrollService {
   }
 
   static async approveTaxDeclaration(
-    site: string,
+    organizationId: string,
     employeeId: string,
     financialYear: string,
     approvedBy: string
   ): Promise<TaxDeclarationResponse> {
     const res = await api.post<TaxDeclarationResponse>(`${BASE}/taxDeclaration/approve`, {
-      site,
+      organizationId,
       employeeId,
       financialYear,
       approvedBy,
@@ -239,9 +239,9 @@ export class HrmPayrollService {
     return res.data;
   }
 
-  static async getTaxDeclarationsByEmployee(site: string, employeeId: string): Promise<TaxDeclarationResponse[]> {
+  static async getTaxDeclarationsByEmployee(organizationId: string, employeeId: string): Promise<TaxDeclarationResponse[]> {
     const res = await api.post<TaxDeclarationResponse[]>(`${BASE}/taxDeclaration/getByEmployee`, {
-      site,
+      organizationId,
       employeeId,
     });
     return Array.isArray(res.data) ? res.data : [];
@@ -254,8 +254,8 @@ export class HrmPayrollService {
     return res.data;
   }
 
-  static async getLoansByEmployee(site: string, employeeId: string): Promise<LoanResponse[]> {
-    const res = await api.post<LoanResponse[]>(`${BASE}/getLoansByEmployee`, { site, employeeId });
+  static async getLoansByEmployee(organizationId: string, employeeId: string): Promise<LoanResponse[]> {
+    const res = await api.post<LoanResponse[]>(`${BASE}/getLoansByEmployee`, { organizationId, employeeId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -266,15 +266,15 @@ export class HrmPayrollService {
 
   // ─── Summary & Export ──────────────────────────────────────────────────────
 
-  static async getPayrollSummary(site: string, payrollRunId: string): Promise<PayrollSummaryResponse> {
-    const res = await api.post<PayrollSummaryResponse>(`${BASE}/getPayrollSummary`, { site, payrollRunId });
+  static async getPayrollSummary(organizationId: string, payrollRunId: string): Promise<PayrollSummaryResponse> {
+    const res = await api.post<PayrollSummaryResponse>(`${BASE}/getPayrollSummary`, { organizationId, payrollRunId });
     return res.data;
   }
 
-  static async exportPayrollReport(site: string, payrollRunId: string, format: string): Promise<Blob> {
+  static async exportPayrollReport(organizationId: string, payrollRunId: string, format: string): Promise<Blob> {
     const res = await api.post(
       `${BASE}/exportPayrollReport`,
-      { site, payrollRunId, format },
+      { organizationId, payrollRunId, format },
       { responseType: 'blob' }
     );
     return res.data as Blob;
@@ -283,12 +283,12 @@ export class HrmPayrollService {
   // ─── Variance Report ────────────────────────────────────────────────────────
 
   static async getVarianceReport(
-    site: string,
+    organizationId: string,
     currentRunId: string,
     previousRunId: string
   ): Promise<VarianceReportEntry[]> {
     const res = await api.post<VarianceReportEntry[]>(`${BASE}/varianceReport`, {
-      site,
+      organizationId,
       currentRunId,
       previousRunId,
     });
@@ -298,13 +298,13 @@ export class HrmPayrollService {
   // ─── Bank File ──────────────────────────────────────────────────────────────
 
   static async generateBankFile(
-    site: string,
+    organizationId: string,
     payrollRunId: string,
     bankFormat?: 'NEFT' | 'RTGS' | 'IMPS'
   ): Promise<Blob> {
     const res = await api.post(
       `${BASE}/generateBankFile`,
-      { site, payrollRunId, bankFormat },
+      { organizationId, payrollRunId, bankFormat },
       { responseType: 'blob' }
     );
     return res.data as Blob;
@@ -317,13 +317,13 @@ export class HrmPayrollService {
     return res.data;
   }
 
-  static async getSchedule(site: string, name: string): Promise<PayrollScheduleResponse> {
-    const res = await api.post<PayrollScheduleResponse>(`${BASE}/schedule/retrieve`, { site, name });
+  static async getSchedule(organizationId: string, name: string): Promise<PayrollScheduleResponse> {
+    const res = await api.post<PayrollScheduleResponse>(`${BASE}/schedule/retrieve`, { organizationId, name });
     return res.data;
   }
 
-  static async listSchedules(site: string): Promise<PayrollScheduleResponse[]> {
-    const res = await api.post<PayrollScheduleResponse[]>(`${BASE}/schedule/list`, { site });
+  static async listSchedules(organizationId: string): Promise<PayrollScheduleResponse[]> {
+    const res = await api.post<PayrollScheduleResponse[]>(`${BASE}/schedule/list`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 }

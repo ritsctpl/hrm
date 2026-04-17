@@ -12,7 +12,7 @@ export class HrmNotificationService {
   private static readonly BASE = '/hrm-service/notification';
 
   static async getMyNotifications(
-    site: string,
+    organizationId: string,
     recipientId: string,
     page: number = 0,
     size: number = 20,
@@ -20,7 +20,7 @@ export class HrmNotificationService {
     read?: boolean
   ): Promise<NotificationResponse[]> {
     const res = await api.post(`${this.BASE}/my-notifications`, {
-      site,
+      organizationId,
       recipientId,
       page,
       size,
@@ -31,25 +31,25 @@ export class HrmNotificationService {
   }
 
   static async markAsRead(
-    site: string,
+    organizationId: string,
     notificationId: string
   ): Promise<NotificationResponse> {
-    const res = await api.post(`${this.BASE}/mark-read`, { site, notificationId });
+    const res = await api.post(`${this.BASE}/mark-read`, { organizationId, notificationId });
     return res.data;
   }
 
-  static async markAllAsRead(site: string, recipientId: string): Promise<void> {
-    await api.post(`${this.BASE}/mark-all-read`, { site, recipientId });
+  static async markAllAsRead(organizationId: string, recipientId: string): Promise<void> {
+    await api.post(`${this.BASE}/mark-all-read`, { organizationId, recipientId });
   }
 
-  static async getUnreadCount(site: string, recipientId: string): Promise<number> {
-    const res = await api.post(`${this.BASE}/count-unread`, { site, recipientId });
+  static async getUnreadCount(organizationId: string, recipientId: string): Promise<number> {
+    const res = await api.post(`${this.BASE}/count-unread`, { organizationId, recipientId });
     return (res.data as UnreadCountResponse).unreadCount;
   }
 
   // Send Notification (Admin / System)
   static async sendNotification(request: {
-    site: string;
+    organizationId: string;
     recipientId: string;
     type: string;
     title: string;

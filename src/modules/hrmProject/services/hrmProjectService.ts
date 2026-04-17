@@ -32,19 +32,19 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async getProject(site: string, handle: string): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/retrieve`, { site, handle });
+  static async getProject(organizationId: string, handle: string): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/retrieve`, { organizationId, handle });
     return res.data;
   }
 
   static async listProjects(
-    site: string,
+    organizationId: string,
     buCode?: string,
     departmentCode?: string,
     status?: string,
     projectManagerId?: string
   ): Promise<ProjectListResponse[]> {
-    const res = await api.post(`${BASE}/list`, { site, buCode, departmentCode, status, projectManagerId });
+    const res = await api.post(`${BASE}/list`, { organizationId, buCode, departmentCode, status, projectManagerId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -53,8 +53,8 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async deleteProject(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/delete`, { site, handle, deletedBy });
+  static async deleteProject(organizationId: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/delete`, { organizationId, handle, deletedBy });
   }
 
   static async addMilestone(
@@ -81,23 +81,23 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async getAllocationsByProject(site: string, projectHandle: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/listByProject`, { site, projectHandle });
+  static async getAllocationsByProject(organizationId: string, projectHandle: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/listByProject`, { organizationId, projectHandle });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getAllocationsByEmployee(site: string, employeeId: string, status?: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/listByEmployee`, { site, employeeId, status });
+  static async getAllocationsByEmployee(organizationId: string, employeeId: string, status?: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/listByEmployee`, { organizationId, employeeId, status });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPendingApprovals(site: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { site });
+  static async getPendingApprovals(organizationId: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/pending`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async submitAllocation(site: string, handle: string, submittedBy: string): Promise<AllocationResponse> {
-    const res = await api.post(`${BASE}/allocation/submit`, { site, handle, submittedBy });
+  static async submitAllocation(organizationId: string, handle: string, submittedBy: string): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/submit`, { organizationId, handle, submittedBy });
     return res.data;
   }
 
@@ -106,8 +106,8 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async cancelAllocation(site: string, handle: string, cancelledBy: string): Promise<void> {
-    await api.post(`${BASE}/allocation/cancel`, { site, handle, cancelledBy });
+  static async cancelAllocation(organizationId: string, handle: string, cancelledBy: string): Promise<void> {
+    await api.post(`${BASE}/allocation/cancel`, { organizationId, handle, cancelledBy });
   }
 
   static async checkCapacity(payload: CapacityCheckRequest): Promise<CapacityCheckResponse> {
@@ -115,57 +115,57 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async getCalendarCapacity(site: string, weekStart: string, buCode?: string, departmentCode?: string): Promise<CapacityCheckResponse[]> {
-    const res = await api.post(`${BASE}/capacity/calendar`, { site, weekStart, buCode, departmentCode });
+  static async getCalendarCapacity(organizationId: string, weekStart: string, buCode?: string, departmentCode?: string): Promise<CapacityCheckResponse[]> {
+    const res = await api.post(`${BASE}/capacity/calendar`, { organizationId, weekStart, buCode, departmentCode });
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getAllocationVsActual(site: string, projectHandle: string): Promise<ProjectAllocationVsActualReport> {
-    const res = await api.post(`${BASE}/report/allocationVsActual`, { site, projectHandle });
+  static async getAllocationVsActual(organizationId: string, projectHandle: string): Promise<ProjectAllocationVsActualReport> {
+    const res = await api.post(`${BASE}/report/allocationVsActual`, { organizationId, projectHandle });
     return res.data;
   }
 
-  static async getResourceUtilization(site: string, startDate: string, endDate: string, department?: string): Promise<ResourceUtilizationReport> {
-    const res = await api.post(`${BASE}/report/resourceUtilization`, { site, startDate, endDate, department });
+  static async getResourceUtilization(organizationId: string, startDate: string, endDate: string, department?: string): Promise<ResourceUtilizationReport> {
+    const res = await api.post(`${BASE}/report/resourceUtilization`, { organizationId, startDate, endDate, department });
     return res.data;
   }
 
-  static async getCapacityDemand(site: string, startDate: string, endDate: string): Promise<CapacityDemandReport> {
-    const res = await api.post(`${BASE}/report/capacityDemand`, { site, startDate, endDate });
+  static async getCapacityDemand(organizationId: string, startDate: string, endDate: string): Promise<CapacityDemandReport> {
+    const res = await api.post(`${BASE}/report/capacityDemand`, { organizationId, startDate, endDate });
     return res.data;
   }
 
-  static async getProjectKpis(site: string): Promise<{ total: number; active: number; draft: number; onHold: number; completed: number }> {
-    const res = await api.post(`${BASE}/kpis`, { site });
+  static async getProjectKpis(organizationId: string): Promise<{ total: number; active: number; draft: number; onHold: number; completed: number }> {
+    const res = await api.post(`${BASE}/kpis`, { organizationId });
     return res.data;
   }
 
-  static async getPendingAllocations(site: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { site });
+  static async getPendingAllocations(organizationId: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/pending`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getResourceCalendar(
-    site: string,
+    organizationId: string,
     weekStart: string,
     buCode?: string,
     departmentCode?: string
   ): Promise<Array<{ employee: { employeeId: string; employeeName: string; department: string }; days: Array<{ date: string; allocatedHours: number; holiday: boolean; leave: boolean; capacityStatus: string }> }>> {
-    const res = await api.post(`${BASE}/capacity/calendar`, { site, weekStart, buCode, departmentCode });
+    const res = await api.post(`${BASE}/capacity/calendar`, { organizationId, weekStart, buCode, departmentCode });
     return Array.isArray(res.data) ? res.data : [];
   }
 
   // ─── Retrieve by Code ──────────────────────────────────────────────────────
 
-  static async getProjectByCode(site: string, projectCode: string): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/retrieveByCode`, { site, projectCode });
+  static async getProjectByCode(organizationId: string, projectCode: string): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/retrieveByCode`, { organizationId, projectCode });
     return res.data;
   }
 
   // ─── Allocation Retrieve ───────────────────────────────────────────────────
 
-  static async getAllocation(site: string, handle: string): Promise<AllocationResponse> {
-    const res = await api.post(`${BASE}/allocation/retrieve`, { site, handle });
+  static async getAllocation(organizationId: string, handle: string): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/retrieve`, { organizationId, handle });
     return res.data;
   }
 
@@ -176,13 +176,13 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async getClient(site: string, code: string): Promise<ClientResponse> {
-    const res = await api.post(`${BASE}/client/retrieve`, { site, code });
+  static async getClient(organizationId: string, code: string): Promise<ClientResponse> {
+    const res = await api.post(`${BASE}/client/retrieve`, { organizationId, code });
     return res.data;
   }
 
-  static async listClients(site: string): Promise<ClientResponse[]> {
-    const res = await api.post(`${BASE}/client/list`, { site });
+  static async listClients(organizationId: string): Promise<ClientResponse[]> {
+    const res = await api.post(`${BASE}/client/list`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -191,8 +191,8 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async deleteClient(site: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/client/delete`, { site, handle, deletedBy });
+  static async deleteClient(organizationId: string, handle: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/client/delete`, { organizationId, handle, deletedBy });
   }
 
   // ─── Billing ───────────────────────────────────────────────────────────────
@@ -202,8 +202,8 @@ export class HrmProjectService {
     return res.data;
   }
 
-  static async getBillingSummary(site: string, projectHandle: string, startDate: string, endDate: string): Promise<BillingSummaryResponse> {
-    const res = await api.post(`${BASE}/billing/summary`, { site, projectHandle, startDate, endDate });
+  static async getBillingSummary(organizationId: string, projectHandle: string, startDate: string, endDate: string): Promise<BillingSummaryResponse> {
+    const res = await api.post(`${BASE}/billing/summary`, { organizationId, projectHandle, startDate, endDate });
     return res.data;
   }
 }

@@ -49,10 +49,10 @@ export class HrmEmployeeService {
 
   /** Check if work email is available */
   static async checkEmailAvailability(
-    site: string,
+    organizationId: string,
     workEmail: string
   ): Promise<{ available: boolean; message: string }> {
-    const response = await api.post(`${this.BASE}/check-email`, { site, workEmail });
+    const response = await api.post(`${this.BASE}/check-email`, { organizationId, workEmail });
     console.log('Raw API response:', response);
     console.log('Response data:', response.data);
     
@@ -91,20 +91,20 @@ export class HrmEmployeeService {
 
   /** Search employees by keyword (uses directory with keyword filter) */
   static async searchByKeyword(
-    site: string,
+    organizationId: string,
     keyword: string
   ): Promise<EmployeeDirectoryResponse> {
-    const response = await api.post(`${this.BASE}/directory`, { site, keyword });
+    const response = await api.post(`${this.BASE}/directory`, { organizationId, keyword });
     return response.data;
   }
 
   /** Fetch full employee profile */
   static async fetchProfile(
-    site: string,
+    organizationId: string,
     handle: string,
     requestingUserRole: string = 'HR'
   ): Promise<EmployeeProfile> {
-    const response = await api.post(`${this.BASE}/profile`, { site, handle, requestingUserRole });
+    const response = await api.post(`${this.BASE}/profile`, { organizationId, handle, requestingUserRole });
     return response.data;
   }
 
@@ -150,7 +150,7 @@ export class HrmEmployeeService {
 
   /** Change employee status (ACTIVE/INACTIVE) */
   static async changeStatus(
-    site: string,
+    organizationId: string,
     handle: string,
     newStatus: string,
     reason: string,
@@ -158,7 +158,7 @@ export class HrmEmployeeService {
     effectiveDate?: string
   ): Promise<void> {
     await api.post(`${this.BASE}/change-status`, {
-      site,
+      organizationId,
       handle,
       newStatus,
       reason,
@@ -169,13 +169,13 @@ export class HrmEmployeeService {
 
   /** Add a skill to an employee */
   static async addSkill(
-    site: string,
+    organizationId: string,
     handle: string,
     skill: Skill,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/skill/add`, {
-      site,
+      organizationId,
       handle,
       skill,
       addedBy: modifiedBy,
@@ -185,13 +185,13 @@ export class HrmEmployeeService {
 
   /** Remove a skill from an employee */
   static async removeSkill(
-    site: string,
+    organizationId: string,
     handle: string,
     skillId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/skill/remove`, {
-      site,
+      organizationId,
       handle,
       skillId,
       modifiedBy,
@@ -200,11 +200,11 @@ export class HrmEmployeeService {
 
   /** Fetch job history timeline for an employee */
   static async fetchJobHistory(
-    site: string,
+    organizationId: string,
     handle: string
   ): Promise<JobHistoryEntry[]> {
     const response = await api.post(`${this.BASE}/job-history/retrieve`, {
-      site,
+      organizationId,
       handle,
     });
     return response.data;
@@ -212,13 +212,13 @@ export class HrmEmployeeService {
 
   /** Add previous work experience */
   static async addExperience(
-    site: string,
+    organizationId: string,
     handle: string,
     experience: PreviousExperience,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/experience/add`, {
-      site,
+      organizationId,
       handle,
       experience,
       modifiedBy,
@@ -227,13 +227,13 @@ export class HrmEmployeeService {
 
   /** Add education entry */
   static async addEducation(
-    site: string,
+    organizationId: string,
     handle: string,
     entry: EducationEntry,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/add`, {
-      site,
+      organizationId,
       handle,
       entry,
       modifiedBy,
@@ -242,7 +242,7 @@ export class HrmEmployeeService {
 
   /** Upload employee document (base64 encoded in JSON payload) */
   static async uploadDocument(
-    site: string,
+    organizationId: string,
     employeeHandle: string,
     documentType: string,
     documentName: string,
@@ -253,7 +253,7 @@ export class HrmEmployeeService {
     tags?: string[]
   ): Promise<EmployeeDocument> {
     const payload = {
-      site,
+      organizationId,
       employeeHandle,
       documentType,
       documentName,
@@ -269,13 +269,13 @@ export class HrmEmployeeService {
 
   /** Delete employee document */
   static async deleteDocument(
-    site: string,
+    organizationId: string,
     handle: string,
     docId: string,
     deletedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/document/delete`, {
-      site,
+      organizationId,
       handle,
       docId,
       deletedBy,
@@ -284,16 +284,16 @@ export class HrmEmployeeService {
 
   /** Fetch employee summary */
   static async fetchSummary(
-    site: string,
+    organizationId: string,
     handle: string
   ): Promise<EmployeeSummary> {
-    const response = await api.post(`${this.BASE}/summary`, { site, handle });
+    const response = await api.post(`${this.BASE}/summary`, { organizationId, handle });
     return response.data;
   }
 
   /** Change reporting manager */
   static async changeManager(
-    site: string,
+    organizationId: string,
     handle: string,
     newManagerHandle: string,
     modifiedBy: string,
@@ -301,7 +301,7 @@ export class HrmEmployeeService {
     reason?: string
   ): Promise<void> {
     await api.post(`${this.BASE}/change-manager`, {
-      site,
+      organizationId,
       handle,
       newManagerHandle,
       modifiedBy,
@@ -312,13 +312,13 @@ export class HrmEmployeeService {
 
   /** Delete employee */
   static async deleteEmployee(
-    site: string,
+    organizationId: string,
     handle: string,
     deletedBy: string,
     reason?: string
   ): Promise<void> {
     await api.post(`${this.BASE}/delete`, {
-      site,
+      organizationId,
       handle,
       deletedBy,
       ...(reason ? { reason } : {}),
@@ -327,14 +327,14 @@ export class HrmEmployeeService {
 
   /** Update a skill */
   static async updateSkill(
-    site: string,
+    organizationId: string,
     handle: string,
     skillId: string,
     skill: Skill,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/skill/update`, {
-      site,
+      organizationId,
       handle,
       skillId,
       skill,
@@ -344,14 +344,14 @@ export class HrmEmployeeService {
 
   /** Update previous experience */
   static async updateExperience(
-    site: string,
+    organizationId: string,
     handle: string,
     experience: PreviousExperience,
     expId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/experience/update`, {
-      site,
+      organizationId,
       handle,
       experience,
       expId,
@@ -361,13 +361,13 @@ export class HrmEmployeeService {
 
   /** Remove previous experience */
   static async removeExperience(
-    site: string,
+    organizationId: string,
     handle: string,
     expId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/experience/remove`, {
-      site,
+      organizationId,
       handle,
       expId,
       modifiedBy,
@@ -376,14 +376,14 @@ export class HrmEmployeeService {
 
   /** Update education entry */
   static async updateEducation(
-    site: string,
+    organizationId: string,
     handle: string,
     entry: EducationEntry,
     eduId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/update`, {
-      site,
+      organizationId,
       handle,
       entry,
       eduId,
@@ -393,13 +393,13 @@ export class HrmEmployeeService {
 
   /** Remove education entry */
   static async removeEducation(
-    site: string,
+    organizationId: string,
     handle: string,
     eduId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/education/remove`, {
-      site,
+      organizationId,
       handle,
       eduId,
       modifiedBy,
@@ -408,13 +408,13 @@ export class HrmEmployeeService {
 
   /** Add training/certification */
   static async addTraining(
-    site: string,
+    organizationId: string,
     handle: string,
     certification: TrainingCert,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/add`, {
-      site,
+      organizationId,
       handle,
       certification,
       modifiedBy,
@@ -423,14 +423,14 @@ export class HrmEmployeeService {
 
   /** Update training/certification */
   static async updateTraining(
-    site: string,
+    organizationId: string,
     handle: string,
     certification: TrainingCert,
     trainId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/update`, {
-      site,
+      organizationId,
       handle,
       certification,
       trainId,
@@ -440,13 +440,13 @@ export class HrmEmployeeService {
 
   /** Remove training/certification */
   static async removeTraining(
-    site: string,
+    organizationId: string,
     handle: string,
     trainId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/training/remove`, {
-      site,
+      organizationId,
       handle,
       trainId,
       modifiedBy,
@@ -455,13 +455,13 @@ export class HrmEmployeeService {
 
   /** Get document signed URL */
   static async getDocumentSignedUrl(
-    site: string,
+    organizationId: string,
     handle: string,
     docId: string,
     requestingUser?: string
   ): Promise<string> {
     const response = await api.post(`${this.BASE}/document/signed-url`, {
-      site,
+      organizationId,
       handle,
       docId,
       ...(requestingUser ? { requestingUser } : {}),
@@ -496,11 +496,11 @@ export class HrmEmployeeService {
 
   /** Get expiring documents alert */
   static async getExpiringDocuments(
-    site: string,
+    organizationId: string,
     daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
     const response = await api.post(`${this.BASE}/alerts/expiring-documents`, {
-      site,
+      organizationId,
       ...(daysAhead != null ? { daysAhead } : {}),
     });
     return response.data;
@@ -508,11 +508,11 @@ export class HrmEmployeeService {
 
   /** Get expiring visas alert */
   static async getExpiringVisas(
-    site: string,
+    organizationId: string,
     daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
     const response = await api.post(`${this.BASE}/alerts/expiring-visas`, {
-      site,
+      organizationId,
       ...(daysAhead != null ? { daysAhead } : {}),
     });
     return response.data;
@@ -520,11 +520,11 @@ export class HrmEmployeeService {
 
   /** Get expiring certifications alert */
   static async getExpiringCertifications(
-    site: string,
+    organizationId: string,
     daysAhead?: number
   ): Promise<ExpiringAlertResponse[]> {
     const response = await api.post(`${this.BASE}/alerts/expiring-certifications`, {
-      site,
+      organizationId,
       ...(daysAhead != null ? { daysAhead } : {}),
     });
     return response.data;
@@ -532,10 +532,10 @@ export class HrmEmployeeService {
 
   /** Get direct reports for a manager */
   static async getDirectReports(
-    site: string,
+    organizationId: string,
     employeeId: string
   ): Promise<DirectReportResponse[]> {
-    const response = await api.post(`${this.BASE}/direct-reports`, { site, employeeId });
+    const response = await api.post(`${this.BASE}/direct-reports`, { organizationId, employeeId });
     return response.data;
   }
 
@@ -546,11 +546,11 @@ export class HrmEmployeeService {
    * recursively. The backend guarantees the tree is cycle-safe.
    */
   static async fetchEmployeeHierarchy(
-    site: string,
+    organizationId: string,
     organizationName: string
   ): Promise<EmployeeHierarchyNode[]> {
     const response = await api.post(`${this.BASE}/hierarchy`, {
-      site,
+      organizationId,
       organizationName,
     });
     return response.data;
@@ -558,13 +558,13 @@ export class HrmEmployeeService {
 
   /** Get audit log for an employee */
   static async getAuditLog(
-    site: string,
+    organizationId: string,
     handle: string,
     page: number,
     size: number
   ): Promise<AuditLogResponse> {
     const response = await api.post(`${this.BASE}/audit-log`, {
-      site,
+      organizationId,
       handle,
       page,
       size,
@@ -574,13 +574,13 @@ export class HrmEmployeeService {
 
   /** Upload employee photo */
   static async uploadPhoto(
-    site: string,
+    organizationId: string,
     handle: string,
     file: File
   ): Promise<EmployeeProfile> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('site', site);
+    formData.append('organizationId', organizationId);
     formData.append('handle', handle);
     const response = await api.post(`${this.BASE}/photo/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -598,10 +598,10 @@ export class HrmEmployeeService {
 
   /** Get onboarding checklist */
   static async getOnboardingChecklist(
-    site: string,
+    organizationId: string,
     handle: string
   ): Promise<OnboardingChecklist> {
-    const response = await api.post(`${this.BASE}/onboarding/retrieve`, { site, handle });
+    const response = await api.post(`${this.BASE}/onboarding/retrieve`, { organizationId, handle });
     return response.data;
   }
 
@@ -615,12 +615,12 @@ export class HrmEmployeeService {
 
   /** Complete onboarding */
   static async completeOnboarding(
-    site: string,
+    organizationId: string,
     handle: string,
     completedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/onboarding/complete`, {
-      site,
+      organizationId,
       handle,
       completedBy,
     });
@@ -628,13 +628,13 @@ export class HrmEmployeeService {
 
   /** Add dependent */
   static async addDependent(
-    site: string,
+    organizationId: string,
     handle: string,
     dependent: Dependent,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/dependent/add`, {
-      site,
+      organizationId,
       handle,
       dependent,
       modifiedBy,
@@ -643,14 +643,14 @@ export class HrmEmployeeService {
 
   /** Update dependent */
   static async updateDependent(
-    site: string,
+    organizationId: string,
     handle: string,
     dependent: Dependent,
     dependentId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/dependent/update`, {
-      site,
+      organizationId,
       handle,
       dependent,
       dependentId,
@@ -660,13 +660,13 @@ export class HrmEmployeeService {
 
   /** Remove dependent */
   static async removeDependent(
-    site: string,
+    organizationId: string,
     handle: string,
     dependentId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/dependent/remove`, {
-      site,
+      organizationId,
       handle,
       dependentId,
       modifiedBy,
@@ -675,13 +675,13 @@ export class HrmEmployeeService {
 
   /** Add visa */
   static async addVisa(
-    site: string,
+    organizationId: string,
     handle: string,
     visa: VisaEntry,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/visa/add`, {
-      site,
+      organizationId,
       handle,
       visa,
       modifiedBy,
@@ -690,14 +690,14 @@ export class HrmEmployeeService {
 
   /** Update visa */
   static async updateVisa(
-    site: string,
+    organizationId: string,
     handle: string,
     visa: VisaEntry,
     visaId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/visa/update`, {
-      site,
+      organizationId,
       handle,
       visa,
       visaId,
@@ -707,13 +707,13 @@ export class HrmEmployeeService {
 
   /** Remove visa */
   static async removeVisa(
-    site: string,
+    organizationId: string,
     handle: string,
     visaId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/visa/remove`, {
-      site,
+      organizationId,
       handle,
       visaId,
       modifiedBy,
@@ -722,13 +722,13 @@ export class HrmEmployeeService {
 
   /** Add bank account */
   static async addBankAccount(
-    site: string,
+    organizationId: string,
     handle: string,
     bankAccount: BankAccount,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/bank/add`, {
-      site,
+      organizationId,
       handle,
       bankAccount,
       modifiedBy,
@@ -737,14 +737,14 @@ export class HrmEmployeeService {
 
   /** Update bank account */
   static async updateBankAccount(
-    site: string,
+    organizationId: string,
     handle: string,
     bankAccount: BankAccount,
     bankAccountId: string,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/bank/update`, {
-      site,
+      organizationId,
       handle,
       bankAccount,
       bankAccountId,
@@ -762,12 +762,12 @@ export class HrmEmployeeService {
 
   /** Fetch remuneration details */
   static async fetchRemuneration(
-    site: string,
+    organizationId: string,
     handle: string,
     requestingUserRole: string = 'HR'
   ): Promise<Remuneration> {
     const response = await api.post(`${this.BASE}/remuneration/retrieve`, {
-      site,
+      organizationId,
       handle,
       requestingUserRole,
     });
@@ -776,13 +776,13 @@ export class HrmEmployeeService {
 
   /** Update remuneration */
   static async updateRemuneration(
-    site: string,
+    organizationId: string,
     handle: string,
     remuneration: Remuneration,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/remuneration/update`, {
-      site,
+      organizationId,
       handle,
       remuneration,
       modifiedBy,
@@ -791,21 +791,21 @@ export class HrmEmployeeService {
 
   /** Fetch leave summary */
   static async fetchLeaveSummary(
-    site: string,
+    organizationId: string,
     handle: string
   ): Promise<LeaveSummary[]> {
-    const response = await api.post(`${this.BASE}/leave-summary`, { site, handle });
+    const response = await api.post(`${this.BASE}/leave-summary`, { organizationId, handle });
     return response.data;
   }
 
   /** Export employees as CSV */
   static async exportEmployees(
-    site: string,
+    organizationId: string,
     filters?: { department?: string; status?: string }
   ): Promise<Blob> {
     const response = await api.post(
       `${this.BASE}/export`,
-      { site, ...filters },
+      { organizationId, ...filters },
       { responseType: 'blob' }
     );
     return response.data;
@@ -813,14 +813,14 @@ export class HrmEmployeeService {
 
   /** Initiate offboarding */
   static async initiateOffboarding(
-    site: string,
+    organizationId: string,
     handle: string,
     exitDate: string,
     reason: string,
     initiatedBy: string
   ): Promise<unknown> {
     const response = await api.post(`${this.BASE}/offboarding/initiate`, {
-      site,
+      organizationId,
       handle,
       exitDate,
       reason,
@@ -831,23 +831,23 @@ export class HrmEmployeeService {
 
   /** Retrieve offboarding status */
   static async getOffboarding(
-    site: string,
+    organizationId: string,
     handle: string
   ): Promise<unknown> {
-    const response = await api.post(`${this.BASE}/offboarding/retrieve`, { site, handle });
+    const response = await api.post(`${this.BASE}/offboarding/retrieve`, { organizationId, handle });
     return response.data;
   }
 
   /** Update offboarding clearance item */
   static async updateClearance(
-    site: string,
+    organizationId: string,
     handle: string,
     itemId: string,
     status: string,
     updatedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/offboarding/updateClearance`, {
-      site,
+      organizationId,
       handle,
       itemId,
       status,
@@ -857,12 +857,12 @@ export class HrmEmployeeService {
 
   /** Complete offboarding */
   static async completeOffboarding(
-    site: string,
+    organizationId: string,
     handle: string,
     completedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/offboarding/complete`, {
-      site,
+      organizationId,
       handle,
       completedBy,
     });
@@ -870,13 +870,13 @@ export class HrmEmployeeService {
 
   /** Add job history entry */
   static async addJobHistory(
-    site: string,
+    organizationId: string,
     handle: string,
     entry: JobHistoryEntry,
     modifiedBy: string
   ): Promise<void> {
     await api.post(`${this.BASE}/job-history/add`, {
-      site,
+      organizationId,
       handle,
       entry,
       modifiedBy,
@@ -884,16 +884,16 @@ export class HrmEmployeeService {
   }
 
   /** Fetch field schemas */
-  static async fetchFieldSchemas(site: string): Promise<unknown[]> {
-    const response = await api.post('/hrm-service/schema/retrieve-all', { site });
+  static async fetchFieldSchemas(organizationId: string): Promise<unknown[]> {
+    const response = await api.post('/hrm-service/schema/retrieve-all', { organizationId });
     return response.data;
   }
 
   /** Save field schema */
   static async saveFieldSchema(
-    site: string,
+    organizationId: string,
     schema: unknown
   ): Promise<void> {
-    await api.post('/hrm-service/schema/save', { site, schema });
+    await api.post('/hrm-service/schema/save', { organizationId, schema });
   }
 }

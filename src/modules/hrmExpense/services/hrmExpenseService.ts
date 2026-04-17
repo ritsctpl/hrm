@@ -113,11 +113,11 @@ export class HrmExpenseService {
   }
 
   // ── Attachments ──────────────────────────────────────────────────────
-  static async uploadAttachment(expenseId: string, file: File, site: string, lineIndex: number): Promise<ReceiptUploadResponse> {
+  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex: number): Promise<ReceiptUploadResponse> {
     const form = new FormData();
     form.append("file", file);
     form.append("expenseId", expenseId);
-    form.append("site", site);
+    form.append("organizationId", organizationId);
     form.append("lineIndex", String(lineIndex));
     const { data } = await api.post(`${this.BASE}/receipt/upload`, form, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -145,7 +145,7 @@ export class HrmExpenseService {
     return data;
   }
 
-  static async getEmployeeBankDetails(payload: { site: string; employeeId: string }): Promise<EmployeeBankDetails> {
+  static async getEmployeeBankDetails(payload: { organizationId: string; employeeId: string }): Promise<EmployeeBankDetails> {
     const { data } = await api.post(`${this.BASE}/employee-bank-details`, payload);
     return data;
   }

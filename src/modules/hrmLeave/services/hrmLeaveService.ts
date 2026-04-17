@@ -236,7 +236,7 @@ export class HrmLeaveService {
     return this.unwrap<LeaveRequest>(data);
   }
 
-  static async escalateRequest(payload: { site: string; requestId: string }): Promise<LeaveRequest> {
+  static async escalateRequest(payload: { organizationId: string; requestId: string }): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/escalate`, payload);
     return this.unwrap<LeaveRequest>(data);
   }

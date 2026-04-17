@@ -48,18 +48,18 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async getCategory(site: string, categoryCode: string): Promise<AssetCategoryResponse> {
-    const res = await api.post(`${this.BASE}/asset/category/retrieve`, { site, categoryCode });
+  static async getCategory(organizationId: string, categoryCode: string): Promise<AssetCategoryResponse> {
+    const res = await api.post(`${this.BASE}/asset/category/retrieve`, { organizationId, categoryCode });
     return res.data;
   }
 
-  static async getAllCategories(site: string): Promise<AssetCategoryResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/category/retrieveAll`, { site });
+  static async getAllCategories(organizationId: string): Promise<AssetCategoryResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/category/retrieveAll`, { organizationId });
     return res.data;
   }
 
-  static async deleteCategory(site: string, categoryCode: string, deletedBy: string): Promise<void> {
-    await api.post(`${this.BASE}/asset/category/delete`, { site, categoryCode, createdBy: deletedBy });
+  static async deleteCategory(organizationId: string, categoryCode: string, deletedBy: string): Promise<void> {
+    await api.post(`${this.BASE}/asset/category/delete`, { organizationId, categoryCode, createdBy: deletedBy });
   }
 
   // ─── Asset CRUD ───────────────────────────────────────────────────────────
@@ -74,33 +74,33 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async getAsset(site: string, assetId: string): Promise<AssetResponse> {
-    const res = await api.post(`${this.BASE}/asset/retrieve`, { site, assetId });
+  static async getAsset(organizationId: string, assetId: string): Promise<AssetResponse> {
+    const res = await api.post(`${this.BASE}/asset/retrieve`, { organizationId, assetId });
     return res.data;
   }
 
-  static async getAllAssets(site: string): Promise<AssetListResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/retrieveAll`, { site });
+  static async getAllAssets(organizationId: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveAll`, { organizationId });
     return res.data;
   }
 
-  static async getAssetsByCategory(site: string, categoryCode: string): Promise<AssetListResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/retrieveByCategory`, { site, categoryCode });
+  static async getAssetsByCategory(organizationId: string, categoryCode: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveByCategory`, { organizationId, categoryCode });
     return res.data;
   }
 
-  static async getAssetsByStatus(site: string, status: string): Promise<AssetListResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/retrieveByStatus`, { site, status });
+  static async getAssetsByStatus(organizationId: string, status: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveByStatus`, { organizationId, status });
     return res.data;
   }
 
-  static async getAssetsByEmployee(site: string, employeeId: string): Promise<AssetListResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/retrieveByEmployee`, { site, employeeId });
+  static async getAssetsByEmployee(organizationId: string, employeeId: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveByEmployee`, { organizationId, employeeId });
     return res.data;
   }
 
-  static async getInStoreByCategory(site: string, categoryCode: string): Promise<AssetListResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/retrieveInStore`, { site, categoryCode });
+  static async getInStoreByCategory(organizationId: string, categoryCode: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveInStore`, { organizationId, categoryCode });
     return res.data;
   }
 
@@ -121,8 +121,8 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async getCustodyHistory(site: string, assetId: string): Promise<AssetCustodyResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/custody/history`, { site, assetId });
+  static async getCustodyHistory(organizationId: string, assetId: string): Promise<AssetCustodyResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/custody/history`, { organizationId, assetId });
     return res.data;
   }
 
@@ -133,8 +133,8 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async getMaintenanceHistory(site: string, assetId: string): Promise<AssetMaintenanceResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/maintenance/history`, { site, assetId });
+  static async getMaintenanceHistory(organizationId: string, assetId: string): Promise<AssetMaintenanceResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/maintenance/history`, { organizationId, assetId });
     return res.data;
   }
 
@@ -145,15 +145,15 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async getDepreciationHistory(site: string, assetId: string): Promise<AssetDepreciationSnapshotResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/depreciation/history`, { site, assetId });
+  static async getDepreciationHistory(organizationId: string, assetId: string): Promise<AssetDepreciationSnapshotResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/depreciation/history`, { organizationId, assetId });
     return res.data;
   }
 
   // ─── QR Code ──────────────────────────────────────────────────────────────
 
-  static async generateQRCode(site: string, assetId: string): Promise<string> {
-    const res = await api.post(`${this.BASE}/asset/qr/generate`, { site, assetId });
+  static async generateQRCode(organizationId: string, assetId: string): Promise<string> {
+    const res = await api.post(`${this.BASE}/asset/qr/generate`, { organizationId, assetId });
     return res.data;
   }
 
@@ -173,13 +173,13 @@ export class HrmAssetService {
 
   // ─── Dashboard & Warranty ─────────────────────────────────────────────────
 
-  static async getDashboard(site: string): Promise<AssetDashboardResponse> {
-    const res = await api.post(`${this.BASE}/asset/dashboard`, { site });
+  static async getDashboard(organizationId: string): Promise<AssetDashboardResponse> {
+    const res = await api.post(`${this.BASE}/asset/dashboard`, { organizationId });
     return res.data;
   }
 
-  static async getWarrantyReminders(site: string, days: number = 30): Promise<AssetWarrantyReminderResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/warranty/reminders`, { site, days });
+  static async getWarrantyReminders(organizationId: string, days: number = 30): Promise<AssetWarrantyReminderResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/warranty/reminders`, { organizationId, days });
     return res.data;
   }
 
@@ -190,13 +190,13 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async submitAssetRequest(site: string, requestId: string, employeeId: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/submit`, { site, requestId, employeeId });
+  static async submitAssetRequest(organizationId: string, requestId: string, employeeId: string): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/submit`, { organizationId, requestId, employeeId });
     return res.data;
   }
 
-  static async cancelAssetRequest(site: string, requestId: string, employeeId: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/cancel`, { site, requestId, employeeId });
+  static async cancelAssetRequest(organizationId: string, requestId: string, employeeId: string): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/cancel`, { organizationId, requestId, employeeId });
     return res.data;
   }
 
@@ -210,52 +210,52 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async markProcurement(site: string, requestId: string, markedBy: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/procurement`, { site, requestId, markedBy });
+  static async markProcurement(organizationId: string, requestId: string, markedBy: string): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/procurement`, { organizationId, requestId, markedBy });
     return res.data;
   }
 
-  static async getRequest(site: string, requestId: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/retrieve`, { site, requestId });
+  static async getRequest(organizationId: string, requestId: string): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/retrieve`, { organizationId, requestId });
     return res.data;
   }
 
-  static async getRequestsByEmployee(site: string, employeeId: string): Promise<AssetRequestResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/retrieveAll`, { site, employeeId });
+  static async getRequestsByEmployee(organizationId: string, employeeId: string): Promise<AssetRequestResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/request/retrieveAll`, { organizationId, employeeId });
     return res.data;
   }
 
-  static async getPendingForSupervisor(site: string, supervisorId: string): Promise<AssetRequestResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/pendingSupervisor`, { site, supervisorId });
+  static async getPendingForSupervisor(organizationId: string, supervisorId: string): Promise<AssetRequestResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/request/pendingSupervisor`, { organizationId, supervisorId });
     return res.data;
   }
 
-  static async getPendingForAdmin(site: string): Promise<AssetRequestResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/pendingAdmin`, { site });
+  static async getPendingForAdmin(organizationId: string): Promise<AssetRequestResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/request/pendingAdmin`, { organizationId });
     return res.data;
   }
 
-  static async getPendingAllocation(site: string): Promise<AssetRequestResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/pendingAllocation`, { site });
+  static async getPendingAllocation(organizationId: string): Promise<AssetRequestResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/request/pendingAllocation`, { organizationId });
     return res.data;
   }
 
-  static async getApprovalHistory(site: string, requestId: string): Promise<AssetApprovalActionResponse[]> {
-    const res = await api.post(`${this.BASE}/asset/request/approvalHistory`, { site, requestId });
+  static async getApprovalHistory(organizationId: string, requestId: string): Promise<AssetApprovalActionResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/request/approvalHistory`, { organizationId, requestId });
     return res.data;
   }
 
   // ─── Attachments ──────────────────────────────────────────────────────────
 
   static async uploadAttachment(
-    site: string,
+    organizationId: string,
     assetId: string,
     file: File,
     uploadedBy: string,
   ): Promise<AssetAttachmentDto> {
     const form = new FormData();
     form.append('file', file);
-    form.append('site', site);
+    form.append('organizationId', organizationId);
     form.append('assetId', assetId);
     form.append('uploadedBy', uploadedBy);
     const res = await api.post(`${this.BASE}/asset/attachment/upload`, form, {
@@ -265,13 +265,13 @@ export class HrmAssetService {
   }
 
   static async deleteAttachment(
-    site: string,
+    organizationId: string,
     assetId: string,
     attachmentId: string,
     deletedBy: string,
   ): Promise<void> {
     await api.post(`${this.BASE}/asset/attachment/delete`, {
-      site,
+      organizationId,
       assetId,
       attachmentId,
       deletedBy,

@@ -107,13 +107,13 @@ export class HrmPolicyService {
   }
 
   static async uploadPolicyFile(
-    site: string,
+    organizationId: string,
     policyHandle: string,
     uploadedBy: string,
     file: File
   ): Promise<PolicyDocument> {
     const formData = new FormData();
-    formData.append("site", site);
+    formData.append("organizationId", organizationId);
     formData.append("policyHandle", policyHandle);
     formData.append("uploadedBy", uploadedBy);
     formData.append("file", file);
@@ -122,7 +122,7 @@ export class HrmPolicyService {
   }
 
   static async uploadNewVersion(
-    site: string,
+    organizationId: string,
     policyHandle: string,
     newVersionNumber: string,
     changeDescription: string,
@@ -130,7 +130,7 @@ export class HrmPolicyService {
     file?: File
   ): Promise<PolicyDocument> {
     const formData = new FormData();
-    formData.append("site", site);
+    formData.append("organizationId", organizationId);
     formData.append("policyHandle", policyHandle);
     formData.append("newVersionNumber", newVersionNumber);
     formData.append("changeDescription", changeDescription);
@@ -181,8 +181,8 @@ export class HrmPolicyService {
 
   // ── Categories ──
 
-  static async getCategories(site: string): Promise<PolicyCategory[]> {
-    const res = await api.post(`${BASE}/listCategories`, { site });
+  static async getCategories(organizationId: string): Promise<PolicyCategory[]> {
+    const res = await api.post(`${BASE}/listCategories`, { organizationId });
     return res.data ?? [];
   }
 

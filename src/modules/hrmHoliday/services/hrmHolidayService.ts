@@ -373,14 +373,14 @@ export class HrmHolidayService {
   // ── Integration (used by Leave module) ────────────────────────────────
 
   static async getPublishedHolidaysForBu(
-    payload: { site: string; buHandle: string; year: number }
+    payload: { organizationId: string; buHandle: string; year: number }
   ): Promise<HolidayApiResponse<HolidayResponse[]>> {
     const { data } = await api.post(`${this.BASE}/holiday/integration/published-for-bu`, payload);
     return data;
   }
 
   static async getCompensatoryHolidaysForBu(
-    payload: { site: string; buHandle: string; year: number }
+    payload: { organizationId: string; buHandle: string; year: number }
   ): Promise<HolidayApiResponse<HolidayResponse[]>> {
     const { data } = await api.post(`${this.BASE}/holiday/integration/compensatory-for-bu`, payload);
     return data;
