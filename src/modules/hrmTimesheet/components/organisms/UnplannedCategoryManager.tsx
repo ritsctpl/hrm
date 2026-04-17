@@ -4,6 +4,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
 import { resolveEmployeeId } from '../../utils/resolveEmployeeId';
@@ -22,7 +23,7 @@ interface CategoryFormValues {
 export default function UnplannedCategoryManager() {
   const { unplannedCategories, setUnplannedCategories } = useHrmTimesheetStore();
   const cookies = parseCookies();
-  const site = cookies.site ?? '';
+  const organizationId = getOrganizationId();
   const employeeId = resolveEmployeeId(cookies);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UnplannedCategory | null>(null);
@@ -30,7 +31,7 @@ export default function UnplannedCategoryManager() {
   const [form] = Form.useForm<CategoryFormValues>();
 
   async function reloadCategories() {
-    const data = await HrmTimesheetService.getUnplannedCategories(site);
+    const data = await HrmTimesheetService.getUnplannedCategories(organizationId);
     setUnplannedCategories(
       data.map((c) => ({
         handle: c.handle,
@@ -61,7 +62,7 @@ export default function UnplannedCategoryManager() {
     try {
       if (editTarget) {
         await HrmTimesheetService.updateUnplannedCategory(
-          site,
+          organizationId,
           editTarget.handle,
           values.label,
           values.description ?? '',
@@ -71,7 +72,7 @@ export default function UnplannedCategoryManager() {
         message.success('Category updated');
       } else {
         await HrmTimesheetService.createUnplannedCategory(
-          site,
+          organizationId,
           values.label,
           values.description ?? '',
           values.displayOrder,
@@ -90,7 +91,7 @@ export default function UnplannedCategoryManager() {
 
   async function handleDelete(handle: string) {
     try {
-      await HrmTimesheetService.deleteUnplannedCategory(site, handle, employeeId);
+      await HrmTimesheetService.deleteUnplannedCategory(organizationId, handle, employeeId);
       message.success('Category deleted');
       await reloadCategories();
     } catch (err: unknown) {

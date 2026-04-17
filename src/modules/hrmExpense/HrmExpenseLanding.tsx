@@ -4,6 +4,7 @@ import React, { useEffect, useCallback, useState } from "react";
 import { Alert, Button, Tabs, Typography, Space } from "antd";
 import { PlusOutlined, DownloadOutlined, WarningOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseData } from "./hooks/useExpenseData";
@@ -28,7 +29,7 @@ const ADMIN_ROLES = ["ADMIN", "HR", "SUPERADMIN"];
 
 const HrmExpenseLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const role = cookies.userRole ?? "EMPLOYEE";
 
   const {
@@ -71,19 +72,19 @@ const HrmExpenseLanding: React.FC = () => {
     loadCategories();
     loadMileageConfig();
     loadUnsettledAdvances().then(setUnsettledAdvances);
-  }, [site]);
+  }, [organizationId]);
 
   useEffect(() => {
     if (isSupervisor || isAdmin) {
       loadSupervisorInbox();
     }
-  }, [site, role]);
+  }, [organizationId, role]);
 
   useEffect(() => {
     if (isFinance || isAdmin) {
       loadFinanceInbox();
     }
-  }, [site, role]);
+  }, [organizationId, role]);
 
   // Auto-trigger search when filters change
   useEffect(() => {

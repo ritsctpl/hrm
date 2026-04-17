@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Drawer, Table, Tabs, Select, Spin, Empty, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import type { ExpiringAlertResponse } from '../../types/api.types';
 
@@ -28,15 +28,14 @@ const AlertsDashboard: React.FC<Props> = ({ open, onClose }) => {
 
   useEffect(() => {
     if (!open) return;
-    const cookies = parseCookies();
-    const site = cookies.site;
-    if (!site) return;
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
 
     setLoading(true);
     Promise.all([
-      HrmEmployeeService.getExpiringDocuments(site, daysAhead),
-      HrmEmployeeService.getExpiringVisas(site, daysAhead),
-      HrmEmployeeService.getExpiringCertifications(site, daysAhead),
+      HrmEmployeeService.getExpiringDocuments(organizationId, daysAhead),
+      HrmEmployeeService.getExpiringVisas(organizationId, daysAhead),
+      HrmEmployeeService.getExpiringCertifications(organizationId, daysAhead),
     ])
       .then(([docs, vis, certifications]) => {
         setDocuments(docs);

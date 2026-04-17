@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Descriptions, Button, Spin, Empty, message, InputNumber, Form, Input, DatePicker } from 'antd';
 import { EditOutlined, SaveOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import type { EmployeeProfile, Remuneration } from '../../types/domain.types';
@@ -24,10 +25,9 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
   useEffect(() => {
     if (!profile.remuneration && profile.handle) {
       setLoading(true);
-      const cookies = parseCookies();
-      const site = cookies.site;
-      if (site) {
-        HrmEmployeeService.fetchRemuneration(site, profile.handle)
+      const organizationId = getOrganizationId();
+      if (organizationId) {
+        HrmEmployeeService.fetchRemuneration(organizationId, profile.handle)
           .then((data) => setRemuneration(data))
           .catch(() => {
             // No remuneration data yet
@@ -41,10 +41,10 @@ const RemunerationTab: React.FC<Props> = ({ profile, onRefresh }) => {
     try {
       const values = await form.validateFields();
       setSaving(true);
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
-      await HrmEmployeeService.updateRemuneration(site, profile.handle, values, modifiedBy);
+      await HrmEmployeeService.updateRemuneration(organizationId, profile.handle, values, modifiedBy);
       message.success('Remuneration updated');
       setEditing(false);
       setRemuneration(values);

@@ -16,6 +16,7 @@
 
 import { create } from 'zustand';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
@@ -55,14 +56,14 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
   loadedFor: '',
 
   load: async () => {
+    const organizationId = getOrganizationId();
     const cookies = parseCookies();
-    const site = cookies.site || '';
     const loginId =
       cookies.rl_user_id || cookies.userId || cookies.username || '';
 
-    if (!site || !loginId) return;
+    if (!organizationId || !loginId) return;
 
-    const key = `${site}::${loginId}`;
+    const key = `${organizationId}::${loginId}`;
     const state = get();
     if (state.loadedFor === key && state.data) return;
     if (state.isLoading) return;
@@ -72,7 +73,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
     // Fetch employee + org in parallel — they're independent.
     const [employeeResult, orgResult] = await Promise.allSettled([
       (async () => {
-        const response = await HrmEmployeeService.searchByKeyword(site, loginId);
+        const response = await HrmEmployeeService.searchByKeyword(organizationId, loginId);
         const items = (response?.employees || []) as EmployeeDirectoryRow[];
         const match =
           items.find(e => e.workEmail?.toLowerCase() === loginId.toLowerCase()) ||
@@ -84,7 +85,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
         let photoUrl = match.photoUrl;
         let photoBase64: string | undefined;
         try {
-          const fullProfile = await HrmEmployeeService.fetchProfile(site, match.handle);
+          const fullProfile = await HrmEmployeeService.fetchProfile(organizationId, match.handle);
           photoUrl = fullProfile.basicDetails?.photoUrl || photoUrl;
           photoBase64 = fullProfile.basicDetails?.photoBase64;
         } catch {
@@ -105,7 +106,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
         try {
           // Step 1: by-site → gives us the handle (and possibly the logo).
           // Backend may wrap the response in different shapes; normalize.
-          const raw = (await HrmOrganizationService.fetchBySite(site)) as unknown;
+          const raw = (await HrmOrganizationService.fetchBySite(organizationId)) as unknown;
           let summary: Record<string, unknown> | null = null;
           if (Array.isArray(raw)) {
             summary = (raw[0] as Record<string, unknown>) || null;
@@ -130,7 +131,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
           if (handle) {
             try {
               const full = (await HrmOrganizationService.fetchCompanyByHandle(
-                site,
+                organizationId,
                 handle,
               )) as unknown as Record<string, unknown>;
               if (full && typeof full === 'object') {

@@ -10,7 +10,6 @@ import { useHrmAssetStore } from '../stores/hrmAssetStore';
 export function useHrmAssetData() {
   const store = useHrmAssetStore();
 
-  const getSite = () => parseCookies().site ?? '';
   const getUserId = () => parseCookies().userId ?? parseCookies().user ?? '';
   // The logged-in user IS the supervisor — pass their own userId as supervisorId
   const getSupervisorId = () => getUserId();

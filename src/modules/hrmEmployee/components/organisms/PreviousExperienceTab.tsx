@@ -9,6 +9,7 @@ import { Button, Input, DatePicker, Modal, Empty, Form, message, Popconfirm } fr
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import { formatDate } from '../../utils/transformations';
@@ -35,8 +36,8 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
       const values = await form.validateFields();
       setLoading(true);
 
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       const exp: PreviousExperience = {
@@ -51,7 +52,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
         description: values.description,
       };
 
-      await HrmEmployeeService.addExperience(site, profile.handle, exp, modifiedBy);
+      await HrmEmployeeService.addExperience(organizationId, profile.handle, exp, modifiedBy);
       message.success('Experience added');
       form.resetFields();
       setAddOpen(false);
@@ -85,8 +86,8 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
       const values = await editForm.validateFields();
       setLoading(true);
 
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       const exp: PreviousExperience = {
@@ -102,9 +103,9 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
 
       // Use update method if we have an expId, otherwise use add
       if (selectedExp?.expId) {
-        await HrmEmployeeService.updateExperience(site, profile.handle, exp, selectedExp.expId, modifiedBy);
+        await HrmEmployeeService.updateExperience(organizationId, profile.handle, exp, selectedExp.expId, modifiedBy);
       } else {
-        await HrmEmployeeService.addExperience(site, profile.handle, exp, modifiedBy);
+        await HrmEmployeeService.addExperience(organizationId, profile.handle, exp, modifiedBy);
       }
       message.success('Experience updated');
       editForm.resetFields();
@@ -121,8 +122,8 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
   const handleDelete = useCallback(async (exp: PreviousExperience) => {
     try {
       setLoading(true);
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       if (!exp.expId) {
@@ -130,7 +131,7 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
         return;
       }
 
-      await HrmEmployeeService.removeExperience(site, profile.handle, exp.expId, modifiedBy);
+      await HrmEmployeeService.removeExperience(organizationId, profile.handle, exp.expId, modifiedBy);
       message.success('Experience deleted');
       onRefresh();
     } catch (err) {

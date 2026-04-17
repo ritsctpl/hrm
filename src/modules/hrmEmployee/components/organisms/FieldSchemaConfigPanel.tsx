@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Drawer, Select, Table, Switch, Button, Spin, Empty, message, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import Can from '../../../hrmAccess/components/Can';
 
@@ -57,10 +57,9 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    const cookies = parseCookies();
-    const site = cookies.site;
-    if (site) {
-      HrmEmployeeService.fetchFieldSchemas(site)
+    const organizationId = getOrganizationId();
+    if (organizationId) {
+      HrmEmployeeService.fetchFieldSchemas(organizationId)
         .then((data) => setSchemas(data as GroupSchema[]))
         .catch(() => {
           // No schema config available, use defaults
@@ -75,8 +74,7 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const cookies = parseCookies();
-      await HrmEmployeeService.saveFieldSchema(cookies.site, currentGroup);
+      await HrmEmployeeService.saveFieldSchema(getOrganizationId(), currentGroup);
       message.success('Schema saved');
     } catch {
       message.error('Failed to save schema');

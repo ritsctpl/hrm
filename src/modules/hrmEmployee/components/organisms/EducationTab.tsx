@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
 import type { ProfileTabProps } from '../../types/ui.types';
@@ -33,8 +34,8 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       const values = await form.validateFields();
       setLoading(true);
 
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       const edu: EducationEntry = {
@@ -50,7 +51,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         grade: values.grade,
       };
 
-      await HrmEmployeeService.addEducation(site, profile.handle, edu, modifiedBy);
+      await HrmEmployeeService.addEducation(organizationId, profile.handle, edu, modifiedBy);
       message.success('Education entry added');
       form.resetFields();
       setAddOpen(false);
@@ -84,8 +85,8 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       const values = await editForm.validateFields();
       setLoading(true);
 
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       const edu: EducationEntry = {
@@ -102,9 +103,9 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
       // Use update method if we have an eduId, otherwise use add
       if (selectedEdu?.eduId) {
-        await HrmEmployeeService.updateEducation(site, profile.handle, edu, selectedEdu.eduId, modifiedBy);
+        await HrmEmployeeService.updateEducation(organizationId, profile.handle, edu, selectedEdu.eduId, modifiedBy);
       } else {
-        await HrmEmployeeService.addEducation(site, profile.handle, edu, modifiedBy);
+        await HrmEmployeeService.addEducation(organizationId, profile.handle, edu, modifiedBy);
       }
       message.success('Education entry updated');
       editForm.resetFields();
@@ -121,8 +122,8 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const handleDelete = useCallback(async (edu: EducationEntry) => {
     try {
       setLoading(true);
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       if (!edu.eduId) {
@@ -130,7 +131,7 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         return;
       }
 
-      await HrmEmployeeService.removeEducation(site, profile.handle, edu.eduId, modifiedBy);
+      await HrmEmployeeService.removeEducation(organizationId, profile.handle, edu.eduId, modifiedBy);
       message.success('Education entry deleted');
       onRefresh();
     } catch (err) {

@@ -7,6 +7,7 @@
 import React, { useState, useCallback } from 'react';
 import { Button, Input, Select, Modal, Empty, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import EmpSkillTag from '../molecules/EmpSkillTag';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
@@ -34,8 +35,8 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
     setLoading(true);
     try {
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const modifiedBy = cookies.username || 'system';
 
       const newSkill: Skill = {
@@ -43,7 +44,7 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         proficiencyLevel: proficiency,
       };
 
-      await HrmEmployeeService.addSkill(site, profile.handle, newSkill, modifiedBy);
+      await HrmEmployeeService.addSkill(organizationId, profile.handle, newSkill, modifiedBy);
       message.success('Skill added');
       setAddModalOpen(false);
       setSkillName('');
@@ -60,11 +61,11 @@ const SkillsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const handleRemove = useCallback(
     async (skillId: string) => {
       try {
+        const organizationId = getOrganizationId();
         const cookies = parseCookies();
-        const site = cookies.site;
         const modifiedBy = cookies.username || 'system';
 
-        await HrmEmployeeService.removeSkill(site, profile.handle, skillId, modifiedBy);
+        await HrmEmployeeService.removeSkill(organizationId, profile.handle, skillId, modifiedBy);
         message.success('Skill removed');
         onRefresh();
       } catch (err) {

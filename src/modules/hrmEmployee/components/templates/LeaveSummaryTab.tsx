@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, Empty, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import type { EmployeeProfile, LeaveSummary } from '../../types/domain.types';
 
@@ -20,10 +20,9 @@ const LeaveSummaryTab: React.FC<Props> = ({ profile }) => {
   useEffect(() => {
     if ((!profile.leaveSummary || profile.leaveSummary.length === 0) && profile.handle) {
       setLoading(true);
-      const cookies = parseCookies();
-      const site = cookies.site;
-      if (site) {
-        HrmEmployeeService.fetchLeaveSummary(site, profile.handle)
+      const organizationId = getOrganizationId();
+      if (organizationId) {
+        HrmEmployeeService.fetchLeaveSummary(organizationId, profile.handle)
           .then((result) => setData(result ?? []))
           .catch(() => {
             // No leave data available

@@ -4,6 +4,7 @@ import React, { useEffect, useCallback } from "react";
 import { Button, Tabs, Typography, Space } from "antd";
 import { PlusOutlined, DownloadOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmTravelStore } from "./stores/hrmTravelStore";
 import { useTravelData } from "./hooks/useTravelData";
@@ -26,7 +27,7 @@ const ADMIN_ROLES = ["ADMIN", "HR", "SUPERADMIN"];
 
 const HrmTravelLanding: React.FC = () => {
   const cookies = parseCookies();
-  const site = cookies.site ?? "";
+  const organizationId = getOrganizationId();
   const role = cookies.userRole ?? "EMPLOYEE";
 
   const {

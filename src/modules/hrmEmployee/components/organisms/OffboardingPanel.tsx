@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Drawer, Form, Input, DatePicker, Button, message, Alert, Empty } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import Can from '../../../hrmAccess/components/Can';
 
@@ -27,7 +28,7 @@ const OffboardingPanel: React.FC<Props> = ({ open, onClose, employeeHandle, empl
       setInitiating(true);
       const cookies = parseCookies();
       await HrmEmployeeService.initiateOffboarding(
-        cookies.site,
+        getOrganizationId(),
         employeeHandle,
         values.exitDate,
         values.reason,

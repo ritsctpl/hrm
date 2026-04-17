@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Drawer, Button, Select, message, Space, Card } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 
 interface Props {
@@ -19,9 +19,8 @@ const EmployeeExportPanel: React.FC<Props> = ({ open, onClose }) => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const cookies = parseCookies();
-      const site = cookies.site;
-      const blob = await HrmEmployeeService.exportEmployees(site, {
+      const organizationId = getOrganizationId();
+      const blob = await HrmEmployeeService.exportEmployees(organizationId, {
         department: departmentFilter,
         status: statusFilter,
       });

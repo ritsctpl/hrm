@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmSettingsService } from '../services/hrmSettingsService';
 import { useHrmSettingsStore } from '../stores/hrmSettingsStore';
 import type { ProfileFormData } from '../types/domain.types';
@@ -13,12 +14,12 @@ export function useSettingsData() {
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site ?? '';
       const userId = cookies.userId ?? '';
-      if (!site || !userId) return;
+      if (!organizationId || !userId) return;
 
-      const data = await HrmSettingsService.fetchEmployeeProfile(site, userId);
+      const data = await HrmSettingsService.fetchEmployeeProfile(organizationId, userId);
       const mapped: ProfileFormData = {
         name: data?.name || data?.firstName || '',
         contactNumber: data?.contactNumber || data?.phone || '',

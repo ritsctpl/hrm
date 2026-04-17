@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { Input, Select, Button, message } from 'antd';
 import { CloseOutlined, UserOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
-import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
 import OrgSaveButton from '../atoms/OrgSaveButton';
@@ -54,13 +54,12 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     }
 
     searchTimerRef.current = setTimeout(async () => {
-      const cookies = parseCookies();
-      const site = cookies.site || '';
-      if (!site) return;
+      const organizationId = getOrganizationId();
+      if (!organizationId) return;
 
       setEmployeeSearchLoading(true);
       try {
-        const result = await HrmEmployeeService.searchByKeyword(site, keyword);
+        const result = await HrmEmployeeService.searchByKeyword(organizationId, keyword);
         const employees = result?.employees || [];
         setEmployeeOptions(
           employees.map((emp) => ({

@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { Button, Upload, Select, Modal, Empty, message } from 'antd';
 import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import EmpDocumentRow from '../molecules/EmpDocumentRow';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
@@ -37,8 +38,8 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 
     setUploading(true);
     try {
+      const organizationId = getOrganizationId();
       const cookies = parseCookies();
-      const site = cookies.site;
       const uploadedBy = cookies.username || 'system';
 
       // Convert file to base64
@@ -55,7 +56,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       });
 
       await HrmEmployeeService.uploadDocument(
-        site,
+        organizationId,
         profile.handle,
         docType,
         selectedFile.name,
@@ -85,11 +86,11 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
         okType: 'danger',
         onOk: async () => {
           try {
+            const organizationId = getOrganizationId();
             const cookies = parseCookies();
-            const site = cookies.site;
             const deletedBy = cookies.username || 'system';
 
-            await HrmEmployeeService.deleteDocument(site, profile.handle, docId, deletedBy);
+            await HrmEmployeeService.deleteDocument(organizationId, profile.handle, docId, deletedBy);
             message.success('Document deleted');
             onRefresh();
           } catch (err) {
