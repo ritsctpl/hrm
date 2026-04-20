@@ -227,7 +227,13 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_ORGANIZATION: [
     { code: "org_module", label: "Module Access" },
     { code: "org_company_profile", label: "Company Profile" },
+    { code: "org_identity", label: "Company Identity" },
+    { code: "org_statutory", label: "Statutory Details" },
+    { code: "org_addresses", label: "Addresses" },
+    { code: "org_bank_accounts", label: "Bank Accounts" },
+    { code: "org_financial_year", label: "Financial Year" },
     { code: "org_department", label: "Departments" },
+    { code: "org_designation", label: "Designations" },
     { code: "org_position", label: "Positions" },
     { code: "org_chart", label: "Org Chart" },
     { code: "org_location", label: "Locations" },

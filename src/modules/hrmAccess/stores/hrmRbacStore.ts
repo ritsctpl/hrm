@@ -180,6 +180,7 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
   loadSectionPermissions: async (moduleCode: string) => {
     const { sectionPermissionCache, currentOrganizationId, userId } = get();
     if (sectionPermissionCache[moduleCode]) return;
+    if (!currentOrganizationId || !userId) return;
 
     try {
       const response = await HrmAccessService.fetchEffectivePermissions(currentOrganizationId, userId, moduleCode);

@@ -30,19 +30,21 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
 }) => {
   const isRbacReady = useHrmRbacStore(s => s.isReady);
   const loadSectionPermissions = useHrmRbacStore(s => s.loadSectionPermissions);
+  const sectionCache = useHrmRbacStore(s => s.sectionPermissionCache[moduleCode]);
   const perms = useCan(moduleCode);
+  const isSectionLoading = isRbacReady && sectionCache === undefined;
 
   // Eagerly load object-level (section) permissions for this module so any
   // <Can object="..."> wrapper inside the subtree resolves to precise perms.
   // The store de-duplicates calls — repeat mounts are no-ops.
   useEffect(() => {
-    if (isRbacReady && perms.canView && moduleCode) {
+    if (isRbacReady && moduleCode) {
       loadSectionPermissions(moduleCode);
     }
-  }, [isRbacReady, perms.canView, moduleCode, loadSectionPermissions]);
+  }, [isRbacReady, moduleCode, loadSectionPermissions]);
 
-  // Wait for RBAC initialization
-  if (!isRbacReady) {
+  // Wait for RBAC initialization and section permissions load
+  if (!isRbacReady || isSectionLoading) {
     return (
       <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <CommonAppBar appTitle={appTitle} />
@@ -53,7 +55,6 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
     );
   }
 
-  // No view permission → show 403
   if (!perms.canView) {
     return (
       <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

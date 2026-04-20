@@ -306,20 +306,29 @@ const OfficialStep: React.FC<{
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Location
         </label>
-        <Select
-          showSearch
-          allowClear
-          value={draft.location || undefined}
-          onChange={(value) => onChange({ location: value })}
-          status={errors.location ? 'error' : undefined}
-          placeholder="Select location"
-          style={{ width: '100%' }}
-          loading={loadingOptions}
-          options={locations}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-        />
+        {locations.length > 0 ? (
+          <Select
+            showSearch
+            allowClear
+            value={draft.location || undefined}
+            onChange={(value) => onChange({ location: value })}
+            status={errors.location ? 'error' : undefined}
+            placeholder="Select location"
+            style={{ width: '100%' }}
+            loading={loadingOptions}
+            options={locations}
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+          />
+        ) : (
+          <Input
+            value={draft.location || ''}
+            onChange={(e) => onChange({ location: e.target.value })}
+            status={errors.location ? 'error' : undefined}
+            placeholder="Enter location"
+          />
+        )}
         {errors.location && (
           <div className={formStyles.formFieldError}>{errors.location}</div>
         )}
