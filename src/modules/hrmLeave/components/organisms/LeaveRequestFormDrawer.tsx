@@ -269,6 +269,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     };
   }, [showLeaveForm, organizationId, effectiveEmployeeId, setLeaveTypes]);
 
+  // Derive the employee's gender from the fetched profile so that
+  // gender-restricted leave types can be hidden / disabled.
+  const employeeGender = currentProfile?.personalDetails?.gender?.toUpperCase();
+
   // Merge prop balances + drawer-fetched balances + configured leave types.
   // The drawer-fetched balances cover the case where the parent never loaded
   // them (e.g. HR landing where the dashboard isn't shown).
@@ -279,6 +283,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       available: number;
       halfDayAllowed: boolean;
       hasBalance: boolean;
+      /** When true the card is dimmed and unclickable (gender / probation filter). */
+      disabled: boolean;
+      disabledReason?: string;
     };
     const byCode = new Map<string, ChoiceOption>();
     const addBalance = (b: LeaveBalance) => {
@@ -288,10 +295,18 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         available: b.availableBalance,
         halfDayAllowed: b.halfDayAllowed,
         hasBalance: true,
+        disabled: false,
       });
     };
     balances.forEach(addBalance);
     fetchedBalances.forEach(addBalance);
+
+    // Build a quick lookup for gender applicability from leaveTypes.
+    const genderByCode = new Map<string, string>();
+    leaveTypes.forEach((lt) => {
+      genderByCode.set(lt.code, (lt.applicableGender ?? 'ALL').toUpperCase());
+    });
+
     leaveTypes.forEach((lt) => {
       if (byCode.has(lt.code)) return;
       byCode.set(lt.code, {
@@ -300,10 +315,27 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         available: 0,
         halfDayAllowed: !!lt.halfDayAllowed,
         hasBalance: false,
+        disabled: false,
       });
     });
+
+    // Apply gender filter on every entry.
+    if (employeeGender) {
+      byCode.forEach((opt, code) => {
+        const applicable = genderByCode.get(code) ?? 'ALL';
+        if (applicable !== 'ALL' && applicable !== employeeGender) {
+          opt.disabled = true;
+          opt.disabledReason = 'Not applicable';
+        }
+      });
+    }
+
+    // TODO: probation filter — requires fetching effective policies per leave
+    // type and comparing joiningDate + availableAfterMonths with today. The
+    // backend already validates at submit time (state "probation_restricted").
+
     return Array.from(byCode.values());
-  }, [balances, fetchedBalances, leaveTypes]);
+  }, [balances, fetchedBalances, leaveTypes, employeeGender]);
 
   const selectedBalance = choiceOptions.find(
     (o) => o.code === leaveFormState.leaveTypeCode,
@@ -597,17 +629,25 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                     key={opt.code}
                     className={`${styles.typeChoiceCard} ${
                       selected ? styles.typeChoiceCardSelected : ""
-                    }`}
-                    onClick={() => updateLeaveFormState({ leaveTypeCode: opt.code })}
+                    } ${opt.disabled ? styles.typeChoiceCardDisabled ?? "" : ""}`}
+                    onClick={() => {
+                      if (!opt.disabled) {
+                        updateLeaveFormState({ leaveTypeCode: opt.code });
+                      }
+                    }}
+                    title={opt.disabled ? opt.disabledReason : undefined}
+                    style={opt.disabled ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
                   >
                     <span className={styles.typeChoiceIcon}>{getLeaveIcon(opt.code)}</span>
                     <span className={styles.typeChoiceName}>{opt.name}</span>
                     <span className={styles.typeChoiceBalance}>
-                      {opt.hasBalance
-                        ? `${opt.available.toFixed(1)} days available`
-                        : "Balance not configured"}
+                      {opt.disabled
+                        ? opt.disabledReason ?? "Not applicable"
+                        : opt.hasBalance
+                          ? `${opt.available.toFixed(1)} days available`
+                          : "Balance not configured"}
                     </span>
-                    {selected && <span className={styles.typeChoiceCheckmark}>✓</span>}
+                    {selected && !opt.disabled && <span className={styles.typeChoiceCheckmark}>✓</span>}
                   </div>
                 );
               })}

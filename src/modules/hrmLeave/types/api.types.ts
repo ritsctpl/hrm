@@ -11,6 +11,7 @@ export interface LeaveType {
   active: number;
   category: string;
   sortOrder: number;
+  applicableGender?: 'ALL' | 'MALE' | 'FEMALE';
   createdDateTime?: string;
   modifiedDateTime?: string;
   createdBy?: string;
@@ -59,6 +60,8 @@ export interface LeavePolicy {
   coExpiryDays?: number;
   supervisorSlaDays: number;
   escalationSlaDays: number;
+  probationRestricted?: boolean;
+  availableAfterMonths?: number;
   version: number;
   active: number;
   createdDateTime?: string;
