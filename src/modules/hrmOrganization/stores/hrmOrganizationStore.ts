@@ -566,8 +566,32 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const list = await HrmOrganizationService.fetchBusinessUnits(organizationId, companyHandle);
+
+      // Backend's `departmentCount` on each BU is unreliable (returns stale
+      // defaults). Recompute from the org hierarchy, which returns the actual
+      // BU → departments mapping in a single call.
+      let deptCountByBu: Record<string, number> = {};
+      try {
+        const hierarchy = await HrmOrganizationService.fetchOrgHierarchy(organizationId, companyHandle);
+        deptCountByBu = (hierarchy.businessUnits || []).reduce<Record<string, number>>(
+          (acc, entry) => {
+            const handle = entry.businessUnit?.handle;
+            if (handle) acc[handle] = (entry.departments || []).length;
+            return acc;
+          },
+          {}
+        );
+      } catch (hierarchyErr) {
+        console.warn('fetchOrgHierarchy failed — falling back to zero counts:', hierarchyErr);
+      }
+
+      const withCounts = list.map((bu) => ({
+        ...bu,
+        departmentCount: deptCountByBu[bu.handle] ?? 0,
+      }));
+
       set((state) => ({
-        businessUnit: { ...state.businessUnit, list, isLoading: false },
+        businessUnit: { ...state.businessUnit, list: withCounts, isLoading: false },
       }));
     } catch (error: unknown) {
       const errMsg =
@@ -675,14 +699,17 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           businessUnit.selected.handle,
           updatePayload
         );
+        // Preserve the client-computed departmentCount — backend's field is unreliable.
+        const priorCount = businessUnit.selected.departmentCount ?? 0;
+        const normalizedUpdated = { ...updated, departmentCount: priorCount };
         set((state) => ({
           businessUnit: {
             ...state.businessUnit,
             list: state.businessUnit.list.map((bu) =>
-              bu.handle === updated.handle ? updated : bu
+              bu.handle === normalizedUpdated.handle ? normalizedUpdated : bu
             ),
-            selected: updated,
-            draft: { ...updated },
+            selected: normalizedUpdated,
+            draft: { ...normalizedUpdated },
             isSaving: false,
             isCreating: false,
           },
@@ -692,12 +719,14 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         get().fetchHierarchy();
       } else {
         const created = await HrmOrganizationService.createBusinessUnit(payload);
+        // A brand-new BU always has 0 departments — ignore backend's count.
+        const normalizedCreated = { ...created, departmentCount: 0 };
         set((state) => ({
           businessUnit: {
             ...state.businessUnit,
-            list: [...state.businessUnit.list, created],
-            selected: created,
-            draft: { ...created },
+            list: [...state.businessUnit.list, normalizedCreated],
+            selected: normalizedCreated,
+            draft: { ...normalizedCreated },
             isSaving: false,
             isCreating: false,
           },
@@ -1259,12 +1288,30 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     try {
       const data = await HrmOrganizationService.fetchOrgHierarchy(organizationId, companyHandle);
-      set({
+      // Derive authoritative department counts per BU from the hierarchy
+      // response and sync them back into the BU list. Keeps the Business Unit
+      // table count in sync after department create/delete.
+      const deptCountByBu = (data.businessUnits || []).reduce<Record<string, number>>(
+        (acc, entry) => {
+          const handle = entry.businessUnit?.handle;
+          if (handle) acc[handle] = (entry.departments || []).length;
+          return acc;
+        },
+        {}
+      );
+      set((state) => ({
         hierarchy: {
           data: data as unknown as OrgHierarchy,
           isLoading: false,
         },
-      });
+        businessUnit: {
+          ...state.businessUnit,
+          list: state.businessUnit.list.map((bu) => ({
+            ...bu,
+            departmentCount: deptCountByBu[bu.handle] ?? bu.departmentCount ?? 0,
+          })),
+        },
+      }));
     } catch (error: unknown) {
       const errMsg =
         error instanceof Error ? error.message : 'Failed to fetch hierarchy';
