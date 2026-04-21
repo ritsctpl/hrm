@@ -238,6 +238,10 @@ const HrmLeaveLanding: React.FC = () => {
           loading={pendingRequestsLoading}
           selectedHandle={selectedRequest?.handle}
           onRowClick={setSelectedRequest}
+          organizationId={organizationId}
+          employeeId={employeeId}
+          role={role}
+          onActionComplete={handleActionComplete}
         />
         {rightPanel}
       </LeaveMasterDetail>
@@ -303,6 +307,10 @@ const HrmLeaveLanding: React.FC = () => {
           loading={globalQueueLoading}
           selectedHandle={selectedRequest?.handle}
           onRowClick={setSelectedRequest}
+          organizationId={organizationId}
+          employeeId={employeeId}
+          role={role}
+          onActionComplete={handleActionComplete}
         />
         {rightPanel}
       </LeaveMasterDetail>

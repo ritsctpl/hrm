@@ -190,6 +190,10 @@ export interface ApproverInboxTableProps {
   loading: boolean;
   selectedHandle?: string;
   onRowClick: (request: LeaveRequest) => void;
+  organizationId: string;
+  employeeId: string;
+  role: string;
+  onActionComplete?: () => void;
 }
 
 export interface HrGlobalQueueTableProps {
@@ -197,6 +201,10 @@ export interface HrGlobalQueueTableProps {
   loading: boolean;
   selectedHandle?: string;
   onRowClick: (request: LeaveRequest) => void;
+  organizationId: string;
+  employeeId: string;
+  role: string;
+  onActionComplete?: () => void;
 }
 
 export interface LedgerHistoryTableProps {

@@ -87,6 +87,8 @@ interface HrmLeaveState {
   validationSummary: ValidationSummary | null;
   validationLoading: boolean;
 
+  selectedRequestIds: string[];
+
   activeTab: string;
   activeHrTab: string;
   showLeaveForm: boolean;
@@ -147,6 +149,11 @@ interface HrmLeaveState {
   setValidationSummary: (summary: ValidationSummary | null) => void;
   setValidationLoading: (loading: boolean) => void;
 
+  // Actions — Selection (Bulk Approval)
+  toggleRequestSelection: (id: string) => void;
+  selectAllRequests: (ids: string[]) => void;
+  clearSelection: () => void;
+
   // Actions — UI
   setActiveTab: (tab: string) => void;
   setActiveHrTab: (tab: string) => void;
@@ -204,6 +211,7 @@ const defaultState = {
   policiesLoading: false,
   validationSummary: null,
   validationLoading: false,
+  selectedRequestIds: [],
   activeTab: "requests",
   activeHrTab: "queue",
   showLeaveForm: false,
@@ -274,6 +282,15 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
 
   setValidationSummary: (validationSummary) => set({ validationSummary }),
   setValidationLoading: (validationLoading) => set({ validationLoading }),
+
+  toggleRequestSelection: (id) =>
+    set((s) => ({
+      selectedRequestIds: s.selectedRequestIds.includes(id)
+        ? s.selectedRequestIds.filter((rid) => rid !== id)
+        : [...s.selectedRequestIds, id],
+    })),
+  selectAllRequests: (ids) => set({ selectedRequestIds: ids }),
+  clearSelection: () => set({ selectedRequestIds: [] }),
 
   setActiveTab: (activeTab) => set({ activeTab }),
   setActiveHrTab: (activeHrTab) => set({ activeHrTab }),
