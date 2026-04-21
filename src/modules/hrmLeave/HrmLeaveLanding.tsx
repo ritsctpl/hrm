@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { parseCookies } from "nookies";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Typography, Select, InputNumber, Button } from "antd";
+import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, message } from "antd";
 import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { HrmLeaveService } from "./services/hrmLeaveService";
 import CommonAppBar from "@/components/CommonAppBar";
 import EmployeeDashboard from "./components/organisms/EmployeeDashboard";
 import LeaveRequestsTable from "./components/organisms/LeaveRequestsTable";
@@ -16,6 +17,9 @@ import AccrualRunPanel from "./components/organisms/AccrualRunPanel";
 import ManualAdjustmentForm from "./components/organisms/ManualAdjustmentForm";
 import BulkAdjustmentForm from "./components/organisms/BulkAdjustmentForm";
 import CompOffCreditForm from "./components/organisms/CompOffCreditForm";
+import CompOffRequestForm from "./components/organisms/CompOffRequestForm";
+import CompOffInboxTable from "./components/organisms/CompOffInboxTable";
+import CompOffRequestRow from "./components/molecules/CompOffRequestRow";
 import PolicySettingsTable from "./components/organisms/PolicySettingsTable";
 import YearEndOperationsPanel from "./components/organisms/YearEndOperationsPanel";
 import PayrollExportPanel from "./components/organisms/PayrollExportPanel";
@@ -100,6 +104,16 @@ const HrmLeaveLanding: React.FC = () => {
     setActiveTab,
     activeHrTab,
     showLeaveForm,
+    compOffRequests,
+    compOffRequestsLoading,
+    compOffPending,
+    compOffPendingLoading,
+    setCompOffRequests,
+    setCompOffRequestsLoading,
+    setCompOffPending,
+    setCompOffPendingLoading,
+    showCompOffForm,
+    openCompOffForm,
   } = useHrmLeaveStore();
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
@@ -137,6 +151,43 @@ const HrmLeaveLanding: React.FC = () => {
   useEffect(() => {
     loadLedgerHistory();
   }, [organizationId, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, loadLedgerHistory]);
+
+  // ── Comp-Off Workflow Data ──────────────────────────────────────────
+  const loadMyCompOffRequests = useCallback(async () => {
+    if (!employeeId) return;
+    setCompOffRequestsLoading(true);
+    try {
+      const res = await HrmLeaveService.getMyCompOffRequests({ organizationId, employeeId });
+      setCompOffRequests(res);
+    } catch {
+      message.error("Failed to load comp-off requests");
+    } finally {
+      setCompOffRequestsLoading(false);
+    }
+  }, [organizationId, employeeId, setCompOffRequests, setCompOffRequestsLoading]);
+
+  const loadPendingCompOffs = useCallback(async () => {
+    if (!employeeId) return;
+    setCompOffPendingLoading(true);
+    try {
+      const res = await HrmLeaveService.getPendingCompOffs({ organizationId, approverId: employeeId });
+      setCompOffPending(res);
+    } catch {
+      message.error("Failed to load pending comp-off requests");
+    } finally {
+      setCompOffPendingLoading(false);
+    }
+  }, [organizationId, employeeId, setCompOffPending, setCompOffPendingLoading]);
+
+  useEffect(() => {
+    loadMyCompOffRequests();
+  }, [loadMyCompOffRequests]);
+
+  useEffect(() => {
+    if (isSupervisor || isHrAdmin) {
+      loadPendingCompOffs();
+    }
+  }, [isSupervisor, isHrAdmin, loadPendingCompOffs]);
 
   const handleFilterChange = (filters: Record<string, string>) => {
     if (permissions.canViewAll) {
@@ -188,8 +239,27 @@ const HrmLeaveLanding: React.FC = () => {
       </LeaveMasterDetail>
     );
 
+    const compOffTab = (
+      <div style={{ padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <Text strong>My Comp-Off Requests</Text>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
+            Request Comp-Off
+          </Button>
+        </div>
+        {compOffRequestsLoading ? (
+          <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
+        ) : compOffRequests.length === 0 ? (
+          <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
+        )}
+      </div>
+    );
+
     const tabItems = [
       { key: "requests", label: "My Requests", children: requestsTab },
+      { key: "compOff", label: "Comp-Off", children: compOffTab },
     ];
 
     return (
@@ -223,6 +293,9 @@ const HrmLeaveLanding: React.FC = () => {
               }}
             />
           )}
+          {showCompOffForm && (
+            <CompOffRequestForm onSubmitted={loadMyCompOffRequests} />
+          )}
         </div>
       </ModuleAccessGate>
     );
@@ -251,8 +324,45 @@ const HrmLeaveLanding: React.FC = () => {
       <TeamCalendarView requests={pendingRequests} />
     );
 
+    const compOffInboxTab = (
+      <CompOffInboxTable
+        requests={compOffPending}
+        loading={compOffPendingLoading}
+        organizationId={organizationId}
+        employeeId={employeeId}
+        onActionComplete={() => {
+          loadPendingCompOffs();
+          loadMyCompOffRequests();
+        }}
+      />
+    );
+
+    const compOffMyTab = (
+      <div style={{ padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <Text strong>My Comp-Off Requests</Text>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
+            Request Comp-Off
+          </Button>
+        </div>
+        {compOffRequestsLoading ? (
+          <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
+        ) : compOffRequests.length === 0 ? (
+          <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
+        )}
+      </div>
+    );
+
+    const compOffLabel = compOffPending.length > 0
+      ? <Badge count={compOffPending.length} size="small" offset={[8, 0]}>Comp-Off Approvals</Badge>
+      : "Comp-Off Approvals";
+
     const tabItems = [
       { key: "approvals", label: `Approvals (${pendingRequests.length})`, children: approvalTab },
+      { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
+      { key: "compOffMy", label: "My Comp-Off", children: compOffMyTab },
       { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
     ];
 
@@ -279,6 +389,9 @@ const HrmLeaveLanding: React.FC = () => {
                 loadBalances();
               }}
             />
+          )}
+          {showCompOffForm && (
+            <CompOffRequestForm onSubmitted={loadMyCompOffRequests} />
           )}
         </div>
       </ModuleAccessGate>
@@ -399,9 +512,12 @@ const HrmLeaveLanding: React.FC = () => {
         </div>
         <div className={styles.ledgerCard}>
           <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>Credit Comp Off</span>
+            <span className={styles.ledgerCardTitle}>Credit Comp Off (Direct)</span>
           </div>
           <div className={styles.ledgerCardBody}>
+            <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+              For workflow-based comp-off, employees submit claims from their dashboard.
+            </Text>
             <CompOffCreditForm organizationId={organizationId} onCredited={() => loadLedgerHistory()} />
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
   ValidationSummary,
 } from "../types/domain.types";
 import { LeaveRequestFormState } from "../types/ui.types";
+import { CompOffRequest } from "../types/api.types";
 
 // ─── Supporting types ─────────────────────────────────────────────────────────
 
@@ -99,6 +100,12 @@ interface HrmLeaveState {
   showReassignModal: boolean;
   pendingActionRequestId: string | null;
 
+  compOffRequests: CompOffRequest[];
+  compOffRequestsLoading: boolean;
+  compOffPending: CompOffRequest[];
+  compOffPendingLoading: boolean;
+  showCompOffForm: boolean;
+
   // Actions — Balances
   setBalances: (balances: LeaveBalance[]) => void;
   setBalancesLoading: (loading: boolean) => void;
@@ -166,6 +173,15 @@ interface HrmLeaveState {
   closeRejectModal: () => void;
   openReassignModal: (requestId: string) => void;
   closeReassignModal: () => void;
+
+  // Actions — Comp-Off Workflow
+  setCompOffRequests: (requests: CompOffRequest[]) => void;
+  setCompOffRequestsLoading: (loading: boolean) => void;
+  setCompOffPending: (requests: CompOffRequest[]) => void;
+  setCompOffPendingLoading: (loading: boolean) => void;
+  openCompOffForm: () => void;
+  closeCompOffForm: () => void;
+
   reset: () => void;
 }
 
@@ -221,6 +237,11 @@ const defaultState = {
   showRejectModal: false,
   showReassignModal: false,
   pendingActionRequestId: null,
+  compOffRequests: [],
+  compOffRequestsLoading: false,
+  compOffPending: [],
+  compOffPendingLoading: false,
+  showCompOffForm: false,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -317,5 +338,13 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
     set({ showReassignModal: true, pendingActionRequestId: requestId }),
   closeReassignModal: () =>
     set({ showReassignModal: false, pendingActionRequestId: null }),
+
+  setCompOffRequests: (compOffRequests) => set({ compOffRequests }),
+  setCompOffRequestsLoading: (compOffRequestsLoading) => set({ compOffRequestsLoading }),
+  setCompOffPending: (compOffPending) => set({ compOffPending }),
+  setCompOffPendingLoading: (compOffPendingLoading) => set({ compOffPendingLoading }),
+  openCompOffForm: () => set({ showCompOffForm: true }),
+  closeCompOffForm: () => set({ showCompOffForm: false }),
+
   reset: () => set(defaultState),
 }));
