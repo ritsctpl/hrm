@@ -26,6 +26,8 @@ import PayrollExportPanel from "./components/organisms/PayrollExportPanel";
 import LeaveAvailedReportPanel from "./components/organisms/LeaveAvailedReportPanel";
 import LeaveRegisterPanel from "./components/organisms/LeaveRegisterPanel";
 import ApprovalConfigPanel from "./components/organisms/ApprovalConfigPanel";
+import BlackoutPeriodPanel from "./components/organisms/BlackoutPeriodPanel";
+import LeaveAnalyticsPanel from "./components/organisms/LeaveAnalyticsPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";
 import LeaveFilterBar from "./components/molecules/LeaveFilterBar";
@@ -539,12 +541,15 @@ const HrmLeaveLanding: React.FC = () => {
   );
 
   const policyPanel = (
-    <PolicySettingsTable
-      leaveTypes={leaveTypes}
-      loading={leaveTypesLoading}
-      organizationId={organizationId}
-      onRefresh={loadLeaveTypes}
-    />
+    <>
+      <PolicySettingsTable
+        leaveTypes={leaveTypes}
+        loading={leaveTypesLoading}
+        organizationId={organizationId}
+        onRefresh={loadLeaveTypes}
+      />
+      <BlackoutPeriodPanel />
+    </>
   );
 
   const yearEndPanel = (
@@ -561,6 +566,8 @@ const HrmLeaveLanding: React.FC = () => {
   const registerPanel = <LeaveRegisterPanel organizationId={organizationId} />;
 
   const approvalConfigPanel = <ApprovalConfigPanel organizationId={organizationId} />;
+
+  const analyticsPanel = <LeaveAnalyticsPanel organizationId={organizationId} />;
 
   return (
     <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
@@ -581,6 +588,7 @@ const HrmLeaveLanding: React.FC = () => {
           reportsPanel={reportsPanel}
           registerPanel={registerPanel}
           approvalConfigPanel={approvalConfigPanel}
+          analyticsPanel={analyticsPanel}
         />
         {showLeaveForm && (
           <LeaveRequestFormDrawer

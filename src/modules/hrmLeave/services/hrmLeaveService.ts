@@ -63,6 +63,13 @@ import {
   SettleSeparationResponse,
   LeaveRegisterRequest,
   LeaveRegisterRow,
+  AnalyticsRequest,
+  AbsenteeismData,
+  LeaveTrendData,
+  TopAbsenteeData,
+  LeaveBlackoutPeriod,
+  BlackoutPeriodRequest,
+  DeleteBlackoutRequest,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -441,5 +448,38 @@ export class HrmLeaveService {
       responseType: 'blob',
     });
     return res.data;
+  }
+
+  // ── Leave Analytics ──────────────────────────────────────────────────
+
+  static async getAbsenteeismRate(payload: AnalyticsRequest): Promise<AbsenteeismData[]> {
+    const res = await api.post(`${this.BASE}/analytics/absenteeism-rate`, payload);
+    return this.unwrap<AbsenteeismData[]>(res.data) ?? [];
+  }
+
+  static async getLeaveTrend(payload: AnalyticsRequest): Promise<LeaveTrendData[]> {
+    const res = await api.post(`${this.BASE}/analytics/leave-trend`, payload);
+    return this.unwrap<LeaveTrendData[]>(res.data) ?? [];
+  }
+
+  static async getTopAbsentees(payload: AnalyticsRequest): Promise<TopAbsenteeData[]> {
+    const res = await api.post(`${this.BASE}/analytics/top-absentees`, payload);
+    return this.unwrap<TopAbsenteeData[]>(res.data) ?? [];
+  }
+
+  // ── Blackout Periods ────────────────────────────────────────────────
+
+  static async createBlackout(payload: BlackoutPeriodRequest): Promise<LeaveBlackoutPeriod> {
+    const res = await api.post(`${this.BASE}/blackout/create`, payload);
+    return this.unwrap<LeaveBlackoutPeriod>(res.data);
+  }
+
+  static async getAllBlackouts(payload: SiteRequest): Promise<LeaveBlackoutPeriod[]> {
+    const res = await api.post(`${this.BASE}/blackout/retrieve-all`, payload);
+    return this.unwrap<LeaveBlackoutPeriod[]>(res.data) ?? [];
+  }
+
+  static async deleteBlackout(payload: DeleteBlackoutRequest): Promise<void> {
+    await api.post(`${this.BASE}/blackout/delete`, payload);
   }
 }

@@ -747,3 +747,67 @@ export interface LeaveRegisterRow {
   encashed: number;
   lapsed: number;
 }
+
+// ── Leave Analytics ─────────────────────────────────────────────────
+export interface AnalyticsRequest {
+  organizationId: string;
+  year: number;
+  month?: number;
+  deptId?: string;
+  limit?: number;
+}
+
+export interface AbsenteeismData {
+  department: string;
+  totalEmployees: number;
+  totalLeaveDays: number;
+  absenteeismRate: number; // percentage
+}
+
+export interface LeaveTrendData {
+  month: number;
+  monthName: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  totalDays: number;
+}
+
+export interface TopAbsenteeData {
+  employeeId: string;
+  employeeName: string;
+  employeeNumber: string;
+  department: string;
+  totalLeaveDays: number;
+  leaveBreakdown: { leaveTypeCode: string; days: number }[];
+}
+
+// ── Blackout Periods ────────────────────────────────────────────────
+export interface LeaveBlackoutPeriod {
+  handle: string;
+  organizationId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  applicableLeaveTypes: string[]; // empty = all types
+  applicableDepartments: string[]; // empty = all depts
+  reason: string;
+  active: number;
+  createdDateTime: string;
+  createdBy: string;
+}
+
+export interface BlackoutPeriodRequest {
+  organizationId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  applicableLeaveTypes?: string[];
+  applicableDepartments?: string[];
+  reason: string;
+  createdBy: string;
+}
+
+export interface DeleteBlackoutRequest {
+  organizationId: string;
+  handle: string;
+}

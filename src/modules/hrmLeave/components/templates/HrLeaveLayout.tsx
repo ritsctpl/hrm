@@ -15,6 +15,7 @@ interface HrLeaveLayoutProps {
   reportsPanel: React.ReactNode;
   registerPanel: React.ReactNode;
   approvalConfigPanel: React.ReactNode;
+  analyticsPanel: React.ReactNode;
 }
 
 const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
@@ -27,6 +28,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
   reportsPanel,
   registerPanel,
   approvalConfigPanel,
+  analyticsPanel,
 }) => {
   const { activeHrTab, setActiveHrTab } = useHrmLeaveStore();
 
@@ -40,6 +42,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     { key: "reports", label: "Reports" },
     { key: "register", label: "Leave Register" },
     { key: "approvalConfig", label: "Approval Config" },
+    { key: "analytics", label: "Analytics" },
   ];
 
   const contentMap: Record<string, React.ReactNode> = {
@@ -52,6 +55,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     reports: reportsPanel,
     register: registerPanel,
     approvalConfig: approvalConfigPanel,
+    analytics: analyticsPanel,
   };
 
   return (
