@@ -558,6 +558,8 @@ const HrmLeaveLanding: React.FC = () => {
 
   const reportsPanel = <LeaveAvailedReportPanel organizationId={organizationId} />;
 
+  const registerPanel = <LeaveRegisterPanel organizationId={organizationId} />;
+
   const approvalConfigPanel = <ApprovalConfigPanel organizationId={organizationId} />;
 
   return (
@@ -577,6 +579,7 @@ const HrmLeaveLanding: React.FC = () => {
           yearEndPanel={yearEndPanel}
           payrollPanel={payrollPanel}
           reportsPanel={reportsPanel}
+          registerPanel={registerPanel}
           approvalConfigPanel={approvalConfigPanel}
         />
         {showLeaveForm && (
