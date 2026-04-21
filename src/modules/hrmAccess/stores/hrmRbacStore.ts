@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { parseCookies, setCookie } from 'nookies';
 import { HrmAccessService } from '../services/hrmAccessService';
 import { getRootObjectCode, getObjectCodesForModule } from '../utils/moduleObjectRegistry';
 import type { PermissionAction } from '../types/api.types';
@@ -138,6 +139,19 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       } catch {
         // use non-enriched modules
+      }
+
+      // Persist the resolved organization to the `site` cookie BEFORE flipping
+      // isReady — gated components (ModuleAccessGate) mount children as soon
+      // as isReady is true, and those children call getOrganizationId() on
+      // mount. Writing the cookie first prevents a "Site not found in cookies"
+      // race for users who direct-nav into a module without passing through
+      // the homepage / site switcher.
+      if (currentOrganizationId && parseCookies().site !== currentOrganizationId) {
+        setCookie(null, 'site', currentOrganizationId, {
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60,
+        });
       }
 
       set({
