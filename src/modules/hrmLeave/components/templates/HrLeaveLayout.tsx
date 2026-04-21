@@ -13,6 +13,7 @@ interface HrLeaveLayoutProps {
   yearEndPanel: React.ReactNode;
   payrollPanel: React.ReactNode;
   reportsPanel: React.ReactNode;
+  registerPanel: React.ReactNode;
   approvalConfigPanel: React.ReactNode;
 }
 
@@ -24,6 +25,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
   yearEndPanel,
   payrollPanel,
   reportsPanel,
+  registerPanel,
   approvalConfigPanel,
 }) => {
   const { activeHrTab, setActiveHrTab } = useHrmLeaveStore();
@@ -36,6 +38,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     { key: "yearEnd", label: "Year-End" },
     { key: "payroll", label: "Payroll" },
     { key: "reports", label: "Reports" },
+    { key: "register", label: "Leave Register" },
     { key: "approvalConfig", label: "Approval Config" },
   ];
 
@@ -47,6 +50,7 @@ const HrLeaveLayout: React.FC<HrLeaveLayoutProps> = ({
     yearEnd: yearEndPanel,
     payroll: payrollPanel,
     reports: reportsPanel,
+    register: registerPanel,
     approvalConfig: approvalConfigPanel,
   };
 

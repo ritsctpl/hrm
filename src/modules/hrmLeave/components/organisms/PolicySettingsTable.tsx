@@ -22,7 +22,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { PolicySettingsTableProps } from "../../types/ui.types";
-import { LeaveType, LeavePolicy } from "../../types/domain.types";
+import { LeaveType, LeavePolicy, LeaveEntitlementTier } from "../../types/domain.types";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { parseCookies } from "nookies";
 import {
@@ -32,6 +32,7 @@ import {
   ENCASH_WHEN_OPTIONS,
   ENCASH_RATE_FORMULAS,
 } from "../../utils/constants";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -60,6 +61,21 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const [editingPolicy, setEditingPolicy] = useState<LeavePolicy | null>(null);
   const [policyForm] = Form.useForm();
   const [policySaving, setPolicySaving] = useState(false);
+  const [tiers, setTiers] = useState<LeaveEntitlementTier[]>([]);
+
+  const addTier = () =>
+    setTiers([...tiers, { minTenureYears: 0, maxTenureYears: 99, annualEntitlement: 0 }]);
+  const removeTier = (idx: number) =>
+    setTiers(tiers.filter((_, i) => i !== idx));
+  const updateTier = (
+    idx: number,
+    field: keyof LeaveEntitlementTier,
+    value: number | null,
+  ) => {
+    const updated = [...tiers];
+    updated[idx] = { ...updated[idx], [field]: value ?? 0 };
+    setTiers(updated);
+  };
 
   const handleSaveType = async () => {
     try {
@@ -149,6 +165,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       supervisorSlaDays: 2,
       escalationSlaDays: 1,
     });
+    setTiers([]);
     setPolicyModalOpen(true);
   };
 
@@ -160,6 +177,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       effectiveTo: policy.effectiveTo ? dayjs(policy.effectiveTo) : null,
       lapseDate: policy.lapseDate ? dayjs(policy.lapseDate) : null,
     });
+    setTiers(policy.entitlementTiers ?? []);
     setPolicyModalOpen(true);
   };
 
@@ -192,6 +210,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         coExpiryDays: values.coExpiryDays,
         supervisorSlaDays: Number(values.supervisorSlaDays ?? 2),
         escalationSlaDays: Number(values.escalationSlaDays ?? 1),
+        entitlementTiers: tiers.length > 0 ? tiers : undefined,
         createdBy: userId,
       });
       message.success("Policy saved");
@@ -542,6 +561,72 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <InputNumber min={0} />
             </Form.Item>
           </Space>
+
+          {/* Entitlement Tiers */}
+          <div style={{ marginTop: 16 }}>
+            <Text strong>Entitlement Tiers (Optional)</Text>
+            <Text
+              type="secondary"
+              style={{ display: "block", fontSize: 11, marginBottom: 8 }}
+            >
+              Define different entitlements based on employee tenure. Leave blank
+              to use the standard accrual quantity.
+            </Text>
+
+            {tiers.map((tier, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginBottom: 8,
+                  alignItems: "center",
+                }}
+              >
+                <InputNumber
+                  placeholder="Min Years"
+                  min={0}
+                  value={tier.minTenureYears}
+                  onChange={(v) => updateTier(idx, "minTenureYears", v)}
+                  style={{ width: 100 }}
+                />
+                <Text>to</Text>
+                <InputNumber
+                  placeholder="Max Years"
+                  min={0}
+                  value={tier.maxTenureYears}
+                  onChange={(v) => updateTier(idx, "maxTenureYears", v)}
+                  style={{ width: 100 }}
+                />
+                <Text>years →</Text>
+                <InputNumber
+                  placeholder="Days/Year"
+                  min={0}
+                  step={0.5}
+                  value={tier.annualEntitlement}
+                  onChange={(v) => updateTier(idx, "annualEntitlement", v)}
+                  style={{ width: 100 }}
+                />
+                <Text>days</Text>
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={() => removeTier(idx)}
+                />
+              </div>
+            ))}
+
+            <Button
+              type="dashed"
+              size="small"
+              onClick={addTier}
+              icon={<PlusOutlined />}
+            >
+              Add Tier
+            </Button>
+          </div>
         </Form>
       </Modal>
     </div>

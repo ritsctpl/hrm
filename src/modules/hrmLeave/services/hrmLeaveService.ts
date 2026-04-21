@@ -61,6 +61,8 @@ import {
   DeleteDelegationRequest,
   SettleSeparationRequest,
   SettleSeparationResponse,
+  LeaveRegisterRequest,
+  LeaveRegisterRow,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -426,5 +428,18 @@ export class HrmLeaveService {
   static async settleLeaveOnSeparation(payload: SettleSeparationRequest): Promise<SettleSeparationResponse> {
     const res = await api.post(`${this.BASE}/leave-balance/settle-separation`, payload);
     return this.unwrap<SettleSeparationResponse>(res.data);
+  }
+
+  // ── Leave Register Report ─────────────────────────────────────────
+  static async getLeaveRegister(payload: LeaveRegisterRequest): Promise<LeaveRegisterRow[]> {
+    const res = await api.post(`${this.BASE}/reports/leave-register`, payload);
+    return this.unwrap<LeaveRegisterRow[]>(res.data) ?? [];
+  }
+
+  static async exportLeaveRegister(payload: LeaveRegisterRequest): Promise<Blob> {
+    const res = await api.post(`${this.BASE}/reports/leave-register/export`, payload, {
+      responseType: 'blob',
+    });
+    return res.data;
   }
 }

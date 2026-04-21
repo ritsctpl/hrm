@@ -24,6 +24,7 @@ import PolicySettingsTable from "./components/organisms/PolicySettingsTable";
 import YearEndOperationsPanel from "./components/organisms/YearEndOperationsPanel";
 import PayrollExportPanel from "./components/organisms/PayrollExportPanel";
 import LeaveAvailedReportPanel from "./components/organisms/LeaveAvailedReportPanel";
+import LeaveRegisterPanel from "./components/organisms/LeaveRegisterPanel";
 import ApprovalConfigPanel from "./components/organisms/ApprovalConfigPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";

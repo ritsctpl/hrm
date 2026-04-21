@@ -1,17 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
-
-const AUTH_FILE = path.join(__dirname, 'tests', '.auth', 'user.json');
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // Skip auth.setup.ts — we connect over CDP to the user's running Chrome,
+  // which already has a logged-in Keycloak session.
+  testIgnore: ['**/auth.setup.ts'],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:8686',
+    baseURL: 'http://49.206.228.110:18687',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
@@ -21,17 +21,10 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-    },
-    {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        headless: false,
-        storageState: AUTH_FILE,
       },
-      dependencies: ['setup'],
     },
   ],
 });

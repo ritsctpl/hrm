@@ -136,6 +136,12 @@ export interface LeaveType {
   modifiedBy?: string;
 }
 
+export interface LeaveEntitlementTier {
+  minTenureYears: number;
+  maxTenureYears: number;
+  annualEntitlement: number;
+}
+
 export interface LeavePolicy {
   handle: string;
   site: string;
@@ -165,6 +171,7 @@ export interface LeavePolicy {
   escalationSlaDays: number;
   probationRestricted?: boolean;
   availableAfterMonths?: number;
+  entitlementTiers?: LeaveEntitlementTier[];
   version: number;
   active?: number;
   createdDateTime?: string;

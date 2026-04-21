@@ -723,3 +723,27 @@ export interface SettleSeparationResponse {
   totalLapsed: number;
   totalCancelledRequests: number;
 }
+
+// ── Leave Register Report ───────────────────────────────────────────
+export interface LeaveRegisterRequest {
+  organizationId: string;
+  year: number;
+  format: 'FORM_14' | 'FORM_8' | 'CUSTOM';
+}
+
+export interface LeaveRegisterRow {
+  employeeNumber: string;
+  employeeName: string;
+  department: string;
+  designation: string;
+  joiningDate: string;
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  openingBalance: number;
+  monthlyAvailed: number[];  // 12 elements, Jan-Dec
+  totalAvailed: number;
+  closingBalance: number;
+  carryForward: number;
+  encashed: number;
+  lapsed: number;
+}
