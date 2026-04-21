@@ -10,6 +10,7 @@ import {
   InputNumber,
   List,
   Popconfirm,
+  Segmented,
   Select,
   Space,
   Statistic,
@@ -33,6 +34,10 @@ import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
 
+// ── Period type definitions ─────────────────────────────────────────
+
+type PeriodType = "MONTHLY" | "QUARTERLY" | "ANNUAL";
+
 type Quarter = "Q1" | "Q2" | "Q3" | "Q4";
 
 const QUARTER_OPTIONS: { value: Quarter; label: string }[] = [
@@ -50,6 +55,27 @@ const QUARTER_START_MONTH: Record<Quarter, number> = {
   Q4: 9,
 };
 
+const MONTH_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "January" },
+  { value: 2, label: "February" },
+  { value: 3, label: "March" },
+  { value: 4, label: "April" },
+  { value: 5, label: "May" },
+  { value: 6, label: "June" },
+  { value: 7, label: "July" },
+  { value: 8, label: "August" },
+  { value: 9, label: "September" },
+  { value: 10, label: "October" },
+  { value: 11, label: "November" },
+  { value: 12, label: "December" },
+];
+
+const MONTH_NAMES: Record<number, string> = {
+  1: "January", 2: "February", 3: "March", 4: "April",
+  5: "May", 6: "June", 7: "July", 8: "August",
+  9: "September", 10: "October", 11: "November", 12: "December",
+};
+
 const getQuarterPeriod = (
   quarter: Quarter,
   year: number,
@@ -58,6 +84,37 @@ const getQuarterPeriod = (
   const start = dayjs(new Date(year, startMonth, 1));
   const end = start.add(2, "month").endOf("month");
   return { start, end };
+};
+
+const getMonthPeriod = (
+  month: number,
+  year: number,
+): { start: Dayjs; end: Dayjs } => {
+  const start = dayjs(new Date(year, month - 1, 1));
+  const end = start.endOf("month");
+  return { start, end };
+};
+
+const getAnnualPeriod = (
+  year: number,
+): { start: Dayjs; end: Dayjs } => {
+  const start = dayjs(new Date(year, 0, 1));
+  const end = dayjs(new Date(year, 11, 31));
+  return { start, end };
+};
+
+/**
+ * Converts a batch's `quarter` field into a human-readable display string.
+ * Monthly batches use "M01"–"M12", annual uses "ANNUAL", quarterly uses "Q1"–"Q4".
+ */
+const formatBatchQuarter = (quarter: string, year: number): string => {
+  if (quarter === "ANNUAL") return `Annual ${year}`;
+  const monthMatch = quarter.match(/^M(\d{2})$/);
+  if (monthMatch) {
+    const monthNum = Number(monthMatch[1]);
+    return `${MONTH_NAMES[monthNum] ?? quarter} ${year}`;
+  }
+  return `${quarter} ${year}`;
 };
 
 // Best-effort backend error extraction: prefers the HRM envelope `message`
@@ -89,14 +146,48 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
   const [batchesLoading, setBatchesLoading] = useState(false);
   const [batchYear, setBatchYear] = useState<number>(currentYear);
   const [rollingBackId, setRollingBackId] = useState<string | null>(null);
+  const [periodType, setPeriodType] = useState<PeriodType>("QUARTERLY");
+  const [selectedQuarter, setSelectedQuarter] = useState<Quarter | undefined>(undefined);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
 
-  // Auto-fill periodStart/periodEnd whenever quarter or year changes. Keeps
-  // the run window consistent with the selected quarter so a Q1 run can't
-  // accidentally use July dates.
-  const syncPeriodFromQuarter = (quarter: Quarter | undefined, year: number | undefined) => {
-    if (!quarter || !year || !Number.isFinite(year)) return;
-    const { start, end } = getQuarterPeriod(quarter, year);
-    form.setFieldsValue({ periodStart: start, periodEnd: end });
+  // Auto-fill periodStart/periodEnd whenever the period selector or year
+  // changes.  Keeps the run window consistent with the selected period so
+  // the dates can't drift.
+  const syncPeriod = (
+    type: PeriodType,
+    quarter: Quarter | undefined,
+    month: number | undefined,
+    year: number | undefined,
+  ) => {
+    if (!year || !Number.isFinite(year)) return;
+
+    let period: { start: Dayjs; end: Dayjs } | null = null;
+    let quarterField: string | undefined;
+
+    switch (type) {
+      case "QUARTERLY":
+        if (!quarter) return;
+        period = getQuarterPeriod(quarter, year);
+        quarterField = quarter;
+        break;
+      case "MONTHLY":
+        if (!month) return;
+        period = getMonthPeriod(month, year);
+        quarterField = `M${String(month).padStart(2, "0")}`;
+        break;
+      case "ANNUAL":
+        period = getAnnualPeriod(year);
+        quarterField = "ANNUAL";
+        break;
+    }
+
+    if (period) {
+      form.setFieldsValue({
+        periodStart: period.start,
+        periodEnd: period.end,
+        quarter: quarterField,
+      });
+    }
   };
 
   const loadBatches = async (year: number) => {
@@ -134,7 +225,7 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
 
   const handlePreview = async () => {
     let values: {
-      quarter: Quarter;
+      quarter: string;
       year: number;
       periodStart: Dayjs;
       periodEnd: Dayjs;
@@ -210,21 +301,73 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
     <div className={styles.accrualPanel}>
       <Title level={5}>Accrual Run</Title>
 
+      <div style={{ marginBottom: 12 }}>
+        <Space>
+          <Text strong>Period Type:</Text>
+          <Segmented
+            value={periodType}
+            options={[
+              { value: "MONTHLY", label: "Monthly" },
+              { value: "QUARTERLY", label: "Quarterly" },
+              { value: "ANNUAL", label: "Annual" },
+            ]}
+            onChange={(value) => {
+              const newType = value as PeriodType;
+              setPeriodType(newType);
+              // Re-sync period dates for the new type
+              const year = form.getFieldValue("year") as number | undefined;
+              syncPeriod(
+                newType,
+                newType === "QUARTERLY" ? selectedQuarter : undefined,
+                newType === "MONTHLY" ? selectedMonth : undefined,
+                year,
+              );
+            }}
+          />
+        </Space>
+      </div>
+
       <Form
         form={form}
         layout="inline"
         style={{ marginBottom: 16 }}
         initialValues={{ year: currentYear }}
       >
-        <Form.Item name="quarter" label="Quarter" rules={[{ required: true }]}>
-          <Select
-            options={QUARTER_OPTIONS}
-            style={{ width: 160 }}
-            onChange={(value: Quarter) =>
-              syncPeriodFromQuarter(value, form.getFieldValue("year"))
-            }
-          />
+        {/* Hidden field that always holds the quarter/period identifier sent to backend */}
+        <Form.Item name="quarter" hidden rules={[{ required: true, message: "Period selection is required" }]}>
+          <Input />
         </Form.Item>
+
+        {periodType === "QUARTERLY" && (
+          <Form.Item label="Quarter">
+            <Select
+              value={selectedQuarter}
+              options={QUARTER_OPTIONS}
+              style={{ width: 160 }}
+              onChange={(value: Quarter) => {
+                setSelectedQuarter(value);
+                form.setFieldsValue({ quarter: value });
+                syncPeriod("QUARTERLY", value, undefined, form.getFieldValue("year"));
+              }}
+            />
+          </Form.Item>
+        )}
+
+        {periodType === "MONTHLY" && (
+          <Form.Item label="Month">
+            <Select
+              value={selectedMonth}
+              options={MONTH_OPTIONS}
+              style={{ width: 160 }}
+              onChange={(value: number) => {
+                setSelectedMonth(value);
+                const year = form.getFieldValue("year") as number | undefined;
+                syncPeriod("MONTHLY", undefined, value, year);
+              }}
+            />
+          </Form.Item>
+        )}
+
         <Form.Item
           name="year"
           label="Year"
@@ -242,12 +385,15 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
             style={{ width: 100 }}
             min={2000}
             max={2100}
-            onChange={(value) =>
-              syncPeriodFromQuarter(
-                form.getFieldValue("quarter") as Quarter | undefined,
-                typeof value === "number" ? value : undefined,
-              )
-            }
+            onChange={(value) => {
+              const year = typeof value === "number" ? value : undefined;
+              syncPeriod(
+                periodType,
+                periodType === "QUARTERLY" ? selectedQuarter : undefined,
+                periodType === "MONTHLY" ? selectedMonth : undefined,
+                year,
+              );
+            }}
           />
         </Form.Item>
         <Form.Item name="periodStart" label="Period Start" rules={[{ required: true }]}>
@@ -348,11 +494,16 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
             [
               { title: "Batch ID", dataIndex: "handle", key: "handle", width: 180 },
               {
-                title: "Period",
+                title: "Date Range",
                 key: "period",
                 render: (_v: unknown, row: AccrualBatch) => `${row.periodStart} → ${row.periodEnd}`,
               },
-              { title: "Quarter", dataIndex: "quarter", key: "quarter", width: 80 },
+              {
+                title: "Period",
+                key: "quarter",
+                width: 140,
+                render: (_v: unknown, row: AccrualBatch) => formatBatchQuarter(row.quarter, row.year),
+              },
               { title: "Run Date", dataIndex: "postDate", key: "postDate", width: 120 },
               { title: "Employees", dataIndex: "totalEmployees", key: "totalEmployees", width: 100 },
               {
