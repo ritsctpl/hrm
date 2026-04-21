@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Table, Select, Input, Tag, Button, Modal, Tooltip } from 'antd';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
+import {
+  computeChanges,
+  objectToRows,
+  extractEntityName,
+  type AuditChangeRow,
+} from '../../utils/auditFieldLabels';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const ENTITY_TYPES = [
@@ -19,24 +25,22 @@ const ACTION_COLORS: Record<string, string> = {
   DELETE: 'red',
 };
 
-/** Detect changed keys between two objects */
-function getChangedKeys(before: unknown, after: unknown): Set<string> {
-  const changed = new Set<string>();
-  if (typeof before !== 'object' || typeof after !== 'object' || !before || !after) return changed;
-  const b = before as Record<string, unknown>;
-  const a = after as Record<string, unknown>;
-  for (const key of Object.keys(a)) {
-    if (JSON.stringify(b[key]) !== JSON.stringify(a[key])) changed.add(key);
-  }
-  return changed;
+const MAX_SUMMARY_FIELDS = 3;
+
+interface AuditEntry {
+  handle: string;
+  action: string;
+  entityType: string;
+  beforeValue: unknown;
+  afterValue: unknown;
+  performedAt: string;
+  performedBy: string;
 }
 
-/** Truncate JSON to short preview */
-function truncateJson(v: unknown, max = 60): string {
-  if (v == null) return '-';
-  const str = typeof v === 'object' ? JSON.stringify(v) : String(v);
-  return str.length > max ? str.substring(0, max) + '...' : str;
-}
+type DetailsModalState =
+  | { kind: 'changes'; rows: AuditChangeRow[] }
+  | { kind: 'snapshot'; label: string; rows: { key: string; label: string; value: string }[] }
+  | null;
 
 const OrgAuditLogPanel: React.FC = () => {
   const {
@@ -47,7 +51,8 @@ const OrgAuditLogPanel: React.FC = () => {
     setAuditEntityHandleFilter,
   } = useHrmOrganizationStore();
 
-  const [modalData, setModalData] = useState<{ title: string; data: unknown; beforeData?: unknown } | null>(null);
+  const [modalState, setModalState] = useState<DetailsModalState>(null);
+  const [modalTitle, setModalTitle] = useState<string>('');
 
   useEffect(() => {
     const entityHandle = selectedCompanyHandle && selectedCompanyHandle !== 'new'
@@ -56,129 +61,200 @@ const OrgAuditLogPanel: React.FC = () => {
     fetchAuditLog(auditLog.entityTypeFilter, entityHandle);
   }, [auditLog.entityTypeFilter, auditLog.entityHandleFilter, selectedCompanyHandle, fetchAuditLog]);
 
-  const handleViewJson = useCallback((title: string, data: unknown, beforeData?: unknown) => {
-    setModalData({ title, data, beforeData });
+  const openChanges = useCallback((record: AuditEntry) => {
+    const entityName =
+      extractEntityName(record.afterValue) ||
+      extractEntityName(record.beforeValue) ||
+      record.entityType;
+    if (record.action === 'UPDATE') {
+      const rows = computeChanges(record.beforeValue, record.afterValue);
+      setModalTitle(`Changes — ${entityName}`);
+      setModalState({ kind: 'changes', rows });
+    } else if (record.action === 'CREATE') {
+      const rows = objectToRows(record.afterValue);
+      setModalTitle(`Created — ${entityName}`);
+      setModalState({ kind: 'snapshot', label: 'Value', rows });
+    } else if (record.action === 'DELETE') {
+      const rows = objectToRows(record.beforeValue);
+      setModalTitle(`Deleted — ${entityName}`);
+      setModalState({ kind: 'snapshot', label: 'Value', rows });
+    }
   }, []);
 
-  /** Render JSON with changed keys highlighted */
-  const renderHighlightedJson = (data: unknown, changedKeys: Set<string>) => {
-    if (typeof data !== 'object' || !data) return JSON.stringify(data, null, 2);
-    const obj = data as Record<string, unknown>;
-    return Object.entries(obj).map(([key, val]) => {
-      const valStr = JSON.stringify(val, null, 2);
-      const isChanged = changedKeys.has(key);
-      return (
-        <div key={key} style={{
-          padding: '2px 4px',
-          backgroundColor: isChanged ? '#fffbe6' : 'transparent',
-          borderLeft: isChanged ? '3px solid #faad14' : '3px solid transparent',
-          marginBottom: 1,
-          fontFamily: 'monospace',
-          fontSize: 12,
-        }}>
-          <span style={{ color: '#1890ff', fontWeight: isChanged ? 700 : 400 }}>"{key}"</span>
-          <span style={{ color: '#595959' }}>: </span>
-          <span style={{ color: isChanged ? '#d48806' : '#262626', fontWeight: isChanged ? 600 : 400 }}>
-            {valStr}
-          </span>
-        </div>
-      );
-    });
-  };
+  const summaryOf = useCallback((record: AuditEntry): { text: string; tone: 'changes' | 'snapshot' } => {
+    if (record.action === 'CREATE') {
+      const name = extractEntityName(record.afterValue);
+      return { text: name ? `Created ${name}` : 'Record created', tone: 'snapshot' };
+    }
+    if (record.action === 'DELETE') {
+      const name = extractEntityName(record.beforeValue);
+      return { text: name ? `Deleted ${name}` : 'Record deleted', tone: 'snapshot' };
+    }
+    // UPDATE
+    const rows = computeChanges(record.beforeValue, record.afterValue);
+    if (rows.length === 0) return { text: 'No visible changes', tone: 'changes' };
+    const labels = rows.map((r) => r.label);
+    const shown = labels.slice(0, MAX_SUMMARY_FIELDS).join(', ');
+    const extra = labels.length > MAX_SUMMARY_FIELDS ? ` +${labels.length - MAX_SUMMARY_FIELDS} more` : '';
+    return {
+      text: `${rows.length} field${rows.length === 1 ? '' : 's'} changed: ${shown}${extra}`,
+      tone: 'changes',
+    };
+  }, []);
 
-  const columns = [
-    {
-      title: 'Timestamp',
-      dataIndex: 'performedAt',
-      key: 'performedAt',
-      width: 170,
-      render: (v: string) => v ? new Date(v).toLocaleString() : '-',
-    },
-    {
-      title: 'Action',
-      dataIndex: 'action',
-      key: 'action',
-      width: 100,
-      render: (v: string) => <Tag color={ACTION_COLORS[v] || 'default'}>{v}</Tag>,
-    },
-    {
-      title: 'Entity Type',
-      dataIndex: 'entityType',
-      key: 'entityType',
-      width: 130,
-    },
-    {
-      title: 'Before Value',
-      dataIndex: 'beforeValue',
-      key: 'beforeValue',
-      ellipsis: true,
-      render: (v: unknown, record: any) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {truncateJson(v)}
-          </span>
-          {v != null && (
-            <Tooltip title="View JSON">
-              <Button
-                type="text"
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={(e) => { e.stopPropagation(); handleViewJson('Before Value', v); }}
-                style={{ flexShrink: 0, opacity: 0.5 }}
-              />
-            </Tooltip>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'After Value',
-      dataIndex: 'afterValue',
-      key: 'afterValue',
-      ellipsis: true,
-      render: (v: unknown, record: any) => {
-        const changed = getChangedKeys(record.beforeValue, v);
-        const hasChanges = changed.size > 0;
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{
-              flex: 1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              backgroundColor: hasChanges ? '#fffbe6' : 'transparent',
-              padding: hasChanges ? '1px 4px' : 0,
-              borderRadius: 3,
-              fontWeight: hasChanges ? 500 : 400,
-            }}>
-              {truncateJson(v)}
-            </span>
-            {v != null && (
-              <Tooltip title="View JSON (changes highlighted)">
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Timestamp',
+        dataIndex: 'performedAt',
+        key: 'performedAt',
+        width: 170,
+        ellipsis: true,
+        render: (v: string) => {
+          const formatted = v ? new Date(v).toLocaleString() : '—';
+          return <Tooltip title={formatted}><span>{formatted}</span></Tooltip>;
+        },
+      },
+      {
+        title: 'Action',
+        dataIndex: 'action',
+        key: 'action',
+        width: 110,
+        render: (v: string) => (
+          <Tag color={ACTION_COLORS[v] || 'default'} style={{ margin: 0 }}>{v}</Tag>
+        ),
+      },
+      {
+        title: 'Entity Type',
+        dataIndex: 'entityType',
+        key: 'entityType',
+        width: 140,
+        ellipsis: true,
+        render: (v: string) => {
+          const match = ENTITY_TYPES.find((e) => e.value === v);
+          const label = match ? match.label : v;
+          return <Tooltip title={label}><span>{label}</span></Tooltip>;
+        },
+      },
+      {
+        title: 'Changes',
+        key: 'changes',
+        ellipsis: true,
+        render: (_: unknown, record: AuditEntry) => {
+          const { text } = summaryOf(record);
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <Tooltip title={text} placement="topLeft">
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#262626',
+                  }}
+                >
+                  {text}
+                </span>
+              </Tooltip>
+              <Tooltip title="View details">
                 <Button
                   type="text"
                   size="small"
                   icon={<EyeOutlined />}
-                  onClick={(e) => { e.stopPropagation(); handleViewJson('After Value', v, record.beforeValue); }}
-                  style={{ flexShrink: 0, opacity: 0.5 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openChanges(record);
+                  }}
+                  style={{ flexShrink: 0 }}
                 />
               </Tooltip>
-            )}
-          </div>
-        );
+            </div>
+          );
+        },
       },
-    },
-    {
-      title: 'Performed By',
-      dataIndex: 'performedBy',
-      key: 'performedBy',
-      width: 130,
-    },
-  ];
+      {
+        title: 'Performed By',
+        dataIndex: 'performedBy',
+        key: 'performedBy',
+        width: 140,
+        ellipsis: true,
+        render: (v: string) => {
+          const label = v || '—';
+          return <Tooltip title={label}><span>{label}</span></Tooltip>;
+        },
+      },
+    ],
+    [openChanges, summaryOf]
+  );
+
+  const renderModalBody = () => {
+    if (!modalState) return null;
+    if (modalState.kind === 'changes') {
+      if (modalState.rows.length === 0) {
+        return <div style={{ color: '#8c8c8c', padding: 16 }}>No user-facing fields changed.</div>;
+      }
+      return (
+        <Table
+          size="small"
+          pagination={false}
+          dataSource={modalState.rows.map((r) => ({ ...r, rowKey: r.key }))}
+          rowKey="rowKey"
+          columns={[
+            { title: 'Field', dataIndex: 'label', key: 'label', width: 200 },
+            {
+              title: 'Before',
+              dataIndex: 'before',
+              key: 'before',
+              render: (v: string) => (
+                <span style={{ color: '#8c8c8c', textDecoration: v === '—' ? 'none' : 'line-through' }}>
+                  {v}
+                </span>
+              ),
+            },
+            {
+              title: 'After',
+              dataIndex: 'after',
+              key: 'after',
+              render: (v: string) => <span style={{ color: '#237804', fontWeight: 500 }}>{v}</span>,
+            },
+          ]}
+        />
+      );
+    }
+    // snapshot (CREATE / DELETE)
+    if (modalState.rows.length === 0) {
+      return <div style={{ color: '#8c8c8c', padding: 16 }}>No user-facing fields recorded.</div>;
+    }
+    return (
+      <Table
+        size="small"
+        pagination={false}
+        dataSource={modalState.rows.map((r) => ({ ...r, rowKey: r.key }))}
+        rowKey="rowKey"
+        columns={[
+          { title: 'Field', dataIndex: 'label', key: 'label', width: 220 },
+          { title: modalState.label, dataIndex: 'value', key: 'value' },
+        ]}
+      />
+    );
+  };
 
   return (
-    <div style={{ padding: 16 }}>
+    <div
+      style={{
+        padding: 16,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        minWidth: 0,
+        overflow: 'hidden',
+      }}
+    >
       <div className={styles.listHeader}>
-        <div className={styles.listHeaderLeft}>
+        <div className={styles.listHeaderLeft} style={{ flexWrap: 'wrap', gap: 8 }}>
           <span className={styles.listTitle}>Audit Log</span>
           <Select
             value={auditLog.entityTypeFilter}
@@ -198,37 +274,28 @@ const OrgAuditLogPanel: React.FC = () => {
           />
         </div>
       </div>
-      <Table
-        dataSource={auditLog.entries}
-        columns={columns}
-        rowKey="handle"
-        loading={auditLog.isLoading}
-        size="small"
-        pagination={false}
-        scroll={{ y: 'calc(100vh - 300px)' }}
-      />
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        <Table
+          dataSource={auditLog.entries}
+          columns={columns}
+          rowKey="handle"
+          loading={auditLog.isLoading}
+          size="small"
+          pagination={false}
+          tableLayout="fixed"
+          scroll={{ x: 900, y: 'calc(100vh - 320px)' }}
+          style={{ width: '100%' }}
+        />
+      </div>
 
       <Modal
-        title={modalData?.title || 'JSON Viewer'}
-        open={!!modalData}
-        onCancel={() => setModalData(null)}
+        title={modalTitle}
+        open={!!modalState}
+        onCancel={() => setModalState(null)}
         footer={null}
-        width={700}
+        width={760}
       >
-        {modalData?.title === 'After Value' && modalData?.beforeData ? (
-          <div>
-            <div style={{ marginBottom: 8, padding: '6px 12px', background: '#fffbe6', borderRadius: 6, fontSize: 12, color: '#d48806' }}>
-              Fields with yellow highlight show what changed from the previous value.
-            </div>
-            <div style={{ maxHeight: 500, overflow: 'auto', padding: 8, background: '#fafafa', borderRadius: 6 }}>
-              {renderHighlightedJson(modalData.data, getChangedKeys(modalData.beforeData, modalData.data))}
-            </div>
-          </div>
-        ) : (
-          <pre style={{ maxHeight: 500, overflow: 'auto', padding: 12, background: '#fafafa', borderRadius: 6, fontSize: 12 }}>
-            {JSON.stringify(modalData?.data, null, 2)}
-          </pre>
-        )}
+        {renderModalBody()}
       </Modal>
     </div>
   );

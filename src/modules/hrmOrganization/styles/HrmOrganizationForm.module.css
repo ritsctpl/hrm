@@ -83,31 +83,24 @@
   grid-column: 1 / -1;
 }
 
-/* BU form tabs */
-.buFormTabs {
+/* BU form single panel (merged General + Address) */
+.buFormSingle {
   margin-top: 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-
-.buFormTabs :global(.ant-tabs-nav) {
-  margin-bottom: 12px;
-}
-
-.buFormTabs :global(.ant-tabs-content-holder) {
-  flex: 1;
   overflow: auto;
-  min-height: 0;
+  gap: 16px;
 }
 
-.buFormTabs :global(.ant-tabs-content) {
-  height: 100%;
-}
-
-.buFormTabs :global(.ant-tabs-tabpane) {
-  height: 100%;
+.buFormSectionHeading {
+  font-size: 13px;
+  font-weight: 600;
+  color: #595959;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-top: 4px;
 }
 
 /* Department form */

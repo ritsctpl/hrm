@@ -271,24 +271,15 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
     errors.buName = 'BU Name is required';
   }
 
-  if (!data.state?.trim()) {
-    errors.state = 'State is required';
-  }
-
-  if (!data.placeOfSupply?.trim()) {
-    errors.placeOfSupply = 'Place of Supply is required';
-  }
-
   if (!data.primaryContact?.trim()) {
     errors.primaryContact = 'Primary Contact is required';
   }
 
-  // GSTIN is now REQUIRED
+  // GSTIN is now REQUIRED (cross-checked with address state since BU-level state field was removed)
   if (!data.gstin?.trim()) {
     errors.gstin = 'GSTIN is required';
   } else {
-    // Validate GSTIN format and cross-check with state
-    const gstinError = validateGSTIN(data.gstin, undefined, data.state);
+    const gstinError = validateGSTIN(data.gstin, undefined, data.address?.state);
     if (gstinError) errors.gstin = gstinError;
   }
 

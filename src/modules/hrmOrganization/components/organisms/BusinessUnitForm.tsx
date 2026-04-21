@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Input, Select, Tabs, Button, message } from 'antd';
+import { Input, Button, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
@@ -9,17 +9,11 @@ import OrgAddressFields from '../molecules/OrgAddressFields';
 import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { COUNTRY_STATES, EMPTY_ADDRESS } from '../../utils/constants';
+import { EMPTY_ADDRESS } from '../../utils/constants';
 import type { BusinessUnitFormProps } from '../../types/ui.types';
 import type { Address } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
-
-// Get Indian states for State and Place of Supply dropdowns
-const getIndianStates = () => {
-  const states = COUNTRY_STATES['India'] || [];
-  return states.map((s) => ({ label: s, value: s }));
-};
 
 const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly = false }) => {
   const {
@@ -82,19 +76,14 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
     }
   }, [saveBusinessUnit, isNew]);
 
-  // General Tab
   const generalContent = readOnly ? (
-    // Read-only view using OrgViewField
     <div className={formStyles.identityGrid}>
       <OrgViewField label="BU Code" value={draft?.buCode} required />
       <OrgViewField label="BU Name" value={draft?.buName} required />
-      <OrgViewField label="State" value={draft?.state} required />
-      <OrgViewField label="Place of Supply" value={draft?.placeOfSupply} required />
       <OrgViewField label="GSTIN" value={draft?.gstin} required />
       <OrgViewField label="Primary Contact" value={draft?.primaryContact} required />
     </div>
   ) : (
-    // Editable form
     <div className={formStyles.identityGrid}>
       <OrgFormField label="BU Code" required error={errors.buCode}>
         <Input
@@ -110,30 +99,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
           value={draft?.buName || ''}
           onChange={(e) => handleFieldChange('buName', e.target.value)}
           placeholder="e.g., Tamil Nadu Operations"
-        />
-      </OrgFormField>
-
-      <OrgFormField label="State" required error={errors.state}>
-        <Select
-          value={draft?.state || undefined}
-          onChange={(val) => handleFieldChange('state', val)}
-          options={getIndianStates()}
-          placeholder="Select state"
-          showSearch
-          optionFilterProp="label"
-          style={{ width: '100%' }}
-        />
-      </OrgFormField>
-
-      <OrgFormField label="Place of Supply" required error={errors.placeOfSupply}>
-        <Select
-          value={draft?.placeOfSupply || undefined}
-          onChange={(val) => handleFieldChange('placeOfSupply', val)}
-          options={getIndianStates()}
-          placeholder="Select place of supply"
-          showSearch
-          optionFilterProp="label"
-          style={{ width: '100%' }}
         />
       </OrgFormField>
 
@@ -155,7 +120,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
     </div>
   );
 
-  // Address Tab
   const addressContent = (
     <OrgAddressFields
       prefix="address"
@@ -165,11 +129,6 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
       disabled={readOnly}
     />
   );
-
-  const tabItems = [
-    { key: 'general', label: 'General', children: generalContent },
-    { key: 'address', label: 'Address', children: addressContent },
-  ];
 
   return (
     <div className={mainStyles.formPanel}>
@@ -182,11 +141,11 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
         />
       </div>
 
-      <Tabs
-        items={tabItems}
-        size="small"
-        className={formStyles.buFormTabs}
-      />
+      <div className={formStyles.buFormSingle}>
+        {generalContent}
+        <div className={formStyles.buFormSectionHeading}>Address</div>
+        {addressContent}
+      </div>
 
       {errors._general && (
         <div style={{ color: '#ff4d4f', marginTop: 8 }}>{errors._general}</div>
