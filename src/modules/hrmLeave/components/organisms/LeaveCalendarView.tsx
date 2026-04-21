@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { getOrganizationId } from '@/utils/cookieUtils';
-import { Calendar, Badge, Tooltip } from "antd";
+import React from "react";
+import { Calendar, Badge } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { parseCookies } from "nookies";
 import { LeaveCalendarViewProps } from "../../types/ui.types";
 import { LeaveRequest } from "../../types/domain.types";
 import { LEAVE_TYPE_COLORS } from "../../utils/constants";
-import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayService";
-import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
+import { useHolidayCalendar } from "../../hooks/useHolidayCalendar";
 import styles from "../../styles/HrmLeave.module.css";
 
 const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
@@ -20,42 +17,7 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
   onMonthChange,
   teamView,
 }) => {
-  const cookies = parseCookies();
-  const organizationId = getOrganizationId();
-  const buHandle = cookies.buHandle ?? "";
-
-  const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadHolidays = async () => {
-      if (!organizationId || !buHandle) return;
-      try {
-        const res = await HrmHolidayService.getPublishedHolidaysForBu({ organizationId,
-          buHandle,
-          year,
-        });
-        if (!cancelled && res?.success) {
-          setHolidays(Array.isArray(res.data) ? res.data : []);
-        }
-      } catch {
-        if (!cancelled) setHolidays([]);
-      }
-    };
-    loadHolidays();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, buHandle, year]);
-
-  const holidaysByDate = useMemo(() => {
-    const map: Record<string, HolidayResponse[]> = {};
-    holidays.forEach((h) => {
-      if (!map[h.date]) map[h.date] = [];
-      map[h.date].push(h);
-    });
-    return map;
-  }, [holidays]);
+  const { isHoliday, getHolidayName } = useHolidayCalendar(year);
 
   const getRequestsForDate = (date: Dayjs): LeaveRequest[] => {
     const dateStr = date.format("YYYY-MM-DD");
@@ -67,35 +29,15 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
   const dateCellRender = (value: Dayjs) => {
     const dateStr = value.format("YYYY-MM-DD");
     const dayRequests = getRequestsForDate(value);
-    const dayHolidays = holidaysByDate[dateStr] ?? [];
+    const holidayName = getHolidayName(dateStr);
 
-    if (dayRequests.length === 0 && dayHolidays.length === 0) return null;
+    if (dayRequests.length === 0 && !holidayName) return null;
 
     return (
       <>
-        {dayHolidays.length > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              top: 2,
-              right: 2,
-              display: "flex",
-              gap: 2,
-            }}
-          >
-            {dayHolidays.slice(0, 2).map((h) => (
-              <Tooltip key={h.handle} title={h.name}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: h.categoryColorHex || "#f5222d",
-                  }}
-                />
-              </Tooltip>
-            ))}
+        {holidayName && (
+          <div className={styles.holidayLabel} title={holidayName}>
+            {holidayName}
           </div>
         )}
         {dayRequests.length > 0 && (
@@ -123,10 +65,35 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
     );
   };
 
+  const fullCellRender = (value: Dayjs) => {
+    const dateStr = value.format("YYYY-MM-DD");
+    const holidayOnDate = isHoliday(dateStr);
+    const isCurrentMonth = value.month() === month;
+
+    return (
+      <div
+        className={`ant-picker-cell-inner ant-picker-calendar-date${
+          holidayOnDate && isCurrentMonth ? ` ${styles.calendarCellHolidayBg}` : ""
+        }`}
+      >
+        <div className="ant-picker-calendar-date-value">{value.date()}</div>
+        <div className="ant-picker-calendar-date-content">
+          {dateCellRender(value)}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.calendarWrapper}>
+      <div className={styles.calendarLegend}>
+        <span className={styles.calendarLegendItem}>
+          <span className={styles.calendarLegendHolidayDot} />
+          Holiday
+        </span>
+      </div>
       <Calendar
-        cellRender={dateCellRender}
+        fullCellRender={fullCellRender}
         onPanelChange={(val, mode) => {
           if (mode === "month") onMonthChange(val.month());
         }}

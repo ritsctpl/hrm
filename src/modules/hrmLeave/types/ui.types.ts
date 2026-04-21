@@ -162,6 +162,7 @@ export interface AccrualPreviewLineProps {
 export interface TeamCalendarCellProps {
   date: string;
   requests: LeaveRequest[];
+  holidayName?: string;
 }
 
 export interface LeaveFilterBarProps {

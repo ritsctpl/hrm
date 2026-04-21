@@ -6,11 +6,16 @@ import { TeamCalendarCellProps } from "../../types/ui.types";
 import { LEAVE_TYPE_COLORS } from "../../utils/constants";
 import styles from "../../styles/HrmLeave.module.css";
 
-const TeamCalendarCell: React.FC<TeamCalendarCellProps> = ({ date, requests }) => {
-  if (!requests || requests.length === 0) return null;
+const TeamCalendarCell: React.FC<TeamCalendarCellProps> = ({ date, requests, holidayName }) => {
+  if ((!requests || requests.length === 0) && !holidayName) return null;
 
   return (
     <div className={styles.calendarCell}>
+      {holidayName && (
+        <Tooltip title={holidayName}>
+          <div className={styles.holidayLabel}>{holidayName}</div>
+        </Tooltip>
+      )}
       {requests.slice(0, 3).map((req) => {
         const color = LEAVE_TYPE_COLORS[req.leaveTypeCode] ?? "#8c8c8c";
         const isApproved = req.status === "APPROVED";
