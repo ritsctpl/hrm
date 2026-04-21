@@ -25,7 +25,7 @@ import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/trans
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
-import type { TeamCalendarEntry } from "../../types/api.types";
+import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
 
 const { Text } = Typography;
@@ -112,6 +112,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
+  const [blackouts, setBlackouts] = useState<LeaveBlackoutPeriod[]>([]);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
   const [currentProfile, setCurrentProfile] = useState<EmployeeProfile | null>(null);
@@ -389,6 +390,40 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     };
   }, [showLeaveForm, organizationId, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
 
+  // Load blackout periods when the drawer opens.
+  useEffect(() => {
+    if (!showLeaveForm || !organizationId) return;
+    let cancelled = false;
+    HrmLeaveService.getAllBlackouts({ organizationId })
+      .then((res) => {
+        if (!cancelled) setBlackouts(res ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setBlackouts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLeaveForm, organizationId]);
+
+  // Determine if the selected date range overlaps an active blackout period.
+  const overlappingBlackout = useMemo(() => {
+    if (!leaveFormState.startDate || !leaveFormState.endDate) return null;
+    return blackouts.find((b) => {
+      const bStart = dayjs(b.startDate);
+      const bEnd = dayjs(b.endDate);
+      const sDate = dayjs(leaveFormState.startDate);
+      const eDate = dayjs(leaveFormState.endDate);
+      // Check overlap: not (end before b.start or start after b.end)
+      const overlaps = !(eDate.isBefore(bStart, "day") || sDate.isAfter(bEnd, "day"));
+      // Check leave type applicability — empty means all types blocked
+      const typeApplies =
+        b.applicableLeaveTypes.length === 0 ||
+        b.applicableLeaveTypes.includes(leaveFormState.leaveTypeCode);
+      return overlaps && typeApplies;
+    }) ?? null;
+  }, [leaveFormState.startDate, leaveFormState.endDate, blackouts, leaveFormState.leaveTypeCode]);
+
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -485,7 +520,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     leaveFormState.reason.trim().length > 0 &&
     !exceedsBalance &&
     // Block non-HR users from submitting beyond-limit backdated requests
-    !(isBackdatedBeyondLimit && !isHrUser);
+    !(isBackdatedBeyondLimit && !isHrUser) &&
+    // Block non-HR users from submitting during a blackout period
+    !(overlappingBlackout && !isHrUser);
 
   const handleReset = () => {
     setAttachments([]);
@@ -601,7 +638,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                   ? "Insufficient Balance"
                   : isBackdatedBeyondLimit && !isHrUser
                     ? "Backdated Not Allowed"
-                    : "Submit Request"}
+                    : overlappingBlackout && !isHrUser
+                      ? "Blackout Period"
+                      : "Submit Request"}
               </Button>
             </Can>
           </div>
@@ -725,6 +764,26 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 showIcon
                 message="Backdated Leave Request (HR Override)"
                 description={`This request is ${daysBackdated} day(s) in the past, exceeding the ${maxBackdatedDays}-day limit. Submitting as HR.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {overlappingBlackout && !isHrUser && (
+              <Alert
+                type="error"
+                showIcon
+                message={`Leave Blackout: ${overlappingBlackout.name}`}
+                description={`Leave is restricted from ${overlappingBlackout.startDate} to ${overlappingBlackout.endDate}. Reason: ${overlappingBlackout.reason}`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {overlappingBlackout && isHrUser && (
+              <Alert
+                type="warning"
+                showIcon
+                message={`Leave Blackout: ${overlappingBlackout.name} (HR Override)`}
+                description={`Leave is restricted from ${overlappingBlackout.startDate} to ${overlappingBlackout.endDate}. Reason: ${overlappingBlackout.reason}. Submitting as HR — blackout check bypassed.`}
                 style={{ marginTop: 8 }}
               />
             )}
