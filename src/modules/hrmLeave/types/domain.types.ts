@@ -170,15 +170,35 @@ export interface LeavePolicy {
   modifiedBy?: string;
 }
 
+export interface ExcludedHoliday {
+  date: string;
+  name: string;
+}
+
 export interface ValidationSummary {
   leaveTypeCode: string;
   requestedUnits: number;
   balanceBefore: number;
   balanceAfter: number;
-  state: "eligible" | "insufficient_balance" | "overlap_detected" | "requires_hr_review";
+  state:
+    | "eligible"
+    | "insufficient_balance"
+    | "overlap_detected"
+    | "requires_hr_review"
+    | "insufficient_notice"
+    | "below_minimum"
+    | "exceeds_maximum"
+    | "probation_restricted"
+    | "gender_restricted"
+    | "backdated_requires_hr"
+    | "clubbing_violation"
+    | "blackout_period";
   conflictFlags: string[];
   messages: string[];
   overlaps: OverlapDetail[];
+  calculatedDays?: number;
+  sandwichDaysAdded?: number;
+  excludedHolidays?: ExcludedHoliday[];
 }
 
 export interface OverlapDetail {

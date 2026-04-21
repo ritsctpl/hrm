@@ -88,6 +88,21 @@ export const ESCALATION_LEVEL_LABELS: Record<number, string> = {
 export const SLA_WARNING_HOURS = 4;
 export const SLA_CRITICAL_HOURS = 1;
 
+export const VALIDATION_STATE_LABELS: Record<string, string> = {
+  eligible: "Eligible",
+  insufficient_balance: "Insufficient Balance",
+  overlap_detected: "Overlap Detected",
+  requires_hr_review: "Requires HR Review",
+  insufficient_notice: "Insufficient Notice",
+  below_minimum: "Below Minimum",
+  exceeds_maximum: "Exceeds Maximum",
+  probation_restricted: "Probation Restricted",
+  gender_restricted: "Not Applicable",
+  backdated_requires_hr: "Backdated — HR Review",
+  clubbing_violation: "Clubbing Violation",
+  blackout_period: "Blackout Period",
+};
+
 export const LEDGER_REF_TYPE_LABELS: Record<string, string> = {
   ACCRUAL: "Accrual",
   LEAVE: "Leave Availed",
