@@ -1,15 +1,19 @@
 "use client";
 
 import React from "react";
-import { Button, message } from "antd";
+import { Button, message, Tooltip } from "antd";
+import dayjs from "dayjs";
 import { parseCookies } from "nookies";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import LeaveRequestDetail from "./components/organisms/LeaveRequestDetail";
 import LeaveRequestApprovalPanel from "./components/organisms/LeaveRequestApprovalPanel";
 import Can from "../hrmAccess/components/Can";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { HrmLeaveService } from "./services/hrmLeaveService";
 import { LeaveRequest } from "./types/domain.types";
+import { LeaveApprovalConfig } from "./types/api.types";
 import { LeavePermissions } from "./types/ui.types";
+import { HR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
 
 interface HrmLeaveScreenProps {
@@ -27,10 +31,32 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
 }) => {
   const cookies = parseCookies();
   const actorId = cookies.userId ?? "";
-  const actorRole = cookies.userRole ?? "";
+  const actorRole = (cookies.userRole ?? "").toUpperCase();
+  const isHr = HR_ROLES.includes(actorRole);
 
   const [loading, setLoading] = React.useState(false);
+  const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
   const { removeFromPending, updateGlobalQueueRequest, updateMyRequest } = useHrmLeaveStore();
+
+  // Fetch approval config once on mount to read cancellationWindowHours
+  React.useEffect(() => {
+    const orgId = organizationId || getOrganizationId();
+    if (!orgId) return;
+    HrmLeaveService.getApprovalConfig({ organizationId: orgId })
+      .then((cfg) => setApprovalConfig(cfg))
+      .catch(() => { /* fallback to default 24h window */ });
+  }, [organizationId]);
+
+  // ── Cancellation window check ────────────────────────────────────
+  const cancellationWindowHours = approvalConfig?.cancellationWindowHours ?? 24;
+
+  const isCancelBlocked = (() => {
+    if (!request || request.status !== "APPROVED") return false;
+    if (isHr) return false; // HR can always cancel
+    const leaveStart = dayjs(request.startDate).startOf("day");
+    const hoursUntilLeave = leaveStart.diff(dayjs(), "hour");
+    return hoursUntilLeave < cancellationWindowHours;
+  })();
 
   const handleApprove = async () => {
     setLoading(true);
@@ -166,18 +192,29 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
       />
 
       {permissions.canCancel &&
-        request.status === "PENDING_SUPERVISOR" &&
-        request.createdBy === actorId && (
+        (request.status === "PENDING_SUPERVISOR" || request.status === "APPROVED") &&
+        (request.createdBy === actorId || isHr) && (
           <div style={{ padding: "12px 0" }}>
             <Can I="delete" object="leave_request" passIf={true}>
-              <Button
-                danger
-                size="small"
-                onClick={handleCancel}
-                loading={loading}
+              <Tooltip
+                title={
+                  isCancelBlocked
+                    ? `Cancellation not allowed within ${cancellationWindowHours} hours of leave start`
+                    : undefined
+                }
               >
-                Cancel Request
-              </Button>
+                <span>
+                  <Button
+                    danger
+                    size="small"
+                    onClick={handleCancel}
+                    loading={loading}
+                    disabled={isCancelBlocked}
+                  >
+                    Cancel Request
+                  </Button>
+                </span>
+              </Tooltip>
             </Can>
           </div>
         )}

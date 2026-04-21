@@ -543,6 +543,7 @@ export interface LeaveApprovalConfig {
   levels: ApprovalLevel[];
   autoEscalateDays: number;
   notifyHrOnEscalation: boolean;
+  cancellationWindowHours?: number;
   modifiedBy?: string;
 }
 
