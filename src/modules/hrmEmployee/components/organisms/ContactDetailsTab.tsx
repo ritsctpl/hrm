@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { Button, Input, Form, Divider, Select, message } from 'antd';
 import {
   EditOutlined,
@@ -14,6 +14,7 @@ import {
   CloseOutlined,
   PlusOutlined,
   DeleteOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import type { ProfileTabProps } from '../../types/ui.types';
@@ -72,6 +73,32 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
     setPermanentCountry(value);
     form.setFieldValue('permanentState', undefined);
   };
+
+  const handleCopyPermanentToPresent = useCallback(() => {
+    const perm = {
+      address: form.getFieldValue('permanentAddress') || '',
+      city: form.getFieldValue('permanentCity') || '',
+      state: form.getFieldValue('permanentState') || '',
+      country: form.getFieldValue('permanentCountry') || '',
+      pinZip: form.getFieldValue('permanentPinZip') || '',
+    };
+    const hasAny = Boolean(perm.address || perm.city || perm.state || perm.country || perm.pinZip);
+    if (!hasAny) {
+      message.info('Fill in the permanent address first, then copy');
+      return;
+    }
+    // Sync the country-dependent state first so the State dropdown renders
+    // the correct option list before we set its value.
+    setPresentCountry(perm.country);
+    form.setFieldsValue({
+      presentAddress: perm.address,
+      presentCity: perm.city,
+      presentCountry: perm.country,
+      presentState: perm.state,
+      presentPinZip: perm.pinZip,
+    });
+    message.success('Copied permanent address to present address');
+  }, [form]);
 
   const handleSave = async () => {
     try {
@@ -189,10 +216,21 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
           }}
         >
           {/* Present Address Section */}
-          <Divider orientation="left" style={{ fontSize: 13, marginTop: 0 }}>
-            Present Address
-          </Divider>
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0 }}>
+            <Divider orientation="left" style={{ fontSize: 13, margin: '0 8px 0 0', flex: 1 }}>
+              Present Address
+            </Divider>
+            <Button
+              type="link"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={handleCopyPermanentToPresent}
+              style={{ padding: 0, fontSize: 12 }}
+            >
+              Same as permanent address
+            </Button>
+          </div>
+          <div style={{ marginBottom: 16, marginTop: 8 }}>
             <Form.Item
               name="presentAddress"
               label="Address"

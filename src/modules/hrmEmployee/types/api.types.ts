@@ -78,7 +78,7 @@ export interface CreateEmployeeRequest {
   organizationName?: string;
   /** @deprecated UI backward compat - mapped to 'role' by buildCreateRequest */
   designation?: string;
-  /** @deprecated UI backward compat - not sent to API */
+  /** Employee's date of joining (ISO YYYY-MM-DD). */
   joiningDate?: string;
   presentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
   permanentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
@@ -109,6 +109,8 @@ export interface UpdateOfficialRequest {
   reportingManager?: string;
   location?: string;
   businessUnits: string[];
+  /** Employee's date of joining (ISO YYYY-MM-DD). */
+  joiningDate?: string;
   modifiedBy: string;
 }
 
