@@ -16,6 +16,8 @@ import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
+import { HrmLeaveService } from '@/modules/hrmLeave/services/hrmLeaveService';
+import dayjs from 'dayjs';
 
 /* Step 0: Basic Info */
 const BasicStep: React.FC<{
@@ -887,7 +889,24 @@ const OnboardingWizard: React.FC = () => {
       }
 
       // Step 2: Create employee
-      await submitOnboarding();
+      const newEmployeeHandle = await submitOnboarding();
+
+      // Step 2b: Initialize leave balances for the new employee
+      if (newEmployeeHandle) {
+        try {
+          const organizationId = getOrganizationId();
+          await HrmLeaveService.initializeBalances({
+            organizationId,
+            employeeId: newEmployeeHandle,
+            joiningDate: draft.joiningDate || dayjs().format('YYYY-MM-DD'),
+          });
+          message.success(`Leave balances initialized for ${dayjs(draft.joiningDate || undefined).year()}`);
+        } catch {
+          message.warning(
+            'Employee created. Leave balances could not be initialized automatically — HR can adjust manually.'
+          );
+        }
+      }
 
       // Step 3: Show credentials if created
       if (generatedCredentials) {
