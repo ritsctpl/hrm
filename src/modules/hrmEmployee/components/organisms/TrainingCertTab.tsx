@@ -31,6 +31,9 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
 }) => {
   const { trainingCerts } = profile;
   const permissions = useEmployeePermissions();
+  const canAdd = permissions.canAddTraining || permissions.isAdmin;
+  const canEdit = permissions.canEditTraining || permissions.isAdmin;
+  const canDelete = permissions.canDeleteTraining || permissions.isAdmin;
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -180,7 +183,7 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
             icon={<EyeOutlined />}
             onClick={() => handleView(row)}
           />
-          {permissions.canEditTraining && (
+          {canEdit && (
             <Button
               type="text"
               size="small"
@@ -188,7 +191,7 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
               onClick={() => handleEdit(row)}
             />
           )}
-          {permissions.canDeleteTraining && (
+          {canDelete && (
             <Popconfirm
               title="Delete entry"
               description="Are you sure you want to delete this training / certification?"
@@ -213,7 +216,7 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        {permissions.canAddTraining && (
+        {canAdd && (
           <Button
             type="primary"
             size="small"

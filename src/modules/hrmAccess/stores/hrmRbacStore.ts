@@ -227,17 +227,24 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       // This ensures: root VIEW → all children inherit VIEW;
       // root V/A/E/D (admin) → all children get full access.
       //
-      // When the backend grants module-level access but never returns an
-      // explicit root-object entry, fall back to those module-level perms
-      // so admins don't silently lose canAdd/canEdit/canDelete on every
-      // child object.
+      // Root perms are the UNION of (the explicit root-object entry, if
+      // returned) and (module-level perms). This handles three real-world
+      // backend variants in one pass:
+      //   - Backend returns root object with all flags → use it.
+      //   - Backend omits root but grants module-level → fall back to
+      //     module-level, so admins keep canAdd/canEdit/canDelete.
+      //   - Backend returns root with canView only but module has ADD →
+      //     we union both, which prevents the canAdd from being silently
+      //     lost during cascade.
       const rootCode = getRootObjectCode(moduleCode);
+      const explicitRoot = rootCode ? sectionPerms[rootCode] : undefined;
       const moduleFallback = get().permissionsByModule[moduleCode];
-      const rootPerms: ModulePermissions = rootCode && sectionPerms[rootCode]
-        ? sectionPerms[rootCode]
-        : moduleFallback
-          ? { ...moduleFallback }
-          : { canView: false, canAdd: false, canEdit: false, canDelete: false };
+      const rootPerms: ModulePermissions = {
+        canView: (explicitRoot?.canView ?? false) || (moduleFallback?.canView ?? false),
+        canAdd: (explicitRoot?.canAdd ?? false) || (moduleFallback?.canAdd ?? false),
+        canEdit: (explicitRoot?.canEdit ?? false) || (moduleFallback?.canEdit ?? false),
+        canDelete: (explicitRoot?.canDelete ?? false) || (moduleFallback?.canDelete ?? false),
+      };
 
       // Cascade root to every registered object for this module
       const allObjectCodes = getObjectCodesForModule(moduleCode);

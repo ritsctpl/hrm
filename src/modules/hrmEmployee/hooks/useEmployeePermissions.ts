@@ -89,7 +89,16 @@ export const useEmployeePermissions = () => {
       canDelete: skillPerms.canDelete || jobHistoryPerms.canDelete || trainingPerms.canDelete || assetPerms.canDelete,
     };
 
+    // Module-level admin bypass: if the user has module-wide ADD or DELETE,
+    // treat them as an admin so UI actions that depend on object-level
+    // grants still render even when the backend hasn't returned an explicit
+    // object entry yet (or returned it without ADD/EDIT/DELETE).
+    const isAdmin = Boolean(moduleLevelPerms?.canAdd || moduleLevelPerms?.canDelete);
+
     return {
+      // Admin flag (module-level bypass)
+      isAdmin,
+
       // Employee (Directory) permissions
       canViewEmployee: employeePerms.canView,
       canAddEmployee: employeePerms.canAdd,

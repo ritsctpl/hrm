@@ -22,6 +22,8 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
 }) => {
   const { documents } = profile;
   const permissions = useEmployeePermissions();
+  const canAddDocs = permissions.canAddDocuments || permissions.isAdmin;
+  const canDeleteDocs = permissions.canDeleteDocuments || permissions.isAdmin;
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -216,7 +218,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1f2937' }}>Documents</h3>
-        {permissions.canAddDocuments && (
+        {canAddDocs && (
           <Button
             type="primary"
             size="small"
@@ -249,7 +251,7 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             onView={handleView}
             onDownload={handleDownload}
             onDelete={handleDelete}
-            canDelete={permissions.canDeleteDocuments}
+            canDelete={canDeleteDocs}
           />
         ))
       )}
