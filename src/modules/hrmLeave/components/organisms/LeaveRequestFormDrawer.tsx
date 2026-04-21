@@ -630,6 +630,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               startDayType={leaveFormState.startDayType}
               endDayType={leaveFormState.endDayType}
               halfDayAllowed={selectedBalance?.halfDayAllowed ?? false}
+              employeeId={effectiveEmployeeId}
               onStartDateChange={(date, dayType) =>
                 updateLeaveFormState({ startDate: date, startDayType: dayType })
               }

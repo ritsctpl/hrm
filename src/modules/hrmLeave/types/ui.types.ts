@@ -82,6 +82,7 @@ export interface DateRangePickerProps {
   startDayType: DayType;
   endDayType: DayType;
   halfDayAllowed: boolean;
+  employeeId?: string;
   onStartDateChange: (date: string, dayType: DayType) => void;
   onEndDateChange: (date: string, dayType: DayType) => void;
   onTotalDaysChange: (days: number) => void;

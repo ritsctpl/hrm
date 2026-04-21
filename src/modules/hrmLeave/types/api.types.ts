@@ -555,3 +555,46 @@ export interface ExportLeaveReportRequest {
   year?: number;
   format?: "CSV" | "XLSX";
 }
+
+// ── Calculate Working Days ──────────────────────────────────────────
+export interface CalculateDaysRequest {
+  organizationId: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  startDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+}
+
+export interface ExcludedHoliday {
+  date: string;
+  name: string;
+}
+
+export interface CalculateDaysResponse {
+  calculatedDays: number;
+  calendarDays: number;
+  excludedHolidays: ExcludedHoliday[];
+  excludedWeekends: string[];
+}
+
+// ── Bulk Approval ───────────────────────────────────────────────────
+export interface BulkApprovalRequest {
+  organizationId: string;
+  requestIds: string[];
+  actorId: string;
+  actorRole: string;
+  remarks?: string;
+}
+
+export interface BulkApprovalResponse {
+  approved: string[];
+  failed: { requestId: string; reason: string }[];
+}
+
+// ── Balance Initialize ──────────────────────────────────────────────
+export interface InitializeBalanceRequest {
+  organizationId: string;
+  employeeId: string;
+  joiningDate: string;
+}

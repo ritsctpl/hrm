@@ -46,6 +46,11 @@ import {
   SaveApprovalConfigRequest,
   LeaveApprovalConfig,
   ExportLeaveReportRequest,
+  CalculateDaysRequest,
+  CalculateDaysResponse,
+  BulkApprovalRequest,
+  BulkApprovalResponse,
+  InitializeBalanceRequest,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -341,5 +346,27 @@ export class HrmLeaveService {
 
   static async triggerSlaEscalations(payload: SiteRequest): Promise<void> {
     await api.post(`${this.BASE}/leave-request/sla-escalations`, payload);
+  }
+
+  // ── Working Days Calculator (GAP-01, GAP-02) ────────────────────
+  static async calculateWorkingDays(payload: CalculateDaysRequest): Promise<CalculateDaysResponse> {
+    const res = await api.post(`${this.BASE}/leave-request/calculate-days`, payload);
+    return this.unwrap<CalculateDaysResponse>(res.data);
+  }
+
+  // ── Bulk Approval (GAP-07) ──────────────────────────────────────
+  static async bulkApprove(payload: BulkApprovalRequest): Promise<BulkApprovalResponse> {
+    const res = await api.post(`${this.BASE}/leave-request/bulk-approve`, payload);
+    return this.unwrap<BulkApprovalResponse>(res.data);
+  }
+
+  static async bulkReject(payload: BulkApprovalRequest): Promise<BulkApprovalResponse> {
+    const res = await api.post(`${this.BASE}/leave-request/bulk-reject`, payload);
+    return this.unwrap<BulkApprovalResponse>(res.data);
+  }
+
+  // ── Balance Initialization (GAP-06) ─────────────────────────────
+  static async initializeBalances(payload: InitializeBalanceRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-balance/initialize`, payload);
   }
 }
