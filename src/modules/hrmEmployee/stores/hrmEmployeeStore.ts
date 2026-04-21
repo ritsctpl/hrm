@@ -135,16 +135,19 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const { searchKeyword, departmentFilter, statusFilter, buFilter, currentPage, pageSize } =
         get().directory;
 
-      const response = searchKeyword
-        ? await HrmEmployeeService.searchByKeyword(organizationId, searchKeyword)
-        : await HrmEmployeeService.fetchDirectory({ organizationId,
-            keyword: searchKeyword || undefined,
-            department: departmentFilter || undefined,
-            isActive: statusFilter,
-            businessUnit: buFilter || undefined,
-            page: currentPage - 1, // Backend expects 0-indexed page
-            size: pageSize,        // Backend expects 'size' not 'pageSize'
-          });
+      // Always use the paginated directory endpoint so keyword and the
+      // dropdown filters (department / status / BU) apply together. The
+      // previous short-circuit to searchByKeyword silently dropped every
+      // other filter whenever the user typed in the search box.
+      const response = await HrmEmployeeService.fetchDirectory({
+        organizationId,
+        keyword: searchKeyword || undefined,
+        department: departmentFilter || undefined,
+        isActive: statusFilter,
+        businessUnit: buFilter || undefined,
+        page: currentPage - 1, // Backend expects 0-indexed page
+        size: pageSize,        // Backend expects 'size' not 'pageSize'
+      });
 
       const employees = (response.employees || []).map(mapDirectoryRowToSummary);
 

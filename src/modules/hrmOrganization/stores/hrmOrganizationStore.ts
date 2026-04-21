@@ -62,7 +62,6 @@ export interface HrmOrganizationState {
   // Company List Actions
   fetchCompanyList: () => Promise<void>;
   setCompanyListSearch: (text: string) => void;
-  setCompanyListStatusFilter: (status: 'all' | 'active' | 'inactive') => void;
   deleteCompany: (handle: string) => Promise<void>;
 
   // Company Profile Actions
@@ -131,7 +130,6 @@ const initialCompanyListState: CompanyListState = {
   items: [],
   isLoading: false,
   searchText: '',
-  statusFilter: 'all',
 };
 
 const initialCompanyProfileState: CompanyProfileState = {
@@ -301,11 +299,6 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   setCompanyListSearch: (text) =>
     set((state) => ({
       companyList: { ...state.companyList, searchText: text },
-    })),
-
-  setCompanyListStatusFilter: (status) =>
-    set((state) => ({
-      companyList: { ...state.companyList, statusFilter: status },
     })),
 
   deleteCompany: async (handle) => {

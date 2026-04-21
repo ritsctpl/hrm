@@ -55,9 +55,15 @@ const OrgAuditLogPanel: React.FC = () => {
   const [modalTitle, setModalTitle] = useState<string>('');
 
   useEffect(() => {
-    const entityHandle = selectedCompanyHandle && selectedCompanyHandle !== 'new'
-      ? selectedCompanyHandle
-      : auditLog.entityHandleFilter;
+    // A user-typed entityHandleFilter must win over the parent-company
+    // scope so the filter input actually filters. Fall back to the
+    // selected company only when the filter box is empty.
+    const typedFilter = auditLog.entityHandleFilter?.trim();
+    const entityHandle = typedFilter
+      ? typedFilter
+      : selectedCompanyHandle && selectedCompanyHandle !== 'new'
+        ? selectedCompanyHandle
+        : '';
     fetchAuditLog(auditLog.entityTypeFilter, entityHandle);
   }, [auditLog.entityTypeFilter, auditLog.entityHandleFilter, selectedCompanyHandle, fetchAuditLog]);
 

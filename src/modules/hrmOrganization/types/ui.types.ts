@@ -28,7 +28,6 @@ export interface CompanyListState {
   items: CompanyListItem[];
   isLoading: boolean;
   searchText: string;
-  statusFilter: 'all' | 'active' | 'inactive';
 }
 
 export interface CompanyListItem {
