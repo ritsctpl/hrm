@@ -5,6 +5,11 @@ import {
   ManualAdjustmentRequest,
   BulkAdjustmentRequest,
   CompOffCreditRequest,
+  CompOffSubmitRequest,
+  CompOffActionRequest,
+  CompOffMyRequestsRequest,
+  CompOffPendingRequest,
+  CompOffRequest,
   LeaveRequestCreateDto,
   ApprovalActionRequest,
   CancelLeaveRequest,
@@ -51,6 +56,9 @@ import {
   BulkApprovalRequest,
   BulkApprovalResponse,
   InitializeBalanceRequest,
+  SetDelegationRequest,
+  DelegationEntry,
+  DeleteDelegationRequest,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -154,6 +162,33 @@ export class HrmLeaveService {
   static async creditCompOff(payload: CompOffCreditRequest): Promise<LedgerHistoryResponse> {
     const { data } = await api.post(`${this.BASE}/comp-off/credit`, payload);
     return this.unwrap<LedgerHistoryResponse>(data);
+  }
+
+  // ── Comp-Off Workflow ─────────────────────────────────────────────────
+
+  static async submitCompOffRequest(payload: CompOffSubmitRequest): Promise<CompOffRequest> {
+    const res = await api.post(`${this.BASE}/comp-off/request`, payload);
+    return this.unwrap<CompOffRequest>(res.data);
+  }
+
+  static async approveCompOff(payload: CompOffActionRequest): Promise<CompOffRequest> {
+    const res = await api.post(`${this.BASE}/comp-off/approve`, payload);
+    return this.unwrap<CompOffRequest>(res.data);
+  }
+
+  static async rejectCompOff(payload: CompOffActionRequest): Promise<CompOffRequest> {
+    const res = await api.post(`${this.BASE}/comp-off/reject`, payload);
+    return this.unwrap<CompOffRequest>(res.data);
+  }
+
+  static async getMyCompOffRequests(payload: CompOffMyRequestsRequest): Promise<CompOffRequest[]> {
+    const res = await api.post(`${this.BASE}/comp-off/my-requests`, payload);
+    return this.unwrap<CompOffRequest[]>(res.data) ?? [];
+  }
+
+  static async getPendingCompOffs(payload: CompOffPendingRequest): Promise<CompOffRequest[]> {
+    const res = await api.post(`${this.BASE}/comp-off/pending-for-approver`, payload);
+    return this.unwrap<CompOffRequest[]>(res.data) ?? [];
   }
 
   // ── Ledger History ───────────────────────────────────────────────────
@@ -368,5 +403,20 @@ export class HrmLeaveService {
   // ── Balance Initialization (GAP-06) ─────────────────────────────
   static async initializeBalances(payload: InitializeBalanceRequest): Promise<void> {
     await api.post(`${this.BASE}/leave-balance/initialize`, payload);
+  }
+
+  // ── Approval Delegation ────────────────────────────────────────────
+
+  static async setDelegation(payload: SetDelegationRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-approval-config/set-delegation`, payload);
+  }
+
+  static async getDelegations(payload: SiteRequest): Promise<DelegationEntry[]> {
+    const res = await api.post(`${this.BASE}/leave-approval-config/delegations`, payload);
+    return this.unwrap<DelegationEntry[]>(res.data) ?? [];
+  }
+
+  static async deleteDelegation(payload: DeleteDelegationRequest): Promise<void> {
+    await api.post(`${this.BASE}/leave-approval-config/delete-delegation`, payload);
   }
 }

@@ -258,6 +258,52 @@ export interface CompOffCreditRequest {
   createdBy: string;
 }
 
+// ── Comp-Off Request Workflow ──────────────────────────────────────
+export interface CompOffRequest {
+  handle: string;
+  organizationId: string;
+  employeeId: string;
+  employeeName: string;
+  workedDate: string;
+  hours: number;
+  quantity: number;
+  reason: string;
+  supervisorId?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CREDITED';
+  rejectionReason?: string;
+  expiryDate?: string;
+  createdDateTime: string;
+  createdBy: string;
+}
+
+export interface CompOffSubmitRequest {
+  organizationId: string;
+  employeeId: string;
+  workedDate: string;
+  hours: number;
+  quantity: number;
+  reason: string;
+  supervisorId?: string;
+  createdBy: string;
+}
+
+export interface CompOffActionRequest {
+  organizationId: string;
+  requestId: string;
+  actorId: string;
+  remarks?: string;
+}
+
+export interface CompOffMyRequestsRequest {
+  organizationId: string;
+  employeeId: string;
+}
+
+export interface CompOffPendingRequest {
+  organizationId: string;
+  approverId: string;
+}
+
 // ── Year-End ──────────────────────────────────────────────────────────
 
 export interface YearEndRequest {
@@ -616,4 +662,29 @@ export interface InitializeBalanceRequest {
   organizationId: string;
   employeeId: string;
   joiningDate: string;
+}
+
+// ── Approval Delegation ────────────────────────────────────────────
+export interface SetDelegationRequest {
+  organizationId: string;
+  approverId: string;
+  delegateIds: string[];
+  fromDate: string;
+  toDate: string;
+}
+
+export interface DelegationEntry {
+  handle: string;
+  approverId: string;
+  approverName: string;
+  delegateId: string;
+  delegateName: string;
+  fromDate: string;
+  toDate: string;
+  active: number;
+}
+
+export interface DeleteDelegationRequest {
+  organizationId: string;
+  handle: string;
 }
