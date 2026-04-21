@@ -417,7 +417,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             {/* Training & Certifications - uses employmentDetails object permission */}
             {permissions.canViewEmploymentDetails && (
               <ProfileSection title="Training & Certifications">
-                <TrainingCertTab {...tabProps} />
+                <TrainingCertTab {...tabProps} onRefresh={onRefresh} />
               </ProfileSection>
             )}
           </div>

@@ -226,10 +226,18 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       // Explicit child grants merge ON TOP of root perms (union).
       // This ensures: root VIEW → all children inherit VIEW;
       // root V/A/E/D (admin) → all children get full access.
+      //
+      // When the backend grants module-level access but never returns an
+      // explicit root-object entry, fall back to those module-level perms
+      // so admins don't silently lose canAdd/canEdit/canDelete on every
+      // child object.
       const rootCode = getRootObjectCode(moduleCode);
+      const moduleFallback = get().permissionsByModule[moduleCode];
       const rootPerms: ModulePermissions = rootCode && sectionPerms[rootCode]
         ? sectionPerms[rootCode]
-        : { canView: false, canAdd: false, canEdit: false, canDelete: false };
+        : moduleFallback
+          ? { ...moduleFallback }
+          : { canView: false, canAdd: false, canEdit: false, canDelete: false };
 
       // Cascade root to every registered object for this module
       const allObjectCodes = getObjectCodesForModule(moduleCode);
@@ -250,15 +258,10 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
 
-      // Correct module-level permissions from root object
-      const correctedModulePerms: ModulePermissions = rootPerms.canView || rootPerms.canAdd || rootPerms.canEdit || rootPerms.canDelete
-        ? { ...rootPerms }
-        : {
-            canView: (get().permissionsByModule[moduleCode]?.canView) ?? false,
-            canAdd: false,
-            canEdit: false,
-            canDelete: false,
-          };
+      // Correct module-level permissions from the effective root perms.
+      // `rootPerms` already includes the module-level fallback (see above)
+      // when no explicit root object was returned, so we just mirror it here.
+      const correctedModulePerms: ModulePermissions = { ...rootPerms };
 
       set(state => ({
         sectionPermissionCache: {
