@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Button,
   Drawer,
   Input,
@@ -103,9 +104,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // When HR picks an employee, target overrides the prop. Otherwise the
   // logged-in user's id is used.
   const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
-  // Removing the prop is enough to silence the unused-var lint when the
-  // picker is the only consumer.
-  void allowEmployeeSelection;
+  // HR users (indicated by allowEmployeeSelection) can submit any date
+  // without backdated restrictions.
+  const isHrUser = allowEmployeeSelection;
 
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
@@ -465,13 +466,26 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const exceedsBalance =
     balanceKnown && leaveFormState.totalDays > 0 && balanceAfter < 0;
 
+  // Backdated leave detection
+  const isBackdated =
+    !!leaveFormState.startDate &&
+    dayjs(leaveFormState.startDate).isBefore(dayjs(), "day");
+  const daysBackdated = isBackdated
+    ? dayjs().diff(dayjs(leaveFormState.startDate), "day")
+    : 0;
+  // Default max backdated days — backend will also validate
+  const maxBackdatedDays = 7;
+  const isBackdatedBeyondLimit = daysBackdated > maxBackdatedDays;
+
   const canSubmit =
     !!leaveFormState.leaveTypeCode &&
     !!leaveFormState.startDate &&
     !!leaveFormState.endDate &&
     leaveFormState.totalDays > 0 &&
     leaveFormState.reason.trim().length > 0 &&
-    !exceedsBalance;
+    !exceedsBalance &&
+    // Block non-HR users from submitting beyond-limit backdated requests
+    !(isBackdatedBeyondLimit && !isHrUser);
 
   const handleReset = () => {
     setAttachments([]);
@@ -583,7 +597,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                   exceedsBalance ? styles.submitButtonInsufficient : ""
                 }`}
               >
-                {exceedsBalance ? "Insufficient Balance" : "Submit Request"}
+                {exceedsBalance
+                  ? "Insufficient Balance"
+                  : isBackdatedBeyondLimit && !isHrUser
+                    ? "Backdated Not Allowed"
+                    : "Submit Request"}
               </Button>
             </Can>
           </div>
@@ -679,6 +697,37 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               }
               onTotalDaysChange={(days) => updateLeaveFormState({ totalDays: days })}
             />
+
+            {/* Backdated leave warnings */}
+            {isBackdated && !isBackdatedBeyondLimit && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Backdated Leave Request"
+                description={`This request is for ${daysBackdated} day(s) in the past. It will be routed to HR for approval.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {isBackdatedBeyondLimit && !isHrUser && (
+              <Alert
+                type="error"
+                showIcon
+                message="Backdated Request Not Allowed"
+                description={`Backdated requests beyond ${maxBackdatedDays} days are not permitted. Please contact HR.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {isBackdatedBeyondLimit && isHrUser && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Backdated Leave Request (HR Override)"
+                description={`This request is ${daysBackdated} day(s) in the past, exceeding the ${maxBackdatedDays}-day limit. Submitting as HR.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
           </div>
 
           {/* Reason */}
