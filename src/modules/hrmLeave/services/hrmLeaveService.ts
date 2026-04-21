@@ -59,6 +59,8 @@ import {
   SetDelegationRequest,
   DelegationEntry,
   DeleteDelegationRequest,
+  SettleSeparationRequest,
+  SettleSeparationResponse,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -418,5 +420,11 @@ export class HrmLeaveService {
 
   static async deleteDelegation(payload: DeleteDelegationRequest): Promise<void> {
     await api.post(`${this.BASE}/leave-approval-config/delete-delegation`, payload);
+  }
+
+  // ── Leave Settlement on Separation ─────────────────────────────────
+  static async settleLeaveOnSeparation(payload: SettleSeparationRequest): Promise<SettleSeparationResponse> {
+    const res = await api.post(`${this.BASE}/leave-balance/settle-separation`, payload);
+    return this.unwrap<SettleSeparationResponse>(res.data);
   }
 }

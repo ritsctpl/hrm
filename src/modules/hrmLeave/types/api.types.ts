@@ -31,6 +31,14 @@ export interface LeaveTypeRequest {
   createdBy?: string;
 }
 
+// ── Leave Entitlement Tier ───────────────────────────────────────────
+
+export interface LeaveEntitlementTier {
+  minTenureYears: number;
+  maxTenureYears: number;
+  annualEntitlement: number;
+}
+
 // ── Leave Policy ─────────────────────────────────────────────────────
 
 export interface LeavePolicy {
@@ -62,6 +70,7 @@ export interface LeavePolicy {
   escalationSlaDays: number;
   probationRestricted?: boolean;
   availableAfterMonths?: number;
+  entitlementTiers?: LeaveEntitlementTier[];
   version: number;
   active: number;
   createdDateTime?: string;
@@ -96,6 +105,7 @@ export interface LeavePolicyRequest {
   coExpiryDays?: number;
   supervisorSlaDays?: number;
   escalationSlaDays?: number;
+  entitlementTiers?: LeaveEntitlementTier[];
   createdBy: string;
 }
 
@@ -687,4 +697,29 @@ export interface DelegationEntry {
 export interface DeleteDelegationRequest {
   organizationId: string;
   handle: string;
+}
+
+// ── Leave Settlement on Separation ──────────────────────────────────
+export interface SettleSeparationRequest {
+  organizationId: string;
+  employeeId: string;
+  lastWorkingDate: string;
+  triggeredBy: string;
+}
+
+export interface LeaveSettlementItem {
+  leaveTypeCode: string;
+  leaveTypeName: string;
+  currentBalance: number;
+  encashedDays: number;
+  lapsedDays: number;
+  cancelledRequests: number;
+}
+
+export interface SettleSeparationResponse {
+  employeeId: string;
+  settlements: LeaveSettlementItem[];
+  totalEncashed: number;
+  totalLapsed: number;
+  totalCancelledRequests: number;
 }
