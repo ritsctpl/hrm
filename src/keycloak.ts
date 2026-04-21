@@ -42,6 +42,17 @@ export const getKeycloakInstance = async (): Promise<KeycloakInstance> => {
   return keycloakInstance!;
 };
 
+export const getKeycloakInitOptions = async (): Promise<KeycloakInitOptions> => {
+  const config = await fetchRuntimeConfig();
+  return {
+    onLoad: "login-required",
+    checkLoginIframe: false,
+    pkceMethod: "S256",
+    redirectUri: config.NEXT_PUBLIC_REDIRECT_URI,
+  };
+};
+
+// Legacy export kept for compatibility — does not include redirectUri
 export const keycloakInitOptions: KeycloakInitOptions = {
   onLoad: "login-required",
   checkLoginIframe: false,

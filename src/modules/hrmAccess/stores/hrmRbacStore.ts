@@ -119,6 +119,11 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         currentOrganizationId = organizations[0].organizationId;
       }
 
+      // Persist resolved org to cookie so module stores can read it synchronously
+      if (currentOrganizationId) {
+        setCookie(null, 'site', currentOrganizationId, { path: '/' });
+      }
+
       // Find current org modules
       const currentOrg = organizations.find(o => o.organizationId === currentOrganizationId);
       const orgModules = currentOrg?.modules || [];
@@ -176,6 +181,8 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     if (!org) return;
 
     const enrichedModules: EnrichedModule[] = org.modules.map(m => ({ ...m }));
+
+    setCookie(null, 'site', organizationId, { path: '/' });
 
     set({
       currentOrganizationId: organizationId,

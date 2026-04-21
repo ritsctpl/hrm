@@ -2,7 +2,7 @@
 import '@/utils/i18n';
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
-import { getKeycloakInstance, keycloakInitOptions } from '../keycloak';
+import { getKeycloakInstance, getKeycloakInitOptions } from '../keycloak';
 import jwtDecode from 'jwt-decode';
 
 interface AuthContextProps {
@@ -60,7 +60,8 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
     const initializeKeycloak = async () => {
       try {
         const keycloak = await getKeycloakInstance();
-        const authenticated = await keycloak.init(keycloakInitOptions);
+        const initOptions = await getKeycloakInitOptions();
+        const authenticated = await keycloak.init(initOptions);
 
         setIsAuthenticated(authenticated);
 

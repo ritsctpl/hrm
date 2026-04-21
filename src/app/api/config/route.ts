@@ -9,7 +9,7 @@ export async function GET() {
     NEXT_PUBLIC_KEYCLOAK_REALM: process.env.NEXT_PUBLIC_KEYCLOAK_REALM || "spring-boot-microservices-realm",
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "rmfg-init-client",
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL || "http://192.168.147.129:8181",
-    NEXT_PUBLIC_REDIRECT_URI: process.env.NEXT_PUBLIC_REDIRECT_URI || "http://192.168.147.129:8687/hrm/callback",
+    NEXT_PUBLIC_REDIRECT_URI: process.env.NEXT_PUBLIC_REDIRECT_URI || "http://192.168.147.129:8687/hrm",
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.147.129:8080/app/v1",
     NEXT_PUBLIC_ENCRYPTION_KEY: process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "fcde2b2e9076d5276fb63525ec1ae7ad5276fb63525ec1ae7ad5276fb63525ec",
   });

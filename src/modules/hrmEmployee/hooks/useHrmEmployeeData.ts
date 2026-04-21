@@ -8,6 +8,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useHrmEmployeeStore } from '../stores/hrmEmployeeStore';
+import { useHrmRbacStore } from '../../hrmAccess/stores/hrmRbacStore';
 import type { DirectoryFilters } from '../types/ui.types';
 
 /**
@@ -30,13 +31,16 @@ export function useEmployeeDirectory() {
     openOnboarding,
   } = useHrmEmployeeStore();
 
+  const { isReady: rbacReady, currentOrganizationId } = useHrmRbacStore();
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initial data load
+  // Initial data load — wait for RBAC to finish so the site cookie is set
   useEffect(() => {
+    if (!rbacReady || !currentOrganizationId) return;
     fetchDirectory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [rbacReady, currentOrganizationId]);
 
   // Debounced search handler
   const handleSearch = useCallback(
