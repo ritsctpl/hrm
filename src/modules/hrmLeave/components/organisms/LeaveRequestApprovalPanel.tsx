@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Input, Modal, Space, Typography } from "antd";
-import { CheckOutlined, CloseOutlined, SwapOutlined } from "@ant-design/icons";
+import { Button, Input, Modal, Popconfirm, Space, Typography } from "antd";
+import { CheckOutlined, CloseOutlined, ArrowUpOutlined, SwapOutlined } from "@ant-design/icons";
 import { LeavePermissions } from "../../types/ui.types";
 import { LeaveRequest } from "../../types/domain.types";
+import { useCurrentEmployeeStore } from "../../../hrmAccess/stores/currentEmployeeStore";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -33,8 +35,21 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
 }) => {
   const [rejectVisible, setRejectVisible] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [reassignVisible, setReassignVisible] = useState(false);
-  const [reassignId, setReassignId] = useState("");
+
+  // Resolve the current supervisor's own reporting manager for "Forward to My Manager"
+  const currentEmployee = useCurrentEmployeeStore(s => s.data);
+  const { employees } = useEmployeeOptions();
+  const myManagerHandle = (() => {
+    if (!currentEmployee?.handle || !employees.length) return null;
+    // Find current user in directory to get their reportingManager
+    const me = employees.find(e => e.handle === currentEmployee.handle);
+    return me?.reportingManager ?? null;
+  })();
+  const myManagerName = (() => {
+    if (!myManagerHandle) return null;
+    const mgr = employees.find(e => e.handle === myManagerHandle);
+    return mgr ? `${mgr.fullName} (${mgr.employeeCode})` : null;
+  })();
 
   const isPending =
     request.status === "PENDING_SUPERVISOR" ||
@@ -79,17 +94,32 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
           </Can>
         )}
 
-        {permissions.canEscalate && onEscalate && (
+        {/* Forward to my manager — supervisor can push request up the chain */}
+        {onReassign && myManagerHandle && (
           <Can I="edit" object="leave_approval" passIf={true}>
-            <Button onClick={onEscalate}>Escalate</Button>
+            <Popconfirm
+              title="Forward to Your Manager"
+              description={`This request will be forwarded to ${myManagerName || 'your reporting manager'} for approval. Continue?`}
+              onConfirm={() => onReassign(myManagerHandle)}
+              okText="Forward"
+              cancelText="Cancel"
+            >
+              <Button icon={<ArrowUpOutlined />} loading={loading}>
+                Forward to My Manager
+                {myManagerName && (
+                  <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                    ({myManagerName})
+                  </Text>
+                )}
+              </Button>
+            </Popconfirm>
           </Can>
         )}
 
-        {permissions.canReassign && onReassign && (
+        {/* HR-only: Escalate (auto-route to next level) */}
+        {permissions.canEscalate && onEscalate && (
           <Can I="edit" object="leave_approval" passIf={true}>
-            <Button icon={<SwapOutlined />} onClick={() => setReassignVisible(true)}>
-              Reassign
-            </Button>
+            <Button onClick={onEscalate}>Escalate</Button>
           </Can>
         )}
 
@@ -139,29 +169,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
         />
       </Modal>
 
-      <Modal
-        title="Reassign Approver"
-        open={reassignVisible}
-        onOk={() => {
-          if (reassignId.trim() && onReassign) {
-            onReassign(reassignId.trim());
-            setReassignVisible(false);
-            setReassignId("");
-          }
-        }}
-        onCancel={() => {
-          setReassignVisible(false);
-          setReassignId("");
-        }}
-        okText="Reassign"
-        okButtonProps={{ disabled: !reassignId.trim() }}
-      >
-        <Input
-          placeholder="Enter new approver employee ID"
-          value={reassignId}
-          onChange={(e) => setReassignId(e.target.value)}
-        />
-      </Modal>
+      {/* Reassign modal removed — replaced by "Forward to My Manager" Popconfirm above */}
     </div>
   );
 };
