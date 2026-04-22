@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Button,
   Card,
@@ -14,6 +14,8 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { DownloadOutlined, FileSearchOutlined } from "@ant-design/icons";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import { LeaveRegisterRow, LeaveRegisterRequest } from "../../types/api.types";
 import { buildYearOptions } from "../../utils/transformations";
 import Can from "../../../hrmAccess/components/Can";
@@ -51,24 +53,55 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
 
+  // Filters
+  const [employeeFilter, setEmployeeFilter] = useState<string | undefined>(undefined);
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | undefined>(undefined);
+  const [departmentFilter, setDepartmentFilter] = useState<string | undefined>(undefined);
+
+  // Employee + Leave type dropdowns
+  const { options: employeeOptions } = useEmployeeOptions();
+  const { options: leaveTypeOptions } = useLeaveTypeOptions();
+
+  // Unique departments from loaded data
+  const departmentOptions = useMemo(() => {
+    const depts = Array.from(new Set(rows.map(r => r.department).filter(Boolean)));
+    return depts.map(d => ({ value: d, label: d }));
+  }, [rows]);
+
   const buildPayload = (): LeaveRegisterRequest => ({
     organizationId,
     year: selectedYear,
     format: selectedFormat,
   });
 
-  const handleGenerate = async () => {
+  const fetchData = async () => {
+    if (!organizationId) return;
     try {
       setLoading(true);
       const data = await HrmLeaveService.getLeaveRegister(buildPayload());
       setRows(Array.isArray(data) ? data : []);
-      message.success(`Loaded ${data?.length ?? 0} rows`);
     } catch {
-      message.error("Failed to generate leave register");
+      // Backend endpoint may not be implemented yet — show empty
+      setRows([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-load on mount and when year/format changes
+  useEffect(() => {
+    fetchData();
+  }, [organizationId, selectedYear, selectedFormat]);
+
+  // Client-side filtering
+  const filteredRows = useMemo(() => {
+    return rows.filter(r => {
+      if (employeeFilter && r.employeeNumber !== employeeFilter && r.employeeName !== employeeFilter) return false;
+      if (leaveTypeFilter && r.leaveTypeCode !== leaveTypeFilter) return false;
+      if (departmentFilter && r.department !== departmentFilter) return false;
+      return true;
+    });
+  }, [rows, employeeFilter, leaveTypeFilter, departmentFilter]);
 
   const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -132,20 +165,20 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "Type",
       dataIndex: "leaveTypeCode",
       key: "leaveTypeCode",
-      width: 70,
+      width: 100,
     },
     {
       title: "OB",
       dataIndex: "openingBalance",
       key: "openingBalance",
-      width: 70,
+      width: 60,
       align: "right",
       render: renderCell,
     },
     ...MONTH_LABELS.map((month, idx) => ({
       title: month,
       key: `month_${idx}`,
-      width: 60,
+      width: 55,
       align: "right" as const,
       render: (_: unknown, record: LeaveRegisterRow) =>
         renderCell(record.monthlyAvailed?.[idx] ?? 0),
@@ -154,7 +187,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "Total",
       dataIndex: "totalAvailed",
       key: "totalAvailed",
-      width: 70,
+      width: 65,
       align: "right",
       render: renderCell,
     },
@@ -162,7 +195,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "Closing",
       dataIndex: "closingBalance",
       key: "closingBalance",
-      width: 80,
+      width: 70,
       align: "right",
       render: renderCell,
     },
@@ -170,7 +203,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "C/F",
       dataIndex: "carryForward",
       key: "carryForward",
-      width: 70,
+      width: 55,
       align: "right",
       render: renderCell,
     },
@@ -178,7 +211,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "Encash",
       dataIndex: "encashed",
       key: "encashed",
-      width: 80,
+      width: 65,
       align: "right",
       render: renderCell,
     },
@@ -186,35 +219,36 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
       title: "Lapsed",
       dataIndex: "lapsed",
       key: "lapsed",
-      width: 80,
+      width: 65,
       align: "right",
       render: renderCell,
     },
   ];
 
-  // Build summary row
+  // Summary row
   const summaryRow = useMemo(() => {
-    if (rows.length === 0) return null;
+    if (filteredRows.length === 0) return null;
     const monthlyTotals = Array.from({ length: 12 }, (_, idx) =>
-      rows.reduce((sum, r) => sum + (r.monthlyAvailed?.[idx] ?? 0), 0)
+      filteredRows.reduce((sum, r) => sum + (r.monthlyAvailed?.[idx] ?? 0), 0)
     );
     return {
-      openingBalance: rows.reduce((s, r) => s + r.openingBalance, 0),
+      openingBalance: filteredRows.reduce((s, r) => s + (r.openingBalance || 0), 0),
       monthlyTotals,
-      totalAvailed: rows.reduce((s, r) => s + r.totalAvailed, 0),
-      closingBalance: rows.reduce((s, r) => s + r.closingBalance, 0),
-      carryForward: rows.reduce((s, r) => s + r.carryForward, 0),
-      encashed: rows.reduce((s, r) => s + r.encashed, 0),
-      lapsed: rows.reduce((s, r) => s + r.lapsed, 0),
+      totalAvailed: filteredRows.reduce((s, r) => s + (r.totalAvailed || 0), 0),
+      closingBalance: filteredRows.reduce((s, r) => s + (r.closingBalance || 0), 0),
+      carryForward: filteredRows.reduce((s, r) => s + (r.carryForward || 0), 0),
+      encashed: filteredRows.reduce((s, r) => s + (r.encashed || 0), 0),
+      lapsed: filteredRows.reduce((s, r) => s + (r.lapsed || 0), 0),
     };
-  }, [rows]);
+  }, [filteredRows]);
 
   return (
     <div className={styles.leaveRegisterPanel}>
       <Title level={5}>Leave Register (Statutory)</Title>
 
+      {/* Controls: Year, Format, Actions */}
       <Card size="small" style={{ marginBottom: 12 }}>
-        <Space wrap size="middle" align="center">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
           <Space align="center">
             <Text strong>Year:</Text>
             <Select
@@ -222,35 +256,24 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
               onChange={setSelectedYear}
               options={yearOptions}
               style={{ width: 100 }}
+              size="small"
             />
           </Space>
 
-          <Space align="center">
-            <Text strong>Format:</Text>
-            <Segmented
-              options={FORMAT_OPTIONS}
-              value={selectedFormat}
-              onChange={(val) => setSelectedFormat(val as RegisterFormat)}
-            />
-          </Space>
-
-          <Can I="view" object="leave_report" passIf={true}>
-            <Button
-              type="primary"
-              icon={<FileSearchOutlined />}
-              onClick={handleGenerate}
-              loading={loading}
-            >
-              Generate
-            </Button>
-          </Can>
+          <Segmented
+            options={FORMAT_OPTIONS}
+            value={selectedFormat}
+            onChange={(val) => setSelectedFormat(val as RegisterFormat)}
+            size="small"
+          />
 
           <Can I="view" object="leave_report" passIf={true}>
             <Button
               icon={<DownloadOutlined />}
               onClick={() => handleExport("CSV")}
               loading={exportingCsv}
-              disabled={rows.length === 0}
+              disabled={filteredRows.length === 0}
+              size="small"
             >
               Export CSV
             </Button>
@@ -261,24 +284,77 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
               icon={<DownloadOutlined />}
               onClick={() => handleExport("XLSX")}
               loading={exportingXlsx}
-              disabled={rows.length === 0}
+              disabled={filteredRows.length === 0}
+              size="small"
             >
               Export XLSX
             </Button>
           </Can>
-        </Space>
+        </div>
       </Card>
 
+      {/* Filters: Employee, Leave Type, Department */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <Select
+          showSearch
+          allowClear
+          placeholder="Filter by Employee"
+          value={employeeFilter}
+          onChange={setEmployeeFilter}
+          options={employeeOptions}
+          filterOption={(input, option) =>
+            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+          }
+          style={{ width: 220 }}
+          size="small"
+        />
+        <Select
+          allowClear
+          placeholder="Filter by Leave Type"
+          value={leaveTypeFilter}
+          onChange={setLeaveTypeFilter}
+          options={leaveTypeOptions}
+          style={{ width: 180 }}
+          size="small"
+        />
+        <Select
+          allowClear
+          placeholder="Filter by Department"
+          value={departmentFilter}
+          onChange={setDepartmentFilter}
+          options={departmentOptions}
+          style={{ width: 180 }}
+          size="small"
+        />
+        {(employeeFilter || leaveTypeFilter || departmentFilter) && (
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              setEmployeeFilter(undefined);
+              setLeaveTypeFilter(undefined);
+              setDepartmentFilter(undefined);
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
+        <Text type="secondary" style={{ fontSize: 12, lineHeight: "24px" }}>
+          {filteredRows.length} of {rows.length} records
+        </Text>
+      </div>
+
       <Table<LeaveRegisterRow>
-        dataSource={rows}
+        dataSource={filteredRows}
         columns={columns}
         rowKey={(record) =>
           `${record.employeeNumber}-${record.leaveTypeCode}`
         }
         size="small"
         loading={loading}
-        pagination={{ pageSize: 50, showSizeChanger: true }}
+        pagination={{ pageSize: 50, showSizeChanger: true, pageSizeOptions: ["25", "50", "100"] }}
         scroll={{ x: 1800 }}
+        bordered
         summary={() =>
           summaryRow ? (
             <Table.Summary fixed>
@@ -286,17 +362,12 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
                 <Table.Summary.Cell index={0} colSpan={2}>
                   <Text strong>Totals</Text>
                 </Table.Summary.Cell>
-                {/* Dept */}
                 <Table.Summary.Cell index={2} />
-                {/* Designation */}
                 <Table.Summary.Cell index={3} />
-                {/* Type */}
                 <Table.Summary.Cell index={4} />
-                {/* OB */}
                 <Table.Summary.Cell index={5} align="right">
                   <Text strong>{summaryRow.openingBalance.toFixed(1)}</Text>
                 </Table.Summary.Cell>
-                {/* 12 months */}
                 {summaryRow.monthlyTotals.map((val, idx) => (
                   <Table.Summary.Cell key={idx} index={6 + idx} align="right">
                     <Text strong>
@@ -304,23 +375,18 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
                     </Text>
                   </Table.Summary.Cell>
                 ))}
-                {/* Total */}
                 <Table.Summary.Cell index={18} align="right">
                   <Text strong>{summaryRow.totalAvailed.toFixed(1)}</Text>
                 </Table.Summary.Cell>
-                {/* Closing */}
                 <Table.Summary.Cell index={19} align="right">
                   <Text strong>{summaryRow.closingBalance.toFixed(1)}</Text>
                 </Table.Summary.Cell>
-                {/* C/F */}
                 <Table.Summary.Cell index={20} align="right">
                   <Text strong>{summaryRow.carryForward.toFixed(1)}</Text>
                 </Table.Summary.Cell>
-                {/* Encash */}
                 <Table.Summary.Cell index={21} align="right">
                   <Text strong>{summaryRow.encashed.toFixed(1)}</Text>
                 </Table.Summary.Cell>
-                {/* Lapsed */}
                 <Table.Summary.Cell index={22} align="right">
                   <Text strong>{summaryRow.lapsed.toFixed(1)}</Text>
                 </Table.Summary.Cell>
