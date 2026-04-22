@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { getOrganizationId } from '@/utils/cookieUtils';
+import React, { useEffect, useState } from "react";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import { Tabs, Form, Checkbox, InputNumber, Input, Button, message } from "antd";
-import { parseCookies } from "nookies";
 import { HrmTravelService } from "../../services/hrmTravelService";
 import Can from "../../../hrmAccess/components/Can";
 import type { TravelPolicy, TravelType, TravelMode } from "../../types/domain.types";
@@ -15,61 +14,91 @@ interface Props {
   onSaved?: () => void;
 }
 
-const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
-  const cookies = parseCookies();
-  const organizationId = getOrganizationId();
-  const [saving, setSaving] = useState(false);
-  const [form] = Form.useForm();
+interface PolicyFormValues {
+  allowedModes: TravelMode[];
+  escalationDays: number;
+  fileTypes: string;
+  maxSize: number;
+  maxCount: number;
+}
 
-  const renderTab = (policy: TravelPolicy) => (
-    <Form
-      form={form}
-      layout="vertical"
-      initialValues={{
-        [`allowedModes_${policy.travelType}`]: policy.allowedModes,
-        [`escalationDays_${policy.travelType}`]: policy.escalationWindowDays,
-        [`fileTypes_${policy.travelType}`]: policy.allowedFileTypes.join(", "),
-        [`maxSize_${policy.travelType}`]: policy.maxFileSizeMb,
-        [`maxCount_${policy.travelType}`]: policy.maxFileCount,
-      }}
-    >
-      <Form.Item label="Allowed Travel Modes" name={`allowedModes_${policy.travelType}`}>
+const policyToValues = (policy: TravelPolicy): PolicyFormValues => ({
+  allowedModes: policy.allowedModes,
+  escalationDays: policy.escalationWindowDays,
+  fileTypes: policy.allowedFileTypes.join(", "),
+  maxSize: policy.maxFileSizeMb,
+  maxCount: policy.maxFileCount,
+});
+
+const PolicyTypeForm: React.FC<{
+  policy: TravelPolicy;
+  onSave: (type: TravelType, values: PolicyFormValues) => Promise<void>;
+  saving: boolean;
+}> = ({ policy, onSave, saving }) => {
+  const [form] = Form.useForm<PolicyFormValues>();
+
+  useEffect(() => {
+    form.setFieldsValue(policyToValues(policy));
+  }, [policy, form]);
+
+  return (
+    <Form form={form} layout="vertical" initialValues={policyToValues(policy)}>
+      <Form.Item label="Allowed Travel Modes" name="allowedModes">
         <Checkbox.Group options={ALL_MODES.map((m) => ({ label: m, value: m }))} />
       </Form.Item>
-      <Form.Item label="Escalation Window (days)" name={`escalationDays_${policy.travelType}`}>
+      <Form.Item label="Escalation Window (days)" name="escalationDays">
         <InputNumber min={1} max={30} style={{ width: 120 }} />
       </Form.Item>
-      <Form.Item label="Allowed File Types" name={`fileTypes_${policy.travelType}`}>
+      <Form.Item label="Allowed File Types" name="fileTypes">
         <Input placeholder="pdf, jpg, png" style={{ width: 300 }} />
       </Form.Item>
-      <Form.Item label="Max File Size (MB)" name={`maxSize_${policy.travelType}`}>
+      <Form.Item label="Max File Size (MB)" name="maxSize">
         <InputNumber min={1} max={50} style={{ width: 120 }} />
       </Form.Item>
-      <Form.Item label="Max File Count" name={`maxCount_${policy.travelType}`}>
+      <Form.Item label="Max File Count" name="maxCount">
         <InputNumber min={1} max={20} style={{ width: 120 }} />
       </Form.Item>
+      <div style={{ textAlign: "right" }}>
+        <Can I="edit">
+          <Button
+            type="primary"
+            loading={saving}
+            onClick={async () => {
+              const values = await form.validateFields();
+              await onSave(policy.travelType, values);
+            }}
+          >
+            Save {policy.travelType.charAt(0) + policy.travelType.slice(1).toLowerCase()} Policy
+          </Button>
+        </Can>
+      </div>
     </Form>
   );
+};
 
-  const handleSave = async () => {
-    const values = await form.validateFields();
+const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
+  const organizationId = getOrganizationId();
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (type: TravelType, values: PolicyFormValues) => {
     setSaving(true);
     try {
-      const types: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
-      for (const t of types) {
-        await HrmTravelService.updatePolicy({ organizationId,
-          travelType: t,
-          allowedModes: values[`allowedModes_${t}`],
-          escalationWindowDays: values[`escalationDays_${t}`],
-          allowedFileTypes: (values[`fileTypes_${t}`] as string).split(",").map((s: string) => s.trim()),
-          maxFileSizeMb: values[`maxSize_${t}`],
-          maxFileCount: values[`maxCount_${t}`],
-        });
-      }
-      message.success("Policies saved.");
+      await HrmTravelService.updatePolicy({
+        organizationId,
+        travelType: type,
+        allowedModes: values.allowedModes,
+        escalationWindowDays: values.escalationDays,
+        allowedFileTypes: values.fileTypes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        maxFileSizeMb: values.maxSize,
+        maxFileCount: values.maxCount,
+      });
+      message.success(`${type} policy saved.`);
       onSaved?.();
     } catch {
-      message.error("Failed to save policies.");
+      message.error(`Failed to save ${type} policy.`);
     } finally {
       setSaving(false);
     }
@@ -81,16 +110,9 @@ const TravelPolicyConfig: React.FC<Props> = ({ policies, onSaved }) => {
         items={policies.map((p) => ({
           key: p.travelType,
           label: p.travelType.charAt(0) + p.travelType.slice(1).toLowerCase(),
-          children: renderTab(p),
+          children: <PolicyTypeForm policy={p} onSave={handleSave} saving={saving} />,
         }))}
       />
-      <div style={{ textAlign: "right", marginTop: 16 }}>
-        <Can I="edit">
-          <Button type="primary" loading={saving} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </Can>
-      </div>
     </div>
   );
 };

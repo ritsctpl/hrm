@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import { Table, Empty } from "antd";
+import { Table, Empty, Tag, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { TravelRequest } from "../../types/domain.types";
-import TravelStatusChip from "../atoms/TravelStatusChip";
 import TravelTypeTag from "../atoms/TravelTypeTag";
 import SlaIndicator from "../atoms/SlaIndicator";
 import { formatDateRange, computeSlaInfo } from "../../utils/travelTransformations";
@@ -47,8 +46,19 @@ const ApproverInboxTable: React.FC<Props> = ({
     {
       title: "Type",
       key: "type",
-      width: 100,
-      render: (_, r) => <TravelTypeTag travelType={r.travelType} />,
+      width: 160,
+      render: (_, r) => (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <TravelTypeTag travelType={r.travelType} />
+          {r.escalationLevel > 0 && (
+            <Tooltip title={`Escalated to level ${r.escalationLevel}`}>
+              <Tag color="volcano" style={{ marginLeft: 2 }}>
+                L{r.escalationLevel}
+              </Tag>
+            </Tooltip>
+          )}
+        </span>
+      ),
     },
     {
       title: "Date(s)",
@@ -69,8 +79,8 @@ const ApproverInboxTable: React.FC<Props> = ({
     {
       title: "SLA",
       key: "sla",
-      width: 100,
-      render: (_, r) => <SlaIndicator sla={computeSlaInfo(r)} />,
+      width: 130,
+      render: (_, r) => <SlaIndicator sla={computeSlaInfo(r)} deadline={r.slaDeadline} />,
     },
   ];
 

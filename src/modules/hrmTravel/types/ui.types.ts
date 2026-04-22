@@ -1,6 +1,6 @@
 import type { TravelMode, TravelType } from "./domain.types";
 
-export type TravelScreenMode = "list" | "create" | "view" | "edit";
+export type TravelScreenMode = "list" | "create" | "view";
 
 export type TravelDetailTab = "details" | "cotravellers" | "attachments" | "timeline";
 

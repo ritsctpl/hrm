@@ -4,6 +4,7 @@ import React from "react";
 import { Form, Input, Radio, Button } from "antd";
 import type { TravelType, TravelMode } from "../../types/domain.types";
 import type { TravelFormState } from "../../types/ui.types";
+import type { TravelFormErrors } from "../../utils/travelValidations";
 import { ALLOWED_MODES_BY_TYPE, TRAVEL_MODE_LABELS } from "../../utils/travelConstants";
 import ItineraryRow from "../molecules/ItineraryRow";
 import styles from "../../styles/TravelForm.module.css";
@@ -12,11 +13,12 @@ interface Props {
   formState: TravelFormState;
   onChange: (changes: Partial<TravelFormState>) => void;
   readonly?: boolean;
+  errors?: TravelFormErrors;
 }
 
 const TRAVEL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
 
-const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) => {
+const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, errors = {} }) => {
   const allowedModes = formState.travelType
     ? ALLOWED_MODES_BY_TYPE[formState.travelType]
     : [];
@@ -25,21 +27,32 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
     <Form layout="vertical" component="div">
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Travel Type</div>
-        <Radio.Group
-          value={formState.travelType}
-          onChange={(e) => onChange({ travelType: e.target.value, travelMode: null })}
-          disabled={readonly}
+        <Form.Item
+          validateStatus={errors.travelType ? "error" : undefined}
+          help={errors.travelType}
+          style={{ marginBottom: 0 }}
         >
-          {TRAVEL_TYPES.map((t) => (
-            <Radio key={t} value={t}>
-              {t.charAt(0) + t.slice(1).toLowerCase()}
-            </Radio>
-          ))}
-        </Radio.Group>
+          <Radio.Group
+            value={formState.travelType}
+            onChange={(e) => onChange({ travelType: e.target.value, travelMode: null })}
+            disabled={readonly}
+          >
+            {TRAVEL_TYPES.map((t) => (
+              <Radio key={t} value={t}>
+                {t.charAt(0) + t.slice(1).toLowerCase()}
+              </Radio>
+            ))}
+          </Radio.Group>
+        </Form.Item>
       </div>
 
       <div className={styles.formSection}>
-        <Form.Item label="Purpose" required>
+        <Form.Item
+          label="Purpose"
+          required
+          validateStatus={errors.purpose ? "error" : undefined}
+          help={errors.purpose}
+        >
           <Input.TextArea
             placeholder="Official purpose description (max 500 characters)"
             maxLength={500}
@@ -55,7 +68,12 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Destination</div>
         <div className={styles.fieldRow}>
-          <Form.Item label="City" required>
+          <Form.Item
+            label="City"
+            required
+            validateStatus={errors.destinationCity ? "error" : undefined}
+            help={errors.destinationCity}
+          >
             <Input
               placeholder="City"
               value={formState.destinationCity}
@@ -64,7 +82,12 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
             />
           </Form.Item>
           {(formState.travelType === "DOMESTIC" || formState.travelType === "INTERNATIONAL") && (
-            <Form.Item label="State">
+            <Form.Item
+              label="State"
+              required
+              validateStatus={errors.destinationState ? "error" : undefined}
+              help={errors.destinationState}
+            >
               <Input
                 placeholder="State"
                 value={formState.destinationState}
@@ -74,7 +97,12 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
             </Form.Item>
           )}
           {formState.travelType === "INTERNATIONAL" && (
-            <Form.Item label="Country">
+            <Form.Item
+              label="Country"
+              required
+              validateStatus={errors.destinationCountry ? "error" : undefined}
+              help={errors.destinationCountry}
+            >
               <Input
                 placeholder="Country"
                 value={formState.destinationCountry}
@@ -94,6 +122,13 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
             value={formState}
             onChange={(field, value) => onChange({ [field]: value } as Partial<TravelFormState>)}
             readonly={readonly}
+            errors={{
+              travelDate: errors.travelDate,
+              startHour: errors.startHour,
+              endHour: errors.endHour,
+              startDate: errors.startDate,
+              endDate: errors.endDate,
+            }}
           />
         </div>
       )}
@@ -101,19 +136,25 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly }) =
       {allowedModes.length > 0 && (
         <div className={styles.formSection}>
           <div className={styles.sectionTitle}>Travel Mode</div>
-          <div className={styles.modeGroup}>
-            {allowedModes.map((mode: TravelMode) => (
-              <Button
-                key={mode}
-                type={formState.travelMode === mode ? "primary" : "default"}
-                onClick={() => !readonly && onChange({ travelMode: mode })}
-                disabled={readonly}
-                className={styles.modeButton}
-              >
-                {TRAVEL_MODE_LABELS[mode]}
-              </Button>
-            ))}
-          </div>
+          <Form.Item
+            validateStatus={errors.travelMode ? "error" : undefined}
+            help={errors.travelMode}
+            style={{ marginBottom: 0 }}
+          >
+            <div className={styles.modeGroup}>
+              {allowedModes.map((mode: TravelMode) => (
+                <Button
+                  key={mode}
+                  type={formState.travelMode === mode ? "primary" : "default"}
+                  onClick={() => !readonly && onChange({ travelMode: mode })}
+                  disabled={readonly}
+                  className={styles.modeButton}
+                >
+                  {TRAVEL_MODE_LABELS[mode]}
+                </Button>
+              ))}
+            </div>
+          </Form.Item>
         </div>
       )}
 

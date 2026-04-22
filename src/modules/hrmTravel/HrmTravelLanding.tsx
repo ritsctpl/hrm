@@ -15,9 +15,11 @@ import TravelPolicyConfig from "./components/organisms/TravelPolicyConfig";
 import TravelMasterDetailTemplate from "./components/templates/TravelMasterDetailTemplate";
 import TravelApproverTemplate from "./components/templates/TravelApproverTemplate";
 import TravelScreenHeader from "./components/organisms/TravelScreenHeader";
+import TravelReportScreen from "./components/organisms/TravelReportScreen";
 import HrmTravelScreen from "./HrmTravelScreen";
 import Can from "../hrmAccess/components/Can";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { HrmTravelService } from "./services/hrmTravelService";
 import styles from "./styles/Travel.module.css";
 
 const { Text } = Typography;
@@ -29,6 +31,14 @@ const HrmTravelLanding: React.FC = () => {
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
   const role = cookies.userRole ?? "EMPLOYEE";
+  const employeeId =
+    cookies.employeeId ??
+    cookies.employeeCode ??
+    cookies.username ??
+    cookies.userId ??
+    cookies.user ??
+    cookies.rl_user_id ??
+    "";
 
   const {
     myRequests,
@@ -169,9 +179,11 @@ const HrmTravelLanding: React.FC = () => {
 
   // ── Supervisor / Admin view with tabs ──────────────────────────────────
 
-  const pendingRequests = approverInbox.filter((r) => r.status === "PENDING_APPROVAL" || r.status === "ESCALATED" && r.escalationLevel === 0);
+  const pendingRequests = approverInbox.filter((r) => r.status === "PENDING_APPROVAL");
   const escalatedRequests = approverInbox.filter((r) => r.status === "ESCALATED");
-  const decidedRequests = approverInbox.filter((r) => !["PENDING_APPROVAL", "ESCALATED"].includes(r.status));
+  const decidedRequests = approverInbox.filter(
+    (r) => !["PENDING_APPROVAL", "ESCALATED"].includes(r.status),
+  );
 
   const makeInboxPanel = (items: typeof approverInbox) => (
     <TravelMasterDetailTemplate
@@ -203,6 +215,46 @@ const HrmTravelLanding: React.FC = () => {
       ),
     },
   ];
+
+  if (isSupervisor || isAdmin) {
+    tabItems.push({
+      key: "reportPendingAging",
+      label: "Pending Aging Report",
+      children: (
+        <TravelReportScreen
+          title="Pending Approval — Aging Report"
+          description="Travel requests awaiting approval, with days-since-submission aging."
+          organizationId={organizationId}
+          empId={employeeId}
+          fetcher={(p) =>
+            HrmTravelService.reportPendingAging({ organizationId: p.organizationId, empId: p.empId })
+          }
+        />
+      ),
+    });
+    tabItems.push({
+      key: "reportByTypeDate",
+      label: "By Type & Date Report",
+      children: (
+        <TravelReportScreen
+          title="Travel Reports by Type & Date"
+          description="All travel requests in the selected window, optionally filtered by travel type."
+          organizationId={organizationId}
+          empId={employeeId}
+          fetcher={(p) =>
+            HrmTravelService.reportByTypeDate({
+              organizationId: p.organizationId,
+              fromDate: p.fromDate ?? "",
+              toDate: p.toDate ?? "",
+              travelType: p.travelType,
+            })
+          }
+          requireDateRange
+          showTypeFilter
+        />
+      ),
+    });
+  }
 
   if (isAdmin) {
     tabItems.push({

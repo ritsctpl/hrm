@@ -17,8 +17,6 @@ export function useTravelData() {
     setListLoading,
     setApproverInbox,
     setInboxLoading,
-    setSelectedRequest,
-    setDetailLoading,
     setError,
     statusFilter,
     typeFilter,
@@ -63,18 +61,6 @@ export function useTravelData() {
     }
   }, [organizationId, employeeId, activeInboxTab]);
 
-  const loadRequestDetail = useCallback(async (handle: string) => {
-    setDetailLoading(true);
-    try {
-      const data = await HrmTravelService.getRequestByHandle({ organizationId, handle });
-      setSelectedRequest(data);
-    } catch {
-      message.error("Failed to load request details.");
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [organizationId]);
-
   const loadPolicies = useCallback(async () => {
     try {
       const data = await HrmTravelService.getPolicies({ organizationId });
@@ -106,5 +92,5 @@ export function useTravelData() {
     }
   }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
 
-  return { loadMyRequests, loadApproverInbox, loadRequestDetail, loadPolicies, exportRequests };
+  return { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests };
 }

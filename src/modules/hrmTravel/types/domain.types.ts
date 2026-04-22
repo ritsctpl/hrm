@@ -30,10 +30,13 @@ export interface TravelRequest {
   endDate?: string;
   remarks?: string;
   onDutyApplied: boolean;
+  onDutyEntryRef?: string;
   status: TravelStatus;
   currentApproverId?: string;
   currentApproverName?: string;
+  approverChainSnapshot?: ApproverChainEntry[];
   escalationLevel: number;
+  escalationDueDate?: string;
   slaDeadline?: string;
   slaBreached: boolean;
   rejectionReason?: string;
@@ -53,6 +56,18 @@ export interface CoTravellerDto {
   department: string;
   hasConflict: boolean;
   conflictReason?: string;
+  onDutyEntryRef?: string;
+  localStartTime?: string;
+  localEndTime?: string;
+}
+
+export interface ApproverChainEntry {
+  level: number;
+  approverId: string;
+  approverName?: string;
+  approverRole?: string;
+  status?: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "SKIPPED";
+  actionAt?: string;
 }
 
 export interface TravelAttachment {

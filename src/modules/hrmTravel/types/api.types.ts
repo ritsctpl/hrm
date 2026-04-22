@@ -200,7 +200,11 @@ export interface TravelAdvance {
   purpose: string;
   status: "REQUESTED" | "APPROVED" | "SETTLED" | "REJECTED";
   approvedBy?: string;
+  approvedAt?: string;
   approvalRemarks?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionRemarks?: string;
   expenseHandle?: string;
   settledBy?: string;
   settledAt?: string;

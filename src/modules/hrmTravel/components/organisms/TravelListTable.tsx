@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Table, Empty, Button } from "antd";
+import { Table, Empty, Button, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import type { TravelRequest } from "../../types/domain.types";
@@ -61,26 +61,37 @@ const TravelListTable: React.FC<Props> = ({
       render: (_, r) => <span style={{ fontSize: 12 }}>{formatDateRange(r)}</span>,
     },
     {
+      title: "With",
+      key: "approver",
+      width: 130,
+      render: (_, r) =>
+        r.currentApproverName ? (
+          <span style={{ fontSize: 12 }} title={r.currentApproverId}>
+            {r.currentApproverName}
+          </span>
+        ) : (
+          <span style={{ fontSize: 12, color: "#8c8c8c" }}>—</span>
+        ),
+    },
+    {
       title: "Status",
       key: "status",
-      width: 160,
+      width: 180,
       render: (_, r) => (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <TravelStatusChip status={r.status} size="sm" />
           {r.onDutyApplied && (
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#52c41a",
-                display: "inline-block",
-              }}
-              title="On Duty Applied"
-            />
+            <Tag color="green" style={{ marginLeft: 2 }} title="On-duty entry auto-applied">
+              On Duty
+            </Tag>
+          )}
+          {r.escalationLevel > 0 && (
+            <Tag color="volcano" style={{ marginLeft: 2 }} title={`Escalated to level ${r.escalationLevel}`}>
+              L{r.escalationLevel}
+            </Tag>
           )}
           {(r.status === "PENDING_APPROVAL" || r.status === "ESCALATED") && (
-            <SlaIndicator sla={computeSlaInfo(r)} />
+            <SlaIndicator sla={computeSlaInfo(r)} deadline={r.slaDeadline} />
           )}
         </div>
       ),

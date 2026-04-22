@@ -42,7 +42,8 @@ export const ALLOWED_MODES_BY_TYPE: Record<TravelType, TravelMode[]> = {
 };
 
 export const CANCELLABLE_STATUSES: TravelStatus[] = ["DRAFT", "PENDING_APPROVAL"];
-export const RECALLABLE_STATUSES: TravelStatus[] = ["PENDING_APPROVAL", "ESCALATED"];
+// Backend permits recall only on PENDING_APPROVAL — keep this aligned.
+export const RECALLABLE_STATUSES: TravelStatus[] = ["PENDING_APPROVAL"];
 
 export const SLA_WARNING_DAYS = 3;
 

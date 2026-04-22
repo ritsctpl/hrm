@@ -1,9 +1,17 @@
 "use client";
 
 import React from "react";
-import { Form, Input, TimePicker, DatePicker } from "antd";
+import { Form, TimePicker, DatePicker } from "antd";
 import type { TravelType } from "../../types/domain.types";
 import dayjs from "dayjs";
+
+interface RowErrors {
+  travelDate?: string;
+  startHour?: string;
+  endHour?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 interface Props {
   travelType: TravelType;
@@ -16,16 +24,29 @@ interface Props {
   };
   onChange?: (field: string, value: string | null) => void;
   readonly?: boolean;
+  errors?: RowErrors;
 }
 
-const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, readonly }) => {
+const ItineraryRow: React.FC<Props> = ({
+  travelType,
+  value = {},
+  onChange,
+  readonly,
+  errors = {},
+}) => {
   const timeFormat = "HH:mm";
   const dateFormat = "DD/MM/YYYY";
 
   if (travelType === "LOCAL") {
     return (
       <div style={{ display: "flex", gap: 16 }}>
-        <Form.Item label="Travel Date" style={{ flex: 1 }}>
+        <Form.Item
+          label="Travel Date"
+          required
+          style={{ flex: 1 }}
+          validateStatus={errors.travelDate ? "error" : undefined}
+          help={errors.travelDate}
+        >
           <DatePicker
             format={dateFormat}
             disabled={readonly}
@@ -34,7 +55,13 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
             style={{ width: "100%" }}
           />
         </Form.Item>
-        <Form.Item label="Start Hour" style={{ flex: 1 }}>
+        <Form.Item
+          label="Start Hour"
+          required
+          style={{ flex: 1 }}
+          validateStatus={errors.startHour ? "error" : undefined}
+          help={errors.startHour}
+        >
           <TimePicker
             format={timeFormat}
             disabled={readonly}
@@ -43,7 +70,13 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
             style={{ width: "100%" }}
           />
         </Form.Item>
-        <Form.Item label="End Hour" style={{ flex: 1 }}>
+        <Form.Item
+          label="End Hour"
+          required
+          style={{ flex: 1 }}
+          validateStatus={errors.endHour ? "error" : undefined}
+          help={errors.endHour}
+        >
           <TimePicker
             format={timeFormat}
             disabled={readonly}
@@ -58,7 +91,13 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
 
   return (
     <div style={{ display: "flex", gap: 16 }}>
-      <Form.Item label="Start Date" style={{ flex: 1 }}>
+      <Form.Item
+        label="Start Date"
+        required
+        style={{ flex: 1 }}
+        validateStatus={errors.startDate ? "error" : undefined}
+        help={errors.startDate}
+      >
         <DatePicker
           format={dateFormat}
           disabled={readonly}
@@ -67,7 +106,13 @@ const ItineraryRow: React.FC<Props> = ({ travelType, value = {}, onChange, reado
           style={{ width: "100%" }}
         />
       </Form.Item>
-      <Form.Item label="End Date" style={{ flex: 1 }}>
+      <Form.Item
+        label="End Date"
+        required
+        style={{ flex: 1 }}
+        validateStatus={errors.endDate ? "error" : undefined}
+        help={errors.endDate}
+      >
         <DatePicker
           format={dateFormat}
           disabled={readonly}

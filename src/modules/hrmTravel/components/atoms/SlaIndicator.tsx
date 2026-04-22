@@ -1,19 +1,31 @@
 "use client";
 
 import React from "react";
-import { Tag } from "antd";
+import { Tag, Tooltip } from "antd";
+import { ClockCircleOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import type { SlaInfo } from "../../types/ui.types";
 
 interface Props {
   sla: SlaInfo;
+  /** Optional ISO deadline string for the tooltip body */
+  deadline?: string;
 }
 
-const SlaIndicator: React.FC<Props> = ({ sla }) => {
+const SlaIndicator: React.FC<Props> = ({ sla, deadline }) => {
   if (!sla.label) return null;
+  const tip = deadline
+    ? `Due by ${dayjs(deadline).format("DD MMM YYYY, hh:mm A")}`
+    : sla.label;
   return (
-    <Tag color={sla.isOverdue ? "error" : sla.color === "warning" ? "warning" : "success"}>
-      {sla.isOverdue ? "Overdue" : sla.label}
-    </Tag>
+    <Tooltip title={tip}>
+      <Tag
+        icon={<ClockCircleOutlined />}
+        color={sla.isOverdue ? "error" : sla.color === "warning" ? "warning" : "success"}
+      >
+        {sla.isOverdue ? "Overdue" : sla.label}
+      </Tag>
+    </Tooltip>
   );
 };
 

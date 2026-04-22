@@ -10,6 +10,8 @@ import {
   DeleteOutlined,
   StopOutlined,
   DollarOutlined,
+  CheckOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import TravelScreenHeader from "./components/organisms/TravelScreenHeader";
@@ -19,6 +21,7 @@ import TravelRequestForm from "./components/organisms/TravelRequestForm";
 import CoTravellerPanel from "./components/organisms/CoTravellerPanel";
 import AttachmentsPanel from "./components/organisms/AttachmentsPanel";
 import ApprovalTimeline from "./components/organisms/ApprovalTimeline";
+import ApproverChainPanel from "./components/organisms/ApproverChainPanel";
 import ApprovalActionBar from "./components/molecules/ApprovalActionBar";
 import TravelStatusChip from "./components/atoms/TravelStatusChip";
 import Can from "../hrmAccess/components/Can";
@@ -26,7 +29,7 @@ import type { TravelRequest } from "./types/domain.types";
 import type { CoTravellerDto } from "./types/domain.types";
 import type { TravelAdvance } from "./types/api.types";
 import { CANCELLABLE_STATUSES, RECALLABLE_STATUSES } from "./utils/travelConstants";
-import { isTravelFormValid } from "./utils/travelValidations";
+import { isTravelFormValid, validateTravelForm } from "./utils/travelValidations";
 import { HrmTravelService } from "./services/hrmTravelService";
 import styles from "./styles/Travel.module.css";
 
@@ -41,7 +44,7 @@ const ADVANCE_STATUS_COLORS: Record<string, string> = {
 
 interface Props {
   request: TravelRequest | null;
-  mode: "create" | "view" | "edit";
+  mode: "create" | "view";
   isApprover?: boolean;
   onBack: () => void;
   onActionComplete: () => void;
@@ -76,14 +79,25 @@ const HrmTravelScreen: React.FC<Props> = ({
   const [advanceAmount, setAdvanceAmount] = useState<number | null>(null);
   const [advanceCurrency, setAdvanceCurrency] = useState("INR");
   const [advanceLoading, setAdvanceLoading] = useState(false);
+  const [advanceApprovalRemarks, setAdvanceApprovalRemarks] = useState("");
+  const [approveAdvanceModal, setApproveAdvanceModal] = useState(false);
+  const [settleAdvanceModal, setSettleAdvanceModal] = useState(false);
+  const [settleExpenseHandle, setSettleExpenseHandle] = useState("");
 
   const isReadonly = mode === "view";
   const isNew = mode === "create";
   const canCancel = request && CANCELLABLE_STATUSES.includes(request.status);
   const canRecall = request && RECALLABLE_STATUSES.includes(request.status);
   const canDelete = request && request.status === "DRAFT";
-  const formValid = isTravelFormValid(formState);
+  const validationCtx = {
+    coTravellers: request?.coTravellers ?? [],
+  };
+  const formErrors = isReadonly ? {} : validateTravelForm(formState, validationCtx);
+  const formValid = isTravelFormValid(formState, validationCtx);
   const canRequestAdvance = request && request.status === "APPROVED" && !advance;
+  // Approver/admin can approve REQUESTED advances; finance/admin can settle APPROVED ones.
+  const canApproveAdvance = !!(isApprover && advance && advance.status === "REQUESTED");
+  const canSettleAdvance = !!(advance && advance.status === "APPROVED");
 
   // Load advance on mount for approved requests
   useEffect(() => {
@@ -149,6 +163,50 @@ const HrmTravelScreen: React.FC<Props> = ({
   };
 
   // Travel Advance handlers
+  const handleApproveAdvance = async (approve: boolean) => {
+    if (!advance?.handle) return;
+    setAdvanceLoading(true);
+    try {
+      if (approve) {
+        const result = await HrmTravelService.approveAdvance({
+          organizationId,
+          handle: advance.handle,
+          approvedBy: employeeId,
+          remarks: advanceApprovalRemarks || undefined,
+        });
+        setAdvance(result);
+        message.success("Travel advance approved.");
+      }
+      setApproveAdvanceModal(false);
+      setAdvanceApprovalRemarks("");
+    } catch {
+      message.error("Failed to update advance status.");
+    } finally {
+      setAdvanceLoading(false);
+    }
+  };
+
+  const handleSettleAdvance = async () => {
+    if (!advance?.handle || !settleExpenseHandle.trim()) return;
+    setAdvanceLoading(true);
+    try {
+      const result = await HrmTravelService.settleAdvance({
+        organizationId,
+        handle: advance.handle,
+        expenseHandle: settleExpenseHandle.trim(),
+        settledBy: employeeId,
+      });
+      setAdvance(result);
+      setSettleAdvanceModal(false);
+      setSettleExpenseHandle("");
+      message.success("Advance settled against expense.");
+    } catch {
+      message.error("Failed to settle advance.");
+    } finally {
+      setAdvanceLoading(false);
+    }
+  };
+
   const handleRequestAdvance = async () => {
     if (!request?.handle || !advanceAmount) return;
     setAdvanceLoading(true);
@@ -236,18 +294,43 @@ const HrmTravelScreen: React.FC<Props> = ({
       title="Travel Advance"
       style={{ margin: "12px 16px 0" }}
       extra={
-        canRequestAdvance ? (
-          <Can I="add">
-            <Button
-              type="primary"
-              size="small"
-              icon={<DollarOutlined />}
-              onClick={() => setAdvanceModalOpen(true)}
-            >
-              Request Advance
-            </Button>
-          </Can>
-        ) : null
+        <Space>
+          {canRequestAdvance && (
+            <Can I="add">
+              <Button
+                type="primary"
+                size="small"
+                icon={<DollarOutlined />}
+                onClick={() => setAdvanceModalOpen(true)}
+              >
+                Request Advance
+              </Button>
+            </Can>
+          )}
+          {canApproveAdvance && (
+            <Can I="edit">
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={() => setApproveAdvanceModal(true)}
+              >
+                Approve Advance
+              </Button>
+            </Can>
+          )}
+          {canSettleAdvance && (
+            <Can I="edit">
+              <Button
+                size="small"
+                icon={<LinkOutlined />}
+                onClick={() => setSettleAdvanceModal(true)}
+              >
+                Settle with Expense
+              </Button>
+            </Can>
+          )}
+        </Space>
       }
     >
       {advance ? (
@@ -261,10 +344,33 @@ const HrmTravelScreen: React.FC<Props> = ({
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Requested">
-            {advance.createdDateTime}
+            {advance.createdDateTime} by {advance.createdBy}
           </Descriptions.Item>
+          {advance.approvedBy && (
+            <Descriptions.Item label="Approved">
+              {advance.approvedAt ?? "—"} by {advance.approvedBy}
+            </Descriptions.Item>
+          )}
+          {advance.rejectedBy && (
+            <Descriptions.Item label="Rejected">
+              {advance.rejectedAt ?? "—"} by {advance.rejectedBy}
+            </Descriptions.Item>
+          )}
+          {advance.settledBy && (
+            <Descriptions.Item label="Settled">
+              {advance.settledAt ?? "—"} by {advance.settledBy}
+              {advance.expenseHandle ? ` (Expense: ${advance.expenseHandle})` : ""}
+            </Descriptions.Item>
+          )}
           {advance.approvalRemarks && (
-            <Descriptions.Item label="Remarks">{advance.approvalRemarks}</Descriptions.Item>
+            <Descriptions.Item label="Remarks" span={2}>
+              {advance.approvalRemarks}
+            </Descriptions.Item>
+          )}
+          {advance.rejectionRemarks && (
+            <Descriptions.Item label="Reject Reason" span={2}>
+              {advance.rejectionRemarks}
+            </Descriptions.Item>
           )}
         </Descriptions>
       ) : (
@@ -313,12 +419,29 @@ const HrmTravelScreen: React.FC<Props> = ({
                   {request.currentApproverName}
                 </Descriptions.Item>
               )}
+              {request.onDutyApplied && (
+                <Descriptions.Item label="On-Duty">
+                  {request.onDutyEntryRef ? (
+                    <span>
+                      Auto-applied — Ref:{" "}
+                      <code style={{ fontSize: 12 }}>{request.onDutyEntryRef}</code>
+                    </span>
+                  ) : (
+                    "Auto-applied on approval"
+                  )}
+                </Descriptions.Item>
+              )}
               {request.submittedAt && (
                 <Descriptions.Item label="Submitted On">{request.submittedAt}</Descriptions.Item>
               )}
             </Descriptions>
           ) : (
-            <TravelRequestForm formState={formState} onChange={updateFormState} readonly={isReadonly} />
+            <TravelRequestForm
+              formState={formState}
+              onChange={updateFormState}
+              readonly={isReadonly}
+              errors={formErrors}
+            />
           )}
         </div>
       ),
@@ -333,6 +456,7 @@ const HrmTravelScreen: React.FC<Props> = ({
             onAdd={handleCoTravellerAdd}
             onRemove={handleCoTravellerRemove}
             readonly={isReadonly}
+            error={formErrors.coTravellers}
           />
         </div>
       ),
@@ -354,6 +478,20 @@ const HrmTravelScreen: React.FC<Props> = ({
   ];
 
   if (!isNew && request) {
+    if (request.approverChainSnapshot && request.approverChainSnapshot.length > 0) {
+      tabItems.push({
+        key: "chain",
+        label: `Approver Chain (${request.approverChainSnapshot.length})`,
+        children: (
+          <div className={styles.detailBody}>
+            <ApproverChainPanel
+              chain={request.approverChainSnapshot}
+              currentApproverId={request.currentApproverId}
+            />
+          </div>
+        ),
+      });
+    }
     tabItems.push({
       key: "timeline",
       label: "Timeline",
@@ -370,7 +508,37 @@ const HrmTravelScreen: React.FC<Props> = ({
       <TravelScreenHeader
         title={barTitle}
         onBack={onBack}
-        extra={request?.status ? <TravelStatusChip status={request.status} /> : undefined}
+        extra={
+          request?.status ? (
+            <Space size={6}>
+              <TravelStatusChip status={request.status} />
+              {request.onDutyApplied && (
+                <Tag
+                  color="green"
+                  title={
+                    request.onDutyEntryRef
+                      ? `On-duty entry: ${request.onDutyEntryRef}`
+                      : "On-duty auto-applied"
+                  }
+                >
+                  On Duty
+                </Tag>
+              )}
+              {request.escalationLevel > 0 && (
+                <Tag
+                  color="volcano"
+                  title={
+                    request.escalationDueDate
+                      ? `Escalation L${request.escalationLevel} — due ${request.escalationDueDate}`
+                      : `Escalation level ${request.escalationLevel}`
+                  }
+                >
+                  Escalated L{request.escalationLevel}
+                </Tag>
+              )}
+            </Space>
+          ) : undefined
+        }
         actions={barActions}
       />
 
@@ -456,6 +624,53 @@ const HrmTravelScreen: React.FC<Props> = ({
         okButtonProps={{ danger: true }}
       >
         <Text>Are you sure you want to delete this draft request? This cannot be undone.</Text>
+      </Modal>
+
+      {/* Travel Advance Approve Modal */}
+      <Modal
+        title="Approve Travel Advance"
+        open={approveAdvanceModal}
+        onCancel={() => setApproveAdvanceModal(false)}
+        onOk={() => handleApproveAdvance(true)}
+        confirmLoading={advanceLoading}
+        okText="Approve"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {advance && (
+            <Text type="secondary">
+              {advance.currency} {advance.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })} for{" "}
+              {advance.employeeName}
+            </Text>
+          )}
+          <Input.TextArea
+            placeholder="Approval remarks (optional)"
+            value={advanceApprovalRemarks}
+            onChange={(e) => setAdvanceApprovalRemarks(e.target.value)}
+            rows={3}
+          />
+        </div>
+      </Modal>
+
+      {/* Travel Advance Settle Modal */}
+      <Modal
+        title="Settle Travel Advance"
+        open={settleAdvanceModal}
+        onCancel={() => setSettleAdvanceModal(false)}
+        onOk={handleSettleAdvance}
+        confirmLoading={advanceLoading}
+        okText="Settle"
+        okButtonProps={{ disabled: !settleExpenseHandle.trim() }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Text type="secondary">
+            Link this advance to a settled expense report. Enter the expense handle (UUID) issued by Finance.
+          </Text>
+          <Input
+            placeholder="Expense handle (e.g. 8c1d-…)"
+            value={settleExpenseHandle}
+            onChange={(e) => setSettleExpenseHandle(e.target.value)}
+          />
+        </div>
       </Modal>
 
       {/* Travel Advance Request Modal */}

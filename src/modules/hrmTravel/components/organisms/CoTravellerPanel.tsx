@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Input, Typography, Spin } from "antd";
+import { Alert, Input, Typography, Spin } from "antd";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
 import { useCoTravellerSearch } from "../../hooks/useCoTravellerSearch";
 import CoTravellerRow from "../molecules/CoTravellerRow";
@@ -15,9 +15,10 @@ interface Props {
   onAdd: (traveller: CoTravellerDto) => void;
   onRemove: (employeeId: string) => void;
   readonly?: boolean;
+  error?: string;
 }
 
-const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, readonly }) => {
+const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, readonly, error }) => {
   const [query, setQuery] = useState("");
   const { eligibleCoTravellers, coTravellerSearchLoading } = useHrmTravelStore();
   const { searchCoTravellers } = useCoTravellerSearch();
@@ -26,6 +27,14 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
 
   return (
     <div>
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          message={error}
+          style={{ marginBottom: 12 }}
+        />
+      )}
       {!readonly && (
         <div className={styles.searchRow}>
           <Input

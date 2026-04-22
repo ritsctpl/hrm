@@ -66,10 +66,15 @@ function mapTravelRequest(raw: any): TravelRequest {
     endDate: raw.endDate,
     remarks: raw.remarks,
     onDutyApplied: raw.onDutyApplied ?? false,
+    onDutyEntryRef: raw.onDutyEntryRef,
     status: raw.status,
     currentApproverId: raw.currentApproverId,
     currentApproverName: raw.currentApproverName,
+    approverChainSnapshot: Array.isArray(raw.approverChainSnapshot)
+      ? raw.approverChainSnapshot
+      : undefined,
     escalationLevel: raw.escalationLevel ?? 0,
+    escalationDueDate: raw.escalationDueDate,
     slaDeadline: raw.slaDeadline,
     slaBreached: raw.slaBreached ?? false,
     rejectionReason: raw.rejectionReason,
