@@ -103,15 +103,18 @@ export function useExpenseData() {
   const exportExpenses = useCallback(async () => {
     try {
       const blob = await HrmExpenseService.exportExpenses({ organizationId,
-        startDate: dateRange?.[0] ?? "",
-        endDate: dateRange?.[1] ?? "",
+        startDate: normalizeDateToISO(dateRange?.[0]),
+        endDate: normalizeDateToISO(dateRange?.[1]),
         status: statusFilter || undefined,
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `expense-reports-${new Date().toISOString().slice(0, 10)}.csv`;
+      // Firefox/Safari ignore .click() on detached anchors — append first.
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       message.success("Export downloaded.");
     } catch {

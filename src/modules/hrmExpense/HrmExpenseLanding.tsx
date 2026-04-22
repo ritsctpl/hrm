@@ -8,6 +8,7 @@ import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseData } from "./hooks/useExpenseData";
+import { useDebounce } from "./hooks/useDebounce";
 import ExpenseSearchBar from "./components/molecules/ExpenseSearchBar";
 import ExpenseListTable from "./components/organisms/ExpenseListTable";
 import SupervisorInboxTable from "./components/organisms/SupervisorInboxTable";
@@ -47,11 +48,15 @@ const HrmExpenseLanding: React.FC = () => {
     statusFilter,
     typeFilter,
     dateRange,
+    searchTerm,
     setSelectedExpense,
     setScreenMode,
     resetFormState,
     resetDraftItems,
   } = useHrmExpenseStore();
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [exporting, setExporting] = useState(false);
 
   const {
     loadMyExpenses,
@@ -89,10 +94,19 @@ const HrmExpenseLanding: React.FC = () => {
     }
   }, [organizationId, role]);
 
-  // Auto-trigger search when filters change
+  // Auto-trigger search when filters or debounced search term change
   useEffect(() => {
     loadMyExpenses();
-  }, [statusFilter, typeFilter, dateRange]);
+  }, [statusFilter, typeFilter, dateRange, debouncedSearchTerm]);
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      await exportExpenses();
+    } finally {
+      setExporting(false);
+    }
+  }, [exportExpenses]);
 
   const handleNewExpense = () => {
     setSelectedExpense(null);
@@ -179,7 +193,7 @@ const HrmExpenseLanding: React.FC = () => {
         title="My Expense Reports"
         actions={
           <Space>
-            <Button icon={<DownloadOutlined />} onClick={exportExpenses}>
+            <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
               Export CSV
             </Button>
             <Can I="add">

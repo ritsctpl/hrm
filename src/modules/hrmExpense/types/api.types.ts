@@ -202,8 +202,10 @@ export interface ExpenseCategoryDeleteRequest {
 
 export interface ExpenseExportRequest {
   organizationId: string;
-  startDate: string;
-  endDate: string;
+  /** Optional. When omitted, the backend exports all dates. */
+  startDate?: string;
+  /** Optional. When omitted, the backend exports all dates. */
+  endDate?: string;
   status?: string;
 }
 
