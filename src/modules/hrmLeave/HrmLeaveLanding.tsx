@@ -40,6 +40,7 @@ import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
 import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
 import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
+import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
 import { HR_ROLES, SUPERVISOR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -48,7 +49,11 @@ const { Text } = Typography;
 const HrmLeaveLanding: React.FC = () => {
   const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const employeeId = cookies.employeeId ?? cookies.userId ?? "";
+  // Use the resolved employee handle from currentEmployeeStore (populated
+  // during app init). This is the actual DB handle the backend expects,
+  // NOT the login username/email from cookies.
+  const currentEmployee = useCurrentEmployeeStore(s => s.data);
+  const employeeId = currentEmployee?.handle ?? cookies.employeeId ?? cookies.userId ?? "";
   const cookieRole = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
 
   // RBAC-driven role: canDelete -> Admin/HR, canEdit -> Supervisor, canAdd -> Employee.
