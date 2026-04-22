@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip } from "antd";
+import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, message } from "antd";
 import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined, CheckSquareOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
@@ -57,6 +57,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     setActiveDetailTab,
     approving,
     saving,
+    submitting,
     categories,
     mileageConfig,
     financePanel,
@@ -117,10 +118,33 @@ const HrmExpenseScreen: React.FC<Props> = ({
   }, [isFinance, expense?.employeeId, organizationId]);
 
   const handleSaveDraft = useCallback(async () => {
+    if (!formState.expenseType) {
+      message.error("Please select an expense type.");
+      return;
+    }
+    if (!formState.purpose?.trim()) {
+      message.error("Please enter a purpose.");
+      return;
+    }
     await saveDraft(formState, expense?.handle);
-  }, [formState, expense?.handle]);
+  }, [formState, expense?.handle, saveDraft]);
 
   const handleSubmit = useCallback(async () => {
+    if (!formState.fromDate || !formState.toDate) {
+      message.error("Please select From Date and To Date before submitting.");
+      return;
+    }
+    if (!formState.purpose?.trim()) {
+      message.error("Please enter a purpose before submitting.");
+      return;
+    }
+    const itemsCount = draftItems.length || expense?.items?.length || 0;
+    if (itemsCount === 0) {
+      message.error("Please add at least one expense line item before submitting.");
+      setActiveDetailTab("lineitems");
+      return;
+    }
+
     let handle = expense?.handle;
     if (!handle) {
       const saved = await saveDraft(formState, undefined);
@@ -129,7 +153,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     }
     await submitExpense(handle);
     onActionComplete();
-  }, [formState, expense?.handle]);
+  }, [formState, expense?.handle, expense?.items?.length, draftItems.length, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
 
   const handleUploadAttachment = async (file: File) => {
     if (!expense?.handle) return;
@@ -189,7 +213,12 @@ const HrmExpenseScreen: React.FC<Props> = ({
   ) : (
     <Space>
       <Can I={isNew ? "add" : "edit"}>
-        <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
+        <Button
+          icon={<SaveOutlined />}
+          onClick={handleSaveDraft}
+          loading={saving}
+          disabled={submitting || approving}
+        >
           Save Draft
         </Button>
       </Can>
@@ -198,8 +227,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
           type="primary"
           icon={<SendOutlined />}
           onClick={handleSubmit}
-          loading={saving}
-          disabled={!formValid}
+          loading={submitting}
+          disabled={saving || approving}
         >
           Submit
         </Button>

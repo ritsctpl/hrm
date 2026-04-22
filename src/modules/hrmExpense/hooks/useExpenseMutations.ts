@@ -102,8 +102,11 @@ export function useExpenseMutations() {
         message.success("Draft created.");
         return created;
       }
-    } catch {
-      message.error("Failed to save draft.");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const msg = err?.response?.data?.message || err?.message || "Failed to save draft.";
+      message.error(msg);
+      console.error("saveDraft error:", error);
       return null;
     } finally {
       setSaving(false);
