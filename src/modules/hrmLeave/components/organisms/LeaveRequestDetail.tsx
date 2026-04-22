@@ -7,6 +7,7 @@ import LeaveStatusChip from "../atoms/LeaveStatusChip";
 import HalfDayIndicator from "../atoms/HalfDayIndicator";
 import ValidationSummaryPanel from "../molecules/ValidationSummaryPanel";
 import ActionHistoryTimeline from "../molecules/ActionHistoryTimeline";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { LeaveRequestDetailProps } from "../../types/ui.types";
 import { DAY_TYPE_LABELS } from "../../utils/constants";
 import styles from "../../styles/HrmLeave.module.css";
@@ -21,6 +22,20 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
   onRejected,
   onCancelled,
 }) => {
+  const { employees } = useEmployeeOptions();
+
+  // Resolve approver name from directory. The currentApproverId may be
+  // a raw handle or prefixed like "SUPERVISOR_<handle>".
+  const resolveEmployeeName = (id: string | undefined): string => {
+    if (!id) return "";
+    // Strip role prefix if present (e.g., "SUPERVISOR_uuid" → "uuid")
+    const rawHandle = id.includes("_") ? id.substring(id.indexOf("_") + 1) : id;
+    const match = employees.find(
+      (e) => e.handle === id || e.handle === rawHandle || e.employeeCode === id || e.employeeCode === rawHandle,
+    );
+    return match ? `${match.fullName} (${match.employeeCode})` : id;
+  };
+
   const fromDate = new Date(request.startDate).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -60,7 +75,7 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
       <Divider style={{ margin: "12px 0" }} />
 
       <Descriptions size="small" column={1} bordered>
-        <Descriptions.Item label="Employee">{request.employeeName}</Descriptions.Item>
+        <Descriptions.Item label="Employee">{request.employeeName || resolveEmployeeName(request.employeeId)}</Descriptions.Item>
         <Descriptions.Item label="Leave Type">
           <LeaveTypeTag code={request.leaveTypeCode} name={request.leaveTypeName} />
         </Descriptions.Item>
@@ -81,7 +96,7 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
         <Descriptions.Item label="Total Days">{request.totalDays.toFixed(1)} days</Descriptions.Item>
         <Descriptions.Item label="Reason">{request.reason}</Descriptions.Item>
         {request.currentApproverId && (
-          <Descriptions.Item label="Current Approver">{request.currentApproverId}</Descriptions.Item>
+          <Descriptions.Item label="Current Approver">{resolveEmployeeName(request.currentApproverId)}</Descriptions.Item>
         )}
         {request.slaDeadline && (
           <Descriptions.Item label="SLA Deadline">
