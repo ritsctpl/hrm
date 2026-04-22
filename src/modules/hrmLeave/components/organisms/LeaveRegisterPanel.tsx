@@ -59,7 +59,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
   const [departmentFilter, setDepartmentFilter] = useState<string | undefined>(undefined);
 
   // Employee + Leave type dropdowns
-  const { options: employeeOptions } = useEmployeeOptions();
+  const { options: employeeOptions, employees } = useEmployeeOptions();
   const { options: leaveTypeOptions } = useLeaveTypeOptions();
 
   // Unique departments from loaded data
@@ -79,7 +79,21 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
     try {
       setLoading(true);
       const data = await HrmLeaveService.getLeaveRegister(buildPayload());
-      setRows(Array.isArray(data) ? data : []);
+      // Enrich: resolve employee name/dept from directory when backend returns UUID
+      const enriched = (Array.isArray(data) ? data : []).map(row => {
+        const emp = employees.find(e =>
+          e.handle === row.employeeNumber ||
+          e.employeeCode === row.employeeNumber
+        );
+        return {
+          ...row,
+          employeeName: row.employeeName || (emp ? emp.fullName : row.employeeNumber),
+          employeeNumber: emp?.employeeCode || row.employeeNumber,
+          department: row.department || emp?.department || "",
+          designation: row.designation || (emp as unknown as Record<string, string>)?.role || "",
+        };
+      });
+      setRows(enriched);
     } catch {
       // Backend endpoint may not be implemented yet — show empty
       setRows([]);

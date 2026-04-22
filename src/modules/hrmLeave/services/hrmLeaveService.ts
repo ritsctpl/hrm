@@ -440,7 +440,57 @@ export class HrmLeaveService {
   // ── Leave Register Report ─────────────────────────────────────────
   static async getLeaveRegister(payload: LeaveRegisterRequest): Promise<LeaveRegisterRow[]> {
     const res = await api.post(`${this.BASE}/reports/leave-register`, payload);
-    return this.unwrap<LeaveRegisterRow[]>(res.data) ?? [];
+    const raw = res.data;
+
+    // Backend may return JSON array or CSV text — handle both
+    if (Array.isArray(raw)) {
+      return raw;
+    }
+
+    // Unwrap envelope if present
+    const unwrapped = this.unwrap<unknown>(raw);
+    if (Array.isArray(unwrapped)) {
+      return unwrapped as LeaveRegisterRow[];
+    }
+
+    // Parse CSV response into LeaveRegisterRow[]
+    if (typeof unwrapped === "string" || typeof raw === "string") {
+      const csv = (typeof unwrapped === "string" ? unwrapped : raw) as string;
+      return this.parseCsvToRegisterRows(csv);
+    }
+
+    return [];
+  }
+
+  /** Parse CSV from backend into LeaveRegisterRow objects */
+  private static parseCsvToRegisterRows(csv: string): LeaveRegisterRow[] {
+    const lines = csv.trim().split("\n");
+    if (lines.length < 2) return [];
+
+    // Skip header row
+    return lines.slice(1).map((line) => {
+      const cols = line.split(",");
+      // CSV columns: Employee No, Employee Name, Leave Type, Opening Balance,
+      // Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec,
+      // Total Taken, Closing Balance, Carry Forward, Encashed, Lapsed
+      const monthlyAvailed = cols.slice(3, 15).map((v) => parseFloat(v) || 0);
+      return {
+        employeeNumber: (cols[0] || "").trim(),
+        employeeName: (cols[1] || "").trim(),
+        department: "",
+        designation: "",
+        joiningDate: "",
+        leaveTypeCode: (cols[2] || "").trim(),
+        leaveTypeName: (cols[2] || "").trim(),
+        openingBalance: parseFloat(cols[3]) || 0,
+        monthlyAvailed,
+        totalAvailed: parseFloat(cols[15]) || 0,
+        closingBalance: parseFloat(cols[16]) || 0,
+        carryForward: parseFloat(cols[17]) || 0,
+        encashed: parseFloat(cols[18]) || 0,
+        lapsed: parseFloat(cols[19]) || 0,
+      };
+    }).filter((r) => r.employeeNumber.length > 0);
   }
 
   static async exportLeaveRegister(payload: LeaveRegisterRequest): Promise<Blob> {
