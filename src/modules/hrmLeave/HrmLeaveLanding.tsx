@@ -395,7 +395,7 @@ const HrmLeaveLanding: React.FC = () => {
             onApplyLeave={() => openLeaveForm()}
             loading={balancesLoading}
           />
-          <LeaveFilterBar role={role} permissions={permissions} />
+          {/* Filters are inside each tab that needs them (My Requests has status+year) */}
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -524,7 +524,7 @@ const HrmLeaveLanding: React.FC = () => {
             onApplyLeave={() => openLeaveForm()}
             loading={balancesLoading}
           />
-          <LeaveFilterBar role={role} permissions={permissions} />
+          {/* Filters are inside each tab that needs them (inbox, team history) */}
           <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
           {showLeaveForm && (
             <LeaveRequestFormDrawer
@@ -549,6 +549,11 @@ const HrmLeaveLanding: React.FC = () => {
 
   const queuePanel = (
     <div className={styles.requestsPanel}>
+      <LeaveFilterBar
+        role={role}
+        permissions={permissions}
+        onFilterChange={handleFilterChange}
+      />
       <div className={styles.requestsToolbar}>
         <span className={styles.requestsToolbarTitle}>
           Leave Requests · {globalQueue.length}
@@ -718,11 +723,7 @@ const HrmLeaveLanding: React.FC = () => {
     <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
       <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Leave Management — HR Console" />
-        <LeaveFilterBar
-          role={role}
-          permissions={permissions}
-          onFilterChange={handleFilterChange}
-        />
+        {/* Filter bar moved inside Global Queue tab — not needed for other tabs */}
         <HrLeaveLayout
           queuePanel={queuePanel}
           ledgerPanel={ledgerPanel}
