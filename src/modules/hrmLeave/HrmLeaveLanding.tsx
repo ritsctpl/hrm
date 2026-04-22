@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { parseCookies } from "nookies";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, message } from "antd";
@@ -31,6 +31,7 @@ import LeaveAnalyticsPanel from "./components/organisms/LeaveAnalyticsPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";
 import LeaveFilterBar from "./components/molecules/LeaveFilterBar";
+import LeaveStatusChip from "./components/atoms/LeaveStatusChip";
 import LeaveMasterDetail from "./components/templates/LeaveMasterDetail";
 import HrLeaveLayout from "./components/templates/HrLeaveLayout";
 import HrmLeaveScreen from "./HrmLeaveScreen";
@@ -41,10 +42,120 @@ import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
 import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
 import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
-import { HR_ROLES, SUPERVISOR_ROLES } from "./utils/constants";
+import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS } from "./utils/constants";
+import { buildYearOptions } from "./utils/transformations";
+import { LeaveRequest } from "./types/domain.types";
 import styles from "./styles/HrmLeave.module.css";
 
 const { Text } = Typography;
+
+const statusFilterOptions = Object.entries(LEAVE_STATUS_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+/* ── Supervisor Team History sub-component ────────────────────────── */
+
+interface SupervisorTeamHistoryProps {
+  requests: LeaveRequest[];
+  loading: boolean;
+  selectedHandle?: string;
+  onRowClick: (request: LeaveRequest) => void;
+  rightPanel: React.ReactNode;
+  supervisorId: string;
+}
+
+const SupervisorTeamHistory: React.FC<SupervisorTeamHistoryProps> = ({
+  requests,
+  loading,
+  selectedHandle,
+  onRowClick,
+  rightPanel,
+  supervisorId,
+}) => {
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      // Exclude supervisor's own requests — show only reportees
+      if (req.employeeId === supervisorId) return false;
+      if (statusFilter && req.status !== statusFilter) return false;
+      const reqYear = new Date(req.startDate).getFullYear();
+      if (yearFilter && reqYear !== yearFilter) return false;
+      return true;
+    });
+  }, [requests, statusFilter, yearFilter, supervisorId]);
+
+  if (loading) {
+    return (
+      <div className={styles.panelLoading}>
+        <Spin tip="Loading team history..." />
+      </div>
+    );
+  }
+
+  return (
+    <LeaveMasterDetail leftWidth="45%">
+      <div className={styles.requestsList}>
+        <div className={styles.requestsListHeader}>
+          <Text strong>Team Leave History ({filteredRequests.length})</Text>
+        </div>
+        <div style={{ display: "flex", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f0f0f0" }}>
+          <Select
+            placeholder="Status"
+            allowClear
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val)}
+            options={statusFilterOptions}
+            style={{ width: 170 }}
+            size="small"
+          />
+          <Select
+            value={yearFilter}
+            onChange={(val) => setYearFilter(val)}
+            options={buildYearOptions(new Date().getFullYear())}
+            style={{ width: 90 }}
+            size="small"
+          />
+        </div>
+        {filteredRequests.length === 0 ? (
+          <div className={styles.panelEmpty}>
+            <Empty description="No team leave requests found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          </div>
+        ) : (
+          filteredRequests.map((req) => (
+            <div
+              key={req.handle}
+              className={`${styles.requestRow} ${req.handle === selectedHandle ? styles.requestRowSelected : ""}`}
+              onClick={() => onRowClick(req)}
+            >
+              <div className={styles.requestRowTop}>
+                <Text style={{ fontSize: 13, fontWeight: 500 }}>{req.employeeName || req.employeeId}</Text>
+                <LeaveStatusChip status={req.status} />
+              </div>
+              <div className={styles.requestRowMid}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {req.leaveTypeName || req.leaveTypeCode} &middot;{" "}
+                  {new Date(req.startDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                  {" – "}
+                  {new Date(req.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                </Text>
+              </div>
+              <div className={styles.requestRowBottom}>
+                <Text style={{ fontSize: 12 }}>{req.totalDays.toFixed(1)} days</Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {new Date(req.createdDateTime).toLocaleDateString("en-GB")}
+                </Text>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {rightPanel}
+    </LeaveMasterDetail>
+  );
+};
 
 const HrmLeaveLanding: React.FC = () => {
   const organizationId = getOrganizationId();
@@ -144,10 +255,10 @@ const HrmLeaveLanding: React.FC = () => {
   }, [organizationId, employeeId, role, loadPendingForApprover]);
 
   useEffect(() => {
-    if (permissions.canViewAll) {
+    if (permissions.canViewAll || isSupervisor) {
       loadGlobalQueue();
     }
-  }, [organizationId, permissions.canViewAll, loadGlobalQueue]);
+  }, [organizationId, permissions.canViewAll, isSupervisor, loadGlobalQueue]);
 
   useEffect(() => {
     if (permissions.canViewAll) {
@@ -213,7 +324,10 @@ const HrmLeaveLanding: React.FC = () => {
 
   const handleActionComplete = () => {
     setSelectedRequest(null);
-    if (SUPERVISOR_ROLES.includes(role)) loadPendingForApprover();
+    if (SUPERVISOR_ROLES.includes(role)) {
+      loadPendingForApprover();
+      loadGlobalQueue();
+    }
     if (permissions.canViewAll) loadGlobalQueue();
     loadMyRequests();
     loadBalances();
@@ -328,6 +442,29 @@ const HrmLeaveLanding: React.FC = () => {
       </LeaveMasterDetail>
     );
 
+    const myRequestsTab = (
+      <LeaveMasterDetail leftWidth="40%">
+        <LeaveRequestsTable
+          requests={myRequests}
+          loading={myRequestsLoading}
+          selectedHandle={selectedRequest?.handle}
+          onRowClick={setSelectedRequest}
+        />
+        {rightPanel}
+      </LeaveMasterDetail>
+    );
+
+    const teamHistoryTab = (
+      <SupervisorTeamHistory
+        requests={globalQueue}
+        loading={globalQueueLoading}
+        selectedHandle={selectedRequest?.handle}
+        onRowClick={setSelectedRequest}
+        rightPanel={rightPanel}
+        supervisorId={employeeId}
+      />
+    );
+
     const teamCalendarTab = (
       <TeamCalendarView requests={pendingRequests} />
     );
@@ -369,6 +506,8 @@ const HrmLeaveLanding: React.FC = () => {
 
     const tabItems = [
       { key: "approvals", label: `Approvals (${pendingRequests.length})`, children: approvalTab },
+      { key: "myRequests", label: "My Requests", children: myRequestsTab },
+      { key: "teamHistory", label: "Team History", children: teamHistoryTab },
       { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
       { key: "compOffMy", label: "My Comp-Off", children: compOffMyTab },
       { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
