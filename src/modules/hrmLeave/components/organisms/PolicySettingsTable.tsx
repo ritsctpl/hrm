@@ -473,6 +473,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         open={policyModalOpen}
         onCancel={() => setPolicyModalOpen(false)}
         width={720}
+        zIndex={1100}
         footer={[
           <Button key="cancel" onClick={() => setPolicyModalOpen(false)}>
             Cancel
