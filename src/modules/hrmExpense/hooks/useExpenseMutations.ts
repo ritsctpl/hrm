@@ -7,6 +7,7 @@ import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
 import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
 import { HrmTravelService } from "../../hrmTravel/services/hrmTravelService";
+import { normalizeDateToISO } from "../utils/dateHelpers";
 import type { ExpenseFormState, FinancePanelState } from "../types/ui.types";
 import type { ExpenseType, PaymentMode } from "../types/domain.types";
 
@@ -64,8 +65,8 @@ export function useExpenseMutations() {
         purpose: form.purpose,
         travelRequestHandle: travelHandle,
         linkedAdvanceHandle: form.linkedAdvanceHandle || undefined,
-        fromDate: form.fromDate!,
-        toDate: form.toDate!,
+        fromDate: normalizeDateToISO(form.fromDate)!,
+        toDate: normalizeDateToISO(form.toDate)!,
         costCenter: form.costCenter || undefined,
         projectCode: form.projectCode || undefined,
         wbsCode: form.wbsCode || undefined,
@@ -73,7 +74,7 @@ export function useExpenseMutations() {
         outOfPolicyJustification: form.outOfPolicyJustification || undefined,
         items: draftItems.map((item) => ({
           categoryId: item.categoryId,
-          expenseDate: item.expenseDate,
+          expenseDate: normalizeDateToISO(item.expenseDate) ?? item.expenseDate,
           description: item.description,
           amount: item.amount,
           currency: item.currency,

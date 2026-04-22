@@ -7,6 +7,7 @@ import type { ExpenseFormErrors } from "../../utils/expenseValidations";
 import CurrencyFxRow from "../molecules/CurrencyFxRow";
 import styles from "../../styles/ExpenseForm.module.css";
 import dayjs from "dayjs";
+import { DATE_DISPLAY_FORMAT, parseDateForPicker } from "../../utils/dateHelpers";
 
 interface Props {
   formState: ExpenseFormState;
@@ -15,9 +16,33 @@ interface Props {
   errors?: ExpenseFormErrors;
 }
 
-const dateFormat = "DD/MM/YYYY";
+const dateFormat = DATE_DISPLAY_FORMAT;
+
+// ADVANCE expenses must always be future-dated; reimbursement / mileage
+// allow past dates because they describe what already happened.
+const isPastBlocked = (expenseType: ExpenseFormState['expenseType']) => expenseType === 'ADVANCE';
 
 const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, errors = {} }) => {
+  const blockPast = isPastBlocked(formState.expenseType);
+
+  const disabledFromDate = (current: dayjs.Dayjs) => {
+    if (!current) return false;
+    const isPast = blockPast && current.isBefore(dayjs(), 'day');
+    const after = formState.toDate
+      ? current.isAfter(dayjs(formState.toDate, dateFormat), 'day')
+      : false;
+    return isPast || after;
+  };
+
+  const disabledToDate = (current: dayjs.Dayjs) => {
+    if (!current) return false;
+    const isPast = blockPast && current.isBefore(dayjs(), 'day');
+    const before = formState.fromDate
+      ? current.isBefore(dayjs(formState.fromDate, dateFormat), 'day')
+      : false;
+    return isPast || before;
+  };
+
   return (
     <Form layout="vertical" component="div">
       <div className={styles.formSection}>
@@ -77,8 +102,9 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, err
             <DatePicker
               format={dateFormat}
               disabled={readonly}
-              value={formState.fromDate ? dayjs(formState.fromDate) : null}
+              value={parseDateForPicker(formState.fromDate)}
               onChange={(_, s) => onChange({ fromDate: (Array.isArray(s) ? s[0] : s) || null })}
+              disabledDate={disabledFromDate}
               style={{ width: "100%" }}
             />
           </Form.Item>
@@ -91,8 +117,9 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, err
             <DatePicker
               format={dateFormat}
               disabled={readonly}
-              value={formState.toDate ? dayjs(formState.toDate) : null}
+              value={parseDateForPicker(formState.toDate)}
               onChange={(_, s) => onChange({ toDate: (Array.isArray(s) ? s[0] : s) || null })}
+              disabledDate={disabledToDate}
               style={{ width: "100%" }}
             />
           </Form.Item>

@@ -6,6 +6,7 @@ import { message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
 import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
+import { normalizeDateToISO } from "../utils/dateHelpers";
 
 export function useExpenseData() {
   const cookies = parseCookies();
@@ -43,8 +44,8 @@ export function useExpenseData() {
         status: statusFilter as never,
         expenseType: typeFilter as never,
         searchTerm: searchTerm || undefined,
-        fromDate: dateRange?.[0],
-        toDate: dateRange?.[1],
+        fromDate: normalizeDateToISO(dateRange?.[0]),
+        toDate: normalizeDateToISO(dateRange?.[1]),
       });
       setMyExpenses(data);
     } catch {
