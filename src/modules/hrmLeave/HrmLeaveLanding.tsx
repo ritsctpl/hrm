@@ -632,6 +632,7 @@ const HrmLeaveLanding: React.FC = () => {
             <BalanceSummaryTable
               balances={balanceSummary}
               loading={balanceSummaryLoading}
+              selectedEmployeeId={ledgerEmployeeId}
             />
           </div>
         </div>

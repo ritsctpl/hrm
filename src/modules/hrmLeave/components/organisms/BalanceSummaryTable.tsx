@@ -1,15 +1,19 @@
 "use client";
 
 import React from "react";
-import { Table, Empty } from "antd";
+import { Table, Empty, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import { BalanceSummaryTableProps } from "../../types/ui.types";
 import { LeaveBalance } from "../../types/domain.types";
+
+const { Text } = Typography;
 
 const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
   balances,
   loading,
   onRowClick,
+  selectedEmployeeId,
 }) => {
   // Group balances by employee — here we handle flat list per leaveType
   const columns: ColumnsType<LeaveBalance> = [
@@ -64,6 +68,18 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       render: (v: boolean) => (v ? "Yes" : "No"),
     },
   ];
+
+  if (!selectedEmployeeId && !loading && balances.length === 0) {
+    return (
+      <Empty
+        image={<InfoCircleOutlined style={{ fontSize: 36, color: "#bfbfbf" }} />}
+        description={
+          <Text type="secondary">Select an employee to view their balance details.</Text>
+        }
+        style={{ padding: "32px 0" }}
+      />
+    );
+  }
 
   return (
     <Table

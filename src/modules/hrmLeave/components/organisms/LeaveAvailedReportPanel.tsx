@@ -18,6 +18,7 @@ import type { ColumnsType } from "antd/es/table";
 import type { Dayjs } from "dayjs";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { LedgerHistoryResponse } from "../../types/api.types";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
@@ -41,6 +42,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
+  const { employees } = useEmployeeOptions();
 
   const buildPayload = (values: FormValues) => {
     const [from, to] = values.dateRange;
@@ -95,8 +97,22 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
     }
   };
 
+  /** Resolve createdBy (UUID or literal like "system") to a readable name */
+  const resolveEmployee = (createdBy: string) => {
+    if (!createdBy) return "—";
+    const emp = employees.find((e) => e.handle === createdBy);
+    if (emp) return `${emp.employeeCode} - ${emp.fullName}`;
+    // Capitalise non-UUID literals like "system" → "System"
+    return createdBy.charAt(0).toUpperCase() + createdBy.slice(1);
+  };
+
   const columns: ColumnsType<LedgerHistoryResponse> = [
-    { title: "Employee", dataIndex: "createdBy", key: "createdBy" },
+    {
+      title: "Employee",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      render: (v: string) => resolveEmployee(v),
+    },
     { title: "Leave Type", dataIndex: "leaveTypeName", key: "leaveTypeName" },
     { title: "Txn Date", dataIndex: "transactionDate", key: "transactionDate", width: 120 },
     {
@@ -127,7 +143,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
       <Title level={5}>Leave Availed Report</Title>
 
       <Card size="small" style={{ marginBottom: 12 }}>
-        <Form form={form} layout="inline" style={{ rowGap: 12 }}>
+        <Form form={form} layout="inline" style={{ rowGap: 12, gap: 8, flexWrap: "wrap" }}>
           <Form.Item name="dateRange" label="Date Range" rules={[{ required: true }]}>
             <DatePicker.RangePicker format="DD-MMM-YYYY" />
           </Form.Item>

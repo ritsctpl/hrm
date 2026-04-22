@@ -77,13 +77,17 @@ const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ organizationI
   };
 
   // ── Delegation data loading ──────────────────────────────────────
+  // TODO: Backend endpoint not yet implemented
   const loadDelegations = useCallback(async () => {
     setDelegationLoading(true);
     try {
       const data = await HrmLeaveService.getDelegations({ organizationId });
       setDelegations(data);
-    } catch {
-      message.error("Failed to load delegations");
+    } catch (err) {
+      // Silently fail — delegation endpoint may not exist yet.
+      // Show empty table instead of an error toast.
+      console.warn("Delegation load failed (endpoint may not exist yet):", err);
+      setDelegations([]);
     } finally {
       setDelegationLoading(false);
     }

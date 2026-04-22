@@ -278,7 +278,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
         size="small"
         loading={loading}
         pagination={{ pageSize: 50, showSizeChanger: true }}
-        scroll={{ x: "max-content" }}
+        scroll={{ x: 1800 }}
         summary={() =>
           summaryRow ? (
             <Table.Summary fixed>

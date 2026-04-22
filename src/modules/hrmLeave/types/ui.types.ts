@@ -217,6 +217,7 @@ export interface BalanceSummaryTableProps {
   balances: LeaveBalance[];
   loading: boolean;
   onRowClick?: (employeeId: string) => void;
+  selectedEmployeeId?: string | null;
 }
 
 export interface PolicySettingsTableProps {

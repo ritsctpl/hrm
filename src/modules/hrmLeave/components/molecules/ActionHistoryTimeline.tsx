@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { Timeline, Tag, Typography } from "antd";
 import { ActionHistoryTimelineProps } from "../../types/ui.types";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 
 const { Text } = Typography;
 
@@ -16,7 +17,21 @@ const ACTION_COLORS: Record<string, string> = {
   OVERRIDE: "gold",
 };
 
+const UUID_RE =
+  /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
+
 const ActionHistoryTimeline: React.FC<ActionHistoryTimelineProps> = ({ actions }) => {
+  const { employees } = useEmployeeOptions();
+
+  const resolveUuid = useCallback(
+    (text: string) =>
+      text.replace(UUID_RE, (uuid) => {
+        const emp = employees.find((e) => e.handle === uuid);
+        return emp ? `${emp.fullName} (${emp.employeeCode})` : uuid;
+      }),
+    [employees],
+  );
+
   if (!actions || actions.length === 0) {
     return <Text type="secondary">No action history available.</Text>;
   }
@@ -38,7 +53,7 @@ const ActionHistoryTimeline: React.FC<ActionHistoryTimelineProps> = ({ actions }
               {new Date(action.actionDateTime).toLocaleString("en-GB")}
             </Text>
             {action.remarks && (
-              <Text style={{ fontSize: 12, fontStyle: "italic" }}>"{action.remarks}"</Text>
+              <Text style={{ fontSize: 12, fontStyle: "italic" }}>"{resolveUuid(action.remarks)}"</Text>
             )}
           </div>
         ),
