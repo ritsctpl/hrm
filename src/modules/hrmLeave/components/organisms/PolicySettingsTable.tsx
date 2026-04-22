@@ -187,6 +187,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       const values = await policyForm.validateFields();
       setPolicySaving(true);
       await HrmLeaveService.createOrUpdatePolicy({ organizationId,
+        handle: editingPolicy?.handle,  // Pass handle for update, undefined for create
         leaveTypeId: policyDrawerType.handle,
         leaveTypeCode: policyDrawerType.code,
         buId: values.buId,

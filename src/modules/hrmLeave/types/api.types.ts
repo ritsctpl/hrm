@@ -81,6 +81,7 @@ export interface LeavePolicy {
 
 export interface LeavePolicyRequest {
   organizationId: string;
+  handle?: string;  // Pass when updating existing policy
   leaveTypeId: string;
   leaveTypeCode: string;
   buId?: string;
