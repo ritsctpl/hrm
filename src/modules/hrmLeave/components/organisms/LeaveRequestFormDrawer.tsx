@@ -650,28 +650,41 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       <div className={styles.formGrid}>
         {/* ── Form Column ────────────────────────────────────────────── */}
         <div className={styles.formColumn}>
-          {/* Employee picker — always shown. Pre-selected with the current
-              user's handle (see useEffect below). HR can change it; employees
-              can keep it as-is. Selecting re-fetches that employee's balances
-              + profile via the effectiveEmployeeId effect. */}
+          {/* Employee: HR gets a picker to choose any employee.
+              Regular employees see their own name as read-only. */}
           <div className={styles.fieldBlock}>
             <span className={styles.fieldLabel}>Employee</span>
-            <Select
-              showSearch
-              allowClear
-              placeholder="Search and select an employee"
-              value={formTargetEmployeeId ?? undefined}
-              onChange={(value) => setFormTargetEmployeeId(value ?? null)}
-              options={employeeOptions}
-              loading={employeeOptionsLoading}
-              filterOption={(input, option) =>
-                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-              }
-            />
-            {!formTargetEmployeeId && (
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                Pick an employee to load their leave balances and continue.
-              </Text>
+            {allowEmployeeSelection ? (
+              <>
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="Search and select an employee"
+                  value={formTargetEmployeeId ?? undefined}
+                  onChange={(value) => setFormTargetEmployeeId(value ?? null)}
+                  options={employeeOptions}
+                  loading={employeeOptionsLoading}
+                  filterOption={(input, option) =>
+                    (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+                {!formTargetEmployeeId && (
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Pick an employee to load their leave balances and continue.
+                  </Text>
+                )}
+              </>
+            ) : (
+              <div style={{
+                padding: '5px 11px',
+                background: '#f5f5f5',
+                borderRadius: 6,
+                border: '1px solid #d9d9d9',
+                fontSize: 14,
+                color: '#262626',
+              }}>
+                {employeeDisplayName}
+              </div>
             )}
           </div>
 
