@@ -112,8 +112,133 @@ export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Phone pattern (basic - allows 10+ digits with optional +, -, spaces)
 export const PHONE_PATTERN = /^[\+]?[\d\s\-\(\)]{10,}$/;
 
-// Pincode pattern (6 digits for India)
-export const PINCODE_PATTERN = /^[0-9]{6}$/;
+// Pincode pattern (6 digits for India only, must not start with 0)
+export const PINCODE_PATTERN = /^[1-9][0-9]{5}$/;
+// Overseas ZIP / postal code — alphanumeric, 3-12 chars, allow single space/hyphen.
+// Fallback for any country not explicitly mapped below.
+export const OVERSEAS_POSTAL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 \-]{1,10}[A-Za-z0-9]$/;
+
+/**
+ * Country-specific validation registry.
+ *
+ * Driving principle: tax IDs, postal codes, and VAT number formats are
+ * country-scoped. Encoding them in a map (instead of scattered `if country
+ * === 'India'` branches across validators + UI) keeps the logic discoverable
+ * and easy to extend when a new country is added.
+ *
+ * Each entry provides:
+ *   - postalLabel   → UI label (India: "PIN Code", US: "ZIP Code", else: "Postal Code")
+ *   - postalPattern → regex enforced on save
+ *   - postalHint    → user-facing error message when postalPattern fails
+ *   - postalMax     → input maxLength (UX — prevents overtype)
+ *   - taxIdLabel    → UI label (India: "GSTIN", US: "Tax ID", EU: "VAT Number", else: "Tax ID / VAT Number")
+ *   - taxIdPattern  → strict regex (India only); overseas uses a loose length check
+ *   - taxIdHint     → error message for bad tax id
+ */
+export interface CountryValidationSpec {
+  postalLabel: string;
+  postalPattern: RegExp;
+  postalHint: string;
+  postalMax: number;
+  taxIdLabel: string;
+  taxIdPattern?: RegExp;
+  taxIdHint: string;
+  taxIdMin: number;
+  taxIdMax: number;
+}
+
+// US ZIP: 5 digits, optionally + dash + 4 digits (ZIP+4).
+const US_ZIP_PATTERN = /^[0-9]{5}(?:-[0-9]{4})?$/;
+// US Tax ID: 9 digits (EIN) or XX-XXXXXXX or XXX-XX-XXXX (SSN) — loose match.
+const US_TAX_ID_PATTERN = /^[0-9]{2}-?[0-9]{7}$|^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$|^[0-9]{9}$/;
+// UK postcode: e.g. "SW1A 1AA", "EC1A 1BB", "M1 1AE" — flexible.
+const UK_POSTCODE_PATTERN = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
+// UK VAT: GB + 9 digits (+ optional 3 digits for branch) or GBGD xxx / GBHA xxx.
+const UK_VAT_PATTERN = /^GB[0-9]{9}(?:[0-9]{3})?$|^GB(?:GD|HA)[0-9]{3}$/i;
+// Singapore postal: 6 digits.
+const SG_POSTAL_PATTERN = /^[0-9]{6}$/;
+// Singapore UEN: 9-10 chars, digits + letter or letters.
+const SG_UEN_PATTERN = /^[0-9]{8,9}[A-Z]$|^[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z]$/i;
+// UAE: PO Box is typed as plain digits; accept 3-8 digits to match common usage.
+const UAE_POSTAL_PATTERN = /^[0-9]{3,8}$/;
+// UAE TRN (Tax Registration Number): 15 digits.
+const UAE_TRN_PATTERN = /^[0-9]{15}$/;
+
+export const COUNTRY_VALIDATION: Record<string, CountryValidationSpec> = {
+  India: {
+    postalLabel: 'PIN Code',
+    postalPattern: PINCODE_PATTERN,
+    postalHint: 'PIN Code must be exactly 6 digits (and cannot start with 0)',
+    postalMax: 6,
+    taxIdLabel: 'GSTIN',
+    taxIdPattern: GSTIN_PATTERN,
+    taxIdHint: 'GSTIN must be 15 characters (e.g., 33AABCA0633D1Z5)',
+    taxIdMin: 15,
+    taxIdMax: 15,
+  },
+  'United States': {
+    postalLabel: 'ZIP Code',
+    postalPattern: US_ZIP_PATTERN,
+    postalHint: 'ZIP must be 5 digits (12345) or ZIP+4 (12345-6789)',
+    postalMax: 10,
+    taxIdLabel: 'Tax ID (EIN/SSN)',
+    taxIdPattern: US_TAX_ID_PATTERN,
+    taxIdHint: 'Enter a 9-digit EIN (12-3456789) or SSN (123-45-6789)',
+    taxIdMin: 9,
+    taxIdMax: 11,
+  },
+  'United Kingdom': {
+    postalLabel: 'Postcode',
+    postalPattern: UK_POSTCODE_PATTERN,
+    postalHint: 'Postcode must match UK format (e.g. SW1A 1AA)',
+    postalMax: 8,
+    taxIdLabel: 'VAT Number',
+    taxIdPattern: UK_VAT_PATTERN,
+    taxIdHint: 'VAT Number must start with GB and be 9-12 digits (e.g. GB123456789)',
+    taxIdMin: 11,
+    taxIdMax: 14,
+  },
+  Singapore: {
+    postalLabel: 'Postal Code',
+    postalPattern: SG_POSTAL_PATTERN,
+    postalHint: 'Postal Code must be exactly 6 digits',
+    postalMax: 6,
+    taxIdLabel: 'UEN',
+    taxIdPattern: SG_UEN_PATTERN,
+    taxIdHint: 'UEN must follow Singapore ACRA format (e.g. 201912345A)',
+    taxIdMin: 9,
+    taxIdMax: 10,
+  },
+  'United Arab Emirates': {
+    postalLabel: 'PO Box',
+    postalPattern: UAE_POSTAL_PATTERN,
+    postalHint: 'PO Box must be 3-8 digits',
+    postalMax: 8,
+    taxIdLabel: 'TRN (Tax Registration Number)',
+    taxIdPattern: UAE_TRN_PATTERN,
+    taxIdHint: 'TRN must be exactly 15 digits',
+    taxIdMin: 15,
+    taxIdMax: 15,
+  },
+};
+
+/** Fallback spec for any country not in the map — loose alphanumeric checks. */
+const GENERIC_VALIDATION: CountryValidationSpec = {
+  postalLabel: 'Postal Code',
+  postalPattern: OVERSEAS_POSTAL_PATTERN,
+  postalHint: 'Enter a valid postal / ZIP code',
+  postalMax: 12,
+  taxIdLabel: 'Tax ID / VAT Number',
+  taxIdPattern: undefined,
+  taxIdHint: 'Tax ID must be 5-20 alphanumeric characters',
+  taxIdMin: 5,
+  taxIdMax: 20,
+};
+
+export function getCountryValidationSpec(country?: string): CountryValidationSpec {
+  if (!country) return COUNTRY_VALIDATION.India;
+  return COUNTRY_VALIDATION[country] ?? GENERIC_VALIDATION;
+}
 
 export const validateEmail = (email: string): string | null => {
   if (!email) return null; // Optional field
@@ -131,15 +256,43 @@ export const validatePhone = (phone: string): string | null => {
   return null;
 };
 
-export const validatePincode = (pincode: string): string | null => {
+export const validatePincode = (pincode: string, country?: string): string | null => {
   if (!pincode || !pincode.trim()) {
-    return 'Pincode is required';
+    const spec = getCountryValidationSpec(country);
+    return `${spec.postalLabel} is required`;
   }
-  if (!PINCODE_PATTERN.test(pincode.trim())) {
-    return 'Pincode must be exactly 6 digits';
+  const spec = getCountryValidationSpec(country);
+  const value = pincode.trim();
+  if (!spec.postalPattern.test(value)) {
+    return spec.postalHint;
   }
   return null;
 };
+
+/**
+ * Validate a tax identifier (GSTIN / EIN / VAT / TRN / UEN) according to the
+ * country's spec. Empty values are allowed by default — the caller decides
+ * whether required-ness applies (e.g., GSTIN is required in India).
+ */
+export const validateTaxId = (
+  value: string | undefined,
+  country?: string
+): string | null => {
+  if (!value || !value.trim()) return null;
+  const spec = getCountryValidationSpec(country);
+  const v = value.trim();
+  if (v.length < spec.taxIdMin || v.length > spec.taxIdMax) {
+    return spec.taxIdHint;
+  }
+  if (spec.taxIdPattern && !spec.taxIdPattern.test(v.toUpperCase())) {
+    return spec.taxIdHint;
+  }
+  return null;
+};
+
+export function getTaxIdLabel(country?: string): string {
+  return getCountryValidationSpec(country).taxIdLabel;
+}
 
 export const validateCompanyProfile = (data: any): Record<string, string> => {
   const errors: Record<string, string> = {};
@@ -162,24 +315,33 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
   // Founded Date is NO LONGER required - REMOVED
   // Do NOT validate foundedDate or incorporationDate
 
-  // Required format validations for PAN, TAN, CIN
-  const panError = validatePAN(data.pan || '');
-  if (panError) errors.pan = panError;
+  // PAN, TAN, CIN, GSTIN are India-only regulatory identifiers. Apply their
+  // strict formats only when the registered office is in India. For overseas
+  // companies, treat `gstIn` as a generic Tax ID with a permissive check.
+  const registeredAddress = data.registeredOfficeAddress || data.registeredAddress;
+  const companyCountry = registeredAddress?.country || 'India';
+  const isIndianCompany = companyCountry.trim().toLowerCase() === 'india';
 
-  const tanError = validateTAN(data.tan || '');
-  if (tanError) errors.tan = tanError;
+  if (isIndianCompany) {
+    const panError = validatePAN(data.pan || '');
+    if (panError) errors.pan = panError;
 
-  const cinError = validateCIN(data.cin || '');
-  if (cinError) errors.cin = cinError;
+    const tanError = validateTAN(data.tan || '');
+    if (tanError) errors.tan = tanError;
 
-  // GSTIN validation (optional field, but if provided must be valid format and match PAN and state)
-  if (data.gstIn && data.gstIn.trim()) {
-    // Get registered address state for validation
-    const registeredAddress = data.registeredOfficeAddress || data.registeredAddress;
-    const registeredState = registeredAddress?.state;
-    
-    const gstinError = validateGSTIN(data.gstIn, data.pan, registeredState);
-    if (gstinError) errors.gstIn = gstinError;
+    const cinError = validateCIN(data.cin || '');
+    if (cinError) errors.cin = cinError;
+
+    // GSTIN (optional, but must match format + PAN + state if provided)
+    if (data.gstIn && data.gstIn.trim()) {
+      const registeredState = registeredAddress?.state;
+      const gstinError = validateGSTIN(data.gstIn, data.pan, registeredState);
+      if (gstinError) errors.gstIn = gstinError;
+    }
+  } else if (data.gstIn && data.gstIn.trim()) {
+    // Non-India: loose tax-id validation against the country's spec.
+    const taxError = validateTaxId(data.gstIn, companyCountry);
+    if (taxError) errors.gstIn = taxError;
   }
 
   // Email validation
@@ -195,7 +357,6 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
   }
 
   // ===== REGISTERED OFFICE ADDRESS - NOW REQUIRED =====
-  const registeredAddress = data.registeredOfficeAddress || data.registeredAddress;
   if (!registeredAddress) {
     errors['registeredOfficeAddress'] = 'Registered Office Address is required';
   } else {
@@ -208,7 +369,7 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     if (!registeredAddress.state?.trim()) {
       errors['registeredOfficeAddress.state'] = 'State is required';
     }
-    const pincodeError = validatePincode(registeredAddress.pincode || '');
+    const pincodeError = validatePincode(registeredAddress.pincode || '', registeredAddress.country);
     if (pincodeError) {
       errors['registeredOfficeAddress.pincode'] = pincodeError;
     }
@@ -275,12 +436,23 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
     errors.primaryContact = 'Primary Contact is required';
   }
 
-  // GSTIN is now REQUIRED (cross-checked with address state since BU-level state field was removed)
-  if (!data.gstin?.trim()) {
-    errors.gstin = 'GSTIN is required';
-  } else {
-    const gstinError = validateGSTIN(data.gstin, undefined, data.address?.state);
-    if (gstinError) errors.gstin = gstinError;
+  // Tax ID: required only for India (where GSTIN is legally mandated for
+  // registered businesses). Other countries may leave it blank; if supplied,
+  // it must match that country's pattern.
+  const buCountry = data.address?.country || 'India';
+  const isIndia = buCountry.trim().toLowerCase() === 'india';
+  const spec = getCountryValidationSpec(buCountry);
+  if (isIndia) {
+    if (!data.gstin?.trim()) {
+      errors.gstin = `${spec.taxIdLabel} is required`;
+    } else {
+      // Use the India-aware validateGSTIN for cross-check with PAN + state.
+      const gstinError = validateGSTIN(data.gstin, undefined, data.address?.state);
+      if (gstinError) errors.gstin = gstinError;
+    }
+  } else if (data.gstin?.trim()) {
+    const taxError = validateTaxId(data.gstin, buCountry);
+    if (taxError) errors.gstin = taxError;
   }
 
   // Address validation - ALL FIELDS REQUIRED
@@ -297,7 +469,7 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
     if (!data.address.state?.trim()) {
       errors['address.state'] = 'State is required';
     }
-    const pincodeError = validatePincode(data.address.pincode || '');
+    const pincodeError = validatePincode(data.address.pincode || '', data.address.country);
     if (pincodeError) {
       errors['address.pincode'] = pincodeError;
     }
@@ -339,7 +511,7 @@ export const validateLocation = (data: any, existingCodes?: string[]): Record<st
     errors.country = 'Country is required';
   }
 
-  const pincodeError = validatePincode(data.pincode || '');
+  const pincodeError = validatePincode(data.pincode || '', data.country);
   if (pincodeError) {
     errors.pincode = pincodeError;
   }

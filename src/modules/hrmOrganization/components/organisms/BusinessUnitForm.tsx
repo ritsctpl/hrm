@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { Input, Button, message } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, EditOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
 import OrgAddressFields from '../molecules/OrgAddressFields';
@@ -10,12 +10,13 @@ import OrgSaveButton from '../atoms/OrgSaveButton';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { EMPTY_ADDRESS } from '../../utils/constants';
+import { getTaxIdLabel, getCountryValidationSpec } from '../../utils/validations';
 import type { BusinessUnitFormProps } from '../../types/ui.types';
 import type { Address } from '../../types/domain.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly = false }) => {
+const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly = false, onEnterEditMode }) => {
   const {
     businessUnit,
     setBusinessUnitDraft,
@@ -45,8 +46,18 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
     (field: string, value: string) => {
       if (readOnly) return;
       const currentAddress = draft?.address || { ...EMPTY_ADDRESS };
+      const nextAddress = { ...currentAddress, [field]: value } as Address;
+      // Keep `state` + `placeOfSupply` mirrored to the address state so the
+      // three fields can never drift. The save payload derives from the
+      // address state too, but syncing the draft here means audit diffs /
+      // read-only views always reflect the same value.
+      const mirrored =
+        field === 'state'
+          ? { state: value, placeOfSupply: value }
+          : {};
       setBusinessUnitDraft({
-        address: { ...currentAddress, [field]: value } as Address,
+        address: nextAddress,
+        ...mirrored,
       });
     },
     [draft?.address, setBusinessUnitDraft, readOnly]
@@ -76,11 +87,19 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
     }
   }, [saveBusinessUnit, isNew]);
 
+  const buCountry = draft?.address?.country || 'India';
+  const isIndianBu = buCountry.trim().toLowerCase() === 'india';
+  const taxIdLabel = getTaxIdLabel(buCountry);
+  const taxIdSpec = getCountryValidationSpec(buCountry);
+  const taxIdPlaceholder = isIndianBu
+    ? 'e.g., 33AABCA1234D1Z5'
+    : `Enter ${taxIdLabel}`;
+
   const generalContent = readOnly ? (
     <div className={formStyles.identityGrid}>
       <OrgViewField label="BU Code" value={draft?.buCode} required />
       <OrgViewField label="BU Name" value={draft?.buName} required />
-      <OrgViewField label="GSTIN" value={draft?.gstin} required />
+      <OrgViewField label={taxIdLabel} value={draft?.gstin} required={isIndianBu} />
       <OrgViewField label="Primary Contact" value={draft?.primaryContact} required />
     </div>
   ) : (
@@ -102,11 +121,12 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
         />
       </OrgFormField>
 
-      <OrgFormField label="GSTIN" required error={errors.gstin}>
+      <OrgFormField label={taxIdLabel} required={isIndianBu} error={errors.gstin}>
         <Input
           value={draft?.gstin || ''}
           onChange={(e) => handleFieldChange('gstin', e.target.value)}
-          placeholder="e.g., 33AABCA1234D1Z5"
+          placeholder={taxIdPlaceholder}
+          maxLength={taxIdSpec.taxIdMax + 2}
         />
       </OrgFormField>
 
@@ -134,11 +154,23 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
     <div className={mainStyles.formPanel}>
       <div className={mainStyles.formPanelHeader}>
         <span className={mainStyles.formPanelTitle}>{title}</span>
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={onClose}
-        />
+        <span style={{ display: 'inline-flex', gap: 4 }}>
+          {onEnterEditMode && (
+            <Button
+              size="small"
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={onEnterEditMode}
+            >
+              Edit
+            </Button>
+          )}
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={onClose}
+          />
+        </span>
       </div>
 
       <div className={formStyles.buFormSingle}>
@@ -152,14 +184,16 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
       )}
 
       <div className={mainStyles.formActions}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Can I={isNew ? 'add' : 'edit'}>
-          <OrgSaveButton
-            loading={isSaving}
-            onClick={handleSave}
-            label={isNew ? 'Create' : 'Update'}
-          />
-        </Can>
+        <Button onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
+        {!readOnly && (
+          <Can I={isNew ? 'add' : 'edit'}>
+            <OrgSaveButton
+              loading={isSaving}
+              onClick={handleSave}
+              label={isNew ? 'Create' : 'Update'}
+            />
+          </Can>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import BusinessUnitTable from '../organisms/BusinessUnitTable';
 import BusinessUnitForm from '../organisms/BusinessUnitForm';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -17,35 +17,58 @@ const BusinessUnitTemplate: React.FC = () => {
 
   const permissions = useOrganizationPermissions();
 
+  // View-first pattern: row click opens read-only details. The user enters
+  // edit mode explicitly via the Action-column pencil or the Edit button in
+  // the form header. Reset to view whenever the selection changes.
+  const [editMode, setEditMode] = useState(false);
+  useEffect(() => {
+    if (businessUnit.isCreating) {
+      setEditMode(true);
+    } else if (businessUnit.selected?.handle) {
+      setEditMode(false);
+    } else {
+      setEditMode(false);
+    }
+  }, [businessUnit.selected?.handle, businessUnit.isCreating]);
+
   const isFormOpen = useMemo(
     () => businessUnit.selected !== null || businessUnit.isCreating,
     [businessUnit.selected, businessUnit.isCreating]
   );
 
-  // Determine if form should be read-only
-  // For new records: check ADD permission
-  // For existing records: check EDIT permission
   const isReadOnly = useMemo(() => {
     if (businessUnit.isCreating) {
-      // Creating new record - need ADD permission
       return !permissions.canAddBusinessUnit;
-    } else {
-      // Editing existing record - need EDIT permission (VIEW-only = read-only)
-      return permissions.canViewBusinessUnit && !permissions.canEditBusinessUnit;
     }
+    // Existing record: read-only unless user explicitly entered edit mode
+    // AND has EDIT permission.
+    return !(editMode && permissions.canEditBusinessUnit);
   }, [
     businessUnit.isCreating,
+    editMode,
     permissions.canAddBusinessUnit,
-    permissions.canViewBusinessUnit,
     permissions.canEditBusinessUnit,
   ]);
 
   const handleSelect = useCallback(
     (bu: BusinessUnit) => {
       selectBusinessUnit(bu);
+      setEditMode(false);
     },
     [selectBusinessUnit]
   );
+
+  const handleEdit = useCallback(
+    (bu: BusinessUnit) => {
+      selectBusinessUnit(bu);
+      setEditMode(true);
+    },
+    [selectBusinessUnit]
+  );
+
+  const handleEnterEditMode = useCallback(() => {
+    setEditMode(true);
+  }, []);
 
   const handleAdd = useCallback(() => {
     setBusinessUnitCreating(true);
@@ -53,6 +76,7 @@ const BusinessUnitTemplate: React.FC = () => {
 
   const handleClose = useCallback(() => {
     selectBusinessUnit(null);
+    setEditMode(false);
   }, [selectBusinessUnit]);
 
   return (
@@ -60,13 +84,23 @@ const BusinessUnitTemplate: React.FC = () => {
       <div
         className={`${mainStyles.tableContainer} ${isFormOpen ? mainStyles.shrink : ''}`}
       >
-        <BusinessUnitTable onSelect={handleSelect} onAdd={handleAdd} />
+        <BusinessUnitTable
+          onSelect={handleSelect}
+          onEdit={handleEdit}
+          onAdd={handleAdd}
+        />
       </div>
 
       <div
         className={`${mainStyles.formContainer} ${isFormOpen ? mainStyles.show : ''}`}
       >
-        {isFormOpen && <BusinessUnitForm onClose={handleClose} readOnly={isReadOnly} />}
+        {isFormOpen && (
+          <BusinessUnitForm
+            onClose={handleClose}
+            readOnly={isReadOnly}
+            onEnterEditMode={isReadOnly && !businessUnit.isCreating && permissions.canEditBusinessUnit ? handleEnterEditMode : undefined}
+          />
+        )}
       </div>
     </div>
   );

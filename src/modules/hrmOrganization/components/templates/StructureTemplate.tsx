@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// State tracks view-vs-edit mode for Dept + Location panes (view-first pattern).
 import { Segmented } from 'antd';
 import { ApartmentOutlined, EnvironmentOutlined, ClusterOutlined } from '@ant-design/icons';
 import DepartmentTree from '../organisms/DepartmentTree';
@@ -52,28 +53,44 @@ const StructureTemplate: React.FC = () => {
     [department.selected, department.isCreating]
   );
 
-  // Determine if department form should be read-only
+  // View-first pattern: row click → view; explicit Edit → edit.
+  const [deptEditMode, setDeptEditMode] = useState(false);
+  useEffect(() => {
+    if (department.isCreating) setDeptEditMode(true);
+    else setDeptEditMode(false);
+  }, [department.selected?.handle, department.isCreating]);
+
   const isDeptReadOnly = useMemo(() => {
     if (department.isCreating) {
-      // Creating new record - need ADD permission
       return !permissions.canAddDepartment;
-    } else {
-      // Editing existing record - need EDIT permission (VIEW-only = read-only)
-      return permissions.canViewDepartment && !permissions.canEditDepartment;
     }
+    return !(deptEditMode && permissions.canEditDepartment);
   }, [
     department.isCreating,
+    deptEditMode,
     permissions.canAddDepartment,
-    permissions.canViewDepartment,
     permissions.canEditDepartment,
   ]);
 
   const handleDeptSelect = useCallback(
     (dept: Department) => {
       selectDepartment(dept);
+      setDeptEditMode(false);
     },
     [selectDepartment]
   );
+
+  const handleDeptEdit = useCallback(
+    (dept: Department) => {
+      selectDepartment(dept);
+      setDeptEditMode(true);
+    },
+    [selectDepartment]
+  );
+
+  const handleDeptEnterEditMode = useCallback(() => {
+    setDeptEditMode(true);
+  }, []);
 
   const handleDeptAdd = useCallback(() => {
     setDepartmentCreating(true);
@@ -81,6 +98,7 @@ const StructureTemplate: React.FC = () => {
 
   const handleDeptClose = useCallback(() => {
     selectDepartment(null);
+    setDeptEditMode(false);
   }, [selectDepartment]);
 
   // Location form state
@@ -171,12 +189,26 @@ const StructureTemplate: React.FC = () => {
           <div
             className={`${mainStyles.tableContainer} ${isDeptFormOpen ? mainStyles.shrink : ''}`}
           >
-            <DepartmentTree onSelect={handleDeptSelect} onAdd={handleDeptAdd} />
+            <DepartmentTree
+              onSelect={handleDeptSelect}
+              onEdit={handleDeptEdit}
+              onAdd={handleDeptAdd}
+            />
           </div>
           <div
             className={`${mainStyles.formContainer} ${isDeptFormOpen ? mainStyles.show : ''}`}
           >
-            {isDeptFormOpen && <DepartmentForm onClose={handleDeptClose} readOnly={isDeptReadOnly} />}
+            {isDeptFormOpen && (
+              <DepartmentForm
+                onClose={handleDeptClose}
+                readOnly={isDeptReadOnly}
+                onEnterEditMode={
+                  isDeptReadOnly && !department.isCreating && permissions.canEditDepartment
+                    ? handleDeptEnterEditMode
+                    : undefined
+                }
+              />
+            )}
           </div>
         </div>
       )}

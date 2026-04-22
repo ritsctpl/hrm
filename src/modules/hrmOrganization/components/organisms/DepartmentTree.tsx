@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tree, Button, Spin, Empty, Tag, Tooltip } from 'antd';
-import { PlusOutlined, ApartmentOutlined, BankOutlined, ClearOutlined } from '@ant-design/icons';
+import { PlusOutlined, ApartmentOutlined, BankOutlined, ClearOutlined, EditOutlined } from '@ant-design/icons';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -23,29 +23,46 @@ function buildDeptNodes(
   nodes: DepartmentNode[],
   canEdit: boolean,
   canView: boolean,
-  onViewClick?: (dept: Department) => void
+  onViewClick?: (dept: Department) => void,
+  onEditClick?: (dept: Department) => void,
 ): AntTreeNode[] {
   return nodes.map((node) => ({
     key: node.handle,
     title: (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
         <span>{node.deptName} ({node.deptCode})</span>
-        {canView && !canEdit && onViewClick && (
-          <Button
-            type="link"
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewClick(node);
-            }}
-            style={{ marginLeft: 8 }}
-          >
-            View
-          </Button>
-        )}
+        <span style={{ display: 'inline-flex', gap: 4, marginLeft: 8 }}>
+          {/* Row click opens read-only details. Surface an explicit View link
+              for clarity when the user has no Edit perm. */}
+          {canView && !canEdit && onViewClick && (
+            <Button
+              type="link"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewClick(node);
+              }}
+            >
+              View
+            </Button>
+          )}
+          {canEdit && onEditClick && (
+            <Tooltip title="Edit">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditClick(node);
+                }}
+              />
+            </Tooltip>
+          )}
+        </span>
       </div>
     ),
-    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children, canEdit, canView, onViewClick) : undefined,
+    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children, canEdit, canView, onViewClick, onEditClick) : undefined,
     isLeaf: !node.children || node.children.length === 0,
   }));
 }
@@ -79,7 +96,7 @@ function filterDeptNodes(nodes: DepartmentNode[], searchLower: string): Departme
   }, []);
 }
 
-const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
+const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onEdit, onAdd }) => {
   const {
     department,
     businessUnit,
@@ -116,21 +133,37 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
     }
   }, [hierarchyState.data, fetchHierarchy]);
 
-  // Handle view button click
-  const handleViewClick = useCallback(
+  // Locate the BU owning a given dept (needed so DepartmentForm knows which
+  // BU context to load).
+  const findParentBu = useCallback(
     (dept: Department) => {
-      // Find parent BU for context
-      const parentBu = allBuDepts.find(({ depts }) => {
+      return allBuDepts.find(({ depts }) => {
         const findInDepts = (nodes: DepartmentNode[]): boolean =>
           nodes.some((n) => n.handle === dept.handle || (n.children && findInDepts(n.children)));
         return findInDepts(depts);
       });
-      if (parentBu) {
-        setDepartmentSelectedBu(parentBu.bu.handle);
-      }
+    },
+    [allBuDepts]
+  );
+
+  // View: open details in read-only mode.
+  const handleViewClick = useCallback(
+    (dept: Department) => {
+      const parentBu = findParentBu(dept);
+      if (parentBu) setDepartmentSelectedBu(parentBu.bu.handle);
       onSelect(dept);
     },
-    [allBuDepts, onSelect, setDepartmentSelectedBu]
+    [findParentBu, onSelect, setDepartmentSelectedBu]
+  );
+
+  // Edit: open directly in edit mode (parent template flips the flag).
+  const handleEditClick = useCallback(
+    (dept: Department) => {
+      const parentBu = findParentBu(dept);
+      if (parentBu) setDepartmentSelectedBu(parentBu.bu.handle);
+      onEdit?.(dept);
+    },
+    [findParentBu, onEdit, setDepartmentSelectedBu]
   );
 
   // Build combined tree: BU → Departments grouped
@@ -157,12 +190,13 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
             filteredDepts,
             permissions.canEditDepartment,
             permissions.canViewDepartment,
-            handleViewClick
+            handleViewClick,
+            handleEditClick,
           ),
         } as AntTreeNode;
       })
       .filter(Boolean) as AntTreeNode[];
-  }, [allBuDepts, searchText, permissions.canEditDepartment, permissions.canViewDepartment, handleViewClick]);
+  }, [allBuDepts, searchText, permissions.canEditDepartment, permissions.canViewDepartment, handleViewClick, handleEditClick]);
 
   // Collect all keys for expand-all when searching
   const allKeys = useMemo(() => {

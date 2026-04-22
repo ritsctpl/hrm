@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { Spin, Empty, Button, Tag, Tooltip, Avatar, Segmented } from 'antd';
@@ -407,6 +407,77 @@ const OrgHierarchyChart: React.FC = () => {
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.4));
   const handleZoomReset = () => setZoom(1);
 
+  // Transform-based pan. We track an (x, y) offset and apply it via CSS
+  // `translate()` on the inner content. This is Miro / Figma / Google Maps
+  // style panning — decoupled from overflow/scrollbar behaviour entirely.
+  // The outer canvas keeps `overflow: hidden` so content outside the
+  // viewport is clipped; dragging slides the inner content under it.
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const dragState = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea')) return;
+    const el = canvasRef.current;
+    if (!el) return;
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPanX: pan.x,
+      startPanY: pan.y,
+    };
+    setIsDragging(true);
+    el.setPointerCapture(e.pointerId);
+  }, [pan.x, pan.y]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragState.current) return;
+    const dx = e.clientX - dragState.current.startX;
+    const dy = e.clientY - dragState.current.startY;
+    setPan({
+      x: dragState.current.startPanX + dx,
+      y: dragState.current.startPanY + dy,
+    });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    dragState.current = null;
+    setIsDragging(false);
+    const el = canvasRef.current;
+    if (el && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+  }, []);
+
+  // Reset pan when switching view mode or resetting zoom so the chart
+  // re-centers. Otherwise you can end up "lost" after zooming out.
+  const resetPan = useCallback(() => setPan({ x: 0, y: 0 }), []);
+
+  // Fit-to-screen: compute a zoom factor that scales the tree to fit inside
+  // the visible canvas width AND reset pan so everything is centered.
+  const handleFitToScreen = useCallback(() => {
+    const el = canvasRef.current;
+    const content = contentRef.current;
+    if (!el || !content) return;
+    const available = el.clientWidth - 32;
+    const naturalW = content.scrollWidth / zoom;
+    const availableH = el.clientHeight - 32;
+    const naturalH = content.scrollHeight / zoom;
+    if (naturalW <= 0 || available <= 0) return;
+    const ratioW = available / naturalW;
+    const ratioH = availableH / naturalH;
+    const next = Math.max(0.3, Math.min(1, Math.min(ratioW, ratioH)));
+    setZoom(Number(next.toFixed(2)));
+    setPan({ x: 0, y: 0 });
+  }, [zoom]);
+
+  // Re-center on zoom reset for consistency with Fit button.
+  const handleZoomResetFull = useCallback(() => {
+    setZoom(1);
+    resetPan();
+  }, [resetPan]);
+
   if (isLoading) {
     return (
       <div className={mainStyles.loadingContainer}>
@@ -433,7 +504,22 @@ const OrgHierarchyChart: React.FC = () => {
   }, 0);
 
   return (
-    <div className={styles.chartWrapper}>
+    <div
+      className={styles.chartWrapper}
+      // Inline styles win over the CSS module, so the wrapper is guaranteed
+      // to be a self-contained bounded box that doesn't leak width into the
+      // ancestor tab pane / content holder.
+      style={{
+        height: '100%',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
@@ -462,19 +548,52 @@ const OrgHierarchyChart: React.FC = () => {
           <Button size="small" icon={<ZoomOutOutlined />} onClick={handleZoomOut} disabled={zoom <= 0.4} />
           <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
           <Button size="small" icon={<ZoomInOutlined />} onClick={handleZoomIn} disabled={zoom >= 1.8} />
-          <Button size="small" icon={<FullscreenOutlined />} onClick={handleZoomReset} />
+          <Tooltip title="Fit to screen">
+            <Button size="small" icon={<FullscreenOutlined />} onClick={handleFitToScreen}>
+              Fit
+            </Button>
+          </Tooltip>
+          <Button size="small" onClick={handleZoomResetFull}>100%</Button>
         </div>
       </div>
 
-      {/* Chart Canvas — pan + zoom.
-          Use CSS `zoom` (not transform: scale) so the element's layout size
-          grows with the zoom factor. With `transform`, the scaled content
-          overflowed but the scroll container never expanded — bottom/right
-          portions became unreachable at zoom > 1. */}
-      <div className={styles.chartCanvas}>
+      {/* Chart Viewport — clip-only container. The inner content is panned
+          by CSS transform, so we don't need overflow:auto scrollbars at all.
+          This avoids every CSS cascade / ancestor-overflow pitfall. */}
+      <div
+        ref={canvasRef}
+        className={styles.chartCanvas}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{
+          flex: '1 1 auto',
+          minHeight: 0,
+          minWidth: 0,
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: isDragging ? 'none' : 'auto',
+          touchAction: 'none',
+          position: 'relative',
+        }}
+      >
         <div
+          ref={contentRef}
           className={styles.chartScroll}
-          style={{ zoom }}
+          style={{
+            display: 'inline-block',
+            // Pan = translate; zoom = CSS scale (keeps layout math simple).
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'top left',
+            transition: isDragging ? 'none' : 'transform 0.2s ease',
+            // Unset width constraint — inline-block sizes to content.
+            width: 'auto',
+            minWidth: '100%',
+          }}
         >
           {viewMode === 'org' ? (
             /* Root: Company → BUs → Depts → Employees (dept-scoped) */

@@ -1,12 +1,20 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Input, Tooltip } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { validatePAN, validateTAN, validateCIN, validateGSTIN } from '../../utils/validations';
+import {
+  validatePAN,
+  validateTAN,
+  validateCIN,
+  validateGSTIN,
+  validateTaxId,
+  getCountryValidationSpec,
+  getTaxIdLabel,
+} from '../../utils/validations';
 import type { CompanyStatutorySectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -19,13 +27,17 @@ const VALIDATORS: Record<string, (val: string, pan?: string) => string | null> =
 
 const UPPERCASE_FIELDS = new Set(['pan', 'tan', 'cin', 'gstIn']);
 
-const STATUTORY_FIELDS: ReadonlyArray<{
+interface StatutoryFieldSpec {
   key: string;
   label: string;
   placeholder: string;
   maxLength?: number;
   tooltip?: string;
-}> = [
+}
+
+// India-specific regulatory identifiers. These fields are collected only
+// when the company's registered office is in India.
+const INDIA_STATUTORY_FIELDS: ReadonlyArray<StatutoryFieldSpec> = [
   { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10, tooltip: 'Permanent Account Number — 5 letters + 4 digits + 1 letter' },
   { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10, tooltip: 'Tax Deduction Account Number — 4 letters + 5 digits + 1 letter' },
   { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21, tooltip: 'Corporate Identity Number — 21 character alphanumeric code issued by MCA' },
@@ -36,12 +48,40 @@ const STATUTORY_FIELDS: ReadonlyArray<{
   { key: 'registrationNumber', label: 'Registration No.', placeholder: 'Enter company registration number' },
 ];
 
+// Fields always shown regardless of country.
+const UNIVERSAL_STATUTORY_FIELDS: ReadonlyArray<StatutoryFieldSpec> = [
+  { key: 'registrationNumber', label: 'Registration No.', placeholder: 'Enter company registration number' },
+];
+
 const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
   disabled = false,
 }) => {
   const { companyProfile, setCompanyDraft, setCompanyError, clearCompanyErrors } = useHrmOrganizationStore();
   const draft = companyProfile.draft;
   const errors = companyProfile.errors;
+
+  // Country from registered office drives which statutory fields show.
+  const registeredAddress =
+    draft?.registeredOfficeAddress || draft?.registeredAddress;
+  const country = registeredAddress?.country || 'India';
+  const isIndia = country.trim().toLowerCase() === 'india';
+  const taxIdLabel = getTaxIdLabel(country);
+  const taxIdSpec = getCountryValidationSpec(country);
+
+  const fieldsToShow = useMemo<ReadonlyArray<StatutoryFieldSpec>>(() => {
+    if (isIndia) return INDIA_STATUTORY_FIELDS;
+    // Non-India: show a generic Tax ID field + the universal registration no.
+    return [
+      {
+        key: 'gstIn',
+        label: taxIdLabel,
+        placeholder: `Enter ${taxIdLabel}`,
+        maxLength: taxIdSpec.taxIdMax + 2,
+        tooltip: `${taxIdLabel} for ${country}. Format varies by country.`,
+      },
+      ...UNIVERSAL_STATUTORY_FIELDS,
+    ];
+  }, [isIndia, taxIdLabel, taxIdSpec.taxIdMax, country]);
 
   // Track which fields have been validated (touched + blurred)
   const [validated, setValidated] = useState<Record<string, 'valid' | 'invalid'>>({});
@@ -80,14 +120,19 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
         return;
       }
 
-      const validatorFn = VALIDATORS[field];
-      if (!validatorFn) {
-        // No validator — mark as valid if it has value
+      // For non-India companies, the `gstIn` field becomes a generic Tax ID
+      // and should not be validated against the India-specific GSTIN regex.
+      const effectiveValidator =
+        field === 'gstIn' && !isIndia
+          ? (v: string) => validateTaxId(v, country)
+          : VALIDATORS[field];
+
+      if (!effectiveValidator) {
         setValidated((prev) => ({ ...prev, [field]: 'valid' }));
         return;
       }
 
-      const error = validatorFn(value, draft?.pan || undefined);
+      const error = effectiveValidator(value, draft?.pan || undefined);
 
       if (error) {
         setCompanyError(field, error);
@@ -122,7 +167,7 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
 
   return (
     <div className={formStyles.statutoryGrid}>
-      {STATUTORY_FIELDS.map((field) => (
+      {fieldsToShow.map((field) => (
         disabled ? (
           <OrgViewField
             key={field.key}

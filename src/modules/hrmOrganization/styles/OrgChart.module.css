@@ -6,10 +6,17 @@
 .chartWrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
   background: var(--hrm-bg-subtle, #fafafa);
   border-radius: 8px;
+  /* Constrain to parent dimensions so the ancestor (.ant-tabs-content-holder
+     with overflow:auto) does NOT pick up a horizontal scrollbar when our
+     wide tree content grows. We want the scroll to live on .chartCanvas.
+     `min-width: 0` + `min-height: 0` are the critical unlock so this flex
+     child can actually shrink to its container. */
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -51,18 +58,29 @@
 
 /* ========== Canvas ========== */
 .chartCanvas {
+  /* Take all remaining height/width from chartWrapper. chartWrapper now
+     has overflow:hidden + fixed outer dimensions, so chartCanvas is the
+     sole scroll container inside the Hierarchy tab.
+     `min-*: 0` lets the flex child actually shrink and scroll its content. */
   flex: 1 1 auto;
-  overflow: auto;
-  padding: 32px 24px 48px;
   min-height: 480px;
-  max-height: calc(100vh - 220px);
+  min-width: 0;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 32px 24px 48px;
+  box-sizing: border-box;
 }
 
 .chartScroll {
-  display: inline-block;
+  /* block + width: max-content makes the scroll child as wide as its
+     content. Combined with chartCanvas `overflow-x: auto`, wide trees
+     (e.g. 30 employees across) trigger a horizontal scrollbar reliably.
+     The previous `display: inline-block` left layout ambiguous inside the
+     tab pane and the scrollbar silently never appeared. */
+  display: block;
+  width: max-content;
   min-width: 100%;
-  /* `zoom` affects layout, so `transform` transition isn't applicable — keep
-     the visual smoothness via a short zoom transition. */
   transition: zoom 0.2s ease;
 }
 

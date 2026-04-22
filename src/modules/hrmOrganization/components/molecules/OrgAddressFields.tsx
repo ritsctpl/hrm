@@ -6,6 +6,8 @@ import { CheckCircleFilled, CloseCircleFilled, LoadingOutlined, WarningFilled } 
 import OrgFormField from './OrgFormField';
 import OrgViewField from './OrgViewField';
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
+import { STATE_CITIES } from '../../utils/locationSearch';
+import { getCountryValidationSpec } from '../../utils/validations';
 import {
   isSixDigits,
   verifyPincode,
@@ -34,6 +36,16 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
     const states = COUNTRY_STATES[country] || [];
     return states.map((s) => ({ label: s, value: s }));
   }, [address.country]);
+
+  // City options for the selected state. STATE_CITIES is keyed by state name
+  // across all supported countries — if the state isn't found we fall back
+  // to an empty options list and the user can still type-in a custom city.
+  const cityOptions = useMemo(() => {
+    const state = address.state || '';
+    if (!state) return [];
+    const cities = STATE_CITIES[state] || [];
+    return cities.map((c) => ({ label: c, value: c }));
+  }, [address.state]);
 
   // ------- Pincode verification (India only) -------
   const currentPincode = (address.pincode || address.pinCode || '').trim();
@@ -181,7 +193,12 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
           <OrgFormField label="State" error={errors[`${prefix}.state`]}>
             <Select
               value={address.state || undefined}
-              onChange={(val) => handleChange('state', val)}
+              onChange={(val) => {
+                handleChange('state', val);
+                // Clear city when state changes so the user can't keep a
+                // city that doesn't belong to the new state.
+                if (address.city) handleChange('city', '');
+              }}
               placeholder="Select state"
               showSearch
               optionFilterProp="label"
@@ -192,20 +209,58 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
           </OrgFormField>
 
           <OrgFormField label="City" error={errors[`${prefix}.city`]}>
-            <Input
-              value={address.city || ''}
-              onChange={(e) => handleChange('city', e.target.value)}
-              placeholder="Enter city"
-              disabled={disabled}
+            <Select
+              value={address.city || undefined}
+              onChange={(val) => handleChange('city', val)}
+              placeholder={address.state ? 'Select city' : 'Select state first'}
+              showSearch
+              allowClear
+              optionFilterProp="label"
+              options={cityOptions}
+              disabled={disabled || !address.state}
+              style={{ width: '100%' }}
+              // Allow custom entry when the curated list is missing the city
+              // (unknown state, small town, overseas corner cases).
+              popupRender={(menu) => (
+                <>
+                  {menu}
+                  {address.state && (
+                    <div style={{ borderTop: '1px solid #f0f0f0', padding: '6px 10px' }}>
+                      <Input
+                        size="small"
+                        placeholder="Can't find it? Type a custom city + press Enter"
+                        onPressEnter={(e) => {
+                          const val = (e.target as HTMLInputElement).value.trim();
+                          if (val) handleChange('city', val);
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
             />
           </OrgFormField>
 
-          <OrgFormField label="PIN Code" error={pincodeError}>
+          <OrgFormField
+            label={getCountryValidationSpec(address.country).postalLabel}
+            error={pincodeError}
+          >
             <Input
               value={address.pincode || address.pinCode || ''}
-              onChange={(e) => handleChange('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="Enter PIN code"
-              maxLength={6}
+              onChange={(e) => {
+                const isIndia = (address.country || 'India') === 'India';
+                const spec = getCountryValidationSpec(address.country);
+                const raw = e.target.value;
+                // India is always numeric; other countries use the spec's
+                // max length but permit alphanumeric (US dash, UK spaces,
+                // UAE digits all work via postalPattern validation).
+                const normalized = isIndia
+                  ? raw.replace(/\D/g, '').slice(0, spec.postalMax)
+                  : raw.toUpperCase().slice(0, spec.postalMax);
+                handleChange('pincode', normalized);
+              }}
+              placeholder={`Enter ${getCountryValidationSpec(address.country).postalLabel.toLowerCase()}`}
+              maxLength={getCountryValidationSpec(address.country).postalMax}
               disabled={disabled}
               suffix={pincodeSuffix}
             />

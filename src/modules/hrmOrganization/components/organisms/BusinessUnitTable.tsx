@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip, message } from 'antd';
 import { ClearOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { MdDelete } from 'react-icons/md';
+import { MdDelete, MdEdit } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -13,7 +13,7 @@ import type { BusinessUnit } from '../../types/domain.types';
 import type { BusinessUnitTableProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
-const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }) => {
+const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit, onAdd }) => {
   const {
     businessUnit,
     setBusinessUnitSearch,
@@ -95,37 +95,58 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
         },
       ];
 
-      // Only add Action column if user has DELETE permission
-      if (permissions.canDeleteBusinessUnit) {
+      // Action column shows Edit (view-first pattern — row click opens
+      // read-only details, the pencil opens the form in edit mode) and
+      // Delete. Column is added whenever at least one action is permitted.
+      const canEdit = !!onEdit && permissions.canEditBusinessUnit;
+      if (canEdit || permissions.canDeleteBusinessUnit) {
         baseColumns.push({
           title: 'Action',
           key: 'actions',
+          width: 110,
           render: (_: unknown, record: BusinessUnit) => (
-            <Popconfirm
-              title="Delete Business Unit"
-              description="Are you sure you want to delete this business unit?"
-              onConfirm={(e) => handleDelete(record.handle, e as unknown as React.MouseEvent)}
-              onCancel={(e) => e?.stopPropagation()}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Tooltip title="Delete">
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<MdDelete />}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </Tooltip>
-            </Popconfirm>
+            <span style={{ display: 'inline-flex', gap: 4 }}>
+              {canEdit && (
+                <Tooltip title="Edit">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MdEdit />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.(record);
+                    }}
+                  />
+                </Tooltip>
+              )}
+              {permissions.canDeleteBusinessUnit && (
+                <Popconfirm
+                  title="Delete Business Unit"
+                  description="Are you sure you want to delete this business unit?"
+                  onConfirm={(e) => handleDelete(record.handle, e as unknown as React.MouseEvent)}
+                  onCancel={(e) => e?.stopPropagation()}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Tooltip title="Delete">
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<MdDelete />}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              )}
+            </span>
           ),
         });
       }
 
       return baseColumns;
     },
-    [handleDelete, permissions.canDeleteBusinessUnit]
+    [handleDelete, onEdit, permissions.canDeleteBusinessUnit, permissions.canEditBusinessUnit]
   );
 
   if (isLoading) {

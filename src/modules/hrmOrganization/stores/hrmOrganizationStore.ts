@@ -668,13 +668,21 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
+      // Single source of truth for the BU's state: the address state. Both
+      // the top-level `state` and `placeOfSupply` on the API payload are
+      // kept in sync with it so they always match — the UI only collects
+      // the address state and we no longer accept divergent values.
+      const resolvedState = businessUnit.draft.address?.state
+        || businessUnit.draft.state
+        || '';
+
       const payload: BusinessUnitRequest = {
         organizationId,
         companyHandle,
         buCode: businessUnit.draft.buCode || '',
         buName: businessUnit.draft.buName || '',
-        state: businessUnit.draft.state || '',
-        placeOfSupply: businessUnit.draft.placeOfSupply || '',
+        state: resolvedState,
+        placeOfSupply: resolvedState,
         gstin: businessUnit.draft.gstin || '',
         primaryContact: businessUnit.draft.primaryContact || '',
         address: {
@@ -970,18 +978,31 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         }));
       }
 
-      // Refresh department hierarchy after save (for specific BU)
+      // Refresh department hierarchy after save (for specific BU) AND re-pull
+      // the flat department list. The flat list backs the Parent Department
+      // dropdown — without this, a just-created dept isn't selectable as a
+      // parent in a follow-up create, and stale entries can linger.
       const { department: updatedDept } = get();
       if (updatedDept.selectedBuHandle) {
-        const hierarchy = await HrmOrganizationService.fetchDepartmentHierarchy(
-          organizationId,
-          updatedDept.selectedBuHandle
-        );
+        const [hierarchy, freshList] = await Promise.all([
+          HrmOrganizationService.fetchDepartmentHierarchy(
+            organizationId,
+            updatedDept.selectedBuHandle,
+          ),
+          HrmOrganizationService.fetchDepartments(
+            organizationId,
+            updatedDept.selectedBuHandle,
+          ),
+        ]);
         set((state) => ({
-          department: { ...state.department, hierarchy },
+          department: {
+            ...state.department,
+            hierarchy,
+            list: freshList,
+          },
         }));
       }
-      
+
       // Refresh global hierarchy after department save
       get().fetchHierarchy();
     } catch (error: unknown) {

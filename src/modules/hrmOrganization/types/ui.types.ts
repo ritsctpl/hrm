@@ -193,22 +193,29 @@ export interface CompanyContactSectionProps {
 
 export interface BusinessUnitTableProps {
   onSelect: (bu: BusinessUnit) => void;
+  onEdit?: (bu: BusinessUnit) => void;
   onAdd: () => void;
 }
 
 export interface BusinessUnitFormProps {
   onClose: () => void;
   readOnly?: boolean;
+  /** When set + form is readOnly, surface an "Edit" button in the form header
+   *  that flips the parent into edit mode. */
+  onEnterEditMode?: () => void;
 }
 
 export interface DepartmentTreeProps {
   onSelect: (dept: Department) => void;
+  onEdit?: (dept: Department) => void;
   onAdd: () => void;
 }
 
 export interface DepartmentFormProps {
   onClose: () => void;
   readOnly?: boolean;
+  /** When set + form is readOnly, surface an "Edit" button in the form header. */
+  onEnterEditMode?: () => void;
 }
 
 export interface TreeNodeData {

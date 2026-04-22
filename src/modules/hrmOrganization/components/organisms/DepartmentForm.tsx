@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Input, Select, Button, message } from 'antd';
-import { CloseOutlined, UserOutlined } from '@ant-design/icons';
+import { CloseOutlined, UserOutlined, EditOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import OrgFormField from '../molecules/OrgFormField';
@@ -15,7 +15,7 @@ import type { DepartmentFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
-const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = false }) => {
+const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = false, onEnterEditMode }) => {
   const {
     department,
     businessUnit,
@@ -149,13 +149,14 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     };
   }, [draft?.headOfDepartmentEmployeeId, employeeOptions, buildEmployeeOption]);
 
-  // Parent department options (exclude current department).
-  // `value` stays as handle for backend compatibility. `label` shows the
-  // richer "Name (Code)" combo for the dropdown list / search. The selected
-  // box collapses to just the deptCode via `labelRender` below.
+  // Parent department options. Guard against stale / soft-deleted rows the
+  // backend may still return: require a valid name + code and `active !== 0`.
+  // Also exclude the current department to prevent self-parenting.
   const parentOptions = useMemo(() => {
     return list
       .filter((d) => d.handle !== selected?.handle)
+      .filter((d) => (d.active ?? 1) !== 0)
+      .filter((d) => !!d.deptName?.trim() && !!d.deptCode?.trim())
       .map((d) => ({
         value: d.handle,
         label: `${d.deptName} (${d.deptCode})`,
@@ -215,6 +216,16 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
       <div className={mainStyles.formPanelHeader}>
         <span className={mainStyles.formPanelTitle}>{title}</span>
         <div style={{ display: 'flex', gap: 8 }}>
+          {onEnterEditMode && (
+            <Button
+              size="small"
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={onEnterEditMode}
+            >
+              Edit
+            </Button>
+          )}
           {!isNew && selected && (
             <Can I="delete">
               <Button
@@ -343,14 +354,16 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
 
       <div className={mainStyles.formActions}>
         <div style={{ flex: 1 }} />
-        <Button onClick={onClose}>Cancel</Button>
-        <Can I={isNew ? 'add' : 'edit'}>
-          <OrgSaveButton
-            loading={isSaving}
-            onClick={handleSave}
-            label={isNew ? 'Create' : 'Update'}
-          />
-        </Can>
+        <Button onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
+        {!readOnly && (
+          <Can I={isNew ? 'add' : 'edit'}>
+            <OrgSaveButton
+              loading={isSaving}
+              onClick={handleSave}
+              label={isNew ? 'Create' : 'Update'}
+            />
+          </Can>
+        )}
       </div>
     </div>
   );

@@ -104,6 +104,12 @@
 
 .detailTabs :global(.ant-tabs-tabpane) {
   height: 100%;
+  /* Prevent the tab pane from stretching to fit wide content (e.g. a large
+     org-hierarchy tree). Without these, the pane grows past the viewport
+     width and the child's overflow:auto never has anything to scroll. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* Tab label with icon */
@@ -125,7 +131,11 @@
 .tableContainer {
   flex: 1;
   transition: flex 0.3s ease;
-  overflow: hidden;
+  /* Allow horizontal scroll so wide Ant tree nodes / table cells can pan
+     sideways. Vertical is still clipped; the inner Table component owns
+     vertical scrolling via its own scroll.y prop. */
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 16px;
   min-height: 0;
   display: flex;

@@ -10,6 +10,7 @@ import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
 import { STATE_CITIES } from '../../utils/locationSearch';
+import { getCountryValidationSpec } from '../../utils/validations';
 import type { LocationFormProps } from '../../types/ui.types';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
@@ -92,7 +93,11 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, readOnly = false }
             <OrgViewField label="Country" value={draft?.country || 'India'} required />
             <OrgViewField label="State" value={draft?.state} required />
             <OrgViewField label="City" value={draft?.city} required />
-            <OrgViewField label="PIN / ZIP" value={draft?.pincode} required />
+            <OrgViewField
+              label={getCountryValidationSpec(draft?.country).postalLabel}
+              value={draft?.pincode}
+              required
+            />
           </>
         ) : (
           // Editable form
@@ -189,15 +194,24 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, readOnly = false }
               />
             </OrgFormField>
 
-            <OrgFormField label="PIN / ZIP" required error={errors?.pincode}>
+            <OrgFormField
+              label={getCountryValidationSpec(draft?.country).postalLabel}
+              required
+              error={errors?.pincode}
+            >
               <Input
                 value={draft?.pincode || ''}
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/[^0-9]/g, '');
-                  handleFieldChange('pincode', digits);
+                  const spec = getCountryValidationSpec(draft?.country);
+                  const isIndia = (draft?.country || 'India') === 'India';
+                  const raw = e.target.value;
+                  const normalized = isIndia
+                    ? raw.replace(/\D/g, '').slice(0, spec.postalMax)
+                    : raw.toUpperCase().slice(0, spec.postalMax);
+                  handleFieldChange('pincode', normalized);
                 }}
-                placeholder="Enter PIN/ZIP code"
-                maxLength={6}
+                placeholder={`Enter ${getCountryValidationSpec(draft?.country).postalLabel.toLowerCase()}`}
+                maxLength={getCountryValidationSpec(draft?.country).postalMax}
               />
             </OrgFormField>
           </>
