@@ -6,7 +6,6 @@ import {
   Card,
   DatePicker,
   Form,
-  Input,
   Select,
   Space,
   Table,
@@ -42,7 +41,13 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
-  const { employees } = useEmployeeOptions();
+  const { options: employeeSelectOptions, employees, loading: employeesLoading } = useEmployeeOptions();
+
+  // Build department options from employee directory
+  const departmentOptions = React.useMemo(() => {
+    const depts = Array.from(new Set(employees.map(e => e.department).filter(Boolean)));
+    return depts.map(d => ({ value: d, label: d }));
+  }, [employees]);
 
   const buildPayload = (values: FormValues) => {
     const [from, to] = values.dateRange;
@@ -148,7 +153,17 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
             <DatePicker.RangePicker format="DD-MMM-YYYY" />
           </Form.Item>
           <Form.Item name="employeeId" label="Employee">
-            <Input placeholder="Optional" allowClear style={{ width: 160 }} />
+            <Select
+              showSearch
+              allowClear
+              options={employeeSelectOptions}
+              loading={employeesLoading}
+              style={{ width: 220 }}
+              placeholder="All employees"
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <Form.Item name="leaveTypeCode" label="Leave Type">
             <Select
@@ -164,7 +179,16 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
             />
           </Form.Item>
           <Form.Item name="department" label="Department">
-            <Input placeholder="Optional" allowClear style={{ width: 160 }} />
+            <Select
+              showSearch
+              allowClear
+              options={departmentOptions}
+              style={{ width: 180 }}
+              placeholder="All departments"
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <Form.Item>
             <Space>
