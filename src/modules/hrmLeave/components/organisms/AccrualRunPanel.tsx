@@ -123,8 +123,11 @@ const formatBatchQuarter = (quarter: string, year: number): string => {
 const extractError = (err: unknown, fallback: string): string => {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as
-      | { message?: string; errors?: unknown[] }
+      | { message?: string; message_details?: { error?: string; msg?: string }; errors?: unknown[] }
       | undefined;
+    // Backend envelope: { message_details: { error: "..." } }
+    if (data?.message_details?.error) return data.message_details.error;
+    if (data?.message_details?.msg) return data.message_details.msg;
     if (data?.message) return data.message;
     if (Array.isArray(data?.errors) && data!.errors!.length > 0) {
       return data!.errors!.map((e) => String(e)).join(", ");
