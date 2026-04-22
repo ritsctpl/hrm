@@ -40,7 +40,10 @@ const CurrencyFxRow: React.FC<Props> = ({
           style={{ width: "100%" }}
         />
       </Form.Item>
-      <Form.Item label="Exchange Rate (to INR)" style={{ flex: 1 }}>
+      <Form.Item
+        label={currency === "INR" ? "Exchange Rate" : `Exchange Rate (${currency} → INR)`}
+        style={{ flex: 1 }}
+      >
         <InputNumber
           value={exchangeRate}
           min={0.0001}
