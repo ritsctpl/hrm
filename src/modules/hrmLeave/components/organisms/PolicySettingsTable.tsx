@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Tag,
@@ -24,6 +24,8 @@ import dayjs from "dayjs";
 import { PolicySettingsTableProps } from "../../types/ui.types";
 import { LeaveType, LeavePolicy, LeaveEntitlementTier } from "../../types/domain.types";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { HrmOrganizationService } from "../../../hrmOrganization/services/hrmOrganizationService";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import { parseCookies } from "nookies";
 import {
   LEAVE_CATEGORIES,
@@ -61,6 +63,47 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const [editingPolicy, setEditingPolicy] = useState<LeavePolicy | null>(null);
   const [policyForm] = Form.useForm();
   const [policySaving, setPolicySaving] = useState(false);
+
+  // BU and Department dropdowns
+  const [buOptions, setBuOptions] = useState<{ value: string; label: string }[]>([]);
+  const [deptOptions, setDeptOptions] = useState<{ value: string; label: string }[]>([]);
+  const [selectedBu, setSelectedBu] = useState<string | undefined>(undefined);
+
+  // Fetch BUs on mount
+  useEffect(() => {
+    const orgId = organizationId || getOrganizationId();
+    if (!orgId) return;
+    HrmOrganizationService.fetchBusinessUnitsBySite(orgId)
+      .then((bus) => {
+        setBuOptions(
+          (bus || []).map((bu) => ({
+            value: bu.handle || bu.buCode || "",
+            label: bu.buName || bu.buCode || bu.handle || "",
+          }))
+        );
+      })
+      .catch(() => {});
+  }, [organizationId]);
+
+  // Fetch departments when BU changes
+  useEffect(() => {
+    if (!selectedBu) {
+      setDeptOptions([]);
+      return;
+    }
+    const orgId = organizationId || getOrganizationId();
+    if (!orgId) return;
+    HrmOrganizationService.fetchDepartments(orgId, selectedBu)
+      .then((depts) => {
+        setDeptOptions(
+          (depts || []).map((dept) => ({
+            value: dept.handle || dept.deptCode || "",
+            label: dept.deptName || dept.deptCode || dept.handle || "",
+          }))
+        );
+      })
+      .catch(() => {});
+  }, [selectedBu, organizationId]);
   const [tiers, setTiers] = useState<LeaveEntitlementTier[]>([]);
 
   const addTier = () =>
@@ -493,11 +536,34 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="buId" label="BU (optional)">
-              <Input placeholder="All BUs" />
+            <Form.Item name="buId" label="Business Unit (optional)">
+              <Select
+                showSearch
+                allowClear
+                placeholder="All BUs"
+                options={buOptions}
+                style={{ width: 200 }}
+                onChange={(val) => {
+                  setSelectedBu(val);
+                  policyForm.setFieldValue("deptId", undefined);
+                }}
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
-            <Form.Item name="deptId" label="Dept (optional)">
-              <Input placeholder="All depts" />
+            <Form.Item name="deptId" label="Department (optional)">
+              <Select
+                showSearch
+                allowClear
+                placeholder={selectedBu ? "Select department" : "Select BU first"}
+                options={deptOptions}
+                disabled={!selectedBu}
+                style={{ width: 200 }}
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">
