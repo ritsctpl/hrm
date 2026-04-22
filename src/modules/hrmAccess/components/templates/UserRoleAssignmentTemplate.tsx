@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { notification, Button, Input, Spin } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { notification, Button, Input, Spin, Tooltip } from 'antd';
+import { PlusOutlined, SearchOutlined, ClearOutlined } from '@ant-design/icons';
 import UserSearchPanel from '../organisms/UserSearchPanel';
 import UserAssignmentTable from '../organisms/UserAssignmentTable';
 import UserAssignmentDetail from '../organisms/UserAssignmentDetail';
@@ -191,7 +191,7 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
   return (
     <div className={styles.userAssignmentTemplate}>
       <div className={styles.leftPanel}>
-        <div className={styles.searchSection}>
+        <div className={styles.searchSection} style={{ display: 'flex', gap: 8 }}>
           <Input
             placeholder="Search employees by name, code, or email..."
             prefix={<SearchOutlined />}
@@ -199,6 +199,16 @@ const UserRoleAssignmentTemplate: React.FC<UserRoleAssignmentTemplateProps> = ({
             onChange={(e) => handleSearchChange(e.target.value)}
             allowClear
           />
+          {userAssignment.userSearchText && (
+            <Tooltip title="Clear search">
+              <Button
+                icon={<ClearOutlined />}
+                onClick={() => handleSearchChange('')}
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </div>
 
         <div className={styles.userListContainer}>

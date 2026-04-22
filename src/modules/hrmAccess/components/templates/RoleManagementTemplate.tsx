@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, notification, Button, Input, Form, Tabs } from 'antd';
-import { PlusOutlined, CopyOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Modal, notification, Button, Input, Form, Tabs, Tooltip } from 'antd';
+import { PlusOutlined, CopyOutlined, SafetyCertificateOutlined, ClearOutlined } from '@ant-design/icons';
 import RbacSearchBar from '../molecules/RbacSearchBar';
 import RbacEmptyState from '../atoms/RbacEmptyState';
 import RoleTable from '../organisms/RoleTable';
@@ -179,6 +179,13 @@ const RoleManagementTemplate: React.FC<RoleManagementTemplateProps> = ({ organiz
               width={300}
             />
             <div style={{ display: 'flex', gap: 8 }}>
+              {role.searchText && (
+                <Tooltip title="Clear search">
+                  <Button icon={<ClearOutlined />} onClick={() => store.setRoleSearch('')}>
+                    Reset
+                  </Button>
+                </Tooltip>
+              )}
               <Button type="default" onClick={handleSearch} loading={role.isLoading}>
                 Go
               </Button>

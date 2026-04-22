@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Tree, Button, Spin, Empty, Tag } from 'antd';
-import { PlusOutlined, ApartmentOutlined, BankOutlined } from '@ant-design/icons';
+import { Tree, Button, Spin, Empty, Tag, Tooltip } from 'antd';
+import { PlusOutlined, ApartmentOutlined, BankOutlined, ClearOutlined } from '@ant-design/icons';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -252,11 +252,22 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onAdd }) => {
         </Can>
       </div>
 
-      <OrgSearchBar
-        value={searchText}
-        onChange={setDepartmentSearch}
-        placeholder="Search departments across all BUs..."
-      />
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <OrgSearchBar
+            value={searchText}
+            onChange={setDepartmentSearch}
+            placeholder="Search departments across all BUs..."
+          />
+        </div>
+        {searchText && (
+          <Tooltip title="Clear search">
+            <Button size="small" icon={<ClearOutlined />} onClick={() => setDepartmentSearch('')}>
+              Reset
+            </Button>
+          </Tooltip>
+        )}
+      </div>
 
       <div style={{ marginTop: 12 }}>
         {isLoadingAll ? (

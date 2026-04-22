@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ClearOutlined } from '@ant-design/icons';
 import OrgStatusTag from '../atoms/OrgStatusTag';
 import OrgSearchBar from '../molecules/OrgSearchBar';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -154,6 +154,13 @@ const LocationTable: React.FC<LocationTableProps> = ({ onSelect, onAdd }) => {
             onChange={setLocationSearch}
             placeholder="Search by code, name, or city..."
           />
+          {searchText && (
+            <Tooltip title="Clear search">
+              <Button size="small" icon={<ClearOutlined />} onClick={() => setLocationSearch('')}>
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </div>
         {permissions.canAddLocation && (
           <Button type="primary" onClick={onAdd}>

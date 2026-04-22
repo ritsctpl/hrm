@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Table, Button, Spin, Popconfirm, Tooltip, message } from 'antd';
+import { ClearOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { MdDelete } from 'react-icons/md';
 import OrgStatusTag from '../atoms/OrgStatusTag';
@@ -147,6 +148,13 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onAdd }
             onChange={setBusinessUnitSearch}
             placeholder="Search by code, name, or type..."
           />
+          {searchText && (
+            <Tooltip title="Clear search">
+              <Button size="small" icon={<ClearOutlined />} onClick={() => setBusinessUnitSearch('')}>
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </div>
         {permissions.canAddBusinessUnit && (
           <Button type="primary" onClick={onAdd}>

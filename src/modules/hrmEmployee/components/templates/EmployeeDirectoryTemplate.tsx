@@ -18,6 +18,7 @@ import {
   DownloadOutlined,
   AuditOutlined,
   SettingOutlined,
+  ClearOutlined,
 } from '@ant-design/icons';
 import EmpSearchBar from '../molecules/EmpSearchBar';
 import EmpFilterBar from '../molecules/EmpFilterBar';
@@ -195,6 +196,20 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
             departments={departments}
             businessUnits={businessUnits}
           />
+          {(searchKeyword || filters.buFilter || filters.departmentFilter || filters.statusFilter !== null) && (
+            <Tooltip title="Clear all filters">
+              <Button
+                size="small"
+                icon={<ClearOutlined />}
+                onClick={() => {
+                  onSearch('');
+                  onFilterChange({ buFilter: null, departmentFilter: null, statusFilter: null });
+                }}
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </div>
         <div className={styles.toolbarRight}>
           <Tooltip title="Refresh">

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Select, Button, Skeleton, Typography, Space } from 'antd';
+import { Select, Button, Skeleton, Typography, Space, Tooltip } from 'antd';
+import { ClearOutlined } from '@ant-design/icons';
 import type { RolePermissionGridProps } from '../../types/ui.types';
 import type { Permission } from '../../types/domain.types';
 import type { PermissionAction } from '../../types/api.types';
@@ -73,6 +74,13 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
             style={{ width: 180 }}
             size="small"
           />
+          {moduleFilter && (
+            <Tooltip title="Clear module filter">
+              <Button size="small" icon={<ClearOutlined />} onClick={() => onModuleFilterChange(null)}>
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       </div>
 

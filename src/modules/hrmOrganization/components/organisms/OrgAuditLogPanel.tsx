@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Table, Select, Input, Tag, Button, Modal, Tooltip } from 'antd';
-import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, ClearOutlined } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import {
   computeChanges,
@@ -278,6 +278,20 @@ const OrgAuditLogPanel: React.FC = () => {
             style={{ width: 200 }}
             allowClear
           />
+          {(auditLog.entityHandleFilter || auditLog.entityTypeFilter !== 'COMPANY_PROFILE') && (
+            <Tooltip title="Reset filters">
+              <Button
+                size="small"
+                icon={<ClearOutlined />}
+                onClick={() => {
+                  setAuditEntityTypeFilter('COMPANY_PROFILE');
+                  setAuditEntityHandleFilter('');
+                }}
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>

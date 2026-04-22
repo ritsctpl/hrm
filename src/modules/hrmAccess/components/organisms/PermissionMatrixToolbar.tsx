@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Select, Button, Space } from 'antd';
+import { Select, Button, Space, Tooltip } from 'antd';
+import { ClearOutlined } from '@ant-design/icons';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { Role } from '../../types/domain.types';
 import type { ModuleRegistry } from '../../types/domain.types';
@@ -49,6 +50,19 @@ const PermissionMatrixToolbar: React.FC<PermissionMatrixToolbarProps> = ({
           style={{ width: 200 }}
           options={roles.map((r) => ({ value: r.roleCode, label: r.roleName }))}
         />
+        {(moduleFilter || roleFilter) && (
+          <Tooltip title="Clear filters">
+            <Button
+              icon={<ClearOutlined />}
+              onClick={() => {
+                onModuleFilterChange(null);
+                onRoleFilterChange(null);
+              }}
+            >
+              Reset
+            </Button>
+          </Tooltip>
+        )}
         <Button
           icon={<DownloadIcon fontSize="small" />}
           onClick={onExport}

@@ -16,6 +16,7 @@ import {
   CloseCircleOutlined,
   ApartmentOutlined,
   TeamOutlined,
+  ClearOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import Can from '../../../hrmAccess/components/Can';
@@ -171,6 +172,13 @@ const OrganizationListTemplate: React.FC = () => {
           className={styles.searchInput}
           allowClear
         />
+        {companyList.searchText && (
+          <Tooltip title="Clear search">
+            <Button size="small" icon={<ClearOutlined />} onClick={() => setCompanyListSearch('')}>
+              Reset
+            </Button>
+          </Tooltip>
+        )}
         <Can I="add">
           <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
             Add Company
