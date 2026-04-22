@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Button, Descriptions, Modal, Input, Space, Typography } from "antd";
-import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined } from "@ant-design/icons";
+import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip } from "antd";
+import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined, CheckSquareOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseMutations } from "./hooks/useExpenseMutations";
@@ -20,7 +20,11 @@ import Can from "../hrmAccess/components/Can";
 import type { ExpenseReport } from "./types/domain.types";
 import type { ExpenseDetailTab } from "./types/ui.types";
 import { CANCELLABLE_STATUSES, RECALLABLE_STATUSES } from "./utils/expenseConstants";
-import { isExpenseFormValid } from "./utils/expenseValidations";
+import {
+  isExpenseFormValid,
+  validateExpenseForm,
+  validateLineItems,
+} from "./utils/expenseValidations";
 import { HrmExpenseService } from "./services/hrmExpenseService";
 import styles from "./styles/Expense.module.css";
 
@@ -28,7 +32,7 @@ const { Text } = Typography;
 
 interface Props {
   expense: ExpenseReport | null;
-  mode: "create" | "view" | "edit";
+  mode: "create" | "view";
   isApprover?: boolean;
   isFinance?: boolean;
   onBack: () => void;
@@ -70,6 +74,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     financeSanction,
     financeReject,
     markAsPaid,
+    markOriginalsReceived,
     cancelExpense,
     recallExpense,
     deleteExpense,
@@ -87,7 +92,21 @@ const HrmExpenseScreen: React.FC<Props> = ({
   const canCancel = expense && CANCELLABLE_STATUSES.includes(expense.status);
   const canRecall = expense && RECALLABLE_STATUSES.includes(expense.status);
   const canDelete = expense && expense.status === "DRAFT";
-  const formValid = isExpenseFormValid(formState, draftItems.length || expense?.items?.length || 0);
+  const canMarkOriginals =
+    isFinance &&
+    expense &&
+    !expense.originalsReceived &&
+    ["APPROVED", "PAID"].includes(expense.status);
+  const validationItems = isReadonly ? expense?.items ?? [] : draftItems;
+  const formErrors = isReadonly ? {} : validateExpenseForm(formState, validationItems);
+  const lineErrors = isReadonly
+    ? []
+    : validateLineItems(validationItems, {
+        categories,
+        fromDate: formState.fromDate,
+        toDate: formState.toDate,
+      });
+  const formValid = isExpenseFormValid(formState, validationItems, categories);
 
   useEffect(() => {
     if (isFinance && expense?.employeeId) {
@@ -114,7 +133,14 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   const handleUploadAttachment = async (file: File) => {
     if (!expense?.handle) return;
-    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, 0);
+    // Expense-level (unbound) attachment — not linked to a specific line item.
+    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId);
+    onActionComplete();
+  };
+
+  const handleUploadLineReceipt = async (lineIndex: number, file: File) => {
+    if (!expense?.handle) return;
+    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
     onActionComplete();
   };
 
@@ -126,6 +152,18 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   const barActions = isReadonly ? (
     <Space>
+      {canMarkOriginals && (
+        <Can I="edit">
+          <Button
+            type="primary"
+            icon={<CheckSquareOutlined />}
+            loading={approving}
+            onClick={() => markOriginalsReceived(expense!.handle, true).then(onActionComplete)}
+          >
+            Mark Originals Received
+          </Button>
+        </Can>
+      )}
       {canRecall && (
         <Can I="edit">
           <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
@@ -227,9 +265,12 @@ const HrmExpenseScreen: React.FC<Props> = ({
           readonly={isReadonly}
           outOfPolicy={isReadonly ? expense?.outOfPolicy : draftOutOfPolicy}
           justification={formState.outOfPolicyJustification}
+          justificationError={formErrors.outOfPolicyJustification}
+          lineErrors={lineErrors}
           onJustificationChange={(v) => updateFormState({ outOfPolicyJustification: v })}
           onAddItem={handleAddDraftItem}
           onRemoveItem={handleRemoveDraftItem}
+          onUploadReceipt={expense?.handle ? handleUploadLineReceipt : undefined}
         />
       </div>
     );
@@ -279,8 +320,17 @@ const HrmExpenseScreen: React.FC<Props> = ({
               {expense.paymentReference && (
                 <Descriptions.Item label="Payment Reference">{expense.paymentReference}</Descriptions.Item>
               )}
+              {expense.paymentMode && (
+                <Descriptions.Item label="Payment Mode">{expense.paymentMode}</Descriptions.Item>
+              )}
               {expense.paymentDate && (
                 <Descriptions.Item label="Payment Date">{expense.paymentDate}</Descriptions.Item>
+              )}
+              {expense.financeUserName && (
+                <Descriptions.Item label="Finance Approver">
+                  {expense.financeUserName}
+                  {expense.financeUserId ? ` (${expense.financeUserId})` : ""}
+                </Descriptions.Item>
               )}
               {expense.originalsReceived != null && (
                 <Descriptions.Item label="Originals Received">
@@ -289,7 +339,12 @@ const HrmExpenseScreen: React.FC<Props> = ({
               )}
             </Descriptions>
           ) : (
-            <ExpenseHeaderForm formState={formState} onChange={updateFormState} readonly={isReadonly} />
+            <ExpenseHeaderForm
+              formState={formState}
+              onChange={updateFormState}
+              readonly={isReadonly}
+              errors={formErrors}
+            />
           )}
         </div>
       ),
@@ -334,7 +389,29 @@ const HrmExpenseScreen: React.FC<Props> = ({
       <ExpenseScreenHeader
         title={barTitle}
         onBack={onBack}
-        extra={expense?.status ? <ExpenseStatusChip status={expense.status} /> : undefined}
+        extra={
+          expense?.status ? (
+            <Space size={8}>
+              <ExpenseStatusChip status={expense.status} />
+              {expense.lateSubmission && (
+                <Tooltip title="Submitted after the policy deadline">
+                  <Tag color="red">Late Submission</Tag>
+                </Tooltip>
+              )}
+              {expense.escalationLevel != null && expense.escalationLevel > 0 && (
+                <Tooltip
+                  title={
+                    expense.slaDeadline
+                      ? `Escalation L${expense.escalationLevel} — SLA due ${expense.slaDeadline}`
+                      : `Escalation level ${expense.escalationLevel}`
+                  }
+                >
+                  <Tag color="volcano">Escalated L{expense.escalationLevel}</Tag>
+                </Tooltip>
+              )}
+            </Space>
+          ) : undefined
+        }
         actions={barActions}
       />
 

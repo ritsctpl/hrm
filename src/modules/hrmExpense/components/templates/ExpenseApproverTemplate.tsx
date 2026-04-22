@@ -6,6 +6,7 @@ import { useHrmExpenseStore } from "../../stores/hrmExpenseStore";
 import type { ExpenseInboxTab } from "../../types/ui.types";
 
 interface Props {
+  inboxKind: "supervisor" | "finance";
   pendingPanel: React.ReactNode;
   escalatedPanel: React.ReactNode;
   decidedPanel: React.ReactNode;
@@ -14,18 +15,28 @@ interface Props {
 }
 
 const ExpenseApproverTemplate: React.FC<Props> = ({
+  inboxKind,
   pendingPanel,
   escalatedPanel,
   decidedPanel,
   pendingCount,
   escalatedCount,
 }) => {
-  const { activeInboxTab, setActiveInboxTab } = useHrmExpenseStore();
+  const {
+    activeSupervisorInboxTab,
+    activeFinanceInboxTab,
+    setActiveSupervisorInboxTab,
+    setActiveFinanceInboxTab,
+  } = useHrmExpenseStore();
+
+  const activeTab = inboxKind === "supervisor" ? activeSupervisorInboxTab : activeFinanceInboxTab;
+  const setActiveTab =
+    inboxKind === "supervisor" ? setActiveSupervisorInboxTab : setActiveFinanceInboxTab;
 
   return (
     <Tabs
-      activeKey={activeInboxTab}
-      onChange={(k) => setActiveInboxTab(k as ExpenseInboxTab)}
+      activeKey={activeTab}
+      onChange={(k) => setActiveTab(k as ExpenseInboxTab)}
       items={[
         { key: "pending", label: `Pending (${pendingCount})`, children: pendingPanel },
         { key: "escalated", label: `Escalated (${escalatedCount})`, children: escalatedPanel },

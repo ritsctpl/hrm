@@ -40,6 +40,7 @@ export interface ExpenseCreatePayload {
   expenseType: ExpenseType;
   purpose: string;
   travelRequestHandle?: string;
+  linkedAdvanceHandle?: string;
   costCenter?: string;
   projectCode?: string;
   wbsCode?: string;

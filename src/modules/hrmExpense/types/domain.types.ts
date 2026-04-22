@@ -33,11 +33,14 @@ export interface ExpenseReport {
   perDiemAmount?: number;
   outOfPolicy: boolean;
   outOfPolicyJustification?: string;
+  lateSubmission?: boolean;
   originalsReceived?: boolean;
   paymentMode?: PaymentMode;
   paymentReference?: string;
   paymentDate?: string;
   financeRemarks?: string;
+  financeUserId?: string;
+  financeUserName?: string;
   items: ExpenseItem[];
   attachments?: ExpenseAttachment[];
   approvalHistory: ExpenseApprovalAction[];
@@ -86,6 +89,7 @@ export interface ExpenseApprovalAction {
   remarks?: string;
   sanctionedAmount?: number;
   paymentReference?: string;
+  paymentMode?: PaymentMode;
   actionAt: string;
 }
 

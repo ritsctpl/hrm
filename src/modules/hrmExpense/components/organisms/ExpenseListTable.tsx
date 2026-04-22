@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Table, Empty, Button, Tooltip } from "antd";
+import { Table, Empty, Button, Tooltip, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import type { ExpenseReport } from "../../types/domain.types";
@@ -45,11 +45,18 @@ const ExpenseListTable: React.FC<Props> = ({
     {
       title: "Type",
       key: "type",
-      width: 130,
+      width: 160,
       render: (_, r) => (
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <ExpenseTypeTag expenseType={r.expenseType} />
           {r.outOfPolicy && <OutOfPolicyIcon />}
+          {r.lateSubmission && (
+            <Tooltip title="Submitted after the policy deadline">
+              <Tag color="red" style={{ marginLeft: 4 }}>
+                Late
+              </Tag>
+            </Tooltip>
+          )}
         </span>
       ),
     },

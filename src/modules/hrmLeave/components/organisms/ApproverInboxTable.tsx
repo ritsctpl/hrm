@@ -5,6 +5,7 @@ import { Checkbox, Empty, Spin, Typography, Button, Modal, Input, message } from
 import ApproverRequestRow from "../molecules/ApproverRequestRow";
 import { ApproverInboxTableProps } from "../../types/ui.types";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -27,6 +28,12 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
     selectAllRequests,
     clearSelection,
   } = useHrmLeaveStore();
+
+  const { employees } = useEmployeeOptions();
+  const resolveEmployeeName = (empId: string) => {
+    const match = employees.find(e => e.handle === empId || e.employeeCode === empId);
+    return match ? `${match.fullName} (${match.employeeCode})` : "";
+  };
 
   const [bulkLoading, setBulkLoading] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -203,6 +210,7 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
               request={req}
               isSelected={req.handle === selectedHandle}
               onClick={onRowClick}
+              resolvedEmployeeName={resolveEmployeeName(req.employeeId)}
             />
           </div>
         </div>

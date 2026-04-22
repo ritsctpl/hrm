@@ -33,29 +33,47 @@ const ExpenseApprovalTimeline: React.FC<Props> = ({ actions }) => {
 
   return (
     <Timeline
-      items={actions.map((a) => ({
-        color: ACTION_COLORS[a.action] ?? "blue",
-        children: (
-          <div>
-            <div style={{ fontSize: 12, color: "#8c8c8c", marginBottom: 4 }}>
-              {dayjs(a.actionAt).format("DD MMM YYYY, hh:mm A")}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <Tag color={ACTION_COLORS[a.action] ?? "blue"} style={{ margin: 0 }}>
-                {a.action}
-              </Tag>
-              <Text style={{ fontSize: 13 }}>
-                {a.actorName} ({a.actorRole})
-              </Text>
-              {a.remarks && (
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  — {a.remarks}
+      items={actions.map((a) => {
+        const detailParts: string[] = [];
+        if (a.sanctionedAmount != null) {
+          detailParts.push(
+            `Sanctioned INR ${a.sanctionedAmount.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+            })}`,
+          );
+        }
+        if (a.paymentMode) detailParts.push(`Mode: ${a.paymentMode}`);
+        if (a.paymentReference) detailParts.push(`Ref: ${a.paymentReference}`);
+
+        return {
+          color: ACTION_COLORS[a.action] ?? "blue",
+          children: (
+            <div>
+              <div style={{ fontSize: 12, color: "#8c8c8c", marginBottom: 4 }}>
+                {dayjs(a.actionAt).format("DD MMM YYYY, hh:mm A")}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Tag color={ACTION_COLORS[a.action] ?? "blue"} style={{ margin: 0 }}>
+                  {a.action}
+                </Tag>
+                <Text style={{ fontSize: 13 }}>
+                  {a.actorName ?? "—"} ({a.actorRole})
                 </Text>
+                {a.remarks && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    — {a.remarks}
+                  </Text>
+                )}
+              </div>
+              {detailParts.length > 0 && (
+                <div style={{ fontSize: 12, color: "#595959", marginTop: 4 }}>
+                  {detailParts.join(" · ")}
+                </div>
               )}
             </div>
-          </div>
-        ),
-      }))}
+          ),
+        };
+      })}
     />
   );
 };

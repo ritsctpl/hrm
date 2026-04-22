@@ -7,10 +7,17 @@ interface Props {
   show: boolean;
   justification: string;
   readonly?: boolean;
+  error?: string;
   onJustificationChange?: (val: string) => void;
 }
 
-const OutOfPolicyBanner: React.FC<Props> = ({ show, justification, readonly, onJustificationChange }) => {
+const OutOfPolicyBanner: React.FC<Props> = ({
+  show,
+  justification,
+  readonly,
+  error,
+  onJustificationChange,
+}) => {
   if (!show) return null;
 
   return (
@@ -21,7 +28,13 @@ const OutOfPolicyBanner: React.FC<Props> = ({ show, justification, readonly, onJ
         message="One or more items exceed the daily policy limit."
         description={
           !readonly && (
-            <Form.Item label="Justification" required style={{ marginBottom: 0, marginTop: 8 }}>
+            <Form.Item
+              label="Justification"
+              required
+              style={{ marginBottom: 0, marginTop: 8 }}
+              validateStatus={error ? "error" : undefined}
+              help={error}
+            >
               <Input.TextArea
                 placeholder="Explain why the limit was exceeded..."
                 value={justification}

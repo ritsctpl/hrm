@@ -466,11 +466,15 @@ const OrgHierarchyChart: React.FC = () => {
         </div>
       </div>
 
-      {/* Chart Canvas — pan + zoom */}
+      {/* Chart Canvas — pan + zoom.
+          Use CSS `zoom` (not transform: scale) so the element's layout size
+          grows with the zoom factor. With `transform`, the scaled content
+          overflowed but the scroll container never expanded — bottom/right
+          portions became unreachable at zoom > 1. */}
       <div className={styles.chartCanvas}>
         <div
           className={styles.chartScroll}
-          style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+          style={{ zoom }}
         >
           {viewMode === 'org' ? (
             /* Root: Company → BUs → Depts → Employees (dept-scoped) */

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm } from "antd";
+import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm, Tooltip, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, WarningOutlined } from "@ant-design/icons";
 import type { ExpenseItem, ExpenseCategory } from "../../types/domain.types";
+import type { LineItemError } from "../../utils/expenseValidations";
 import ReceiptThumbnail from "../molecules/ReceiptThumbnail";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
@@ -20,9 +21,12 @@ interface Props {
   readonly?: boolean;
   outOfPolicy?: boolean;
   justification?: string;
+  justificationError?: string;
+  lineErrors?: LineItemError[];
   onJustificationChange?: (val: string) => void;
   onAddItem?: (item: Partial<ExpenseItem>) => void;
   onRemoveItem?: (handle: string) => void;
+  onUploadReceipt?: (lineIndex: number, file: File) => void;
 }
 
 const dateFormat = "DD/MM/YYYY";
@@ -49,14 +53,21 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
   readonly,
   outOfPolicy,
   justification = "",
+  justificationError,
+  lineErrors = [],
   onJustificationChange,
   onAddItem,
   onRemoveItem,
+  onUploadReceipt,
 }) => {
   const [newRow, setNewRow] = useState<NewItemRow>({ ...defaultNewRow });
   const [adding, setAdding] = useState(false);
 
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const errorsByHandle = lineErrors.reduce<Record<string, LineItemError[]>>((acc, err) => {
+    (acc[err.handle] ||= []).push(err);
+    return acc;
+  }, {});
 
   const columns: ColumnsType<ExpenseItem> = [
     {
@@ -79,19 +90,34 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
     {
       title: "Amount",
       key: "amount",
-      width: 110,
-      render: (_, r) => (
-        <span>
-          {r.currency} {r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-          {r.outOfPolicy && <OutOfPolicyIcon />}
-        </span>
-      ),
+      width: 130,
+      render: (_, r) => {
+        const rowErrors = errorsByHandle[r.handle] ?? [];
+        const tip = rowErrors.map((e) => e.message).join("\n");
+        return (
+          <span>
+            {r.currency} {r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            {r.outOfPolicy && <OutOfPolicyIcon />}
+            {rowErrors.length > 0 && (
+              <Tooltip title={tip}>
+                <WarningOutlined style={{ color: "#ff4d4f", marginLeft: 6 }} />
+              </Tooltip>
+            )}
+          </span>
+        );
+      },
     },
     {
       title: "Receipt",
       key: "receipt",
-      width: 80,
-      render: (_, r) => <ReceiptThumbnail attachmentId={r.attachmentRef} fileName={r.categoryName} />,
+      width: 100,
+      render: (_, r, index) => (
+        <ReceiptThumbnail
+          attachmentId={r.attachmentRef}
+          fileName={r.categoryName}
+          onUpload={!readonly && onUploadReceipt ? (file) => onUploadReceipt(index, file) : undefined}
+        />
+      ),
     },
     !readonly && {
       title: "",
@@ -108,7 +134,18 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
   ].filter(Boolean) as ColumnsType<ExpenseItem>;
 
   const handleAddRow = () => {
-    if (!newRow.expenseDate || !newRow.categoryId || !newRow.amount) return;
+    if (!newRow.expenseDate) {
+      message.warning("Please pick a date for the line item.");
+      return;
+    }
+    if (!newRow.categoryId) {
+      message.warning("Please select a category.");
+      return;
+    }
+    if (!newRow.amount || newRow.amount <= 0) {
+      message.warning("Amount must be greater than zero.");
+      return;
+    }
     const category = categories.find((c) => c.categoryCode === newRow.categoryId);
     onAddItem?.({
       expenseDate: newRow.expenseDate,
@@ -117,7 +154,9 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       description: newRow.description,
       amount: newRow.amount,
       currency: newRow.currency,
-      outOfPolicy: category?.dailyLimit != null && newRow.amount > category.dailyLimit,
+      outOfPolicy:
+        (category?.dailyLimit != null && newRow.amount > category.dailyLimit) ||
+        (category?.perTripLimit != null && newRow.amount > category.perTripLimit),
     });
     setNewRow({ ...defaultNewRow });
     setAdding(false);
@@ -129,6 +168,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
         show={!!outOfPolicy}
         justification={justification}
         readonly={readonly}
+        error={justificationError}
         onJustificationChange={onJustificationChange}
       />
 
@@ -173,7 +213,8 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
                 />
                 <InputNumber
                   placeholder="Amount"
-                  min={0}
+                  min={0.01}
+                  step={0.01}
                   style={{ width: 110 }}
                   value={newRow.amount ?? undefined}
                   onChange={(v) => setNewRow((p) => ({ ...p, amount: v }))}

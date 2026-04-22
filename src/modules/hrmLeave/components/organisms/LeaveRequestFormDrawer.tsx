@@ -568,8 +568,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       message.success("Leave request submitted successfully");
       handleClose();
       onSubmitted();
-    } catch {
-      message.error("Failed to submit leave request");
+    } catch (err: unknown) {
+      // Extract actual backend error message instead of generic message
+      const apiError = err as { response?: { data?: { message_details?: { error?: string }; message?: string } }; message?: string };
+      const backendMsg =
+        apiError?.response?.data?.message_details?.error ||
+        apiError?.response?.data?.message ||
+        (err instanceof Error ? err.message : null) ||
+        "Failed to submit leave request";
+      message.error(backendMsg);
     } finally {
       setSubmitting(false);
     }

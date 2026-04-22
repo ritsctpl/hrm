@@ -6,6 +6,7 @@ import ApproverRequestRow from "../molecules/ApproverRequestRow";
 import Can from "../../../hrmAccess/components/Can";
 import { HrGlobalQueueTableProps } from "../../types/ui.types";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -28,6 +29,13 @@ const HrGlobalQueueTable: React.FC<HrGlobalQueueTableProps> = ({
     selectAllRequests,
     clearSelection,
   } = useHrmLeaveStore();
+
+  const { employees } = useEmployeeOptions();
+  // Build a name lookup from the directory for rows missing employeeName
+  const resolveEmployeeName = (empId: string) => {
+    const match = employees.find(e => e.handle === empId || e.employeeCode === empId);
+    return match ? `${match.fullName} (${match.employeeCode})` : "";
+  };
 
   const [bulkLoading, setBulkLoading] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -204,6 +212,7 @@ const HrGlobalQueueTable: React.FC<HrGlobalQueueTableProps> = ({
               request={req}
               isSelected={req.handle === selectedHandle}
               onClick={onRowClick}
+              resolvedEmployeeName={resolveEmployeeName(req.employeeId)}
             />
           </div>
         </div>

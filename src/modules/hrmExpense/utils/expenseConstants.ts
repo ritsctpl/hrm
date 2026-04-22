@@ -54,6 +54,7 @@ export const DEFAULT_EXPENSE_FORM: import("../types/ui.types").ExpenseFormState 
   expenseType: null,
   purpose: "",
   travelRequestHandle: null,
+  linkedAdvanceHandle: null,
   fromDate: null,
   toDate: null,
   costCenter: "",

@@ -15,9 +15,12 @@ import ExpenseCategoryConfig from "./components/organisms/ExpenseCategoryConfig"
 import ExpenseMasterDetailTemplate from "./components/templates/ExpenseMasterDetailTemplate";
 import ExpenseApproverTemplate from "./components/templates/ExpenseApproverTemplate";
 import ExpenseScreenHeader from "./components/organisms/ExpenseScreenHeader";
+import ExpenseReportScreen from "./components/organisms/ExpenseReportScreen";
+import UnsettledAdvancesScreen from "./components/organisms/UnsettledAdvancesScreen";
 import HrmExpenseScreen from "./HrmExpenseScreen";
 import Can from "../hrmAccess/components/Can";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { HrmExpenseService } from "./services/hrmExpenseService";
 import type { UnsettledAdvance } from "./types/api.types";
 import styles from "./styles/Expense.module.css";
 
@@ -95,6 +98,19 @@ const HrmExpenseLanding: React.FC = () => {
     setSelectedExpense(null);
     resetFormState();
     resetDraftItems();
+    setScreenMode("create");
+  };
+
+  const handleSettleAdvance = (advance: UnsettledAdvance) => {
+    setSelectedExpense(null);
+    resetDraftItems();
+    resetFormState();
+    useHrmExpenseStore.getState().updateFormState({
+      expenseType: "REIMBURSEMENT",
+      purpose: `Settlement of advance: ${advance.travelPurpose}`,
+      linkedAdvanceHandle: advance.handle,
+      currency: advance.currency,
+    });
     setScreenMode("create");
   };
 
@@ -191,28 +207,16 @@ const HrmExpenseLanding: React.FC = () => {
     </>
   );
 
-  // Employee only sees their expenses
-  if (!isSupervisor && !isFinance && !isAdmin) {
-    return (
-      <ModuleAccessGate moduleCode="HRM_EXPENSE" appTitle="Expense Reports">
-        <div className={`hrm-module-root ${styles.landing}`}>
-          <CommonAppBar appTitle="Expense Reports" />
-          {myExpensesTab}
-        </div>
-      </ModuleAccessGate>
-    );
-  }
-
-  // ── Supervisor / Finance / Admin view with tabs ───────────────────────
+  // ── Tabbed view (visible to all roles) ────────────────────────────────
 
   const buildInboxPanels = (
     inbox: typeof supervisorInbox,
     isApproverCtx: boolean,
     isFinanceCtx: boolean,
   ) => {
-    const pending = inbox.filter((e) => ["PENDING_SUPERVISOR", "PENDING_FINANCE", "SUBMITTED"].includes(e.status));
+    const pending = inbox.filter((e) => ["PENDING_SUPERVISOR", "PENDING_FINANCE"].includes(e.status));
     const escalated = inbox.filter((e) => e.status === "ESCALATED");
-    const decided = inbox.filter((e) => !["PENDING_SUPERVISOR", "PENDING_FINANCE", "SUBMITTED", "ESCALATED"].includes(e.status));
+    const decided = inbox.filter((e) => !["PENDING_SUPERVISOR", "PENDING_FINANCE", "ESCALATED"].includes(e.status));
 
     const makePanel = (items: typeof inbox) => (
       <ExpenseMasterDetailTemplate
@@ -248,6 +252,7 @@ const HrmExpenseLanding: React.FC = () => {
       label: `Supervisor Inbox (${panels.pendingCount})`,
       children: (
         <ExpenseApproverTemplate
+          inboxKind="supervisor"
           pendingPanel={panels.pendingPanel}
           escalatedPanel={panels.escalatedPanel}
           decidedPanel={panels.decidedPanel}
@@ -265,11 +270,65 @@ const HrmExpenseLanding: React.FC = () => {
       label: `Finance Inbox (${panels.pendingCount})`,
       children: (
         <ExpenseApproverTemplate
+          inboxKind="finance"
           pendingPanel={panels.pendingPanel}
           escalatedPanel={panels.escalatedPanel}
           decidedPanel={panels.decidedPanel}
           pendingCount={panels.pendingCount}
           escalatedCount={panels.escalatedCount}
+        />
+      ),
+    });
+  }
+
+  // Unsettled advances visible to all users (their own list)
+  tabItems.push({
+    key: "unsettledAdvances",
+    label: `Unsettled Advances${unsettledAdvances.length ? ` (${unsettledAdvances.length})` : ""}`,
+    children: (
+      <UnsettledAdvancesScreen
+        loadAdvances={loadUnsettledAdvances}
+        onSettleAdvance={handleSettleAdvance}
+      />
+    ),
+  });
+
+  if (isFinance || isAdmin) {
+    tabItems.push({
+      key: "reportOop",
+      label: "Out-of-Policy Report",
+      children: (
+        <ExpenseReportScreen
+          title="Out-of-Policy Report"
+          description="Expense reports flagged as out-of-policy in the selected window."
+          organizationId={organizationId}
+          fetcher={(p) => HrmExpenseService.getOutOfPolicyReport(p)}
+          requireDateRange
+        />
+      ),
+    });
+    tabItems.push({
+      key: "reportOutstanding",
+      label: "Outstanding Advances Report",
+      children: (
+        <ExpenseReportScreen
+          title="Outstanding Advances Report"
+          description="Approved advances that have not yet been settled by a reimbursement claim."
+          organizationId={organizationId}
+          fetcher={(p) => HrmExpenseService.getOutstandingAdvancesReport(p)}
+        />
+      ),
+    });
+    tabItems.push({
+      key: "reportByDate",
+      label: "Reports by Date",
+      children: (
+        <ExpenseReportScreen
+          title="Expense Reports by Date"
+          description="All expense reports submitted within the selected window."
+          organizationId={organizationId}
+          fetcher={(p) => HrmExpenseService.getByDateReport(p)}
+          requireDateRange
         />
       ),
     });

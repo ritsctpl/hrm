@@ -113,12 +113,14 @@ export class HrmExpenseService {
   }
 
   // ── Attachments ──────────────────────────────────────────────────────
-  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex: number): Promise<ReceiptUploadResponse> {
+  // lineIndex: 0-based index of the line item to bind the receipt to.
+  // Omit or pass -1 for an expense-level (unbound) attachment.
+  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex?: number): Promise<ReceiptUploadResponse> {
     const form = new FormData();
     form.append("file", file);
     form.append("expenseId", expenseId);
     form.append("organizationId", organizationId);
-    form.append("lineIndex", String(lineIndex));
+    form.append("lineIndex", String(lineIndex ?? -1));
     const { data } = await api.post(`${this.BASE}/receipt/upload`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });

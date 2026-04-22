@@ -126,13 +126,18 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   // ── Summary Stats ───────────────────────────────────────────────────
 
   const summaryStats = useMemo(() => {
-    const totalEmployees = absenteeismData.reduce((sum, d) => sum + d.totalEmployees, 0);
-    const totalLeaveDays = absenteeismData.reduce((sum, d) => sum + d.totalLeaveDays, 0);
+    const totalEmployees = absenteeismData.reduce((sum, d) => sum + (d.totalEmployees || 0), 0);
+    const totalLeaveDays = absenteeismData.reduce((sum, d) => sum + (d.totalLeaveDays || 0), 0);
+    const validRates = absenteeismData.filter(d => typeof d.absenteeismRate === 'number' && !isNaN(d.absenteeismRate));
     const avgRate =
-      absenteeismData.length > 0
-        ? absenteeismData.reduce((sum, d) => sum + d.absenteeismRate, 0) / absenteeismData.length
+      validRates.length > 0
+        ? validRates.reduce((sum, d) => sum + d.absenteeismRate, 0) / validRates.length
         : 0;
-    return { totalEmployees, totalLeaveDays, avgRate };
+    return {
+      totalEmployees: isNaN(totalEmployees) ? 0 : totalEmployees,
+      totalLeaveDays: isNaN(totalLeaveDays) ? 0 : totalLeaveDays,
+      avgRate: isNaN(avgRate) ? 0 : avgRate,
+    };
   }, [absenteeismData]);
 
   // ── Absenteeism Table Columns ───────────────────────────────────────
@@ -142,14 +147,16 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       title: "Department",
       dataIndex: "department",
       key: "department",
-      sorter: (a, b) => a.department.localeCompare(b.department),
+      render: (val: string) => val || "Unassigned",
+      sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
     },
     {
       title: "Total Employees",
       dataIndex: "totalEmployees",
       key: "totalEmployees",
       align: "right",
-      sorter: (a, b) => a.totalEmployees - b.totalEmployees,
+      render: (val: number) => val ?? 0,
+      sorter: (a, b) => (a.totalEmployees || 0) - (b.totalEmployees || 0),
     },
     {
       title: "Leave Days",

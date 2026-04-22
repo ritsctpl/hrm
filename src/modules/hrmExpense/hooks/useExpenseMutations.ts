@@ -63,6 +63,7 @@ export function useExpenseMutations() {
         expenseType: form.expenseType as ExpenseType,
         purpose: form.purpose,
         travelRequestHandle: travelHandle,
+        linkedAdvanceHandle: form.linkedAdvanceHandle || undefined,
         fromDate: form.fromDate!,
         toDate: form.toDate!,
         costCenter: form.costCenter || undefined,
@@ -262,6 +263,30 @@ export function useExpenseMutations() {
     }
   }, [organizationId, employeeId]);
 
+  const markOriginalsReceived = useCallback(
+    async (handle: string, received: boolean) => {
+      setApproving(true);
+      try {
+        const updated = await HrmExpenseService.markOriginalsReceived({
+          handle,
+          received,
+          markedBy: employeeId,
+        });
+        updateInboxExpense(handle, updated);
+        updateMyExpense(handle, updated);
+        setSelectedExpense(updated);
+        message.success(received ? "Originals marked as received." : "Originals receipt cleared.");
+        return updated;
+      } catch {
+        message.error("Failed to update originals-received status.");
+        return null;
+      } finally {
+        setApproving(false);
+      }
+    },
+    [organizationId, employeeId],
+  );
+
   const deleteExpense = useCallback(async (handle: string) => {
     setSaving(true);
     try {
@@ -285,6 +310,7 @@ export function useExpenseMutations() {
     financeSanction,
     financeReject,
     markAsPaid,
+    markOriginalsReceived,
     cancelExpense,
     recallExpense,
     deleteExpense,

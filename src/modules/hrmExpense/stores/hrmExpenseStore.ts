@@ -32,7 +32,8 @@ interface ExpenseState {
   // ── UI ────────────────────────────────────────────────────────────────
   screenMode: ExpenseScreenMode;
   activeDetailTab: ExpenseDetailTab;
-  activeInboxTab: ExpenseInboxTab;
+  activeSupervisorInboxTab: ExpenseInboxTab;
+  activeFinanceInboxTab: ExpenseInboxTab;
   formState: ExpenseFormState;
   financePanel: FinancePanelState;
   draftItems: ExpenseReport["items"];
@@ -70,7 +71,8 @@ interface ExpenseState {
   // ── Actions: UI ───────────────────────────────────────────────────────
   setScreenMode: (mode: ExpenseScreenMode) => void;
   setActiveDetailTab: (tab: ExpenseDetailTab) => void;
-  setActiveInboxTab: (tab: ExpenseInboxTab) => void;
+  setActiveSupervisorInboxTab: (tab: ExpenseInboxTab) => void;
+  setActiveFinanceInboxTab: (tab: ExpenseInboxTab) => void;
   updateFormState: (changes: Partial<ExpenseFormState>) => void;
   resetFormState: () => void;
   updateFinancePanel: (changes: Partial<FinancePanelState>) => void;
@@ -105,7 +107,8 @@ const defaultState = {
   error: null,
   screenMode: "list" as ExpenseScreenMode,
   activeDetailTab: "header" as ExpenseDetailTab,
-  activeInboxTab: "pending" as ExpenseInboxTab,
+  activeSupervisorInboxTab: "pending" as ExpenseInboxTab,
+  activeFinanceInboxTab: "pending" as ExpenseInboxTab,
   formState: { ...DEFAULT_EXPENSE_FORM },
   financePanel: { ...DEFAULT_FINANCE_PANEL },
   draftItems: [],
@@ -153,7 +156,8 @@ export const useHrmExpenseStore = create<ExpenseState>((set) => ({
 
   setScreenMode: (screenMode) => set({ screenMode }),
   setActiveDetailTab: (activeDetailTab) => set({ activeDetailTab }),
-  setActiveInboxTab: (activeInboxTab) => set({ activeInboxTab }),
+  setActiveSupervisorInboxTab: (activeSupervisorInboxTab) => set({ activeSupervisorInboxTab }),
+  setActiveFinanceInboxTab: (activeFinanceInboxTab) => set({ activeFinanceInboxTab }),
   updateFormState: (changes) => set((s) => ({ formState: { ...s.formState, ...changes } })),
   resetFormState: () => set({ formState: { ...DEFAULT_EXPENSE_FORM } }),
   updateFinancePanel: (changes) => set((s) => ({ financePanel: { ...s.financePanel, ...changes } })),

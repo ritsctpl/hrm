@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Form, Input, Radio, DatePicker, Select } from "antd";
+import { Form, Input, Radio, DatePicker } from "antd";
 import type { ExpenseFormState } from "../../types/ui.types";
+import type { ExpenseFormErrors } from "../../utils/expenseValidations";
 import CurrencyFxRow from "../molecules/CurrencyFxRow";
 import styles from "../../styles/ExpenseForm.module.css";
 import dayjs from "dayjs";
@@ -11,28 +12,40 @@ interface Props {
   formState: ExpenseFormState;
   onChange: (changes: Partial<ExpenseFormState>) => void;
   readonly?: boolean;
+  errors?: ExpenseFormErrors;
 }
 
 const dateFormat = "DD/MM/YYYY";
 
-const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly }) => {
+const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, errors = {} }) => {
   return (
     <Form layout="vertical" component="div">
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Expense Type</div>
-        <Radio.Group
-          value={formState.expenseType}
-          onChange={(e) => onChange({ expenseType: e.target.value })}
-          disabled={readonly}
+        <Form.Item
+          validateStatus={errors.expenseType ? "error" : undefined}
+          help={errors.expenseType}
+          style={{ marginBottom: 0 }}
         >
-          <Radio value="ADVANCE">Advance</Radio>
-          <Radio value="REIMBURSEMENT">Reimbursement</Radio>
-          <Radio value="MILEAGE">Mileage</Radio>
-        </Radio.Group>
+          <Radio.Group
+            value={formState.expenseType}
+            onChange={(e) => onChange({ expenseType: e.target.value })}
+            disabled={readonly}
+          >
+            <Radio value="ADVANCE">Advance</Radio>
+            <Radio value="REIMBURSEMENT">Reimbursement</Radio>
+            <Radio value="MILEAGE">Mileage</Radio>
+          </Radio.Group>
+        </Form.Item>
       </div>
 
       <div className={styles.formSection}>
-        <Form.Item label="Purpose" required>
+        <Form.Item
+          label="Purpose"
+          required
+          validateStatus={errors.purpose ? "error" : undefined}
+          help={errors.purpose}
+        >
           <Input.TextArea
             placeholder="Describe the purpose of this expense"
             rows={3}
@@ -55,7 +68,12 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly }) =
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Date Range</div>
         <div className={styles.fieldRow}>
-          <Form.Item label="From Date" required>
+          <Form.Item
+            label="From Date"
+            required
+            validateStatus={errors.fromDate || errors.dateRange ? "error" : undefined}
+            help={errors.fromDate}
+          >
             <DatePicker
               format={dateFormat}
               disabled={readonly}
@@ -64,7 +82,12 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly }) =
               style={{ width: "100%" }}
             />
           </Form.Item>
-          <Form.Item label="To Date" required>
+          <Form.Item
+            label="To Date"
+            required
+            validateStatus={errors.toDate || errors.dateRange ? "error" : undefined}
+            help={errors.toDate || errors.dateRange}
+          >
             <DatePicker
               format={dateFormat}
               disabled={readonly}
@@ -79,7 +102,12 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly }) =
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Cost Allocation</div>
         <div className={styles.fieldRow}>
-          <Form.Item label="Cost Center" required>
+          <Form.Item
+            label="Cost Center"
+            required
+            validateStatus={errors.costCenter ? "error" : undefined}
+            help={errors.costCenter}
+          >
             <Input
               placeholder="CC-001 — Sales"
               value={formState.costCenter}

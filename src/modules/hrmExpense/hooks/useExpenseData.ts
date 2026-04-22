@@ -25,8 +25,6 @@ export function useExpenseData() {
     setSupervisorInbox,
     setFinanceInbox,
     setInboxLoading,
-    setSelectedExpense,
-    setDetailLoading,
     setCategories,
     setMileageConfig,
     setError,
@@ -83,18 +81,6 @@ export function useExpenseData() {
     }
   }, [organizationId]);
 
-  const loadExpenseDetail = useCallback(async (handle: string) => {
-    setDetailLoading(true);
-    try {
-      const data = await HrmExpenseService.getExpenseByHandle({ handle });
-      setSelectedExpense(data);
-    } catch {
-      message.error("Failed to load expense details.");
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [organizationId]);
-
   const loadCategories = useCallback(async () => {
     try {
       const data = await HrmExpenseService.getCategories({ organizationId });
@@ -145,7 +131,6 @@ export function useExpenseData() {
     loadMyExpenses,
     loadSupervisorInbox,
     loadFinanceInbox,
-    loadExpenseDetail,
     loadCategories,
     loadMileageConfig,
     exportExpenses,
