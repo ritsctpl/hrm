@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, message } from "antd";
+import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, Alert, message } from "antd";
 import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined, CheckSquareOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
@@ -156,16 +156,37 @@ const HrmExpenseScreen: React.FC<Props> = ({
   }, [formState, expense?.handle, expense?.items?.length, draftItems.length, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
 
   const handleUploadAttachment = async (file: File) => {
-    if (!expense?.handle) return;
-    // Expense-level (unbound) attachment — not linked to a specific line item.
-    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId);
-    onActionComplete();
+    let handle = expense?.handle;
+    if (!handle) {
+      // Auto-save draft so the attachment has a parent expense to bind to.
+      const saved = await saveDraft(formState, undefined);
+      if (!saved) {
+        message.warning("Could not save draft. Please save manually before uploading attachments.");
+        return;
+      }
+      handle = saved.handle;
+    }
+    try {
+      await HrmExpenseService.uploadAttachment(handle, file, organizationId);
+      message.success("Attachment uploaded.");
+      onActionComplete();
+    } catch {
+      message.error("Failed to upload attachment.");
+    }
   };
 
   const handleUploadLineReceipt = async (lineIndex: number, file: File) => {
-    if (!expense?.handle) return;
-    await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
-    onActionComplete();
+    if (!expense?.handle) {
+      message.info("Please save the expense as a draft first to upload line receipts.");
+      return;
+    }
+    try {
+      await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
+      message.success("Receipt uploaded.");
+      onActionComplete();
+    } catch {
+      message.error("Failed to upload receipt.");
+    }
   };
 
   const barTitle = isNew
@@ -388,6 +409,14 @@ const HrmExpenseScreen: React.FC<Props> = ({
       label: `Attachments${expense?.attachments?.length ? ` (${expense.attachments.length})` : ""}`,
       children: (
         <div className={styles.detailBody}>
+          {isNew && (
+            <Alert
+              type="info"
+              showIcon
+              message="Save as draft to enable attachment uploads — uploading will auto-save the draft."
+              style={{ marginBottom: 12 }}
+            />
+          )}
           <ExpenseAttachmentsPanel
             attachments={expense?.attachments ?? []}
             readonly={isReadonly}

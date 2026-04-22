@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm, Tooltip, message } from "antd";
+import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm, Tooltip, Upload, Alert, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, DeleteOutlined, WarningOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, WarningOutlined, PaperClipOutlined } from "@ant-design/icons";
 import type { ExpenseItem, ExpenseCategory } from "../../types/domain.types";
 import type { LineItemError } from "../../utils/expenseValidations";
 import ReceiptThumbnail from "../molecules/ReceiptThumbnail";
@@ -37,6 +37,7 @@ interface NewItemRow {
   description: string;
   amount: number | null;
   currency: string;
+  attachmentRef: string | null;
 }
 
 const defaultNewRow: NewItemRow = {
@@ -45,6 +46,7 @@ const defaultNewRow: NewItemRow = {
   description: "",
   amount: null,
   currency: "INR",
+  attachmentRef: null,
 };
 
 const ExpenseLineItemsTable: React.FC<Props> = ({
@@ -154,6 +156,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       description: newRow.description,
       amount: newRow.amount,
       currency: newRow.currency,
+      attachmentRef: newRow.attachmentRef || undefined,
       outOfPolicy:
         (category?.dailyLimit != null && newRow.amount > category.dailyLimit) ||
         (category?.perTripLimit != null && newRow.amount > category.perTripLimit),
@@ -171,6 +174,16 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
         error={justificationError}
         onJustificationChange={onJustificationChange}
       />
+
+      {!readonly && lineItems.length === 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          message="No line items added yet"
+          description="At least one line item is required before you can submit."
+          style={{ marginBottom: 8 }}
+        />
+      )}
 
       <Table
         rowKey="handle"
@@ -219,6 +232,18 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
                   value={newRow.amount ?? undefined}
                   onChange={(v) => setNewRow((p) => ({ ...p, amount: v }))}
                 />
+                <Upload
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    setNewRow((p) => ({ ...p, attachmentRef: file.name }));
+                    return false;
+                  }}
+                >
+                  <Button size="small" icon={<PaperClipOutlined />}>
+                    {newRow.attachmentRef ?? "Receipt"}
+                  </Button>
+                </Upload>
                 <Button type="primary" size="small" onClick={handleAddRow}>Add</Button>
                 <Button size="small" onClick={() => { setAdding(false); setNewRow({ ...defaultNewRow }); }}>Cancel</Button>
               </div>
