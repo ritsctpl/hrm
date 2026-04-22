@@ -102,7 +102,19 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
         year: selectedYear,
         limit: 10,
       });
-      setTopAbsentees(res);
+      // Normalize: backend may return totalDays/leaveDays instead of totalLeaveDays
+      const normalized = (res || []).map((item: unknown) => {
+        const r = item as Record<string, unknown>;
+        return {
+        employeeId: (r.employeeId ?? r.employeeHandle ?? "") as string,
+        employeeName: (r.employeeName ?? r.fullName ?? "") as string,
+        employeeNumber: (r.employeeNumber ?? r.employeeCode ?? "") as string,
+        department: (r.department ?? "") as string,
+        totalLeaveDays: Number(r.totalLeaveDays ?? r.totalDays ?? r.leaveDays ?? 0),
+        leaveBreakdown: (r.leaveBreakdown ?? []) as { leaveTypeCode: string; days: number }[],
+      };
+      });
+      setTopAbsentees(normalized);
     } catch {
       message.error("Failed to load top absentees data");
     } finally {
@@ -266,29 +278,32 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       key: "employee",
       render: (_: unknown, record: TopAbsenteeData) => (
         <div>
-          <Text strong>{record.employeeName}</Text>
+          <Text strong>{record.employeeName || record.employeeId || "—"}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.employeeNumber}
+            {record.employeeNumber || ""}
           </Text>
         </div>
       ),
-      sorter: (a, b) => a.employeeName.localeCompare(b.employeeName),
+      sorter: (a, b) => (a.employeeName || "").localeCompare(b.employeeName || ""),
     },
     {
       title: "Department",
       dataIndex: "department",
       key: "department",
-      sorter: (a, b) => a.department.localeCompare(b.department),
+      render: (val: string) => val || "Unassigned",
+      sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
     },
     {
       title: "Total Leave Days",
       dataIndex: "totalLeaveDays",
       key: "totalLeaveDays",
       align: "right",
-      sorter: (a, b) => a.totalLeaveDays - b.totalLeaveDays,
+      sorter: (a, b) => (a.totalLeaveDays || 0) - (b.totalLeaveDays || 0),
       defaultSortOrder: "descend",
-      render: (days: number) => <Text strong>{days}</Text>,
+      render: (days: number | null | undefined) => (
+        <Text strong>{typeof days === "number" && !isNaN(days) ? days.toFixed(1) : "0.0"}</Text>
+      ),
     },
   ];
 
