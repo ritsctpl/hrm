@@ -13,6 +13,7 @@ import { HrmLeaveService } from "./services/hrmLeaveService";
 import { LeaveRequest } from "./types/domain.types";
 import { LeaveApprovalConfig } from "./types/api.types";
 import { LeavePermissions } from "./types/ui.types";
+import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
 import { HR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -33,6 +34,19 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const actorId = cookies.userId ?? "";
   const actorRole = (cookies.userRole ?? "").toUpperCase();
   const isHr = HR_ROLES.includes(actorRole);
+
+  // Resolve the logged-in user's employee handle to check if they're the
+  // actual current approver. HR can see all requests in Global Queue but
+  // can only Approve/Reject if they ARE the currentApprover. Otherwise
+  // they must use Override.
+  const currentEmployee = useCurrentEmployeeStore(s => s.data);
+  const myHandle = currentEmployee?.handle ?? "";
+  const isCurrentApprover = Boolean(
+    request.currentApproverId &&
+    myHandle &&
+    (request.currentApproverId === myHandle ||
+     request.currentApproverId.endsWith(myHandle)),
+  );
 
   const [loading, setLoading] = React.useState(false);
   const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
@@ -183,10 +197,10 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
       <LeaveRequestApprovalPanel
         request={request}
         permissions={permissions}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        onEscalate={permissions.canEscalate ? handleEscalate : undefined}
-        onReassign={permissions.canReassign ? handleReassign : undefined}
+        onApprove={isCurrentApprover ? handleApprove : undefined}
+        onReject={isCurrentApprover ? handleReject : undefined}
+        onEscalate={isCurrentApprover && permissions.canEscalate ? handleEscalate : undefined}
+        onReassign={isCurrentApprover ? handleReassign : undefined}
         onOverride={permissions.canOverride ? handleOverride : undefined}
         loading={loading}
       />

@@ -69,7 +69,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
   return (
     <div className={styles.approvalPanel}>
       <Space wrap>
-        {permissions.canApprove && (
+        {permissions.canApprove && onApprove && (
           <Can I="edit" object="leave_approval" passIf={true}>
             <Button
               type="primary"
@@ -82,7 +82,7 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
           </Can>
         )}
 
-        {permissions.canReject && (
+        {permissions.canReject && onReject && (
           <Can I="edit" object="leave_approval" passIf={true}>
             <Button
               danger
