@@ -64,6 +64,11 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const [policyForm] = Form.useForm();
   const [policySaving, setPolicySaving] = useState(false);
 
+  // Watch toggle values to conditionally enable/disable related fields
+  const carryForwardOn = Form.useWatch("carryForwardAllowed", policyForm);
+  const encashmentOn = Form.useWatch("encashmentAllowed", policyForm);
+  const negativeOn = Form.useWatch("negativeBalanceAllowed", policyForm);
+
   // BU and Department dropdowns
   const [buOptions, setBuOptions] = useState<{ value: string; label: string }[]>([]);
   const [deptOptions, setDeptOptions] = useState<{ value: string; label: string }[]>([]);
@@ -590,13 +595,13 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <Switch />
             </Form.Item>
             <Form.Item name="carryForwardCap" label="CF Cap">
-              <InputNumber min={0} />
+              <InputNumber min={0} disabled={!carryForwardOn} />
             </Form.Item>
             <Form.Item name="lapseRule" label="Lapse Rule">
-              <Select options={LAPSE_RULES} style={{ width: 140 }} allowClear />
+              <Select options={LAPSE_RULES} style={{ width: 140 }} allowClear disabled={!carryForwardOn} />
             </Form.Item>
             <Form.Item name="lapseDate" label="Lapse Date">
-              <DatePicker format="DD-MMM-YYYY" />
+              <DatePicker format="DD-MMM-YYYY" disabled={!carryForwardOn} />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">
@@ -604,10 +609,16 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <Switch />
             </Form.Item>
             <Form.Item name="encashWhen" label="Encash When">
-              <Select options={ENCASH_WHEN_OPTIONS} style={{ width: 160 }} allowClear />
+              <Select options={ENCASH_WHEN_OPTIONS} style={{ width: 160 }} allowClear disabled={!encashmentOn} />
             </Form.Item>
             <Form.Item name="encashRateFormula" label="Encash Formula">
-              <Select options={ENCASH_RATE_FORMULAS} style={{ width: 160 }} allowClear />
+              <Select options={ENCASH_RATE_FORMULAS} style={{ width: 160 }} allowClear disabled={!encashmentOn} />
+            </Form.Item>
+            <Form.Item name="minEncashableDays" label="Min Days">
+              <InputNumber min={0} disabled={!encashmentOn} />
+            </Form.Item>
+            <Form.Item name="maxEncashableDays" label="Max Days">
+              <InputNumber min={0} disabled={!encashmentOn} />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">
@@ -615,7 +626,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <Switch />
             </Form.Item>
             <Form.Item name="negativeFloor" label="Negative Floor">
-              <InputNumber />
+              <InputNumber disabled={!negativeOn} />
             </Form.Item>
             <Form.Item name="coExpiryDays" label="CO Expiry (days)">
               <InputNumber min={0} />
