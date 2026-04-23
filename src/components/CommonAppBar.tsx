@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -15,6 +15,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { fetchSiteAll } from "@services/siteServices";
+import { HrmOrganizationService } from "@modules/hrmOrganization/services/hrmOrganizationService";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import styles from "./CommonAppBar.module.css";
@@ -25,7 +26,7 @@ import { message, Modal, Select } from "antd";
 import { DecodedToken } from "@modules/userMaintenance/types/userTypes";
 import { decryptToken } from "@utils/encryption";
 import jwtDecode from "jwt-decode";
-import { updateUserSite } from "@services/userService";
+import { HrmEmployeeService } from "@modules/hrmEmployee/services/hrmEmployeeService";
 import { useRbacContext } from "@modules/hrmAccess/context/RbacContext";
 import { useCurrentEmployeeStore } from "@modules/hrmAccess/stores/currentEmployeeStore";
 import { HomeOutlined } from "@mui/icons-material";
@@ -74,7 +75,80 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   const site = rbac.currentOrganizationId;
   const availableSites = rbac.organizations.map((org) => org.organizationId);
   const currentOrg = rbac.organizations.find(o => o.organizationId === site);
-  const orgDisplayName = currentOrg?.organizationName || site || '';
+
+  // Org switcher (admin-only). Org admins (full VIEW+ADD+EDIT+DELETE on
+  // HRM_ORGANIZATION) get the full org list from the backend; regular users
+  // see only the orgs RBAC has granted them. Shown as a dropdown when the
+  // user has >1 accessible org, otherwise rendered as a read-only badge.
+  const orgActions = rbac.getModuleActions('HRM_ORGANIZATION');
+  const isOrgAdmin =
+    orgActions.includes('VIEW') &&
+    orgActions.includes('ADD') &&
+    orgActions.includes('EDIT') &&
+    orgActions.includes('DELETE');
+
+  const [allOrgs, setAllOrgs] = useState<Array<{ organizationId: string; organizationName: string }>>([]);
+  useEffect(() => {
+    if (!isOrgAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await HrmOrganizationService.fetchAllOrganizations();
+        if (!cancelled) setAllOrgs(list);
+      } catch (e) {
+        console.error('[OrgSwitcher] fetchAllOrganizations failed:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOrgAdmin]);
+
+  // Merge-preference: admin's full list takes precedence; fall back to RBAC
+  // list for non-admins (or while the admin list is loading). Dedupe by
+  // organizationId — backends have been observed returning the same org
+  // twice (e.g. "RITS" appearing both from site-service and hrm-service),
+  // which causes React duplicate-key warnings in the Select.
+  const rawSwitcherOrgs = isOrgAdmin && allOrgs.length > 0
+    ? allOrgs
+    : rbac.organizations.map(o => ({
+        organizationId: o.organizationId,
+        organizationName: o.organizationName,
+      }));
+  const switcherOrgs = useMemo(() => {
+    const seen = new Map<string, { organizationId: string; organizationName: string }>();
+    for (const o of rawSwitcherOrgs) {
+      const id = o.organizationId;
+      if (!id) continue;
+      // Keep the first occurrence, but upgrade the display name if a later
+      // duplicate carries a more informative one (non-empty, not just the id).
+      const existing = seen.get(id);
+      if (!existing) {
+        seen.set(id, { organizationId: id, organizationName: o.organizationName || id });
+      } else if (
+        (!existing.organizationName || existing.organizationName === id) &&
+        o.organizationName &&
+        o.organizationName !== id
+      ) {
+        existing.organizationName = o.organizationName;
+      }
+    }
+    return Array.from(seen.values());
+    // rawSwitcherOrgs is rebuilt every render; memoising on its length +
+    // stable inputs keeps the list stable across re-renders when nothing
+    // actually changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allOrgs, rbac.organizations, isOrgAdmin]);
+  const canSwitchOrg = switcherOrgs.length > 1;
+
+  // Display name resolution: prefer RBAC-provided name, then fall back to
+  // the admin's full org list (covers the case where the admin has switched
+  // into an org they aren't RBAC-assigned to — without this, the header
+  // would render the raw handle/UUID from the `site` cookie).
+  const orgDisplayName =
+    currentOrg?.organizationName ||
+    switcherOrgs.find(o => o.organizationId === site)?.organizationName ||
+    site ||
+    '';
+
   const allActivities = rbac.currentOrgModules.map((m) => ({
     description: m.moduleName,
     url: m.appUrl,
@@ -313,17 +387,17 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
 
       const cookies = parseCookies();
       const userId = cookies.rl_user_id;
-      const currentSite = cookies.site;
-      const payload = {
-        defaultSite: newSite,
-        site: currentSite,
-        user: userId,
-      };
 
-      const res = await updateUserSite(payload);
-      if (res.errorCode) {
+      // Persist the user's default organization — upserts UserSitePreference
+      // so the next login restores the last-selected company. No tenant
+      // update here; RBAC is created per-company in this app's model.
+      const res = await HrmEmployeeService.updateLastDefaultOrganization({
+        user: userId,
+        defaultOrganizationId: newSite,
+      }) as { errorCode?: string; message?: string; message_details?: { msg?: string } } | undefined;
+      if (res?.errorCode) {
         message.destroy();
-        message.error(res.message || "Failed to update site");
+        message.error(res?.message || "Failed to update default organization");
         return;
       }
 
@@ -341,13 +415,20 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
         maxAge: 30 * 24 * 60 * 60,
       });
 
-      // Switch organization via RBAC context
+      // Switch organization via RBAC context. Note: if the admin switches
+      // to an org not in their RBAC-assigned list, switchOrganization is a
+      // no-op — the subsequent reload rebuilds state from the cookie we
+      // just wrote, so this is still safe.
       rbac.switchOrganization(newSite);
 
       if (onSiteChange) {
         onSiteChange(newSite);
-        window.location.reload();
       }
+
+      // Always reload so every module's stores / React Query caches refetch
+      // under the new organization, regardless of whether onSiteChange is
+      // provided by the parent.
+      window.location.reload();
 
       if (res.message_details?.msg) {
         message.success(res.message_details.msg);
@@ -423,24 +504,49 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
               {appTitle}
             </Typography>
             {orgDisplayName && (
-              <Typography
-                variant="body2"
-                title={orgDisplayName}
-                style={{
-                  marginLeft: 16,
-                  padding: "4px 14px",
-                  borderRadius: 14,
-                  background: "var(--button-color, #1890ff)",
-                  color: "#ffffff",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  letterSpacing: 0.3,
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
-                }}
-              >
-                {orgDisplayName}
-              </Typography>
+              canSwitchOrg ? (
+                // Admin with access to multiple orgs — show dropdown.
+                // handleSiteChange updates the cookie + server-side default
+                // site and performs a full reload so every store / React
+                // Query cache refetches under the new organization.
+                <Select
+                  value={site || undefined}
+                  onChange={(val) => handleSiteChange(val as string)}
+                  size="small"
+                  style={{
+                    marginLeft: 16,
+                    minWidth: 180,
+                  }}
+                  popupMatchSelectWidth={260}
+                  title={orgDisplayName}
+                  showSearch
+                  optionFilterProp="label"
+                  options={switcherOrgs.map((o) => ({
+                    value: o.organizationId,
+                    label: o.organizationName || o.organizationId,
+                  }))}
+                />
+              ) : (
+                // Single org (or non-admin with one org) — read-only badge.
+                <Typography
+                  variant="body2"
+                  title={orgDisplayName}
+                  style={{
+                    marginLeft: 16,
+                    padding: "4px 14px",
+                    borderRadius: 14,
+                    background: "var(--button-color, #1890ff)",
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    letterSpacing: 0.3,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  {orgDisplayName}
+                </Typography>
+              )
             )}
  
             <Box className={styles.searchBox}>

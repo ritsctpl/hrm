@@ -21,8 +21,56 @@ import type {
 } from '../types/api.types';
 import type { BusinessUnit, Department, DepartmentNode, Location } from '../types/domain.types';
 
+/**
+ * Lightweight organization summary returned by
+ * /hrm-service/organization/retrieveAll. Each record describes one company
+ * (which in this app's model is a distinct data-scope — employees, roles,
+ * and RBAC are all created per-company).
+ *
+ * `organizationId` here is whatever value should land in the `site` cookie
+ * when this entry is selected in the header switcher. When the backend
+ * provides a per-company `handle`, it's used as the organizationId so
+ * downstream scoping reads it automatically — modules don't need to know
+ * about the tenant/company distinction.
+ */
+export interface OrganizationSummary {
+  organizationId: string;
+  organizationName: string;
+}
+
 export class HrmOrganizationService {
   private static readonly BASE = '/hrm-service/organization';
+
+  // ============================================
+  // Organizations (tenant-level)
+  // ============================================
+
+  /**
+   * Fetch every org visible to the caller — used by the header switcher.
+   *
+   * organizationId convention in this app: `legalName` with whitespace
+   * stripped. We NEVER use `handle` / UUID (those are persistence keys)
+   * and we NEVER fall back to a `site` field (that name is being retired).
+   *
+   * Source of truth for the id: backend-provided `organizationId` if
+   * present, otherwise derived from `legalName`.
+   */
+  static async fetchAllOrganizations(): Promise<OrganizationSummary[]> {
+    const res = await api.post(`${this.BASE}/retrieveAll`, {});
+    const raw = Array.isArray(res.data) ? res.data : (res.data?.organizations ?? []);
+    return (raw as Array<Record<string, unknown>>)
+      .map((o) => {
+        const legalName = String(o.legalName ?? o.organizationName ?? o.name ?? '');
+        const backendId = String(o.organizationId ?? '').trim();
+        const derivedId = legalName.replace(/\s+/g, '');
+        const id = backendId || derivedId;
+        return {
+          organizationId: id,
+          organizationName: legalName || id,
+        };
+      })
+      .filter((o) => o.organizationId);
+  }
 
   // ============================================
   // Company Profile
@@ -33,10 +81,10 @@ export class HrmOrganizationService {
     return res.data;
   }
 
-  // static async fetchAllCompanies(site: string): Promise<CompanyProfileResponse[]> {
-  //   const res = await api.post(`${this.BASE}/company/retrieveAll`, { site });
-  //   return res.data;
-  // }
+  static async fetchAllCompanies(organizationId: string): Promise<CompanyProfileResponse[]> {
+    const res = await api.post(`${this.BASE}/company/retrieveAll`, { organizationId });
+    return res.data;
+  }
 
   static async createCompany(payload: CompanyProfileRequest): Promise<CompanyProfileResponse> {
     const res = await api.post(`${this.BASE}/company/create`, payload);

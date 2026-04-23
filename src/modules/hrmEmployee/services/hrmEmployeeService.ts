@@ -47,6 +47,29 @@ import type {
 export class HrmEmployeeService {
   private static readonly BASE = '/hrm-service/employee';
 
+  /**
+   * Persist the user's currently-selected organization (company) so the
+   * next login restores it. RBAC is created per-company in this app's
+   * model, so the default lives alongside the user preference record.
+   *
+   * Backend contract:
+   *   POST /hrm-service/employee/updateLastDefaultOrganization
+   *   body: { user, defaultOrganizationId }
+   * Upserts UserSitePreference for the user; no role-assignment check
+   * (admins can freely switch between organizations).
+   */
+  static async updateLastDefaultOrganization(params: {
+    user: string;
+    defaultOrganizationId: string;
+  }): Promise<unknown> {
+    const res = await api.post(
+      `${this.BASE}/updateLastDefaultOrganization`,
+      params,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return res.data;
+  }
+
   /** Check if work email is available */
   static async checkEmailAvailability(
     organizationId: string,
