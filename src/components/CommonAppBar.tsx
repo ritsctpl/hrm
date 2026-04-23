@@ -136,6 +136,16 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   // the read-only badge, regardless of how many orgs they're RBAC-assigned.
   const canSwitchOrg = isSuperAdmin && switcherOrgs.length > 1;
 
+  console.log('[SUPER_ADMIN] CommonAppBar render', {
+    isSuperAdmin,
+    allOrgsCount: allOrgs.length,
+    switcherOrgsCount: switcherOrgs.length,
+    switcherOrgIds: switcherOrgs.map(o => o.organizationId),
+    canSwitchOrg,
+    currentSite: site,
+    rbacIsReady: rbac.isReady,
+  });
+
   // Display name resolution: prefer RBAC-provided name, then fall back to
   // the admin's full org list (covers the case where the admin has switched
   // into an org they aren't RBAC-assigned to — without this, the header
