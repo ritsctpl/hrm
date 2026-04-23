@@ -51,7 +51,7 @@ interface HrmRbacState {
 }
 
 interface HrmRbacActions {
-  initialize: (userId: string, initialOrganizationId?: string) => Promise<void>;
+  initialize: (userId: string, initialOrganizationId?: string, tokenRole?: string) => Promise<void>;
   switchOrganization: (organizationId: string) => void;
   loadSectionPermissions: (moduleCode: string) => Promise<void>;
   hasModuleAccess: (appUrl: string) => boolean;
@@ -95,7 +95,9 @@ function groupByCategory(modules: EnrichedModule[]): Record<string, EnrichedModu
 export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) => ({
   ...initialState,
 
-  initialize: async (userId: string, initialOrganizationId?: string) => {
+  initialize: async (userId: string, initialOrganizationId?: string, tokenRole?: string) => {
+    // TODO: branch on tokenRole === 'super_admin' in Task 3
+    void tokenRole;
     set({ isLoading: true, error: null });
     try {
       // Fetch user modules by organization

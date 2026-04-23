@@ -53,6 +53,7 @@ export interface MainFormData {
 
 export interface DecodedToken {
   preferred_username: string;
+  role?: string;
 }
 
 
