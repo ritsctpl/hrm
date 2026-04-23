@@ -76,20 +76,15 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   const availableSites = rbac.organizations.map((org) => org.organizationId);
   const currentOrg = rbac.organizations.find(o => o.organizationId === site);
 
-  // Org switcher (admin-only). Org admins (full VIEW+ADD+EDIT+DELETE on
-  // HRM_ORGANIZATION) get the full org list from the backend; regular users
-  // see only the orgs RBAC has granted them. Shown as a dropdown when the
-  // user has >1 accessible org, otherwise rendered as a read-only badge.
-  const orgActions = rbac.getModuleActions('HRM_ORGANIZATION');
-  const isOrgAdmin =
-    orgActions.includes('VIEW') &&
-    orgActions.includes('ADD') &&
-    orgActions.includes('EDIT') &&
-    orgActions.includes('DELETE');
+  // Org switcher (super-admin only). Super admins get the full list of
+  // every organization from the backend and can switch between them.
+  // Regular users — including org admins with full HRM_ORGANIZATION
+  // permissions — see a read-only badge of their current organization.
+  const isSuperAdmin = rbac.isSuperAdmin;
 
   const [allOrgs, setAllOrgs] = useState<Array<{ organizationId: string; organizationName: string }>>([]);
   useEffect(() => {
-    if (!isOrgAdmin) return;
+    if (!isSuperAdmin) return;
     let cancelled = false;
     (async () => {
       try {
@@ -100,14 +95,14 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       }
     })();
     return () => { cancelled = true; };
-  }, [isOrgAdmin]);
+  }, [isSuperAdmin]);
 
-  // Merge-preference: admin's full list takes precedence; fall back to RBAC
-  // list for non-admins (or while the admin list is loading). Dedupe by
+  // For super admins, prefer the freshly-fetched all-orgs list; fall back
+  // to the RBAC-synthesized list while the fetch is in flight. Dedupe by
   // organizationId — backends have been observed returning the same org
   // twice (e.g. "RITS" appearing both from site-service and hrm-service),
   // which causes React duplicate-key warnings in the Select.
-  const rawSwitcherOrgs = isOrgAdmin && allOrgs.length > 0
+  const rawSwitcherOrgs = isSuperAdmin && allOrgs.length > 0
     ? allOrgs
     : rbac.organizations.map(o => ({
         organizationId: o.organizationId,
@@ -136,8 +131,10 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
     // stable inputs keeps the list stable across re-renders when nothing
     // actually changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allOrgs, rbac.organizations, isOrgAdmin]);
-  const canSwitchOrg = switcherOrgs.length > 1;
+  }, [allOrgs, rbac.organizations, isSuperAdmin]);
+  // Dropdown is exclusive to super admins. Non-super-admins always see
+  // the read-only badge, regardless of how many orgs they're RBAC-assigned.
+  const canSwitchOrg = isSuperAdmin && switcherOrgs.length > 1;
 
   // Display name resolution: prefer RBAC-provided name, then fall back to
   // the admin's full org list (covers the case where the admin has switched
