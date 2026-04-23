@@ -139,6 +139,12 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   console.log('[SUPER_ADMIN] CommonAppBar render', {
     isSuperAdmin,
     allOrgsCount: allOrgs.length,
+    allOrgsRaw: allOrgs,
+    rbacOrgsCount: rbac.organizations.length,
+    rbacOrgsRaw: rbac.organizations.map(o => ({
+      id: o.organizationId,
+      name: o.organizationName,
+    })),
     switcherOrgsCount: switcherOrgs.length,
     switcherOrgIds: switcherOrgs.map(o => o.organizationId),
     canSwitchOrg,
