@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { Input, Select, Button, message } from 'antd';
+import { Input, Select, Button, message, Popconfirm } from 'antd';
 import { CloseOutlined, UserOutlined, EditOutlined } from '@ant-design/icons';
 import { MdDelete } from 'react-icons/md';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -115,10 +115,15 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
   }, [loadEmployees]);
 
   const handleDropdownVisibleChange = useCallback((open: boolean) => {
-    if (open && !employeesLoaded && !employeeSearchLoading) {
+    // Reload the full list on every open. Previous implementation only
+    // loaded once (`!employeesLoaded` guard) — but typing a search REPLACES
+    // `employeeOptions` with the filtered result, and selecting from that
+    // narrow list then closing the dropdown leaves the next open showing
+    // only the stale filtered rows until the user re-types.
+    if (open && !employeeSearchLoading) {
       loadEmployees('');
     }
-  }, [employeesLoaded, employeeSearchLoading, loadEmployees]);
+  }, [employeeSearchLoading, loadEmployees]);
 
   // Seed the selected employee so edit-mode shows the name, not just the code
   useEffect(() => {
@@ -150,25 +155,56 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
   }, [draft?.headOfDepartmentEmployeeId, employeeOptions, buildEmployeeOption]);
 
   // Parent department options. Guard against stale / soft-deleted rows the
-  // backend may still return: require a valid name + code and `active !== 0`.
-  // Also exclude the current department to prevent self-parenting.
+  // backend may still return. The `active` field has been seen as a number,
+  // string, or boolean depending on backend version — treat any of the known
+  // inactive markers as exclusion. Also exclude the current department to
+  // prevent self-parenting.
   const parentOptions = useMemo(() => {
-    return list
+    const isInactive = (d: { active?: unknown; status?: unknown }) => {
+      const a = d.active;
+      const s = (d.status as string | undefined)?.toUpperCase();
+      if (a === 0 || a === '0' || a === false || a === 'N') return true;
+      if (s === 'INACTIVE' || s === 'DELETED' || s === 'DISABLED') return true;
+      return false;
+    };
+    const opts = list
       .filter((d) => d.handle !== selected?.handle)
-      .filter((d) => (d.active ?? 1) !== 0)
+      .filter((d) => !isInactive(d as { active?: unknown; status?: unknown }))
       .filter((d) => !!d.deptName?.trim() && !!d.deptCode?.trim())
       .map((d) => ({
         value: d.handle,
         label: `${d.deptName} (${d.deptCode})`,
       }));
-  }, [list, selected?.handle]);
+    // If the current parent isn't in the filtered options (e.g. it's from
+    // another BU, or the list hasn't loaded yet), inject it so the Select
+    // can render a readable label instead of the raw handle.
+    const currentParent = draft?.parentDeptHandle;
+    if (currentParent && !opts.some((o) => o.value === currentParent)) {
+      const name = (draft as { parentDeptName?: string })?.parentDeptName;
+      opts.unshift({
+        value: currentParent,
+        label: name || currentParent,
+      });
+    }
+    return opts;
+  }, [list, selected?.handle, draft?.parentDeptHandle, draft]);
 
-  // Map handle -> deptCode for the collapsed selector display.
-  const handleToDeptCode = useMemo(() => {
+  // Map handle -> readable label for the collapsed selector. Prefer the
+  // departments list; fall back to the loaded draft's parentDeptName so a
+  // saved parent from a different BU still shows a name.
+  const handleToLabel = useMemo(() => {
     const map = new Map<string, string>();
-    list.forEach((d) => map.set(d.handle, d.deptCode));
+    list.forEach((d) => {
+      if (d.deptName && d.deptCode) {
+        map.set(d.handle, `${d.deptName} (${d.deptCode})`);
+      }
+    });
+    const draftParent = (draft as { parentDeptHandle?: string; parentDeptName?: string });
+    if (draftParent?.parentDeptHandle && draftParent?.parentDeptName && !map.has(draftParent.parentDeptHandle)) {
+      map.set(draftParent.parentDeptHandle, draftParent.parentDeptName);
+    }
     return map;
-  }, [list]);
+  }, [list, draft]);
 
   // Get display values for view mode
   const buName = useMemo(() => {
@@ -176,10 +212,19 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     return bu ? `${bu.buName} (${bu.buCode})` : undefined;
   }, [businessUnit.list, selectedBuHandle]);
 
+  // Prefer a readable "Name (CODE)" label. Falls back to the backend-supplied
+  // parentDeptName when the full dept entry isn't available in `list` (e.g.
+  // parent belongs to a BU that hasn't been fetched yet). Never shows the
+  // raw handle.
   const parentDeptName = useMemo(() => {
-    const parent = list.find(d => d.handle === draft?.parentDeptHandle);
-    return parent ? `${parent.deptName} (${parent.deptCode})` : undefined;
-  }, [list, draft?.parentDeptHandle]);
+    const handle = draft?.parentDeptHandle;
+    if (!handle) return undefined;
+    const parent = list.find(d => d.handle === handle);
+    if (parent) return `${parent.deptName} (${parent.deptCode})`;
+    const draftParentName = (draft as { parentDeptName?: string })?.parentDeptName;
+    if (draftParentName) return draftParentName;
+    return undefined;
+  }, [list, draft?.parentDeptHandle, draft]);
 
   const handleFieldChange = useCallback(
     (field: string, value: string | number | undefined) => {
@@ -227,13 +272,25 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
             </Button>
           )}
           {!isNew && selected && (
+            // Delete is always available to users with Delete permission —
+            // no need to enter edit mode first. The Popconfirm guards
+            // against accidental taps since the button now sits next to
+            // the passive View controls.
             <Can I="delete">
-              <Button
-                type="text"
-                danger
-                icon={<MdDelete />}
-                onClick={handleDelete}
-              />
+              <Popconfirm
+                title="Delete department"
+                description={`Delete "${selected.deptName}"? This cannot be undone.`}
+                onConfirm={handleDelete}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                cancelText="Cancel"
+              >
+                <Button
+                  type="text"
+                  danger
+                  icon={<MdDelete />}
+                />
+              </Popconfirm>
             </Can>
           )}
           <Button
@@ -307,8 +364,14 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
                   labelRender={(labelProps) => {
                     const handle = labelProps.value as string | undefined;
                     if (!handle) return null;
-                    const code = handleToDeptCode.get(handle);
-                    return <>{code ?? labelProps.label ?? handle}</>;
+                    // Prefer "Name (CODE)" so users see what they picked
+                    // rather than an opaque UUID. Falls back through the
+                    // handle-to-label map (covers parents outside current
+                    // BU list) and finally to the raw label/handle.
+                    const readable = handleToLabel.get(handle);
+                    if (readable) return <>{readable}</>;
+                    if (labelProps.label) return <>{labelProps.label}</>;
+                    return <>{handle}</>;
                   }}
                   style={{ width: '100%' }}
                 />

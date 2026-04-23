@@ -53,12 +53,16 @@ const StructureTemplate: React.FC = () => {
     [department.selected, department.isCreating]
   );
 
-  // View-first pattern: row click → view; explicit Edit → edit.
+  // View-first pattern: row click → view; explicit Edit icon → edit.
+  // The handlers (handleDeptSelect / handleDeptEdit) control `deptEditMode`
+  // directly. This effect ONLY force-engages edit mode when the user kicks
+  // off creation — it must NOT blindly reset to false on selection changes,
+  // otherwise clicking the edit icon triggers setDeptEditMode(true) and this
+  // effect immediately overrides it back to false.
   const [deptEditMode, setDeptEditMode] = useState(false);
   useEffect(() => {
     if (department.isCreating) setDeptEditMode(true);
-    else setDeptEditMode(false);
-  }, [department.selected?.handle, department.isCreating]);
+  }, [department.isCreating]);
 
   const isDeptReadOnly = useMemo(() => {
     if (department.isCreating) {

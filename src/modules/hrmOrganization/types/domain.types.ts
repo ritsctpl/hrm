@@ -79,6 +79,12 @@ export interface Address {
   pinCode?: string;
   postalCode?: string;
   country: string;
+  /** Derived — last-verified state from India Post lookup. UI-only, never sent to backend. */
+  _verifiedState?: string;
+  /** Derived — last-verified city from India Post lookup. UI-only, never sent to backend. */
+  _verifiedCity?: string;
+  /** Derived — the pincode that produced the verified state/city. UI-only, never sent to backend. */
+  _verifiedPincode?: string;
 }
 
 export interface BusinessUnit {

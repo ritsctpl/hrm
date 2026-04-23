@@ -294,6 +294,31 @@ export function getTaxIdLabel(country?: string): string {
   return getCountryValidationSpec(country).taxIdLabel;
 }
 
+// Cross-validate an address block against the pincode-derived truth stamped
+// by OrgAddressFields after a successful India Post verification. Only fires
+// for India; no-op otherwise. Catches the "user pincode-verified, then
+// manually changed state/city to mismatch" case.
+function crossValidateAddress(
+  prefix: string,
+  addr: Record<string, any> | undefined | null,
+): Record<string, string> {
+  const errs: Record<string, string> = {};
+  if (!addr) return errs;
+  const country = (addr.country || 'India').trim();
+  if (country.toLowerCase() !== 'india') return errs;
+  const vPin = addr._verifiedPincode;
+  const vState = addr._verifiedState;
+  const vCity = addr._verifiedCity;
+  if (!vPin) return errs;
+  if (vState && addr.state && addr.state !== vState) {
+    errs[`${prefix}.state`] = `State doesn't match PIN ${vPin} (expected ${vState})`;
+  }
+  if (vCity && addr.city && addr.city !== vCity) {
+    errs[`${prefix}.city`] = `City doesn't match PIN ${vPin} (expected ${vCity})`;
+  }
+  return errs;
+}
+
 export const validateCompanyProfile = (data: any): Record<string, string> => {
   const errors: Record<string, string> = {};
 
@@ -406,6 +431,11 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     });
   }
 
+  // ===== ADDRESS CROSS-VALIDATION (India only, requires prior pincode verify) =====
+  Object.assign(errors, crossValidateAddress('registeredOfficeAddress', registeredAddress));
+  const corporateAddress = data.corporateOfficeAddress || data.corporateAddress;
+  Object.assign(errors, crossValidateAddress('corporateOfficeAddress', corporateAddress));
+
   // ===== FINANCIAL YEAR - NOW REQUIRED =====
   if (!data.financialYearStartMonth?.trim()) {
     errors.financialYearStartMonth = 'Financial Year Start Month is required';
@@ -413,6 +443,20 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
 
   if (!data.financialYearEndMonth?.trim()) {
     errors.financialYearEndMonth = 'Financial Year End Month is required';
+  }
+
+  // Enforce 12-month span when both months are set. Uses modular arithmetic:
+  // (end - start + 12) % 12 === 11 iff the two months bracket exactly 12
+  // calendar months (e.g. April → March ⇒ (2 - 3 + 12) % 12 === 11).
+  const FY_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if (data.financialYearStartMonth && data.financialYearEndMonth) {
+    const s = FY_MONTHS.indexOf(data.financialYearStartMonth);
+    const e = FY_MONTHS.indexOf(data.financialYearEndMonth);
+    if (s === -1 || e === -1) {
+      errors.financialYearEndMonth = 'Invalid month';
+    } else if (((e - s + 12) % 12) !== 11) {
+      errors.financialYearEndMonth = 'Financial year must span exactly 12 months (e.g. April – March)';
+    }
   }
 
   return errors;

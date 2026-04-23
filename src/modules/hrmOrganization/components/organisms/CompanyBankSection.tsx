@@ -26,6 +26,9 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
   const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
   const [ifscLookupLoading, setIfscLookupLoading] = useState(false);
   const [ifscVerified, setIfscVerified] = useState(false);
+  // Enabled when IFSC lookup returns "not found" — lets the user enter
+  // bank/branch manually without silent bypass of the IFSC gate.
+  const [ifscManualOverride, setIfscManualOverride] = useState(false);
 
   const resetForm = useCallback(() => {
     setFormData({ ...EMPTY_BANK_ACCOUNT });
@@ -33,6 +36,7 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
     setEditingIndex(null);
     setConfirmAccountNumber('');
     setIfscVerified(false);
+    setIfscManualOverride(false);
     setIfscLookupLoading(false);
   }, []);
 
@@ -90,8 +94,10 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
     const acctNum = formData.accountNumber.trim();
     if (!acctNum) {
       errs.accountNumber = 'Account number is required';
-    } else if (!/^[0-9]{9,18}$/.test(acctNum)) {
-      errs.accountNumber = 'Account number must be 9-18 digits only';
+    } else if (!/^[0-9]{10,18}$/.test(acctNum)) {
+      // Aligned with backend rule — bank save was silently accepted by the
+      // modal but rejected at final company create, confusing users.
+      errs.accountNumber = 'Account number must be 10-18 digits';
     }
 
     if (acctNum && confirmAccountNumber !== acctNum) {
@@ -107,9 +113,15 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
 
     if (!formData.accountType) errs.accountType = 'Account type is required';
 
+    // Require IFSC verification (or explicit manual-override after "not found")
+    // so bank + branch can't be fabricated and passed to the backend.
+    if (ifsc && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc) && !ifscVerified && !ifscManualOverride) {
+      errs.ifscCode = 'Verify IFSC (click the search button) before saving';
+    }
+
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [formData, confirmAccountNumber]);
+  }, [formData, confirmAccountNumber, ifscVerified, ifscManualOverride]);
 
   const handleSave = useCallback(() => {
     if (!validateForm()) return;
@@ -156,9 +168,11 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
       setFormData((prev) => ({ ...prev, [field]: value }));
       setFormErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
 
-      // Reset IFSC verified status when IFSC changes
+      // Reset IFSC verification gates when IFSC changes — both auto-verify
+      // and manual-override must be re-established against the new code.
       if (field === 'ifscCode') {
         setIfscVerified(false);
+        setIfscManualOverride(false);
       }
     },
     []
@@ -187,11 +201,16 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
           branch: result.branch,
         }));
         setIfscVerified(true);
+        setIfscManualOverride(false);
         setFormErrors((prev) => { const next = { ...prev }; delete next.ifscCode; delete next.bankName; delete next.branchName; return next; });
         message.success(`Found: ${result.bank} — ${result.branch}, ${result.city}`);
       } else {
-        setFormErrors((prev) => ({ ...prev, ifscCode: 'IFSC code not found — enter bank details manually' }));
+        // Unknown IFSC — allow manual entry with explicit user acknowledgement
+        // rather than silent bypass.
         setIfscVerified(false);
+        setIfscManualOverride(true);
+        setFormErrors((prev) => { const next = { ...prev }; delete next.ifscCode; return next; });
+        message.warning('IFSC not found in lookup — enter bank & branch manually.');
       }
     } catch {
       setFormErrors((prev) => ({ ...prev, ifscCode: 'Lookup failed — enter bank details manually' }));
@@ -266,6 +285,7 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
               placeholder="Type to search bank..."
               filterOption={false}
               style={{ width: '100%' }}
+              disabled={ifscVerified && !ifscManualOverride}
             />
           </OrgFormField>
 
@@ -274,23 +294,25 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
               value={formData.branchName}
               onChange={(e) => handleFormChange('branchName', e.target.value)}
               placeholder="Enter branch name"
+              disabled={ifscVerified && !ifscManualOverride}
             />
           </OrgFormField>
 
           <OrgFormField label="Account Number" required error={formErrors.accountNumber}>
-            <Input
+            <Input.Password
               value={formData.accountNumber}
               onChange={(e) => {
                 const digits = e.target.value.replace(/[^0-9]/g, '');
                 handleFormChange('accountNumber', digits);
               }}
-              placeholder="9-18 digits"
+              placeholder="10-18 digits"
               maxLength={18}
+              visibilityToggle
             />
           </OrgFormField>
 
           <OrgFormField label="Re-enter Account Number" required error={formErrors.confirmAccountNumber}>
-            <Input
+            <Input.Password
               value={confirmAccountNumber}
               onChange={(e) => {
                 const digits = e.target.value.replace(/[^0-9]/g, '');
@@ -298,12 +320,13 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
               }}
               placeholder="Confirm account number"
               maxLength={18}
-              suffix={
-                confirmAccountNumber && confirmAccountNumber === formData.accountNumber
-                  ? <CheckCircleFilled style={{ color: '#52c41a' }} />
-                  : undefined
-              }
+              visibilityToggle
             />
+            {confirmAccountNumber && confirmAccountNumber === formData.accountNumber && (
+              <div style={{ marginTop: 2, fontSize: 12, color: '#52c41a' }}>
+                <CheckCircleFilled /> Account numbers match
+              </div>
+            )}
           </OrgFormField>
 
           <OrgFormField label="Account Type" required error={formErrors.accountType}>

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Input, Select, Tooltip } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, LoadingOutlined, WarningFilled } from '@ant-design/icons';
+import { AutoComplete, Button, Input, Popover, Select, Tooltip } from 'antd';
+import { CheckCircleFilled, CloseCircleFilled, LoadingOutlined, NumberOutlined, WarningFilled } from '@ant-design/icons';
+import type { PincodeEntry } from '../../utils/pincodeData';
 import OrgFormField from './OrgFormField';
 import OrgViewField from './OrgViewField';
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from '../../utils/constants';
@@ -20,6 +21,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
   prefix,
   address,
   onChange,
+  onChangeBulk,
   errors = {},
   disabled = false,
 }) => {
@@ -54,6 +56,44 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastVerifiedRef = useRef<string>('');
+
+  // ------- Pincode autocomplete (India, dataset-backed) -------
+  const [pincodeOptions, setPincodeOptions] = useState<{ value: string; label: React.ReactNode }[]>([]);
+  const [cityPincodes, setCityPincodes] = useState<string[]>([]);
+  const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
+
+  useEffect(() => {
+    if (disabled) return;
+    const country = (address.country || 'India');
+    if (country !== 'India') { setPincodeOptions([]); return; }
+    const pin = currentPincode;
+    if (pin.length < 3) { setPincodeOptions([]); return; }
+    let cancelled = false;
+    import('../../utils/pincodeData').then(async ({ searchPincodesByPrefix }) => {
+      const matches = await searchPincodesByPrefix(pin, 20);
+      if (cancelled) return;
+      setPincodeOptions(
+        matches.map((m: PincodeEntry) => ({
+          value: m.pincode,
+          label: (
+            <span>
+              <strong>{m.pincode}</strong>{' '}
+              <span style={{ color: '#8c8c8c', fontSize: 12 }}>{m.city}, {m.state}</span>
+            </span>
+          ),
+        }))
+      );
+    });
+    return () => { cancelled = true; };
+  }, [currentPincode, address.country, disabled]);
+
+  const openCityPincodes = useCallback(async () => {
+    if (!address.city) return;
+    const { getPincodesForCity } = await import('../../utils/pincodeData');
+    const rows = await getPincodesForCity(address.city);
+    setCityPincodes(rows.map((r: PincodeEntry) => r.pincode));
+    setCityPopoverOpen(true);
+  }, [address.city]);
 
   useEffect(() => {
     if (disabled) return;
@@ -92,11 +132,40 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
         const matchedState = result.state && validStates.find(
           (s) => s.toLowerCase() === result.state!.toLowerCase()
         );
+        // Apply state + city + verified-triple atomically. Sequential
+        // onChange calls each rebuild the address from a stale closure
+        // snapshot and overwrite each other — only the last call would
+        // survive, so cross-validation would never see the verified values.
+        const patch: Record<string, string> = {
+          _verifiedState: matchedState || result.state || '',
+          _verifiedCity: result.city || '',
+          _verifiedPincode: currentPincode,
+        };
         if (matchedState && address.state !== matchedState) {
-          onChange('state', matchedState);
+          patch.state = matchedState;
         }
         if (result.city && address.city !== result.city) {
-          onChange('city', result.city);
+          patch.city = result.city;
+        }
+        if (onChangeBulk) {
+          onChangeBulk(patch);
+        } else {
+          // Fallback — older callers without bulk support. Best-effort only;
+          // stamps will be incomplete due to the stale-closure problem.
+          Object.entries(patch).forEach(([k, v]) => onChange(k, v));
+        }
+      } else {
+        // Verification failed/inconclusive — clear stamps atomically so a
+        // stale triple can't mask a genuine mismatch on the next save.
+        const clearPatch: Record<string, string> = {
+          _verifiedState: '',
+          _verifiedCity: '',
+          _verifiedPincode: '',
+        };
+        if (onChangeBulk) {
+          onChangeBulk(clearPatch);
+        } else {
+          Object.entries(clearPatch).forEach(([k, v]) => onChange(k, v));
         }
       }
     }, 500);
@@ -209,61 +278,134 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
           </OrgFormField>
 
           <OrgFormField label="City" error={errors[`${prefix}.city`]}>
-            <Select
-              value={address.city || undefined}
-              onChange={(val) => handleChange('city', val)}
-              placeholder={address.state ? 'Select city' : 'Select state first'}
-              showSearch
-              allowClear
-              optionFilterProp="label"
-              options={cityOptions}
-              disabled={disabled || !address.state}
-              style={{ width: '100%' }}
-              // Allow custom entry when the curated list is missing the city
-              // (unknown state, small town, overseas corner cases).
-              popupRender={(menu) => (
-                <>
-                  {menu}
-                  {address.state && (
-                    <div style={{ borderTop: '1px solid #f0f0f0', padding: '6px 10px' }}>
-                      <Input
-                        size="small"
-                        placeholder="Can't find it? Type a custom city + press Enter"
-                        onPressEnter={(e) => {
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val) handleChange('city', val);
-                        }}
-                      />
-                    </div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Select
+                  value={address.city || undefined}
+                  onChange={(val) => handleChange('city', val)}
+                  placeholder={address.state ? 'Select city' : 'Select state first'}
+                  showSearch
+                  allowClear
+                  optionFilterProp="label"
+                  options={cityOptions}
+                  disabled={disabled || !address.state}
+                  style={{ width: '100%' }}
+                  // Allow custom entry when the curated list is missing the city
+                  // (unknown state, small town, overseas corner cases).
+                  popupRender={(menu) => (
+                    <>
+                      {menu}
+                      {address.state && (
+                        <div style={{ borderTop: '1px solid #f0f0f0', padding: '6px 10px' }}>
+                          <Input
+                            size="small"
+                            placeholder="Can't find it? Type a custom city + press Enter"
+                            onPressEnter={(e) => {
+                              const val = (e.target as HTMLInputElement).value.trim();
+                              if (val) handleChange('city', val);
+                            }}
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            />
+                />
+              </div>
+              <Popover
+                open={cityPopoverOpen}
+                onOpenChange={setCityPopoverOpen}
+                trigger="click"
+                placement="bottomRight"
+                content={
+                  cityPincodes.length ? (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 240, overflowY: 'auto', minWidth: 120 }}>
+                      {cityPincodes.map((p) => (
+                        <li
+                          key={p}
+                          style={{ padding: '4px 8px', cursor: 'pointer' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLLIElement).style.background = '#f5f5f5'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLLIElement).style.background = ''; }}
+                          onClick={() => {
+                            handleChange('pincode', p);
+                            setCityPopoverOpen(false);
+                          }}
+                        >
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <span style={{ fontSize: 12 }}>No PINs found for &quot;{address.city}&quot;</span>
+                }
+              >
+                <Button
+                  icon={<NumberOutlined />}
+                  onClick={openCityPincodes}
+                  disabled={disabled || !address.city || (address.country || 'India') !== 'India'}
+                  title="Show PINs for this city"
+                />
+              </Popover>
+            </div>
           </OrgFormField>
 
           <OrgFormField
             label={getCountryValidationSpec(address.country).postalLabel}
             error={pincodeError}
           >
-            <Input
-              value={address.pincode || address.pinCode || ''}
-              onChange={(e) => {
-                const isIndia = (address.country || 'India') === 'India';
-                const spec = getCountryValidationSpec(address.country);
-                const raw = e.target.value;
-                // India is always numeric; other countries use the spec's
-                // max length but permit alphanumeric (US dash, UK spaces,
-                // UAE digits all work via postalPattern validation).
-                const normalized = isIndia
-                  ? raw.replace(/\D/g, '').slice(0, spec.postalMax)
-                  : raw.toUpperCase().slice(0, spec.postalMax);
-                handleChange('pincode', normalized);
-              }}
-              placeholder={`Enter ${getCountryValidationSpec(address.country).postalLabel.toLowerCase()}`}
-              maxLength={getCountryValidationSpec(address.country).postalMax}
-              disabled={disabled}
-              suffix={pincodeSuffix}
-            />
+            {(address.country || 'India') === 'India' ? (
+              <AutoComplete
+                value={address.pincode || address.pinCode || ''}
+                options={pincodeOptions}
+                onChange={(val) => {
+                  const spec = getCountryValidationSpec(address.country);
+                  const normalized = String(val ?? '').replace(/\D/g, '').slice(0, spec.postalMax);
+                  handleChange('pincode', normalized);
+                }}
+                onSelect={(val) => {
+                  import('../../utils/pincodeData').then(async ({ searchPincodesByPrefix }) => {
+                    const rows = await searchPincodesByPrefix(String(val), 1);
+                    if (rows[0]) {
+                      // Atomic patch — sequential handleChange calls would
+                      // overwrite each other via stale-closure. Also stamp
+                      // the verified triple so cross-validation fires if the
+                      // user later edits state/city manually.
+                      const patch: Record<string, string> = {
+                        state: rows[0].state,
+                        city: rows[0].city,
+                        _verifiedState: rows[0].state,
+                        _verifiedCity: rows[0].city,
+                        _verifiedPincode: String(val),
+                      };
+                      if (onChangeBulk) {
+                        onChangeBulk(patch);
+                      } else {
+                        Object.entries(patch).forEach(([k, v]) => handleChange(k, v));
+                      }
+                    }
+                  });
+                }}
+                style={{ width: '100%' }}
+                disabled={disabled}
+              >
+                <Input
+                  placeholder={`Enter ${getCountryValidationSpec(address.country).postalLabel.toLowerCase()}`}
+                  maxLength={getCountryValidationSpec(address.country).postalMax}
+                  suffix={pincodeSuffix}
+                />
+              </AutoComplete>
+            ) : (
+              <Input
+                value={address.pincode || address.pinCode || ''}
+                onChange={(e) => {
+                  const spec = getCountryValidationSpec(address.country);
+                  const normalized = e.target.value.toUpperCase().slice(0, spec.postalMax);
+                  handleChange('pincode', normalized);
+                }}
+                placeholder={`Enter ${getCountryValidationSpec(address.country).postalLabel.toLowerCase()}`}
+                maxLength={getCountryValidationSpec(address.country).postalMax}
+                disabled={disabled}
+                suffix={pincodeSuffix}
+              />
+            )}
             {!pincodeError && pincodeHint && (
               <div
                 style={{

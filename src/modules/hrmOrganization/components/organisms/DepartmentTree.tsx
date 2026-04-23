@@ -21,48 +21,32 @@ interface AntTreeNode {
 
 function buildDeptNodes(
   nodes: DepartmentNode[],
-  canEdit: boolean,
-  canView: boolean,
   onViewClick?: (dept: Department) => void,
-  onEditClick?: (dept: Department) => void,
 ): AntTreeNode[] {
   return nodes.map((node) => ({
     key: node.handle,
+    // Selection is handled manually via the title onClick below. Ant Tree's
+    // built-in onSelect is disabled per-node so it can't fight with our
+    // explicit click routing.
+    selectable: false,
     title: (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-        <span>{node.deptName} ({node.deptCode})</span>
-        <span style={{ display: 'inline-flex', gap: 4, marginLeft: 8 }}>
-          {/* Row click opens read-only details. Surface an explicit View link
-              for clarity when the user has no Edit perm. */}
-          {canView && !canEdit && onViewClick && (
-            <Button
-              type="link"
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewClick(node);
-              }}
-            >
-              View
-            </Button>
-          )}
-          {canEdit && onEditClick && (
-            <Tooltip title="Edit">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditClick(node);
-                }}
-              />
-            </Tooltip>
-          )}
-        </span>
-      </div>
+      <span
+        onClick={(e) => {
+          // Single-path UX: clicking a dept row opens the form in view
+          // mode. The edit transition happens via the "Edit" button in
+          // the form header (see onEnterEditMode in DepartmentTemplate).
+          e.stopPropagation();
+          if (onViewClick) onViewClick(node);
+        }}
+        style={{ cursor: 'pointer', display: 'inline-block', width: '100%' }}
+      >
+        {node.deptName} ({node.deptCode})
+      </span>
     ),
-    children: node.children && node.children.length > 0 ? buildDeptNodes(node.children, canEdit, canView, onViewClick, onEditClick) : undefined,
+    children:
+      node.children && node.children.length > 0
+        ? buildDeptNodes(node.children, onViewClick)
+        : undefined,
     isLeaf: !node.children || node.children.length === 0,
   }));
 }
@@ -186,17 +170,11 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onEdit, onAdd
             </span>
           ),
           selectable: false,
-          children: buildDeptNodes(
-            filteredDepts,
-            permissions.canEditDepartment,
-            permissions.canViewDepartment,
-            handleViewClick,
-            handleEditClick,
-          ),
+          children: buildDeptNodes(filteredDepts, handleViewClick),
         } as AntTreeNode;
       })
       .filter(Boolean) as AntTreeNode[];
-  }, [allBuDepts, searchText, permissions.canEditDepartment, permissions.canViewDepartment, handleViewClick, handleEditClick]);
+  }, [allBuDepts, searchText, handleViewClick]);
 
   // Collect all keys for expand-all when searching
   const allKeys = useMemo(() => {

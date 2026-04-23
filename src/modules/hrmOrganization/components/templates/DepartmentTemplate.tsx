@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DepartmentTree from '../organisms/DepartmentTree';
 import DepartmentForm from '../organisms/DepartmentForm';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
@@ -32,30 +32,54 @@ const DepartmentTemplate: React.FC = () => {
     [department.selected, department.isCreating]
   );
 
-  // Determine if form should be read-only
-  // For new records: check ADD permission
-  // For existing records: check EDIT permission
+  // View-first pattern: clicking the dept name opens the form read-only.
+  // The user must explicitly click the pencil icon (or the header Edit
+  // button) to enter edit mode. The handlers below are the single source
+  // of truth for `editMode` — this effect ONLY force-engages edit mode
+  // when the user kicks off creation; it must NOT reset on selection
+  // changes, or the edit-icon click would be immediately undone.
+  const [editMode, setEditMode] = useState(false);
+  useEffect(() => {
+    if (department.isCreating) setEditMode(true);
+  }, [department.isCreating]);
+
   const isReadOnly = useMemo(() => {
     if (department.isCreating) {
-      // Creating new record - need ADD permission
+      // Creating: allow editing only if the user has ADD permission.
       return !permissions.canAddDepartment;
-    } else {
-      // Editing existing record - need EDIT permission (VIEW-only = read-only)
-      return permissions.canViewDepartment && !permissions.canEditDepartment;
     }
+    // Existing record: read-only unless the user explicitly entered edit
+    // mode AND has EDIT permission. View-only permission stays read-only.
+    return !(editMode && permissions.canEditDepartment);
   }, [
     department.isCreating,
+    editMode,
     permissions.canAddDepartment,
-    permissions.canViewDepartment,
     permissions.canEditDepartment,
   ]);
 
+  // Row click → open in view mode.
   const handleSelect = useCallback(
     (dept: Department) => {
       selectDepartment(dept);
+      setEditMode(false);
     },
     [selectDepartment]
   );
+
+  // Pencil icon → open directly in edit mode.
+  const handleEdit = useCallback(
+    (dept: Department) => {
+      selectDepartment(dept);
+      setEditMode(true);
+    },
+    [selectDepartment]
+  );
+
+  // Header "Edit" button inside the form switches an open view to edit.
+  const handleEnterEditMode = useCallback(() => {
+    setEditMode(true);
+  }, []);
 
   const handleAdd = useCallback(() => {
     setDepartmentCreating(true);
@@ -63,6 +87,7 @@ const DepartmentTemplate: React.FC = () => {
 
   const handleClose = useCallback(() => {
     selectDepartment(null);
+    setEditMode(false);
   }, [selectDepartment]);
 
   return (
@@ -70,13 +95,27 @@ const DepartmentTemplate: React.FC = () => {
       <div
         className={`${mainStyles.tableContainer} ${isFormOpen ? mainStyles.shrink : ''}`}
       >
-        <DepartmentTree onSelect={handleSelect} onAdd={handleAdd} />
+        <DepartmentTree
+          onSelect={handleSelect}
+          onEdit={handleEdit}
+          onAdd={handleAdd}
+        />
       </div>
 
       <div
         className={`${mainStyles.formContainer} ${isFormOpen ? mainStyles.show : ''}`}
       >
-        {isFormOpen && <DepartmentForm onClose={handleClose} readOnly={isReadOnly} />}
+        {isFormOpen && (
+          <DepartmentForm
+            onClose={handleClose}
+            readOnly={isReadOnly}
+            onEnterEditMode={
+              isReadOnly && !department.isCreating && permissions.canEditDepartment
+                ? handleEnterEditMode
+                : undefined
+            }
+          />
+        )}
       </div>
     </div>
   );

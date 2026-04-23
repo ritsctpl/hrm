@@ -60,6 +60,8 @@ export interface CompanyProfileState {
   activeTab: CompanyTabKey;
   errors: Record<string, string>;
   draft: Partial<CompanyProfile> | null;
+  /** UI-only flag — when true, corporate address mirrors registered live. Never persisted to backend. */
+  sameAsRegisteredOffice: boolean;
 }
 
 export interface BusinessUnitState {
@@ -130,8 +132,19 @@ export interface OrgAddressFieldsProps {
     pinCode: string;
     postalCode: string;
     country: string;
+    _verifiedState: string;
+    _verifiedCity: string;
+    _verifiedPincode: string;
   }>;
   onChange: (field: string, value: string) => void;
+  /**
+   * Optional batched update — takes a partial address patch and applies it
+   * atomically. Required when multiple fields must land in the same draft
+   * update (e.g. the post-verification state+city+verified-triple stamps),
+   * because sequential `onChange` calls each rebuild from a stale address
+   * snapshot and overwrite each other.
+   */
+  onChangeBulk?: (patch: Record<string, string>) => void;
   errors?: Record<string, string>;
   disabled?: boolean;
 }

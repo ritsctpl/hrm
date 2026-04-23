@@ -1,15 +1,10 @@
 'use client';
 
 import React, { useCallback, useState, useEffect } from 'react';
-import { Select, Button, message } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import { Select } from 'antd';
 import OrgFormField from '../molecules/OrgFormField';
 import OrgViewField from '../molecules/OrgViewField';
-import Can from '../../../hrmAccess/components/Can';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
-import { HrmOrganizationService } from '../../services/hrmOrganizationService';
-import { parseCookies } from 'nookies';
-import { getOrganizationId } from '@/utils/cookieUtils';
 import type { CompanyFinancialYearSectionProps } from '../../types/ui.types';
 import formStyles from '../../styles/HrmOrganizationForm.module.css';
 
@@ -28,73 +23,58 @@ const MONTHS = [
   { label: 'December', value: 'December' },
 ];
 
+const MONTH_NAMES = MONTHS.map((m) => m.value);
+
 const CompanyFinancialYearSection: React.FC<CompanyFinancialYearSectionProps> = ({
   disabled = false,
 }) => {
-  const { companyProfile, fetchCompanyProfile, setCompanyDraft } = useHrmOrganizationStore();
+  const { companyProfile, setCompanyDraft } = useHrmOrganizationStore();
   const data = companyProfile.data;
   const draft = companyProfile.draft;
 
   const draftRecord = draft as unknown as Record<string, unknown> | null;
   const dataRecord = data as unknown as Record<string, unknown> | null;
-  
-  // Get current values from draft or data
+
   const currentStartMonth = (draftRecord?.financialYearStartMonth as string) || (dataRecord?.financialYearStartMonth as string) || 'April';
   const currentEndMonth = (draftRecord?.financialYearEndMonth as string) || (dataRecord?.financialYearEndMonth as string) || 'March';
-  
+
   const [startMonth, setStartMonth] = useState<string>(currentStartMonth);
   const [endMonth, setEndMonth] = useState<string>(currentEndMonth);
-  const [saving, setSaving] = useState(false);
 
-  // Sync initial values to draft on mount
+  // Seed defaults into the draft on first mount so the main Save has a value
+  // even when the user never touches the dropdowns. Seed each field
+  // independently — for an existing company being edited, the draft may
+  // already carry Start Month from loaded data but not End Month (or vice
+  // versa); previous code guarded on Start alone and left End undefined,
+  // which tripped validation even when the UI showed a fallback value.
   useEffect(() => {
+    const patch: { financialYearStartMonth?: string; financialYearEndMonth?: string } = {};
     if (!draftRecord?.financialYearStartMonth) {
-      setCompanyDraft({
-        financialYearStartMonth: currentStartMonth,
-        financialYearEndMonth: currentEndMonth,
-      });
+      patch.financialYearStartMonth = currentStartMonth;
     }
+    if (!draftRecord?.financialYearEndMonth) {
+      patch.financialYearEndMonth = currentEndMonth;
+    }
+    if (Object.keys(patch).length > 0) {
+      setCompanyDraft(patch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync to draft when values change
+  // Changing the start month auto-sets the end month to start-1 (12-month FY).
+  // User can still override end month; validation will catch bad overrides.
   const handleStartMonthChange = useCallback((value: string) => {
+    const idx = MONTH_NAMES.indexOf(value);
+    const nextEnd = MONTH_NAMES[(idx + 11) % 12];
     setStartMonth(value);
-    setCompanyDraft({ financialYearStartMonth: value });
+    setEndMonth(nextEnd);
+    setCompanyDraft({ financialYearStartMonth: value, financialYearEndMonth: nextEnd });
   }, [setCompanyDraft]);
 
   const handleEndMonthChange = useCallback((value: string) => {
     setEndMonth(value);
     setCompanyDraft({ financialYearEndMonth: value });
   }, [setCompanyDraft]);
-
-  const handleSave = useCallback(async () => {
-    if (!data?.handle) {
-      message.info('Financial year will be saved with the company');
-      return;
-    }
-    const cookies = parseCookies();
-    const organizationId = getOrganizationId();
-    const userId = cookies.rl_user_id || cookies.userId || 'system';
-
-    setSaving(true);
-    try {
-      await HrmOrganizationService.updateFinancialYear({ organizationId,
-        handle: data.handle,
-        financialYearStartMonth: startMonth,
-        financialYearEndMonth: endMonth,
-        modifiedBy: userId,
-      });
-      message.success('Financial year updated successfully');
-      await fetchCompanyProfile();
-    } catch {
-      message.error('Failed to update financial year');
-    } finally {
-      setSaving(false);
-    }
-  }, [data?.handle, startMonth, endMonth, fetchCompanyProfile]);
-
-  const isCreating = !data?.handle;
-  const isEditing = companyProfile.isEditing;
 
   return (
     <div className={formStyles.contactGrid}>
@@ -119,20 +99,6 @@ const CompanyFinancialYearSection: React.FC<CompanyFinancialYearSectionProps> = 
               disabled={disabled}
             />
           </OrgFormField>
-
-          <div>
-            <Can I={isCreating ? 'add' : 'edit'}>
-              <Button
-                type="primary"
-                onClick={handleSave}
-                loading={saving}
-                disabled={isCreating}
-                title={isCreating ? 'Financial year will be saved with the company' : 'Update Financial Year'}
-              >
-                {isCreating ? 'Financial Year (will save with company)' : 'Update Financial Year'}
-              </Button>
-            </Can>
-          </div>
         </>
       ) : (
         <>

@@ -17,19 +17,16 @@ const BusinessUnitTemplate: React.FC = () => {
 
   const permissions = useOrganizationPermissions();
 
-  // View-first pattern: row click opens read-only details. The user enters
-  // edit mode explicitly via the Action-column pencil or the Edit button in
-  // the form header. Reset to view whenever the selection changes.
+  // View-first pattern: row click opens read-only details; the Action-column
+  // pencil opens edit mode directly. The handlers control `editMode`
+  // exclusively — this effect only force-engages edit mode when the user
+  // kicks off creation. It must NOT blindly reset to false on selection
+  // changes, otherwise clicking the edit icon fires setEditMode(true) and
+  // the effect immediately overrides it back to false.
   const [editMode, setEditMode] = useState(false);
   useEffect(() => {
-    if (businessUnit.isCreating) {
-      setEditMode(true);
-    } else if (businessUnit.selected?.handle) {
-      setEditMode(false);
-    } else {
-      setEditMode(false);
-    }
-  }, [businessUnit.selected?.handle, businessUnit.isCreating]);
+    if (businessUnit.isCreating) setEditMode(true);
+  }, [businessUnit.isCreating]);
 
   const isFormOpen = useMemo(
     () => businessUnit.selected !== null || businessUnit.isCreating,

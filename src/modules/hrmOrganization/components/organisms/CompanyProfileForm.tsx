@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Button, Spin, Skeleton, message } from 'antd';
-import { EditOutlined, CloseOutlined, CheckCircleOutlined, FileTextOutlined, BankOutlined, EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Button, Spin, Skeleton, message, Tooltip } from 'antd';
+import { EditOutlined, CloseOutlined, CheckCircleOutlined, FileTextOutlined, BankOutlined, EnvironmentOutlined, CalendarOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import CompanyIdentitySection from './CompanyIdentitySection';
 import CompanyStatutorySection from './CompanyStatutorySection';
 import CompanyBankSection from './CompanyBankSection';
@@ -340,7 +340,12 @@ const CompanyProfileForm: React.FC = () => {
             ref={(el) => { if (el) sectionRefs.current['financial'] = el; }}
             className={mainStyles.profileSection}
           >
-            <div className={mainStyles.profileSectionTitle}>Financial Year</div>
+            <div className={mainStyles.profileSectionTitle}>
+              Financial Year
+              <Tooltip title="Fiscal year used for payroll cycles, tax reports, and leave accrual. Default: April – March.">
+                <InfoCircleOutlined style={{ marginLeft: 8, color: '#8c8c8c', fontSize: 14, cursor: 'help' }} />
+              </Tooltip>
+            </div>
             <CompanyFinancialYearSection disabled={sectionDisabled.financial} />
           </div>
         )}

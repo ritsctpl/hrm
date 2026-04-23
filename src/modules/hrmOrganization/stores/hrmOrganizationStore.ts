@@ -72,6 +72,7 @@ export interface HrmOrganizationState {
   saveCompanyProfile: () => Promise<void>;
   setCompanyError: (field: string, error: string) => void;
   clearCompanyErrors: () => void;
+  setSameAsRegisteredOffice: (value: boolean) => void;
 
   // Business Unit Actions
   fetchBusinessUnits: () => Promise<void>;
@@ -140,6 +141,7 @@ const initialCompanyProfileState: CompanyProfileState = {
   activeTab: 'identity',
   errors: {},
   draft: null,
+  sameAsRegisteredOffice: false,
 };
 
 const initialBusinessUnitState: BusinessUnitState = {
@@ -191,6 +193,42 @@ const initialHierarchyState: HierarchyState = {
 function getUserId(): string {
   const cookies = parseCookies();
   return cookies.rl_user_id || cookies.userId || 'system';
+}
+
+// Extract a user-friendly message from an Axios / fetch error thrown by the
+// service layer. Prefers the backend's structured `message_details.msg`
+// (which carries the specific reason — e.g. "CIN already registered:
+// U12345…") over a generic fallback. Falls back to a friendly message only
+// when the backend returns nothing structured.
+function describeCompanyConflict(error: unknown): string | null {
+  const anyErr = error as {
+    response?: {
+      status?: number;
+      data?: {
+        message?: string;
+        message_details?: { msg_type?: string; msg?: string };
+      } | string;
+    };
+    message?: string;
+  };
+  const status = anyErr?.response?.status;
+  const data = anyErr?.response?.data;
+
+  // Preferred: backend's structured error with the specific reason.
+  if (data && typeof data === 'object') {
+    const detailMsg = data.message_details?.msg;
+    if (detailMsg) return detailMsg;
+  }
+
+  const flatMsg =
+    (typeof data === 'string' ? data : '') ||
+    (typeof data === 'object' && data ? data.message : undefined) ||
+    anyErr?.message ||
+    '';
+  const haystack = flatMsg.toLowerCase();
+  const isConflict = status === 409 || /already|exists|duplicate/.test(haystack);
+  if (!isConflict) return null;
+  return 'A company with this name or identifier already exists in this organization. Please use a different legal name / PAN.';
 }
 
 // ============================================
@@ -272,16 +310,16 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     }));
 
     try {
-      let data;
-      // TODO: Uncomment fetchAllCompanies when API is ready
-      // try {
-      //   data = await HrmOrganizationService.fetchAllCompanies(organizationId);
-      // } catch {
-      //   data = await HrmOrganizationService.fetchBySite(organizationId);
-      // }
-      data = await HrmOrganizationService.fetchBySite(organizationId);
-      
-      // Backend may return single object or array
+      // Backend now supports multi-company per organization. Try the new
+      // retrieveAll endpoint first; fall back to the single-company
+      // retrieveBySite for older backends.
+      let data: unknown;
+      try {
+        data = await HrmOrganizationService.fetchAllCompanies(organizationId);
+      } catch {
+        data = await HrmOrganizationService.fetchBySite(organizationId);
+      }
+
       const rawItems = Array.isArray(data) ? data : data ? [data] : [];
       const items = rawItems as unknown as CompanyListItem[];
       set((state) => ({
@@ -359,11 +397,23 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         processedData.gstIn = processedData.gstin;
       }
       
+      // Auto-detect "same as registered" so the checkbox reflects stored
+      // reality on load. Deep-compare the five UI-relevant address fields;
+      // if both addresses are non-empty and equal, mirror mode is assumed.
+      const reg: any = processedData?.registeredOfficeAddress || (processedData as any)?.registeredAddress;
+      const corp: any = processedData?.corporateOfficeAddress || (processedData as any)?.corporateAddress;
+      const serialize = (a: any) => a
+        ? JSON.stringify({ line1: a.line1 || '', city: a.city || '', state: a.state || '', pincode: a.pincode || '', country: a.country || '' })
+        : '';
+      const sameAsRegisteredOffice =
+        !!reg && !!corp && serialize(reg) !== '' && serialize(reg) === serialize(corp);
+
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
           data: processedData,
           draft: { ...processedData },
+          sameAsRegisteredOffice,
           isLoading: false,
           isEditing: false,
         },
@@ -438,7 +488,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         isPrimary: account.isPrimary || false,
       }));
 
-      // Prepare registered office address
+      // Prepare registered office address.
+      // NOTE: Whitelist backend-facing fields here. DO NOT switch to
+      // `{ ...registeredAddress }` — the draft carries derived fields
+      // (`_verifiedState`, `_verifiedCity`, `_verifiedPincode`) stamped by
+      // OrgAddressFields for frontend cross-validation only; they must never
+      // leak to the backend contract.
       const registeredAddress = (companyProfile.draft.registeredOfficeAddress || companyProfile.draft.registeredAddress || {}) as any;
       const registeredOfficeAddress = {
         line1: registeredAddress.line1 || '',
@@ -522,8 +577,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         },
       }));
     } catch (error: unknown) {
+      const conflictMsg = describeCompanyConflict(error);
       const errMsg =
-        error instanceof Error ? error.message : 'Failed to save company profile';
+        conflictMsg ?? (error instanceof Error ? error.message : 'Failed to save company profile');
       console.error('saveCompanyProfile error:', errMsg);
       set((state) => ({
         companyProfile: {
@@ -546,6 +602,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   clearCompanyErrors: () =>
     set((state) => ({
       companyProfile: { ...state.companyProfile, errors: {} },
+    })),
+
+  setSameAsRegisteredOffice: (value) =>
+    set((state) => ({
+      companyProfile: { ...state.companyProfile, sameAsRegisteredOffice: value },
     })),
 
   // ------------------------------------------
