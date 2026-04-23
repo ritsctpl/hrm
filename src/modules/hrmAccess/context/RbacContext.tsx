@@ -12,6 +12,7 @@ import type {
 export interface RbacContextType {
   currentOrganizationId: string;
   userId: string;
+  isSuperAdmin: boolean;
   organizations: OrganizationModules[];
   currentOrgModules: EnrichedModule[];
   modulesByCategory: Record<string, EnrichedModule[]>;
@@ -32,6 +33,7 @@ export function RbacContextProvider({ children }: { children: React.ReactNode })
   const value: RbacContextType = {
     currentOrganizationId: store.currentOrganizationId,
     userId: store.userId,
+    isSuperAdmin: store.isSuperAdmin,
     organizations: store.organizations,
     currentOrgModules: store.currentOrgModules,
     modulesByCategory: store.modulesByCategory,

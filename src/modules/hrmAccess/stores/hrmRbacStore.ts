@@ -23,6 +23,13 @@ const EMPTY_PERMS: ModulePermissions = Object.freeze({
   canDelete: false,
 });
 
+const ALL_TRUE_PERMS: ModulePermissions = Object.freeze({
+  canView: true,
+  canAdd: true,
+  canEdit: true,
+  canDelete: true,
+});
+
 function buildPermissionsMap(modules: EnrichedModule[]): ModulePermissionsMap {
   const map: ModulePermissionsMap = {};
   for (const mod of modules) {
@@ -37,12 +44,48 @@ function buildPermissionsMap(modules: EnrichedModule[]): ModulePermissionsMap {
   return map;
 }
 
+// For super admins: build a permissionsByModule map where every listed
+// module has full V/A/E/D. Same shape as buildPermissionsMap so every
+// consumer of the map sees the same data on both paths.
+function buildSuperAdminPermissionsMap(modules: EnrichedModule[]): ModulePermissionsMap {
+  const map: ModulePermissionsMap = {};
+  for (const mod of modules) {
+    map[mod.moduleCode] = { ...ALL_TRUE_PERMS };
+  }
+  return map;
+}
+
+// For super admins: build a section-permissions cache where every module
+// maps to every known object (from the registry) set to ALL_TRUE_PERMS.
+// Modules not in the object registry get a single self-keyed entry —
+// purely to keep ModuleAccessGate's `sectionCache === undefined` spinner
+// check from hanging.
+function buildSuperAdminSectionCache(
+  modules: EnrichedModule[],
+): Record<string, ModuleSectionPermissions> {
+  const cache: Record<string, ModuleSectionPermissions> = {};
+  for (const mod of modules) {
+    const objectCodes = getObjectCodesForModule(mod.moduleCode);
+    const sectionPerms: ModuleSectionPermissions = {};
+    if (objectCodes.length > 0) {
+      for (const code of objectCodes) {
+        sectionPerms[code] = { ...ALL_TRUE_PERMS };
+      }
+    } else {
+      sectionPerms[mod.moduleCode] = { ...ALL_TRUE_PERMS };
+    }
+    cache[mod.moduleCode] = sectionPerms;
+  }
+  return cache;
+}
+
 interface HrmRbacState {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
   userId: string;
   currentOrganizationId: string;
+  isSuperAdmin: boolean;
   organizations: OrganizationModules[];
   currentOrgModules: EnrichedModule[];
   modulesByCategory: Record<string, EnrichedModule[]>;
@@ -75,6 +118,7 @@ const initialState: HrmRbacState = {
   error: null,
   userId: '',
   currentOrganizationId: '',
+  isSuperAdmin: false,
   organizations: [],
   currentOrgModules: [],
   modulesByCategory: {},
