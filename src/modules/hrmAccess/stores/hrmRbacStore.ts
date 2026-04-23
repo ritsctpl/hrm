@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { parseCookies, setCookie } from 'nookies';
 import { HrmAccessService } from '../services/hrmAccessService';
+import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { getRootObjectCode, getObjectCodesForModule } from '../utils/moduleObjectRegistry';
 import type { PermissionAction } from '../types/api.types';
 import type {
@@ -95,7 +96,7 @@ interface HrmRbacState {
 
 interface HrmRbacActions {
   initialize: (userId: string, initialOrganizationId?: string, tokenRole?: string) => Promise<void>;
-  switchOrganization: (organizationId: string) => void;
+  switchOrganization: (organizationId: string) => Promise<void>;
   loadSectionPermissions: (moduleCode: string) => Promise<void>;
   hasModuleAccess: (appUrl: string) => boolean;
   getModuleActions: (moduleCode: string) => PermissionAction[];
@@ -140,9 +141,99 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
   ...initialState,
 
   initialize: async (userId: string, initialOrganizationId?: string, tokenRole?: string) => {
-    // TODO: branch on tokenRole === 'super_admin' in Task 3
-    void tokenRole;
     set({ isLoading: true, error: null });
+
+    const isSuperAdmin = tokenRole === 'super_admin';
+
+    if (isSuperAdmin) {
+      try {
+        // 1. All orgs (not /rbac/userModulesByOrganization, which returns
+        //    only assigned orgs — a super admin typically has none).
+        const allOrgSummaries = await HrmOrganizationService.fetchAllOrganizations();
+
+        if (allOrgSummaries.length === 0) {
+          console.warn(
+            '[hrmRbacStore] Super admin detected but fetchAllOrganizations returned 0 orgs.',
+          );
+        }
+
+        // 2. Resolve current org with fallthrough:
+        //    a) initialOrganizationId only if present in the fetched list,
+        //    b) site preference only if present in the fetched list,
+        //    c) first org in the list.
+        const isInList = (id?: string) =>
+          !!id && allOrgSummaries.some((o) => o.organizationId === id);
+
+        let currentOrganizationId = isInList(initialOrganizationId) ? initialOrganizationId! : '';
+        if (!currentOrganizationId) {
+          try {
+            const sitePref = await HrmAccessService.getUserSitePreference(userId);
+            if (sitePref.success && isInList(sitePref.currentSite || undefined)) {
+              currentOrganizationId = sitePref.currentSite!;
+            }
+          } catch {
+            // ignore preference errors
+          }
+        }
+        if (!currentOrganizationId && allOrgSummaries.length > 0) {
+          currentOrganizationId = allOrgSummaries[0].organizationId;
+        }
+
+        // 3. Write site cookie so downstream getOrganizationId() works
+        //    synchronously when gated children mount.
+        if (currentOrganizationId) {
+          setCookie(null, 'site', currentOrganizationId, {
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60,
+          });
+        }
+
+        // 4. Fetch full module registry for the current org.
+        let currentOrgModules: EnrichedModule[] = [];
+        if (currentOrganizationId) {
+          try {
+            const allModules = await HrmAccessService.fetchAllModules(currentOrganizationId);
+            currentOrgModules = allModules.map((m) => ({
+              moduleCode: m.moduleCode,
+              moduleName: m.moduleName,
+              moduleCategory: m.moduleCategory,
+              appUrl: m.appUrl,
+              actions: ['VIEW', 'ADD', 'EDIT', 'DELETE'],
+            }));
+          } catch (err) {
+            console.warn('[hrmRbacStore] fetchAllModules failed for super admin:', err);
+            // Leave empty — E6 fallback; retry via org-switch or reload.
+          }
+        }
+
+        // 5. Synthesize organizations[] — current org has modules; others
+        //    are stubs with modules:[] (lazy-hydrated on switch).
+        const organizations: OrganizationModules[] = allOrgSummaries.map((o) => ({
+          organizationId: o.organizationId,
+          organizationName: o.organizationName,
+          modules: o.organizationId === currentOrganizationId ? currentOrgModules : [],
+        }));
+
+        set({
+          isLoading: false,
+          isReady: true,
+          isSuperAdmin: true,
+          userId,
+          currentOrganizationId,
+          organizations,
+          currentOrgModules,
+          modulesByCategory: groupByCategory(currentOrgModules),
+          permissionsByModule: buildSuperAdminPermissionsMap(currentOrgModules),
+          sectionPermissionCache: buildSuperAdminSectionCache(currentOrgModules),
+        });
+        return;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to initialize super admin RBAC';
+        set({ isLoading: false, error: message, isSuperAdmin: false });
+        return;
+      }
+    }
+
     try {
       // Fetch user modules by organization
       const userModules = await HrmAccessService.fetchUserModulesByOrganization(userId);
@@ -221,8 +312,60 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     }
   },
 
-  switchOrganization: (organizationId: string) => {
-    const { organizations, userId } = get();
+  switchOrganization: async (organizationId: string) => {
+    const state = get();
+
+    if (state.isSuperAdmin) {
+      const orgEntry = state.organizations.find(o => o.organizationId === organizationId);
+      if (!orgEntry) {
+        console.warn(
+          '[hrmRbacStore] switchOrganization: org not in cached list:',
+          organizationId,
+        );
+        return;
+      }
+
+      let enrichedModules: EnrichedModule[] = orgEntry.modules;
+      if (enrichedModules.length === 0) {
+        try {
+          const allModules = await HrmAccessService.fetchAllModules(organizationId);
+          enrichedModules = allModules.map((m) => ({
+            moduleCode: m.moduleCode,
+            moduleName: m.moduleName,
+            moduleCategory: m.moduleCategory,
+            appUrl: m.appUrl,
+            actions: ['VIEW', 'ADD', 'EDIT', 'DELETE'],
+          }));
+        } catch (err) {
+          console.warn('[hrmRbacStore] fetchAllModules failed on super-admin switch:', err);
+          enrichedModules = [];
+        }
+      }
+
+      setCookie(null, 'site', organizationId, { path: '/', maxAge: 30 * 24 * 60 * 60 });
+
+      // Cache the resolved modules back onto the org entry so a future
+      // switch back to this org skips the fetch.
+      const updatedOrganizations = state.organizations.map(o =>
+        o.organizationId === organizationId ? { ...o, modules: enrichedModules } : o,
+      );
+
+      set({
+        currentOrganizationId: organizationId,
+        organizations: updatedOrganizations,
+        currentOrgModules: enrichedModules,
+        modulesByCategory: groupByCategory(enrichedModules),
+        permissionsByModule: buildSuperAdminPermissionsMap(enrichedModules),
+        sectionPermissionCache: buildSuperAdminSectionCache(enrichedModules),
+      });
+
+      HrmAccessService.updateDefaultSite(state.userId, organizationId).catch(err => {
+        console.warn('Failed to persist default site:', err);
+      });
+      return;
+    }
+
+    const { organizations, userId } = state;
     const org = organizations.find(o => o.organizationId === organizationId);
     if (!org) return;
 
@@ -245,7 +388,33 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
   },
 
   loadSectionPermissions: async (moduleCode: string) => {
-    const { sectionPermissionCache, currentOrganizationId, userId } = get();
+    const state = get();
+
+    if (state.isSuperAdmin) {
+      if (state.sectionPermissionCache[moduleCode]) return;
+      // Write the synthesized all-true record so ModuleAccessGate's
+      // direct slice watch transitions from undefined → populated and
+      // stops showing a spinner. Idempotent.
+      const fresh = buildSuperAdminSectionCache([
+        {
+          moduleCode,
+          moduleName: moduleCode,
+          moduleCategory: '',
+          appUrl: '',
+          actions: [],
+        } as EnrichedModule,
+      ])[moduleCode];
+      set(s => ({
+        sectionPermissionCache: { ...s.sectionPermissionCache, [moduleCode]: fresh },
+        permissionsByModule: {
+          ...s.permissionsByModule,
+          [moduleCode]: { ...ALL_TRUE_PERMS },
+        },
+      }));
+      return;
+    }
+
+    const { sectionPermissionCache, currentOrganizationId, userId } = state;
     if (sectionPermissionCache[moduleCode]) return;
     if (!currentOrganizationId || !userId) return;
 
@@ -332,21 +501,25 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
   },
 
   hasModuleAccess: (appUrl: string) => {
+    if (get().isSuperAdmin) return true;
     const { currentOrgModules } = get();
     return currentOrgModules.some(m => m.appUrl === appUrl);
   },
 
   getModuleActions: (moduleCode: string) => {
+    if (get().isSuperAdmin) return ['VIEW', 'ADD', 'EDIT', 'DELETE'];
     const { currentOrgModules } = get();
     const mod = currentOrgModules.find(m => m.moduleCode === moduleCode);
     return mod?.actions || [];
   },
 
   getModulePermissions: (moduleCode: string) => {
+    if (get().isSuperAdmin) return { ...ALL_TRUE_PERMS };
     return get().permissionsByModule[moduleCode] || EMPTY_PERMS;
   },
 
   getObjectPermissions: (moduleCode: string, objectName: string) => {
+    if (get().isSuperAdmin) return { ...ALL_TRUE_PERMS };
     const state = get();
     const sectionPerms = state.sectionPermissionCache[moduleCode];
     // Resolution rules:
@@ -364,7 +537,27 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
   },
 
   getSectionPermissions: (moduleCode: string) => {
-    return get().sectionPermissionCache[moduleCode] || null;
+    const state = get();
+    if (state.isSuperAdmin) {
+      const cached = state.sectionPermissionCache[moduleCode];
+      if (cached) return cached;
+      // Module not seen at init — build on the fly + write back so repeat
+      // reads hit the cache instead of rebuilding.
+      const fresh = buildSuperAdminSectionCache([
+        {
+          moduleCode,
+          moduleName: moduleCode,
+          moduleCategory: '',
+          appUrl: '',
+          actions: [],
+        } as EnrichedModule,
+      ])[moduleCode];
+      set(s => ({
+        sectionPermissionCache: { ...s.sectionPermissionCache, [moduleCode]: fresh },
+      }));
+      return fresh;
+    }
+    return state.sectionPermissionCache[moduleCode] || null;
   },
 
   clearSectionCache: () => {

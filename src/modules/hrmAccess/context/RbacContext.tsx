@@ -20,7 +20,7 @@ export interface RbacContextType {
   isReady: boolean;
   hasModuleAccess: (appUrl: string) => boolean;
   getModuleActions: (moduleCode: string) => PermissionAction[];
-  switchOrganization: (site: string) => void;
+  switchOrganization: (site: string) => Promise<void>;
   loadSectionPermissions: (moduleCode: string) => Promise<void>;
   getSectionPermissions: (moduleCode: string) => ModuleSectionPermissions | null;
 }
