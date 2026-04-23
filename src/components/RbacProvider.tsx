@@ -21,11 +21,20 @@ export default function RbacProvider({ children }: { children: React.ReactNode }
       const decryptedToken = decryptToken(token);
       const decoded: DecodedToken = jwtDecode<DecodedToken>(decryptedToken);
       const username = decoded.preferred_username;
-      const tokenRole = decoded.role;
+      const realmRoles = decoded.realm_access?.roles ?? [];
+      const isSuperAdmin = realmRoles.includes('super_admin');
       const cookies = parseCookies();
       const initialOrganizationId = cookies.site || undefined;
 
-      initialize(username, initialOrganizationId, tokenRole).then(() => {
+      console.log('[SUPER_ADMIN] RbacProvider decoded token', {
+        username,
+        realmRoles,
+        isSuperAdmin,
+        initialOrganizationId,
+        fullClaims: decoded,
+      });
+
+      initialize(username, initialOrganizationId, isSuperAdmin).then(() => {
         setInitialized(true);
       });
     } catch (err) {
