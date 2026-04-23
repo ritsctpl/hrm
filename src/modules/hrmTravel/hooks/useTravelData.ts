@@ -65,8 +65,10 @@ export function useTravelData() {
     try {
       const data = await HrmTravelService.getPolicies({ organizationId });
       useHrmTravelStore.getState().setPolicies(data);
-    } catch {
-      // non-critical, silently fail
+    } catch (err) {
+      console.error("Failed to load travel policies:", err);
+      message.error("Failed to load travel policies. Admin can still create new policies below.");
+      useHrmTravelStore.getState().setPolicies([]);
     }
   }, [organizationId]);
 

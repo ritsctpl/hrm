@@ -3,7 +3,6 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { Alert, Button, Tabs, Typography, Space } from "antd";
 import { PlusOutlined, DownloadOutlined, WarningOutlined } from "@ant-design/icons";
-import { parseCookies } from "nookies";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
@@ -21,20 +20,27 @@ import UnsettledAdvancesScreen from "./components/organisms/UnsettledAdvancesScr
 import HrmExpenseScreen from "./HrmExpenseScreen";
 import Can from "../hrmAccess/components/Can";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { useCan } from "../hrmAccess/hooks/useCan";
 import { HrmExpenseService } from "./services/hrmExpenseService";
 import type { UnsettledAdvance } from "./types/api.types";
 import styles from "./styles/Expense.module.css";
 
 const { Text } = Typography;
 
-const SUPERVISOR_ROLES = ["SUPERVISOR", "NEXT_SUPERIOR", "MANAGER"];
-const FINANCE_ROLES = ["FINANCE", "FINANCE_ADMIN"];
-const ADMIN_ROLES = ["ADMIN", "HR", "SUPERADMIN"];
-
 const HrmExpenseLanding: React.FC = () => {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const role = cookies.userRole ?? "EMPLOYEE";
+
+  // ── Object-level RBAC (drives tab visibility, inbox loading, detail context)
+  // These check per-object perms from the loaded section cache (see useCan).
+  const recordPerms = useCan("HRM_EXPENSE", "expense_record");
+  const approvalPerms = useCan("HRM_EXPENSE", "expense_approval");
+  const financePerms = useCan("HRM_EXPENSE", "expense_finance_approval");
+  const categoryPerms = useCan("HRM_EXPENSE", "expense_category");
+
+  const canViewRecords = recordPerms.canView;
+  const canViewApproval = approvalPerms.canView;
+  const canViewFinance = financePerms.canView;
+  const canViewCategories = categoryPerms.canView;
 
   const {
     myExpenses,
@@ -68,10 +74,6 @@ const HrmExpenseLanding: React.FC = () => {
     loadUnsettledAdvances,
   } = useExpenseData();
 
-  const isSupervisor = SUPERVISOR_ROLES.includes(role);
-  const isFinance = FINANCE_ROLES.includes(role);
-  const isAdmin = ADMIN_ROLES.includes(role);
-
   const [unsettledAdvances, setUnsettledAdvances] = useState<UnsettledAdvance[]>([]);
 
   // Load data on mount
@@ -83,16 +85,16 @@ const HrmExpenseLanding: React.FC = () => {
   }, [organizationId]);
 
   useEffect(() => {
-    if (isSupervisor || isAdmin) {
+    if (canViewApproval) {
       loadSupervisorInbox();
     }
-  }, [organizationId, role]);
+  }, [organizationId, canViewApproval]);
 
   useEffect(() => {
-    if (isFinance || isAdmin) {
+    if (canViewFinance) {
       loadFinanceInbox();
     }
-  }, [organizationId, role]);
+  }, [organizationId, canViewFinance]);
 
   // Auto-trigger search when filters or debounced search term change
   useEffect(() => {
@@ -142,8 +144,8 @@ const HrmExpenseLanding: React.FC = () => {
   const handleActionComplete = () => {
     loadMyExpenses();
     loadUnsettledAdvances().then(setUnsettledAdvances);
-    if (isSupervisor || isAdmin) loadSupervisorInbox();
-    if (isFinance || isAdmin) loadFinanceInbox();
+    if (canViewApproval) loadSupervisorInbox();
+    if (canViewFinance) loadFinanceInbox();
     setSelectedExpense(null);
     setScreenMode("list");
     resetDraftItems();
@@ -196,7 +198,7 @@ const HrmExpenseLanding: React.FC = () => {
             <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
               Export CSV
             </Button>
-            <Can I="add">
+            <Can I="add" object="expense_record">
               <Button type="primary" icon={<PlusOutlined />} onClick={handleNewExpense}>
                 New Expense
               </Button>
@@ -255,11 +257,15 @@ const HrmExpenseLanding: React.FC = () => {
     };
   };
 
-  const tabItems = [
-    { key: "myExpenses", label: "My Expenses", children: myExpensesTab },
-  ];
+  // Tab visibility driven by object-level RBAC (not role codes).
+  // Each object code maps to an RBAC permission row in the Permission Matrix.
+  const tabItems: { key: string; label: string; children: React.ReactNode }[] = [];
 
-  if (isSupervisor || isAdmin) {
+  if (canViewRecords) {
+    tabItems.push({ key: "myExpenses", label: "My Expenses", children: myExpensesTab });
+  }
+
+  if (canViewApproval) {
     const panels = buildInboxPanels(supervisorInbox, true, false);
     tabItems.push({
       key: "supervisorInbox",
@@ -277,7 +283,7 @@ const HrmExpenseLanding: React.FC = () => {
     });
   }
 
-  if (isFinance || isAdmin) {
+  if (canViewFinance) {
     const panels = buildInboxPanels(financeInbox, false, true);
     tabItems.push({
       key: "financeInbox",
@@ -295,19 +301,21 @@ const HrmExpenseLanding: React.FC = () => {
     });
   }
 
-  // Unsettled advances visible to all users (their own list)
-  tabItems.push({
-    key: "unsettledAdvances",
-    label: `Unsettled Advances${unsettledAdvances.length ? ` (${unsettledAdvances.length})` : ""}`,
-    children: (
-      <UnsettledAdvancesScreen
-        loadAdvances={loadUnsettledAdvances}
-        onSettleAdvance={handleSettleAdvance}
-      />
-    ),
-  });
+  // Unsettled advances tied to a user's own expense records.
+  if (canViewRecords) {
+    tabItems.push({
+      key: "unsettledAdvances",
+      label: `Unsettled Advances${unsettledAdvances.length ? ` (${unsettledAdvances.length})` : ""}`,
+      children: (
+        <UnsettledAdvancesScreen
+          loadAdvances={loadUnsettledAdvances}
+          onSettleAdvance={handleSettleAdvance}
+        />
+      ),
+    });
+  }
 
-  if (isFinance || isAdmin) {
+  if (canViewFinance) {
     tabItems.push({
       key: "reportOop",
       label: "Out-of-Policy Report",
@@ -348,7 +356,7 @@ const HrmExpenseLanding: React.FC = () => {
     });
   }
 
-  if (isAdmin) {
+  if (canViewCategories) {
     tabItems.push({
       key: "categoryConfig",
       label: "Expense Categories",

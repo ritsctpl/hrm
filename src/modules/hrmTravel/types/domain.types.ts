@@ -97,7 +97,29 @@ export interface TravelModeCatalog {
   INTERNATIONAL: TravelMode[];
 }
 
+export interface GradeEntitlement {
+  grade: string;
+  travelClass: "ECONOMY" | "PREMIUM_ECONOMY" | "BUSINESS" | "FIRST";
+  hotelCategory: "3_STAR" | "4_STAR" | "5_STAR" | "PREMIUM";
+  perDiemAmount: number;
+  perDiemCurrency: string;
+}
+
+export interface ApprovalLevel {
+  level: number;
+  upToAmount: number;
+  approverRole: string;
+  slaHours: number;
+}
+
+export interface BlackoutPeriod {
+  startDate: string;
+  endDate: string;
+  reason: string;
+}
+
 export interface TravelPolicy {
+  // Core (existing, backward compatible)
   handle?: string;
   site?: string;
   travelType: TravelType;
@@ -111,4 +133,48 @@ export interface TravelPolicy {
   modifiedDateTime?: string;
   createdBy?: string;
   modifiedBy?: string;
+
+  // Grade entitlements (travel class, hotel, per-diem by grade)
+  gradeEntitlements?: GradeEntitlement[];
+
+  // Expense caps (daily ceilings)
+  maxLodgingPerDay?: number;
+  maxMealsPerDay?: number;
+  maxIncidentalsPerDay?: number;
+  expenseCurrency?: string;
+
+  // Advance policy
+  advanceEnabled?: boolean;
+  maxAdvanceAmount?: number;
+  maxAdvancePercent?: number;
+  advanceSettlementDays?: number;
+
+  // Booking rules
+  advanceBookingWindowDays?: number;
+  preferredVendors?: string[];
+  selfBookingThreshold?: number;
+
+  // Approval matrix
+  approvalMatrix?: ApprovalLevel[];
+
+  // Claim submission
+  claimDeadlineDaysAfterReturn?: number;
+  mandatoryDocuments?: string[];
+
+  // International specifics (only relevant for INTERNATIONAL type)
+  visaRequiredDaysBefore?: number;
+  forexLimitAmount?: number;
+  forexLimitCurrency?: string;
+  insuranceMandatory?: boolean;
+  vaccinationRequirements?: string;
+
+  // Cancellation
+  cancellationRefundWindowDays?: number;
+  cancellationChargePercent?: number;
+
+  // Leave integration
+  autoOnDutyOnApproval?: boolean;
+
+  // Blackout periods
+  blackoutPeriods?: BlackoutPeriod[];
 }

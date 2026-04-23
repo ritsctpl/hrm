@@ -1,4 +1,11 @@
-import type { TravelMode, TravelStatus, TravelType } from "./domain.types";
+import type {
+  TravelMode,
+  TravelStatus,
+  TravelType,
+  GradeEntitlement,
+  ApprovalLevel,
+  BlackoutPeriod,
+} from "./domain.types";
 
 export interface SiteRequest {
   organizationId: string;
@@ -119,6 +126,32 @@ export interface TravelPolicyUpdatePayload {
   allowedFileTypes: string[];
   maxFileSizeMb: number;
   maxFileCount: number;
+
+  // Extended HRM standard fields (optional; backend ignores unknowns for now)
+  gradeEntitlements?: GradeEntitlement[];
+  maxLodgingPerDay?: number;
+  maxMealsPerDay?: number;
+  maxIncidentalsPerDay?: number;
+  expenseCurrency?: string;
+  advanceEnabled?: boolean;
+  maxAdvanceAmount?: number;
+  maxAdvancePercent?: number;
+  advanceSettlementDays?: number;
+  advanceBookingWindowDays?: number;
+  preferredVendors?: string[];
+  selfBookingThreshold?: number;
+  approvalMatrix?: ApprovalLevel[];
+  claimDeadlineDaysAfterReturn?: number;
+  mandatoryDocuments?: string[];
+  visaRequiredDaysBefore?: number;
+  forexLimitAmount?: number;
+  forexLimitCurrency?: string;
+  insuranceMandatory?: boolean;
+  vaccinationRequirements?: string;
+  cancellationRefundWindowDays?: number;
+  cancellationChargePercent?: number;
+  autoOnDutyOnApproval?: boolean;
+  blackoutPeriods?: BlackoutPeriod[];
 }
 
 // ── Catalog ─────────────────────────────────────────────────────────

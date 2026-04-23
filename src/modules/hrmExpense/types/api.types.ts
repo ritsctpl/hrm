@@ -189,7 +189,9 @@ export interface ExpenseCategorySavePayload {
   requiresAttachment?: boolean;
   mileageCategory?: boolean;
   mileageRatePerKm?: number;
+  active?: number;
   createdBy: string;
+  modifiedBy?: string;
 }
 
 export interface ExpenseCategoryDeleteRequest {

@@ -86,8 +86,13 @@ export function useExpenseData() {
     try {
       const data = await HrmExpenseService.getCategories({ organizationId });
       setCategories(data);
-    } catch {
-      // non-critical, silently fail
+    } catch (error: any) {
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message;
+      console.error("[Expense] Failed to load categories:", error);
+      message.error(backendMessage || "Failed to load expense categories.");
     }
   }, [organizationId]);
 
