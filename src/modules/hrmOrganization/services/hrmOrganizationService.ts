@@ -48,22 +48,22 @@ export class HrmOrganizationService {
   /**
    * Fetch every org visible to the caller — used by the header switcher.
    *
-   * organizationId convention in this app: `legalName` with whitespace
-   * stripped. We NEVER use `handle` / UUID (those are persistence keys)
-   * and we NEVER fall back to a `site` field (that name is being retired).
+   * organizationId convention in this app: ALWAYS derived from `legalName`
+   * — trimmed, with whitespace runs collapsed to a single `_`. Example:
+   * "RITS Consulting and Technology Pvt Ltd" → "RITS_Consulting_and_Technology_Pvt_Ltd".
    *
-   * Source of truth for the id: backend-provided `organizationId` if
-   * present, otherwise derived from `legalName`.
+   * We deliberately ignore any `organizationId` / `handle` / `site` field
+   * the backend may return for this endpoint — those are legacy short
+   * handles (e.g. "RITS") and the app has converged on legalName-derived
+   * ids as the canonical identifier.
    */
   static async fetchAllOrganizations(): Promise<OrganizationSummary[]> {
     const res = await api.post(`${this.BASE}/retrieveAll`, {});
     const raw = Array.isArray(res.data) ? res.data : (res.data?.organizations ?? []);
     return (raw as Array<Record<string, unknown>>)
       .map((o) => {
-        const legalName = String(o.legalName ?? o.organizationName ?? o.name ?? '');
-        const backendId = String(o.organizationId ?? '').trim();
-        const derivedId = legalName.replace(/\s+/g, '');
-        const id = backendId || derivedId;
+        const legalName = String(o.legalName ?? o.organizationName ?? o.name ?? '').trim();
+        const id = legalName.replace(/\s+/g, '_');
         return {
           organizationId: id,
           organizationName: legalName || id,
