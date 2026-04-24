@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { parseCookies } from "nookies";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, message } from "antd";
-import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, Modal, message } from "antd";
+import { ReloadOutlined, PlusOutlined, EditOutlined, UploadOutlined, GiftOutlined } from "@ant-design/icons";
 import { HrmLeaveService } from "./services/hrmLeaveService";
 import CommonAppBar from "@/components/CommonAppBar";
 import EmployeeDashboard from "./components/organisms/EmployeeDashboard";
@@ -42,6 +42,7 @@ import { useLeavePermissions } from "./hooks/useLeavePermissions";
 import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
 import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
 import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
+import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS } from "./utils/constants";
 import { buildYearOptions } from "./utils/transformations";
 import { LeaveRequest } from "./types/domain.types";
@@ -160,11 +161,15 @@ const SupervisorTeamHistory: React.FC<SupervisorTeamHistoryProps> = ({
 const HrmLeaveLanding: React.FC = () => {
   const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  // Use the resolved employee handle from currentEmployeeStore (populated
-  // during app init). This is the actual DB handle the backend expects,
-  // NOT the login username/email from cookies.
+  // Resolve the signed-in employee's identity. Backend leave service
+  // expects composite `"EMP0012 - John Doe"` for employeeId / approverId /
+  // createdBy / etc. (employee service is excluded — it still takes the
+  // raw handle/code). We pass the composite as `employeeId` down the tree
+  // and let the drawer reach for identity.handle internally for the one
+  // hrm-service/employee/* call it makes (fetchProfile).
   const currentEmployee = useCurrentEmployeeStore(s => s.data);
-  const employeeId = currentEmployee?.handle ?? cookies.employeeId ?? cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  const employeeId = identity.employeeIdWithName || currentEmployee?.handle || cookies.employeeId || cookies.userId || "";
   const cookieRole = (cookies.userRole ?? cookies.role ?? "EMPLOYEE").toUpperCase();
 
   // RBAC-driven role: canDelete -> Admin/HR, canEdit -> Supervisor, canAdd -> Employee.
@@ -236,6 +241,12 @@ const HrmLeaveLanding: React.FC = () => {
   } = useHrmLeaveStore();
 
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+
+  // Ledger panel action modals (Manual / Bulk / Comp-Off) — kept at the top
+  // of the page so users don't have to scroll past tables to reach the forms.
+  const [manualAdjModalOpen, setManualAdjModalOpen] = useState(false);
+  const [bulkAdjModalOpen, setBulkAdjModalOpen] = useState(false);
+  const [compOffCreditModalOpen, setCompOffCreditModalOpen] = useState(false);
 
   // Load data based on role on mount
   useEffect(() => {
@@ -587,9 +598,20 @@ const HrmLeaveLanding: React.FC = () => {
     label: `${lt.code} - ${lt.name}`,
   }));
 
+  // Resolve ledger-filter employee UUID → "EMP-CODE · Full Name" for the
+  // card header (UUIDs are meaningless to HR users).
+  const ledgerEmployeeLabel = (() => {
+    if (!ledgerEmployeeId) return "";
+    const matchFromOptions = employeeOptions.find(
+      (o) => o.value === ledgerEmployeeId,
+    )?.label;
+    return matchFromOptions ?? ledgerEmployeeId;
+  })();
+
   const ledgerPanel = (
     <div className={styles.ledgerPanel}>
-      {/* Filter toolbar */}
+      {/* Filter toolbar + action buttons (forms moved into modals so they
+          are always accessible without scrolling past the tables). */}
       <div className={styles.ledgerToolbar}>
         <span className={styles.ledgerToolbarLabel}>Employee</span>
         <Select
@@ -625,13 +647,35 @@ const HrmLeaveLanding: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
           Refresh
         </Button>
+        <div style={{ flex: 1 }} />
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
+          onClick={() => setManualAdjModalOpen(true)}
+        >
+          Manual Adjust
+        </Button>
+        <Button
+          icon={<UploadOutlined />}
+          onClick={() => setBulkAdjModalOpen(true)}
+        >
+          Bulk Adjust
+        </Button>
+        <Button
+          icon={<GiftOutlined />}
+          onClick={() => setCompOffCreditModalOpen(true)}
+        >
+          Credit Comp-Off
+        </Button>
       </div>
 
       {/* Top: Balance Summary + Ledger History */}
       <div className={styles.ledgerTopGrid}>
         <div className={styles.ledgerCard}>
           <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>Balance Summary</span>
+            <span className={styles.ledgerCardTitle}>
+              Balance Summary{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
+            </span>
           </div>
           <div className={styles.ledgerCardBody}>
             <BalanceSummaryTable
@@ -644,45 +688,80 @@ const HrmLeaveLanding: React.FC = () => {
         <div className={styles.ledgerCard}>
           <div className={styles.ledgerCardHeader}>
             <span className={styles.ledgerCardTitle}>
-              Ledger History {ledgerEmployeeId ? `— ${ledgerEmployeeId}` : ""}
+              Ledger History{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
             </span>
           </div>
           <div className={styles.ledgerCardBody}>
-            <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+            {!ledgerEmployeeId ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <Text type="secondary">
+                    Select an employee from the toolbar to view ledger entries.
+                  </Text>
+                }
+                style={{ padding: "32px 0" }}
+              />
+            ) : (
+              <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Bottom: Adjustment forms */}
-      <div className={styles.ledgerFormsGrid}>
-        <div className={styles.ledgerCard}>
-          <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>Manual Adjustment</span>
-          </div>
-          <div className={styles.ledgerCardBody}>
-            <ManualAdjustmentForm organizationId={organizationId} onAdjusted={() => loadLedgerHistory()} />
-          </div>
-        </div>
-        <div className={styles.ledgerCard}>
-          <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>Credit Comp Off (Direct)</span>
-          </div>
-          <div className={styles.ledgerCardBody}>
-            <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-              For workflow-based comp-off, employees submit claims from their dashboard.
-            </Text>
-            <CompOffCreditForm organizationId={organizationId} onCredited={() => loadLedgerHistory()} />
-          </div>
-        </div>
-        <div className={styles.ledgerCard}>
-          <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>Bulk Adjustment</span>
-          </div>
-          <div className={styles.ledgerCardBody}>
-            <BulkAdjustmentForm organizationId={organizationId} onAdjusted={() => loadLedgerHistory()} />
-          </div>
-        </div>
-      </div>
+      <Modal
+        title="Manual Adjustment"
+        open={manualAdjModalOpen}
+        onCancel={() => setManualAdjModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={560}
+      >
+        <ManualAdjustmentForm
+          organizationId={organizationId}
+          onAdjusted={() => {
+            loadLedgerHistory();
+            setManualAdjModalOpen(false);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        title="Bulk Adjustment"
+        open={bulkAdjModalOpen}
+        onCancel={() => setBulkAdjModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={720}
+      >
+        <BulkAdjustmentForm
+          organizationId={organizationId}
+          onAdjusted={() => {
+            loadLedgerHistory();
+            setBulkAdjModalOpen(false);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        title="Credit Comp-Off (Direct)"
+        open={compOffCreditModalOpen}
+        onCancel={() => setCompOffCreditModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={560}
+      >
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
+          For workflow-based comp-off, employees submit claims from their dashboard.
+        </Text>
+        <CompOffCreditForm
+          organizationId={organizationId}
+          onCredited={() => {
+            loadLedgerHistory();
+            setCompOffCreditModalOpen(false);
+          }}
+        />
+      </Modal>
     </div>
   );
 

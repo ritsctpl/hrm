@@ -11,6 +11,7 @@ import { TeamCalendarEntry } from "../../types/api.types";
 import { LeaveRequest } from "../../types/domain.types";
 import { LEAVE_TYPE_COLORS } from "../../utils/constants";
 import { useHolidayCalendar } from "../../hooks/useHolidayCalendar";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import styles from "../../styles/HrmLeave.module.css";
 
 interface TeamCalendarViewProps {
@@ -19,8 +20,11 @@ interface TeamCalendarViewProps {
 
 const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
   const cookies = parseCookies();
+  const identity = useEmployeeIdentity();
   const organizationId = getOrganizationId();
-  const supervisorId = cookies.userId ?? "";
+  // Leave service's getTeamCalendar expects composite "EMP0012 - John Doe"
+  // for managerId. Falls back to cookie for legacy environments.
+  const supervisorId = identity.employeeIdWithName || cookies.userId || "";
 
   const now = dayjs();
   const [month, setMonth] = useState<number>(now.month());

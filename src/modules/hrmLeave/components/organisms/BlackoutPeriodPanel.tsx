@@ -21,6 +21,7 @@ import { parseCookies } from "nookies";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import type { LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -31,7 +32,9 @@ const { RangePicker } = DatePicker;
 const BlackoutPeriodPanel: React.FC = () => {
   const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for audit fields.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
 
   const [blackouts, setBlackouts] = useState<LeaveBlackoutPeriod[]>([]);
   const [loading, setLoading] = useState(false);

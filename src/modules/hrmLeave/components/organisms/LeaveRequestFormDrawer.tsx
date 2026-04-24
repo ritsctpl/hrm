@@ -18,6 +18,7 @@ import DateRangePicker from "../molecules/DateRangePicker";
 import Can from "../../../hrmAccess/components/Can";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayService";
 import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
@@ -86,6 +87,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   onSubmitted,
 }) => {
   const cookies = parseCookies();
+  const identity = useEmployeeIdentity();
+  // Backend accepts composite `"EMP0012 - John Doe"` for employee-id fields
+  // across all non-employee services. Falls back to plain employeeCode if
+  // fullName hasn't resolved yet (gate the submit on identity.isReady).
   const userId = cookies.userId ?? employeeId;
   const buHandle = cookies.buHandle ?? "";
 
@@ -103,7 +108,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
 
   // When HR picks an employee, target overrides the prop. Otherwise the
   // logged-in user's id is used.
+  //
+  // The `employeeId` prop from the parent is now the composite form
+  // (`"EMP0012 - John Doe"`) used by non-employee services. For the
+  // single employee-service call below (`HrmEmployeeService.fetchProfile`),
+  // we need the raw DB handle instead — reach for identity.handle when
+  // submitting for self, or fall back to the composite otherwise (the HR
+  // picker path; backend will still accept a handle-shaped value).
   const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
+  const effectiveEmployeeHandle = formTargetEmployeeId ?? identity.handle ?? employeeId;
   // HR users (indicated by allowEmployeeSelection) can submit any date
   // without backdated restrictions.
   const isHrUser = allowEmployeeSelection;
@@ -248,7 +261,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         .catch(() => {
           if (!cancelled) setFetchedBalances([]);
         });
-      HrmEmployeeService.fetchProfile(organizationId, effectiveEmployeeId)
+      HrmEmployeeService.fetchProfile(organizationId, effectiveEmployeeHandle)
         .then((raw) => {
           if (cancelled) return;
           const rawObj = raw as unknown as Record<string, unknown>;
@@ -546,11 +559,25 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
 
   const handleSubmit = async () => {
     if (!canSubmit || !leaveFormState.leaveTypeCode) return;
+    if (!identity.isReady) {
+      message.error("Employee identity not resolved yet. Please retry.");
+      return;
+    }
     setSubmitting(true);
     try {
+      // When HR is submitting on behalf of another employee (formTarget is
+      // set), the `employeeId` field must carry that employee's composite
+      // id — not the logged-in user's. When there's no override, the
+      // submitter is also the leave owner, so we use identity.
+      // NOTE: formTargetEmployeeId currently flows from the picker as a
+      // UUID/code; HR-override path still needs the picker to emit
+      // composite values — tracked as part of the broader PR 2 sweep.
+      const submitterComposite = identity.employeeIdWithName;
+      const employeeIdForPayload = formTargetEmployeeId ?? submitterComposite;
+
       const payload = {
         organizationId,
-        employeeId: effectiveEmployeeId,
+        employeeId: employeeIdForPayload,
         leaveTypeCode: leaveFormState.leaveTypeCode,
         startDate: leaveFormState.startDate!,
         endDate: leaveFormState.endDate!,
@@ -559,7 +586,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         totalDays: leaveFormState.totalDays,
         reason: leaveFormState.reason,
         attachmentPath: leaveFormState.attachmentPath ?? undefined,
-        createdBy: userId,
+        createdBy: submitterComposite,
         attachments: attachments.map((a) => a.base64),
         handoverEmployeeId: handoverPerson,
       } as Parameters<typeof HrmLeaveService.submitLeaveRequest>[0];

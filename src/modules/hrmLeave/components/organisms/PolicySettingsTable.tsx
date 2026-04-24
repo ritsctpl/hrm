@@ -35,6 +35,7 @@ import {
   ENCASH_RATE_FORMULAS,
 } from "../../utils/constants";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -47,7 +48,9 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   onRefresh,
 }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for audit fields.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [editingType, setEditingType] = useState<LeaveType | null>(null);
   const [typeForm] = Form.useForm();

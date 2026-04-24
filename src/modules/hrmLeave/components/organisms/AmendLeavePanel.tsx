@@ -16,6 +16,7 @@ import type { UploadFile } from "antd";
 import dayjs from "dayjs";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import { LeaveRequest } from "../../types/domain.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
 
@@ -38,7 +39,9 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   onAmended,
 }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for modifiedBy.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<

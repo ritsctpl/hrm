@@ -24,6 +24,7 @@ import dayjs from "dayjs";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ApprovalLevel, DelegationEntry } from "../../types/api.types";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -41,7 +42,9 @@ interface ApprovalConfigPanelProps {
 
 const ApprovalConfigPanel: React.FC<ApprovalConfigPanelProps> = ({ organizationId }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for audit fields.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const [form] = Form.useForm();
   const [delegationForm] = Form.useForm();
   const [loading, setLoading] = useState(false);

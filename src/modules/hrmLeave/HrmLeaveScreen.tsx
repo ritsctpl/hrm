@@ -14,6 +14,7 @@ import { LeaveRequest } from "./types/domain.types";
 import { LeaveApprovalConfig } from "./types/api.types";
 import { LeavePermissions } from "./types/ui.types";
 import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
+import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import { HR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -31,7 +32,12 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   onActionComplete,
 }) => {
   const cookies = parseCookies();
-  const actorId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" in actor/cancelled-by
+  // fields. Falls back to the login cookie while identity hasn't resolved
+  // — callers should avoid triggering actions in that window but this keeps
+  // the UI responsive instead of crashing.
+  const actorId = identity.employeeIdWithName || cookies.userId || "";
   const actorRole = (cookies.userRole ?? "").toUpperCase();
   const isHr = HR_ROLES.includes(actorRole);
 

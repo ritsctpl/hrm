@@ -29,6 +29,7 @@ import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { AccrualRunPanelProps } from "../../types/ui.types";
 import { AccrualBatch } from "../../types/api.types";
 import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -140,7 +141,9 @@ const extractError = (err: unknown, fallback: string): string => {
 
 const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPosted }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for createdBy.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const currentYear = new Date().getFullYear();
   const [form] = Form.useForm();
   const { accrualPreview, accrualLoading, setAccrualPreview, setAccrualLoading } = useHrmLeaveStore();
@@ -152,6 +155,8 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
   const [periodType, setPeriodType] = useState<PeriodType>("QUARTERLY");
   const [selectedQuarter, setSelectedQuarter] = useState<Quarter | undefined>(undefined);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [batchesPage, setBatchesPage] = useState(1);
+  const [batchesPageSize, setBatchesPageSize] = useState(10);
 
   // Auto-fill periodStart/periodEnd whenever the period selector or year
   // changes.  Keeps the run window consistent with the selected period so
@@ -492,7 +497,22 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
           rowKey="handle"
           size="small"
           loading={batchesLoading}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: batchesPage,
+            pageSize: batchesPageSize,
+            pageSizeOptions: ["10", "25", "50", "100"],
+            showSizeChanger: true,
+            showTotal: (total, range) =>
+              total === 0 ? "0 records" : `${range[0]}–${range[1]} of ${total}`,
+            onChange: (newPage, newSize) => {
+              if (newSize !== batchesPageSize) {
+                setBatchesPageSize(newSize);
+                setBatchesPage(1);
+              } else {
+                setBatchesPage(newPage);
+              }
+            },
+          }}
           columns={
             [
               { title: "Batch ID", dataIndex: "handle", key: "handle", width: 180 },

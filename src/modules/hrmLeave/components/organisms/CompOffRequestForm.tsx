@@ -7,6 +7,7 @@ import { parseCookies } from "nookies";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -18,7 +19,9 @@ interface CompOffRequestFormProps {
 const CompOffRequestForm: React.FC<CompOffRequestFormProps> = ({ onSubmitted }) => {
   const organizationId = getOrganizationId();
   const cookies = parseCookies();
-  const employeeId = cookies.employeeId ?? cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for employeeId/createdBy.
+  const employeeId = identity.employeeIdWithName || cookies.employeeId || cookies.userId || "";
   const { showCompOffForm, closeCompOffForm } = useHrmLeaveStore();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);

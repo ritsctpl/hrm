@@ -7,6 +7,7 @@ import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -14,7 +15,9 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
   onAdjusted,
 }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for createdBy.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();

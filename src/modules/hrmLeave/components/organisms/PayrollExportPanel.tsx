@@ -17,6 +17,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -28,7 +29,9 @@ interface PayrollExportPanelProps {
 
 const PayrollExportPanel: React.FC<PayrollExportPanelProps> = ({ organizationId }) => {
   const cookies = parseCookies();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  // Leave service expects composite "EMP0012 - John Doe" for lockedBy.
+  const userId = identity.employeeIdWithName || cookies.userId || "";
   const [exportForm] = Form.useForm();
   const [lockForm] = Form.useForm();
   const [exporting, setExporting] = useState(false);
