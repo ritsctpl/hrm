@@ -155,15 +155,30 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         // 1. All orgs (not /rbac/userModulesByOrganization, which returns
         //    only assigned orgs — a super admin typically has none).
         console.log('[SUPER_ADMIN] calling fetchAllOrganizations()');
-        const allOrgSummaries = await HrmOrganizationService.fetchAllOrganizations();
-        console.log('[SUPER_ADMIN] fetchAllOrganizations returned', {
-          count: allOrgSummaries.length,
-          orgs: allOrgSummaries.map(o => ({ id: o.organizationId, name: o.organizationName })),
+        const rawAllOrgSummaries = await HrmOrganizationService.fetchAllOrganizations();
+        console.log('[SUPER_ADMIN] fetchAllOrganizations raw response', {
+          count: rawAllOrgSummaries.length,
+          orgs: rawAllOrgSummaries,
         });
+
+        // Defensive filter: drop any record whose organizationId is missing
+        // or blank. The service already filters, but if a backend variant
+        // ever sneaks through with an empty id, this keeps the switcher
+        // rendering exactly the rows the user can actually switch to.
+        const allOrgSummaries = rawAllOrgSummaries.filter(
+          (o) => typeof o.organizationId === 'string' && o.organizationId.trim().length > 0,
+        );
+        if (allOrgSummaries.length !== rawAllOrgSummaries.length) {
+          console.warn(
+            '[SUPER_ADMIN] dropped',
+            rawAllOrgSummaries.length - allOrgSummaries.length,
+            'org records with empty organizationId',
+          );
+        }
 
         if (allOrgSummaries.length === 0) {
           console.warn(
-            '[hrmRbacStore] Super admin detected but fetchAllOrganizations returned 0 orgs.',
+            '[hrmRbacStore] Super admin detected but fetchAllOrganizations returned 0 usable orgs.',
           );
         }
 
@@ -489,53 +504,51 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
         }
       }
 
-      // Root object cascade: the root object (e.g. employee_module,
-      // leave_module) perms cascade to ALL child objects in the module.
-      // Explicit child grants merge ON TOP of root perms (union).
-      // This ensures: root VIEW → all children inherit VIEW;
-      // root V/A/E/D (admin) → all children get full access.
+      // Resolution rules:
       //
-      // Root perms are the UNION of (the explicit root-object entry, if
-      // returned) and (module-level perms). This handles three real-world
-      // backend variants in one pass:
-      //   - Backend returns root object with all flags → use it.
-      //   - Backend omits root but grants module-level → fall back to
-      //     module-level, so admins keep canAdd/canEdit/canDelete.
-      //   - Backend returns root with canView only but module has ADD →
-      //     we union both, which prevents the canAdd from being silently
-      //     lost during cascade.
+      //   1. Opt-in (strict) mode — backend returned at least one
+      //      per-object grant for a REGISTERED object. Treat this as
+      //      "admin has explicitly configured object-level perms". Any
+      //      registered object without an explicit grant is DENIED
+      //      (EMPTY). No cascade from module-level coarse perms, because
+      //      that would inflate deliberately-unchecked rows in the RBAC
+      //      Permission Matrix (e.g., an admin unchecks `expense_category`
+      //      but the user still has module-level V/A/E/D via the user-
+      //      modules endpoint — cascade would wrongly grant categories).
+      //
+      //   2. Legacy fallback — backend returned zero per-object grants.
+      //      Use the coarse module-level perms from userModulesByOrg for
+      //      every registered object, so modules not yet migrated to
+      //      object-level RBAC keep working.
+      //
+      // Module-level perms (permissionsByModule) are corrected to mirror
+      // the effective root object perms, NOT the coarse user-modules
+      // actions — so Can without `object` honors the explicit root grant.
       const rootCode = getRootObjectCode(moduleCode);
-      const explicitRoot = rootCode ? sectionPerms[rootCode] : undefined;
-      const moduleFallback = get().permissionsByModule[moduleCode];
-      const rootPerms: ModulePermissions = {
-        canView: (explicitRoot?.canView ?? false) || (moduleFallback?.canView ?? false),
-        canAdd: (explicitRoot?.canAdd ?? false) || (moduleFallback?.canAdd ?? false),
-        canEdit: (explicitRoot?.canEdit ?? false) || (moduleFallback?.canEdit ?? false),
-        canDelete: (explicitRoot?.canDelete ?? false) || (moduleFallback?.canDelete ?? false),
-      };
-
-      // Cascade root to every registered object for this module
       const allObjectCodes = getObjectCodesForModule(moduleCode);
-      for (const code of allObjectCodes) {
-        if (code === rootCode) continue; // root stays as-is
-        const existing = sectionPerms[code];
-        if (existing) {
-          // Merge: explicit grants + root cascade (union)
-          sectionPerms[code] = {
-            canView: existing.canView || rootPerms.canView,
-            canAdd: existing.canAdd || rootPerms.canAdd,
-            canEdit: existing.canEdit || rootPerms.canEdit,
-            canDelete: existing.canDelete || rootPerms.canDelete,
-          };
-        } else {
-          // No explicit grant — inherit root perms
-          sectionPerms[code] = { ...rootPerms };
+      const hasAnyRegisteredObjectGrants = allObjectCodes.some(code => sectionPerms[code]);
+
+      let rootPerms: ModulePermissions;
+      if (hasAnyRegisteredObjectGrants) {
+        // Opt-in strict: absent registered objects → denied.
+        for (const code of allObjectCodes) {
+          if (!sectionPerms[code]) {
+            sectionPerms[code] = { canView: false, canAdd: false, canEdit: false, canDelete: false };
+          }
+        }
+        rootPerms = rootCode
+          ? (sectionPerms[rootCode] ?? { canView: false, canAdd: false, canEdit: false, canDelete: false })
+          : { canView: false, canAdd: false, canEdit: false, canDelete: false };
+      } else {
+        // Legacy cascade from module-level to every registered object.
+        const moduleFallback = get().permissionsByModule[moduleCode]
+          ?? { canView: false, canAdd: false, canEdit: false, canDelete: false };
+        rootPerms = { ...moduleFallback };
+        for (const code of allObjectCodes) {
+          sectionPerms[code] = { ...moduleFallback };
         }
       }
 
-      // Correct module-level permissions from the effective root perms.
-      // `rootPerms` already includes the module-level fallback (see above)
-      // when no explicit root object was returned, so we just mirror it here.
       const correctedModulePerms: ModulePermissions = { ...rootPerms };
 
       set(state => ({

@@ -15,7 +15,6 @@ import {
   useTheme,
 } from "@mui/material";
 import { fetchSiteAll } from "@services/siteServices";
-import { HrmOrganizationService } from "@modules/hrmOrganization/services/hrmOrganizationService";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import styles from "./CommonAppBar.module.css";
@@ -77,44 +76,21 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
   const currentOrg = rbac.organizations.find(o => o.organizationId === site);
 
   // Org switcher (super-admin only). Super admins get the full list of
-  // every organization from the backend and can switch between them.
-  // Regular users — including org admins with full HRM_ORGANIZATION
-  // permissions — see a read-only badge of their current organization.
+  // every organization from rbac.organizations (populated by the RBAC
+  // store's super-admin init from fetchAllOrganizations — single source
+  // of truth, no second fetch here). Regular users — including org admins
+  // with full HRM_ORGANIZATION permissions — see a read-only badge.
   const isSuperAdmin = rbac.isSuperAdmin;
 
-  const [allOrgs, setAllOrgs] = useState<Array<{ organizationId: string; organizationName: string }>>([]);
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await HrmOrganizationService.fetchAllOrganizations();
-        if (!cancelled) setAllOrgs(list);
-      } catch (e) {
-        console.error('[OrgSwitcher] fetchAllOrganizations failed:', e);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isSuperAdmin]);
-
-  // For super admins, prefer the freshly-fetched all-orgs list; fall back
-  // to the RBAC-synthesized list while the fetch is in flight. Dedupe by
-  // organizationId — backends have been observed returning the same org
-  // twice (e.g. "RITS" appearing both from site-service and hrm-service),
-  // which causes React duplicate-key warnings in the Select.
-  const rawSwitcherOrgs = isSuperAdmin && allOrgs.length > 0
-    ? allOrgs
-    : rbac.organizations.map(o => ({
-        organizationId: o.organizationId,
-        organizationName: o.organizationName,
-      }));
+  // Dedupe by organizationId and drop empty ids. rbac.organizations is
+  // already filtered in the store, but a belt-and-suspenders pass here
+  // catches any edge case — a switcher row without an id can't do
+  // anything useful anyway.
   const switcherOrgs = useMemo(() => {
     const seen = new Map<string, { organizationId: string; organizationName: string }>();
-    for (const o of rawSwitcherOrgs) {
+    for (const o of rbac.organizations) {
       const id = o.organizationId;
-      if (!id) continue;
-      // Keep the first occurrence, but upgrade the display name if a later
-      // duplicate carries a more informative one (non-empty, not just the id).
+      if (!id || !id.trim()) continue;
       const existing = seen.get(id);
       if (!existing) {
         seen.set(id, { organizationId: id, organizationName: o.organizationName || id });
@@ -127,19 +103,14 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       }
     }
     return Array.from(seen.values());
-    // rawSwitcherOrgs is rebuilt every render; memoising on its length +
-    // stable inputs keeps the list stable across re-renders when nothing
-    // actually changed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allOrgs, rbac.organizations, isSuperAdmin]);
+  }, [rbac.organizations]);
+
   // Dropdown is exclusive to super admins. Non-super-admins always see
   // the read-only badge, regardless of how many orgs they're RBAC-assigned.
   const canSwitchOrg = isSuperAdmin && switcherOrgs.length > 1;
 
   console.log('[SUPER_ADMIN] CommonAppBar render', {
     isSuperAdmin,
-    allOrgsCount: allOrgs.length,
-    allOrgsRaw: allOrgs,
     rbacOrgsCount: rbac.organizations.length,
     rbacOrgsRaw: rbac.organizations.map(o => ({
       id: o.organizationId,
