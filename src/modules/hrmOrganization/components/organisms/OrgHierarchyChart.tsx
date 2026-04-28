@@ -510,13 +510,20 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     const next = Math.max(0.3, Math.min(1, Math.min(ratioW, ratioH)));
     setZoom(Number(next.toFixed(2)));
     setPan({ x: 0, y: 0 });
-  }, [zoom]);
+    // setZoom/setPan are per-view useCallbacks whose closures bake in
+    // the current viewMode. If we depend on `zoom` only, switching to
+    // a view with the same zoom value (e.g. both at 100%) won't trigger
+    // recreation, and we'd keep the previous view's setters — Fit would
+    // silently update the wrong view's slot. Including the setters in
+    // the dep array forces the callback to refresh whenever viewMode
+    // changes, regardless of zoom.
+  }, [zoom, setZoom, setPan]);
 
   // Re-center on zoom reset for consistency with Fit button.
   const handleZoomResetFull = useCallback(() => {
     setZoom(1);
     resetPan();
-  }, [resetPan]);
+  }, [resetPan, setZoom]);
 
   if (isLoading) {
     return (
