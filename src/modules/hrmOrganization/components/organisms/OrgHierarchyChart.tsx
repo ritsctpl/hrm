@@ -565,6 +565,10 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        // Required so the absolutely-positioned zoom controls below
+        // anchor to this wrapper, not bubble up to a far ancestor
+        // (which would push them off-screen).
+        position: 'relative',
       }}
     >
       {/* Toolbar — left side only (title + view switcher + tags). */}
