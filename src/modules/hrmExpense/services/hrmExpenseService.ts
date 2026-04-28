@@ -121,10 +121,27 @@ export class HrmExpenseService {
     form.append("expenseId", expenseId);
     form.append("organizationId", organizationId);
     form.append("lineIndex", String(lineIndex ?? -1));
-    const { data } = await api.post(`${this.BASE}/receipt/upload`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // Do NOT set Content-Type here. The browser/axios auto-sets it to
+    // `multipart/form-data; boundary=----WebKitFormBoundaryXXX` when
+    // given a FormData body. Setting it manually without the boundary
+    // causes the backend's multipart parser to fail.
+    const { data } = await api.post(`${this.BASE}/receipt/upload`, form);
     return data;
+  }
+
+  /**
+   * Fetch a receipt as a binary blob. The caller wraps the blob in a
+   * URL via URL.createObjectURL() and opens / displays it.
+   *
+   * Backend endpoint convention: `POST /expense/receipt/download` with
+   * `{ organizationId, attachmentRef }` returning the file as
+   * application/pdf or image/* with `responseType: blob`.
+   */
+  static async downloadReceipt(payload: { organizationId: string; attachmentRef: string }): Promise<Blob> {
+    const response = await api.post(`${this.BASE}/receipt/download`, payload, {
+      responseType: "blob",
+    });
+    return response.data;
   }
 
   // ── Config ────────────────────────────────────────────────────────────

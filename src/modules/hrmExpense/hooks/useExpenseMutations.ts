@@ -3,26 +3,20 @@
 import { useCallback } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
-import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
 import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
 import { HrmTravelService } from "../../hrmTravel/services/hrmTravelService";
 import { normalizeDateToISO } from "../utils/dateHelpers";
+import { extractExpenseError } from "../utils/extractExpenseError";
+import { useEmployeeIdentity } from "../../hrmAccess/hooks/useEmployeeIdentity";
 import type { ExpenseFormState, FinancePanelState } from "../types/ui.types";
 import type { ExpenseType, PaymentMode } from "../types/domain.types";
 
 export function useExpenseMutations() {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    "";
-  const employeeName = cookies.userName ?? employeeId;
+  const identity = useEmployeeIdentity();
+  const employeeId = identity.employeeCode;
+  const employeeName = identity.fullName || employeeId;
 
   const {
     setSaving,
@@ -103,9 +97,7 @@ export function useExpenseMutations() {
         return created;
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } }; message?: string };
-      const msg = err?.response?.data?.message || err?.message || "Failed to save draft.";
-      message.error(msg);
+      message.error(extractExpenseError(error, "Failed to save draft."));
       console.error("saveDraft error:", error);
       return null;
     } finally {
@@ -121,8 +113,9 @@ export function useExpenseMutations() {
       setSelectedExpense(updated);
       message.success("Expense report submitted.");
       return updated;
-    } catch {
-      message.error("Failed to submit expense report.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to submit expense report."));
+      console.error("submitExpense error:", error);
       return null;
     } finally {
       setSubmitting(false);
@@ -139,8 +132,8 @@ export function useExpenseMutations() {
       setSelectedExpense(null);
       message.success("Expense approved and forwarded to Finance.");
       return updated;
-    } catch {
-      message.error("Failed to approve expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to approve expense."));
       return null;
     } finally {
       setApproving(false);
@@ -157,8 +150,8 @@ export function useExpenseMutations() {
       setSelectedExpense(null);
       message.success("Expense rejected.");
       return updated;
-    } catch {
-      message.error("Failed to reject expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to reject expense."));
       return null;
     } finally {
       setApproving(false);
@@ -183,8 +176,8 @@ export function useExpenseMutations() {
       setSelectedExpense(updated);
       message.success("Expense sanctioned.");
       return updated;
-    } catch {
-      message.error("Failed to sanction expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to sanction expense."));
       return null;
     } finally {
       setApproving(false);
@@ -201,8 +194,8 @@ export function useExpenseMutations() {
       setSelectedExpense(null);
       message.success("Expense rejected by Finance.");
       return updated;
-    } catch {
-      message.error("Failed to reject expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to reject expense."));
       return null;
     } finally {
       setApproving(false);
@@ -227,8 +220,8 @@ export function useExpenseMutations() {
       setSelectedExpense(updated);
       message.success("Payment marked successfully.");
       return updated;
-    } catch {
-      message.error("Failed to mark as paid.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to mark as paid."));
       return null;
     } finally {
       setApproving(false);
@@ -243,8 +236,8 @@ export function useExpenseMutations() {
       setSelectedExpense(updated);
       message.success("Expense report cancelled.");
       return updated;
-    } catch {
-      message.error("Failed to cancel expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to cancel expense."));
       return null;
     } finally {
       setSaving(false);
@@ -259,8 +252,8 @@ export function useExpenseMutations() {
       setSelectedExpense(updated);
       message.success("Expense report recalled to draft.");
       return updated;
-    } catch {
-      message.error("Failed to recall expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to recall expense."));
       return null;
     } finally {
       setSaving(false);
@@ -281,8 +274,8 @@ export function useExpenseMutations() {
         setSelectedExpense(updated);
         message.success(received ? "Originals marked as received." : "Originals receipt cleared.");
         return updated;
-      } catch {
-        message.error("Failed to update originals-received status.");
+      } catch (error: unknown) {
+        message.error(extractExpenseError(error, "Failed to update originals-received status."));
         return null;
       } finally {
         setApproving(false);
@@ -299,8 +292,8 @@ export function useExpenseMutations() {
       setSelectedExpense(null);
       setScreenMode("list");
       message.success("Expense report deleted.");
-    } catch {
-      message.error("Failed to delete expense.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to delete expense."));
     } finally {
       setSaving(false);
     }

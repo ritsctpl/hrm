@@ -3,7 +3,6 @@
 import React from "react";
 import { Table, Empty, Button, Tooltip, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import type { ExpenseReport } from "../../types/domain.types";
 import ExpenseStatusChip from "../atoms/ExpenseStatusChip";
 import ExpenseTypeTag from "../atoms/ExpenseTypeTag";
@@ -79,6 +78,19 @@ const ExpenseListTable: React.FC<Props> = ({
       render: (_, r) => <span style={{ fontSize: 12 }}>{formatExpenseDateRange(r)}</span>,
     },
     {
+      title: "Current Approver",
+      key: "currentApprover",
+      width: 160,
+      render: (_, r) =>
+        r.currentApproverName ? (
+          <Tooltip title={r.currentApproverId ? `Emp: ${r.currentApproverId}` : undefined}>
+            <span style={{ fontSize: 12 }}>{r.currentApproverName}</span>
+          </Tooltip>
+        ) : (
+          <span style={{ fontSize: 12, color: "#bfbfbf" }}>—</span>
+        ),
+    },
+    {
       title: "Status",
       key: "status",
       width: 160,
@@ -102,12 +114,14 @@ const ExpenseListTable: React.FC<Props> = ({
         locale={{
           emptyText: (
             <Empty
-              image={<ReceiptLongIcon style={{ fontSize: 48, color: "#d9d9d9" }} />}
-              description="No expense reports yet"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              imageStyle={{ height: 40 }}
+              description={<span style={{ color: "#8c8c8c", fontSize: 13 }}>No expense reports yet</span>}
+              style={{ padding: "16px 0" }}
             >
               {onNewExpense && (
                 <Can I="add">
-                  <Button type="primary" onClick={onNewExpense}>
+                  <Button type="primary" size="small" onClick={onNewExpense}>
                     + New Expense
                   </Button>
                 </Can>

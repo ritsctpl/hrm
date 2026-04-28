@@ -2,6 +2,40 @@
   /* layout handled by hrm-module-root */
 }
 
+/* ----- AntD Tabs flex-chain overrides -----
+   Without these, `.ant-tabs-content` defaults to auto height, so the
+   flex chain (hrm-module-root → Tabs → content → masterDetail →
+   detailPanel → screenContainer → scroll div) breaks at the tab
+   content level and inner scroll never activates. */
+.landing :global(.ant-tabs) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.landing :global(.ant-tabs-content-holder) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing :global(.ant-tabs-content) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing :global(.ant-tabs-tabpane-active) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .masterDetail {
   display: flex;
   flex: 1;
@@ -18,8 +52,11 @@
 
 .detailPanel {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .toolbar {

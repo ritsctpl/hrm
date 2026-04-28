@@ -47,6 +47,8 @@ export interface ExpenseReport {
   status: ExpenseStatus;
   currentApproverId?: string;
   currentApproverName?: string;
+  supervisorId?: string;
+  supervisorName?: string;
   escalationLevel?: number;
   slaDeadline?: string;
   slaBreached?: boolean;

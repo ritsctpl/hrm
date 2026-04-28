@@ -5,10 +5,10 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { Table, Button, Modal, Form, Input, InputNumber, Checkbox, Switch, message, Popconfirm, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../../services/hrmExpenseService";
 import type { ExpenseCategory } from "../../types/domain.types";
 import Can from "../../../hrmAccess/components/Can";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 
 interface Props {
   categories: ExpenseCategory[];
@@ -16,9 +16,9 @@ interface Props {
 }
 
 const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? "";
+  const identity = useEmployeeIdentity();
+  const userId = identity.employeeCode;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [saving, setSaving] = useState(false);

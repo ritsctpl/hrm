@@ -3,22 +3,15 @@
 import { useCallback } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
-import { parseCookies } from "nookies";
 import { HrmExpenseService } from "../services/hrmExpenseService";
 import { useHrmExpenseStore } from "../stores/hrmExpenseStore";
 import { normalizeDateToISO } from "../utils/dateHelpers";
+import { useEmployeeIdentity } from "../../hrmAccess/hooks/useEmployeeIdentity";
 
 export function useExpenseData() {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    "";
+  const identity = useEmployeeIdentity();
+  const employeeId = identity.employeeCode;
 
   const {
     setMyExpenses,
@@ -35,7 +28,15 @@ export function useExpenseData() {
     dateRange,
   } = useHrmExpenseStore();
 
+  // Gate backend calls on identity.isReady — until the directory lookup
+  // completes, employeeId may be a login-email fallback which no backend
+  // accepts as an employee identifier. Each loader early-returns; the
+  // useCallback deps include isReady so callers' useEffects re-fire once
+  // the identity resolves.
+  const isReady = identity.isReady;
+
   const loadMyExpenses = useCallback(async () => {
+    if (!isReady) return;
     setListLoading(true);
     setError(null);
     try {
@@ -54,9 +55,10 @@ export function useExpenseData() {
     } finally {
       setListLoading(false);
     }
-  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, isReady, statusFilter, typeFilter, searchTerm, dateRange]);
 
   const loadSupervisorInbox = useCallback(async () => {
+    if (!isReady) return;
     setInboxLoading(true);
     try {
       const data = await HrmExpenseService.getSupervisorInbox({ organizationId,
@@ -68,7 +70,7 @@ export function useExpenseData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, employeeId, isReady]);
 
   const loadFinanceInbox = useCallback(async () => {
     setInboxLoading(true);
@@ -128,13 +130,14 @@ export function useExpenseData() {
   }, [organizationId, statusFilter, dateRange]);
 
   const loadUnsettledAdvances = useCallback(async () => {
+    if (!isReady) return [];
     try {
       const data = await HrmExpenseService.getUnsettledAdvances({ organizationId, empId: employeeId });
       return data;
     } catch {
       return [];
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, employeeId, isReady]);
 
   return {
     loadMyExpenses,

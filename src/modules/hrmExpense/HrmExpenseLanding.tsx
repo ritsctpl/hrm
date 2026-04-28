@@ -76,30 +76,33 @@ const HrmExpenseLanding: React.FC = () => {
 
   const [unsettledAdvances, setUnsettledAdvances] = useState<UnsettledAdvance[]>([]);
 
-  // Load data on mount
+  // Load data on mount — deps include the loader callbacks so the
+  // effects re-fire after currentEmployeeStore resolves the employee
+  // handle (loaders are no-ops until then; they recreate when
+  // employeeId changes via useCallback).
   useEffect(() => {
     loadMyExpenses();
     loadCategories();
     loadMileageConfig();
     loadUnsettledAdvances().then(setUnsettledAdvances);
-  }, [organizationId]);
+  }, [organizationId, loadMyExpenses, loadCategories, loadMileageConfig, loadUnsettledAdvances]);
 
   useEffect(() => {
     if (canViewApproval) {
       loadSupervisorInbox();
     }
-  }, [organizationId, canViewApproval]);
+  }, [organizationId, canViewApproval, loadSupervisorInbox]);
 
   useEffect(() => {
     if (canViewFinance) {
       loadFinanceInbox();
     }
-  }, [organizationId, canViewFinance]);
+  }, [organizationId, canViewFinance, loadFinanceInbox]);
 
   // Auto-trigger search when filters or debounced search term change
   useEffect(() => {
     loadMyExpenses();
-  }, [statusFilter, typeFilter, dateRange, debouncedSearchTerm]);
+  }, [statusFilter, typeFilter, dateRange, debouncedSearchTerm, loadMyExpenses]);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -368,11 +371,27 @@ const HrmExpenseLanding: React.FC = () => {
     });
   }
 
+  // Clear detail selection on tab change — otherwise an expense picked
+  // in My Expenses stays rendered (with the approver action bar added)
+  // when the user switches to Supervisor Inbox, making a DRAFT request
+  // look like a pending approval.
+  const handleTabChange = () => {
+    setSelectedExpense(null);
+    setScreenMode("list");
+    resetDraftItems();
+  };
+
   return (
     <ModuleAccessGate moduleCode="HRM_EXPENSE" appTitle="Expense Reports">
       <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Expense Reports" />
-        <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
+        <Tabs
+          items={tabItems}
+          size="small"
+          onChange={handleTabChange}
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          style={{ flex: 1, overflow: "hidden" }}
+        />
       </div>
     </ModuleAccessGate>
   );

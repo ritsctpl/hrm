@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useRef } from "react";
-import { Button, Tooltip } from "antd";
-import { FileOutlined, UploadOutlined } from "@ant-design/icons";
+import React, { useRef, useState } from "react";
+import { Button, Tooltip, message } from "antd";
+import { FileOutlined, UploadOutlined, EyeOutlined } from "@ant-design/icons";
+import { getOrganizationId } from "@/utils/cookieUtils";
+import { HrmExpenseService } from "../../services/hrmExpenseService";
+import { extractExpenseError } from "../../utils/extractExpenseError";
 
 interface Props {
   fileName?: string;
@@ -12,14 +15,41 @@ interface Props {
 
 const ReceiptThumbnail: React.FC<Props> = ({ fileName, attachmentId, onUpload }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [opening, setOpening] = useState(false);
+
+  const handleView = async () => {
+    if (!attachmentId) return;
+    setOpening(true);
+    try {
+      const blob = await HrmExpenseService.downloadReceipt({
+        organizationId: getOrganizationId(),
+        attachmentRef: attachmentId,
+      });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      // Revoke after a delay so the new tab can fetch the URL.
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (error) {
+      message.error(extractExpenseError(error, "Failed to open receipt."));
+    } finally {
+      setOpening(false);
+    }
+  };
 
   if (attachmentId) {
     return (
-      <Tooltip title={fileName ?? "Receipt attached"}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-          <FileOutlined style={{ color: "#1890ff" }} />
-          <span style={{ color: "#1890ff" }}>{fileName ?? "Attached"}</span>
-        </span>
+      <Tooltip title="Click to view receipt">
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          loading={opening}
+          onClick={handleView}
+          style={{ padding: 0, height: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}
+        >
+          <FileOutlined />
+          <span>{fileName ?? "View"}</span>
+        </Button>
       </Tooltip>
     );
   }
@@ -30,7 +60,7 @@ const ReceiptThumbnail: React.FC<Props> = ({ fileName, attachmentId, onUpload })
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.jpg,.jpeg,.png"
           style={{ display: "none" }}
           onChange={(e) => {
             const file = e.target.files?.[0];

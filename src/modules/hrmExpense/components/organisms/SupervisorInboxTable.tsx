@@ -109,7 +109,16 @@ const SupervisorInboxTable: React.FC<Props> = ({ expenses, loading, selectedHand
           `${styles.rowClickable} ${r.handle === selectedHandle ? styles.rowSelected : ""}`
         }
         onRow={(r) => ({ onClick: () => onRowClick(r) })}
-        locale={{ emptyText: <Empty description="No requests in this inbox." /> }}
+        locale={{
+          emptyText: (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              imageStyle={{ height: 40 }}
+              description={<span style={{ color: "#8c8c8c", fontSize: 13 }}>No requests in this inbox.</span>}
+              style={{ padding: "16px 0" }}
+            />
+          ),
+        }}
       />
       <div className={styles.recordCount}>Showing {expenses.length} record{expenses.length !== 1 ? "s" : ""}</div>
     </div>

@@ -79,6 +79,7 @@ interface ExpenseState {
   resetFinancePanel: () => void;
   setDraftItems: (items: ExpenseReport["items"]) => void;
   addDraftItem: (item: ExpenseReport["items"][number]) => void;
+  updateDraftItem: (handle: string, changes: Partial<ExpenseReport["items"][number]>) => void;
   removeDraftItem: (handle: string) => void;
   resetDraftItems: () => void;
 
@@ -164,6 +165,9 @@ export const useHrmExpenseStore = create<ExpenseState>((set) => ({
   resetFinancePanel: () => set({ financePanel: { ...DEFAULT_FINANCE_PANEL } }),
   setDraftItems: (draftItems) => set({ draftItems }),
   addDraftItem: (item) => set((s) => ({ draftItems: [...s.draftItems, item] })),
+  updateDraftItem: (handle, changes) => set((s) => ({
+    draftItems: s.draftItems.map((i) => (i.handle === handle ? { ...i, ...changes } : i)),
+  })),
   removeDraftItem: (handle) => set((s) => ({ draftItems: s.draftItems.filter((i) => i.handle !== handle) })),
   resetDraftItems: () => set({ draftItems: [] }),
 

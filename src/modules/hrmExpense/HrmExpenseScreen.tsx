@@ -26,6 +26,7 @@ import {
   validateLineItems,
 } from "./utils/expenseValidations";
 import { HrmExpenseService } from "./services/hrmExpenseService";
+import { extractExpenseError } from "./utils/extractExpenseError";
 import styles from "./styles/Expense.module.css";
 
 const { Text } = Typography;
@@ -64,6 +65,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     updateFinancePanel,
     draftItems,
     addDraftItem,
+    updateDraftItem,
     removeDraftItem,
   } = useHrmExpenseStore();
 
@@ -138,9 +140,25 @@ const HrmExpenseScreen: React.FC<Props> = ({
       message.error("Please enter a purpose before submitting.");
       return;
     }
-    const itemsCount = draftItems.length || expense?.items?.length || 0;
-    if (itemsCount === 0) {
+    const itemsToCheck = draftItems.length > 0 ? draftItems : (expense?.items ?? []);
+    if (itemsToCheck.length === 0) {
       message.error("Please add at least one expense line item before submitting.");
+      setActiveDetailTab("lineitems");
+      return;
+    }
+
+    // Pre-validate line items against category rules (amount, per-trip
+    // limit, requiresAttachment, date-in-range). Blocking here surfaces
+    // the exact problem before round-tripping to backend, which otherwise
+    // returns errorCode=EXPENSE_ATTACHMENT_REQUIRED etc. as a 500.
+    const preErrors = validateLineItems(itemsToCheck, {
+      categories,
+      fromDate: formState.fromDate,
+      toDate: formState.toDate,
+    });
+    if (preErrors.length > 0) {
+      // Surface the first error; the Line Items tab highlights the rest.
+      message.error(preErrors[0].message);
       setActiveDetailTab("lineitems");
       return;
     }
@@ -153,7 +171,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     }
     await submitExpense(handle);
     onActionComplete();
-  }, [formState, expense?.handle, expense?.items?.length, draftItems.length, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
+  }, [formState, expense?.handle, expense?.items, draftItems, categories, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
 
   const handleUploadAttachment = async (file: File) => {
     let handle = expense?.handle;
@@ -170,8 +188,9 @@ const HrmExpenseScreen: React.FC<Props> = ({
       await HrmExpenseService.uploadAttachment(handle, file, organizationId);
       message.success("Attachment uploaded.");
       onActionComplete();
-    } catch {
-      message.error("Failed to upload attachment.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to upload attachment."));
+      console.error("uploadAttachment error:", error);
     }
   };
 
@@ -184,16 +203,17 @@ const HrmExpenseScreen: React.FC<Props> = ({
       await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
       message.success("Receipt uploaded.");
       onActionComplete();
-    } catch {
-      message.error("Failed to upload receipt.");
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to upload receipt."));
+      console.error("uploadLineReceipt error:", error);
     }
   };
 
   const barTitle = isNew
-    ? "New Expense Report"
+    ? "Expense Request"
     : expense
     ? `${expense.requestId} — ${expense.purpose}`
-    : "Expense Report";
+    : "Expense Request";
 
   const barActions = isReadonly ? (
     <Space>
@@ -289,6 +309,13 @@ const HrmExpenseScreen: React.FC<Props> = ({
     [addDraftItem, categories, formState.currency, formState.fromDate]
   );
 
+  const handleUpdateDraftItem = useCallback(
+    (handle: string, changes: Partial<ExpenseReport["items"][number]>) => {
+      updateDraftItem(handle, changes);
+    },
+    [updateDraftItem]
+  );
+
   const handleRemoveDraftItem = useCallback(
     (handle: string) => {
       removeDraftItem(handle);
@@ -319,6 +346,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
           lineErrors={lineErrors}
           onJustificationChange={(v) => updateFormState({ outOfPolicyJustification: v })}
           onAddItem={handleAddDraftItem}
+          onUpdateItem={handleUpdateDraftItem}
           onRemoveItem={handleRemoveDraftItem}
           onUploadReceipt={expense?.handle ? handleUploadLineReceipt : undefined}
         />
@@ -354,6 +382,12 @@ const HrmExpenseScreen: React.FC<Props> = ({
               <Descriptions.Item label="Currency">
                 {expense.currency} (Rate: {expense.exchangeRate})
               </Descriptions.Item>
+              {expense.currentApproverName && (
+                <Descriptions.Item label="Current Approver">
+                  {expense.currentApproverName}
+                  {expense.currentApproverId ? ` (${expense.currentApproverId})` : ""}
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Total Claimed">
                 {expense.currency} {expense.totalClaimedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </Descriptions.Item>
@@ -496,13 +530,51 @@ const HrmExpenseScreen: React.FC<Props> = ({
         />
       )}
 
-      <Tabs
-        activeKey={activeDetailTab}
-        onChange={(k) => setActiveDetailTab(k as ExpenseDetailTab)}
-        style={{ flex: 1 }}
-        tabBarStyle={{ padding: "0 16px", background: "#fff", borderBottom: "1px solid #f0f0f0" }}
-        items={tabItems}
-      />
+      {isNew ? (
+        // Create mode: single scrollable form — avoids tab-hopping
+        // between header/line-items/attachments during initial entry.
+        // minHeight:0 is required for overflow-y:auto to work inside
+        // a flex column child (flex items default to min-height:auto).
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 16px 24px" }}>
+          <div style={{ paddingTop: 12 }}>
+            <ExpenseHeaderForm
+              formState={formState}
+              onChange={updateFormState}
+              readonly={false}
+              errors={formErrors}
+            />
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ margin: "8px 0 12px", fontSize: 14, fontWeight: 600 }}>Line Items</h3>
+            {lineItemsTab}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ margin: "8px 0 12px", fontSize: 14, fontWeight: 600 }}>Attachments</h3>
+            <Alert
+              type="info"
+              showIcon
+              message="Save as draft to enable attachment uploads — uploading will auto-save the draft."
+              style={{ marginBottom: 12 }}
+            />
+            <ExpenseAttachmentsPanel
+              attachments={expense?.attachments ?? []}
+              readonly={false}
+              isFinance={isFinance}
+              originalsReceived={isFinance ? financePanel.originalsReceived : expense?.originalsReceived}
+              onOriginalsChange={(v) => updateFinancePanel({ originalsReceived: v })}
+              onUpload={handleUploadAttachment}
+            />
+          </div>
+        </div>
+      ) : (
+        <Tabs
+          activeKey={activeDetailTab}
+          onChange={(k) => setActiveDetailTab(k as ExpenseDetailTab)}
+          style={{ flex: 1 }}
+          tabBarStyle={{ padding: "0 16px", background: "#fff", borderBottom: "1px solid #f0f0f0" }}
+          items={tabItems}
+        />
+      )}
 
       {/* Cancel Modal */}
       <Modal

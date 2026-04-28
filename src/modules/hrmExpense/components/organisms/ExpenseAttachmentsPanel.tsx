@@ -5,6 +5,9 @@ import { Upload, List, Button, Typography, message, Checkbox } from "antd";
 import { UploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import type { ExpenseAttachment } from "../../types/domain.types";
 import Can from "../../../hrmAccess/components/Can";
+import { getOrganizationId } from "@/utils/cookieUtils";
+import { HrmExpenseService } from "../../services/hrmExpenseService";
+import { extractExpenseError } from "../../utils/extractExpenseError";
 
 const { Text } = Typography;
 
@@ -32,6 +35,20 @@ const ExpenseAttachmentsPanel: React.FC<Props> = ({
   onUpload,
   onDelete,
 }) => {
+  const handleView = async (attachmentId: string) => {
+    try {
+      const blob = await HrmExpenseService.downloadReceipt({
+        organizationId: getOrganizationId(),
+        attachmentRef: attachmentId,
+      });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (error) {
+      message.error(extractExpenseError(error, "Failed to open attachment."));
+    }
+  };
+
   return (
     <div>
       <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
@@ -74,7 +91,15 @@ const ExpenseAttachmentsPanel: React.FC<Props> = ({
           renderItem={(att) => (
             <List.Item
               actions={[
-                <Button key="view" type="link" size="small" icon={<EyeOutlined />}>View</Button>,
+                <Button
+                  key="view"
+                  type="link"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleView(att.attachmentId)}
+                >
+                  View
+                </Button>,
                 !readonly && onDelete && (
                   <Can key="del" I="delete">
                     <Button
