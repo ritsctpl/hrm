@@ -195,6 +195,33 @@ function getUserId(): string {
   return cookies.rl_user_id || cookies.userId || 'system';
 }
 
+/**
+ * Resolve the org id to scope a request by. Prefers the company being
+ * viewed (companyProfile.data) over the global header selection in the
+ * `site` cookie. When the user is on Company A's detail page but the
+ * header still shows Company B, fetches inside this store should follow
+ * Company A — not B.
+ *
+ * Falls back through:
+ *   companyProfile.data.organizationId  →
+ *   companyProfile.data.site            →
+ *   cookie organizationId
+ *
+ * Pass the store's `get()` so the helper can read latest companyProfile.
+ */
+function getScopingOrgId(
+  get: () => HrmOrganizationState,
+): string {
+  const data = get().companyProfile.data as
+    | (CompanyProfile & { organizationId?: string })
+    | null;
+  return (
+    data?.organizationId ||
+    data?.site ||
+    getOrganizationId()
+  );
+}
+
 // Extract a user-friendly message from an Axios / fetch error thrown by the
 // service layer. Prefers the backend's structured `message_details.msg`
 // (which carries the specific reason — e.g. "CIN already registered:
@@ -1396,7 +1423,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Hierarchy
   // ------------------------------------------
   fetchHierarchy: async () => {
-    const organizationId = getOrganizationId();
+    // Use the viewed company's own org id, not the cookie/header global
+    // selection — see getScopingOrgId() docs.
+    const organizationId = getScopingOrgId(get);
     const { companyProfile, selectedCompanyHandle } = get();
     const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
