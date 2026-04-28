@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { Spin, Empty, Button, Tag, Tooltip, Avatar, Segmented } from 'antd';
 import {
@@ -387,15 +386,28 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   // Re-runs once the company data lands so orgName is populated before the
   // hierarchy call.
   useEffect(() => {
-    const cookies = parseCookies();
-    const organizationId = getOrganizationId();
-    if (!organizationId || !orgName) return;
+    // CRITICAL: scope the directory + employee-hierarchy fetches to the
+    // company whose detail page is being viewed — NOT the global org
+    // selection in CommonAppBar. The viewer can be on Company A's
+    // detail page while the header switcher still shows Company B; the
+    // data here must reflect the page's company.
+    //
+    // data.company.organizationId is the company's own org id. We cast
+    // because the typed CompanyProfile only exposes `site`, but the
+    // backend payload reliably carries `organizationId` as the canonical
+    // scoping key for that company. Fall back through `site` then the
+    // cookie if missing.
+    const companyOrgId =
+      ((data?.company as unknown as { organizationId?: string })?.organizationId) ||
+      data?.company?.site ||
+      getOrganizationId();
+    if (!companyOrgId || !orgName) return;
     let cancelled = false;
     Promise.all([
-      HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 500 }).catch(
+      HrmEmployeeService.fetchDirectory({ organizationId: companyOrgId, page: 0, size: 500 }).catch(
         () => ({ employees: [] } as { employees: EmployeeDirectoryRow[] }),
       ),
-      HrmEmployeeService.fetchEmployeeHierarchy(organizationId, orgName).catch(
+      HrmEmployeeService.fetchEmployeeHierarchy(companyOrgId, orgName).catch(
         () => [] as EmployeeHierarchyNode[],
       ),
     ]).then(([dirRes, hier]) => {
@@ -406,7 +418,10 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     return () => {
       cancelled = true;
     };
-  }, [orgName]);
+    // Re-fetch whenever the company being viewed changes (orgName covers
+    // the legalName change; the explicit organizationId dep covers the
+    // case where two distinct companies share a legalName).
+  }, [orgName, data?.company?.handle]);
 
   // Company-scoped employees. Backend should already filter by
   // organizationId, but with super admin spanning multiple orgs, defensive
