@@ -40,7 +40,8 @@
 .cotravellerList {
   border: 1px solid #f0f0f0;
   border-radius: 6px;
-  overflow: hidden;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .searchRow {

@@ -113,6 +113,10 @@ export interface LeavePolicyRequest {
 // ── Balance ───────────────────────────────────────────────────────────
 
 export interface LeaveBalanceResponse {
+  employeeId?: string;
+  employeeNumber?: string;
+  employeeName?: string;
+  department?: string;
   leaveTypeCode: string;
   leaveTypeName: string;
   leaveTypeAlias?: string;

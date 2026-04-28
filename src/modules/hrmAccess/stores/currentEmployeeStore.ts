@@ -23,6 +23,7 @@ import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types
 
 interface CurrentEmployeeCard {
   handle: string;
+  employeeCode: string;
   fullName: string;
   workEmail: string;
   photoUrl?: string;
@@ -94,6 +95,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
 
         return {
           handle: match.handle,
+          employeeCode: match.employeeCode,
           fullName: match.fullName,
           workEmail: match.workEmail,
           photoUrl,

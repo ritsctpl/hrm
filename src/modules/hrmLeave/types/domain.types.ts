@@ -21,6 +21,10 @@ export type LedgerRefType =
   | "WFH";
 
 export interface LeaveBalance {
+  employeeId?: string;
+  employeeNumber?: string;
+  employeeName?: string;
+  department?: string;
   leaveTypeCode: string;
   leaveTypeName: string;
   leaveTypeAlias?: string;

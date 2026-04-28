@@ -28,6 +28,18 @@ import {
   TopAbsenteeData,
 } from "../../types/api.types";
 import { buildYearOptions } from "../../utils/transformations";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: string | undefined | null) => !!v && UUID_RE.test(v.trim());
+
+const formatDept = (val: string | undefined | null): string => {
+  const trimmed = (val ?? "").trim();
+  if (!trimmed || trimmed.toLowerCase() === "unknown" || isUuid(trimmed)) {
+    return "Unassigned";
+  }
+  return trimmed;
+};
 
 const { Title, Text } = Typography;
 
@@ -48,6 +60,20 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
 
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedDept, setSelectedDept] = useState<string | undefined>(undefined);
+
+  // Employee directory for resolving UUIDs → name / code / department.
+  const { employees: employeeDirectory } = useEmployeeOptions();
+  const employeeIndex = useMemo(() => {
+    const byHandle = new Map<string, { name: string; code: string; department: string }>();
+    employeeDirectory.forEach((e) => {
+      byHandle.set(e.handle, {
+        name: e.fullName,
+        code: e.employeeCode,
+        department: e.department,
+      });
+    });
+    return byHandle;
+  }, [employeeDirectory]);
 
   // Absenteeism state
   const [absenteeismData, setAbsenteeismData] = useState<AbsenteeismData[]>([]);
@@ -131,7 +157,13 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   // ── Department options derived from absenteeism data ────────────────
 
   const departmentOptions = useMemo(() => {
-    const depts = Array.from(new Set(absenteeismData.map((d) => d.department))).sort();
+    const depts = Array.from(
+      new Set(
+        absenteeismData
+          .map((d) => (d.department ?? "").trim())
+          .filter((d) => d && d.toLowerCase() !== "unknown" && !isUuid(d)),
+      ),
+    ).sort();
     return depts.map((d) => ({ value: d, label: d }));
   }, [absenteeismData]);
 
@@ -159,8 +191,8 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       title: "Department",
       dataIndex: "department",
       key: "department",
-      render: (val: string) => val || "Unassigned",
-      sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
+      render: (val: string) => formatDept(val),
+      sorter: (a, b) => formatDept(a.department).localeCompare(formatDept(b.department)),
     },
     {
       title: "Total Employees",
@@ -276,23 +308,55 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     {
       title: "Employee",
       key: "employee",
-      render: (_: unknown, record: TopAbsenteeData) => (
-        <div>
-          <Text strong>{record.employeeName || record.employeeId || "—"}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.employeeNumber || ""}
-          </Text>
-        </div>
-      ),
-      sorter: (a, b) => (a.employeeName || "").localeCompare(b.employeeName || ""),
+      render: (_: unknown, record: TopAbsenteeData) => {
+        const resolved = employeeIndex.get(record.employeeId);
+        const name =
+          record.employeeName?.trim() ||
+          resolved?.name ||
+          "";
+        const code =
+          record.employeeNumber?.trim() ||
+          resolved?.code ||
+          "";
+        return (
+          <div>
+            <Text strong>{name || code || "—"}</Text>
+            {code && name && (
+              <>
+                <br />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {code}
+                </Text>
+              </>
+            )}
+          </div>
+        );
+      },
+      sorter: (a, b) => {
+        const an = a.employeeName || employeeIndex.get(a.employeeId)?.name || "";
+        const bn = b.employeeName || employeeIndex.get(b.employeeId)?.name || "";
+        return an.localeCompare(bn);
+      },
     },
     {
       title: "Department",
       dataIndex: "department",
       key: "department",
-      render: (val: string) => val || "Unassigned",
-      sorter: (a, b) => (a.department || "").localeCompare(b.department || ""),
+      render: (val: string, record: TopAbsenteeData) => {
+        const fromRecord = formatDept(val);
+        if (fromRecord !== "Unassigned") return fromRecord;
+        const resolved = employeeIndex.get(record.employeeId);
+        return formatDept(resolved?.department);
+      },
+      sorter: (a, b) => {
+        const ad = formatDept(a.department) !== "Unassigned"
+          ? formatDept(a.department)
+          : formatDept(employeeIndex.get(a.employeeId)?.department);
+        const bd = formatDept(b.department) !== "Unassigned"
+          ? formatDept(b.department)
+          : formatDept(employeeIndex.get(b.employeeId)?.department);
+        return ad.localeCompare(bd);
+      },
     },
     {
       title: "Total Leave Days",

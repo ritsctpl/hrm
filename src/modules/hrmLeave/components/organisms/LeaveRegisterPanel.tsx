@@ -58,15 +58,47 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
   const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | undefined>(undefined);
   const [departmentFilter, setDepartmentFilter] = useState<string | undefined>(undefined);
 
+  // Pagination (controlled — guarantees pageSize stays at user's chosen
+  // value across re-renders and data refreshes).
+  const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Employee + Leave type dropdowns
   const { options: employeeOptions, employees } = useEmployeeOptions();
   const { options: leaveTypeOptions } = useLeaveTypeOptions();
 
-  // Unique departments from loaded data
+  // Enrichment derived from rows + employees so late-arriving directory data
+  // automatically fills in empty name/dept/designation fields.
+  const enrichedRows = useMemo<LeaveRegisterRow[]>(() => {
+    if (rows.length === 0) return [];
+    if (employees.length === 0) return rows;
+    return rows.map((row) => {
+      // Backend may return UUID in employeeNumber, or a code, or blank.
+      // Match against both handle (UUID) and employeeCode.
+      const candidate = (row.employeeNumber ?? "").trim();
+      const emp = employees.find(
+        (e) => e.handle === candidate || e.employeeCode === candidate,
+      );
+      if (!emp) return row;
+      return {
+        ...row,
+        employeeName: row.employeeName?.trim() || emp.fullName,
+        employeeNumber: emp.employeeCode || row.employeeNumber,
+        department: row.department?.trim() || emp.department || "",
+        designation:
+          row.designation?.trim() ||
+          ((emp as unknown as Record<string, string>)?.designation ??
+            (emp as unknown as Record<string, string>)?.role ??
+            ""),
+      };
+    });
+  }, [rows, employees]);
+
+  // Unique departments from enriched data
   const departmentOptions = useMemo(() => {
-    const depts = Array.from(new Set(rows.map(r => r.department).filter(Boolean)));
+    const depts = Array.from(new Set(enrichedRows.map(r => r.department).filter(Boolean)));
     return depts.map(d => ({ value: d, label: d }));
-  }, [rows]);
+  }, [enrichedRows]);
 
   const buildPayload = (): LeaveRegisterRequest => ({
     organizationId,
@@ -79,21 +111,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
     try {
       setLoading(true);
       const data = await HrmLeaveService.getLeaveRegister(buildPayload());
-      // Enrich: resolve employee name/dept from directory when backend returns UUID
-      const enriched = (Array.isArray(data) ? data : []).map(row => {
-        const emp = employees.find(e =>
-          e.handle === row.employeeNumber ||
-          e.employeeCode === row.employeeNumber
-        );
-        return {
-          ...row,
-          employeeName: row.employeeName || (emp ? emp.fullName : row.employeeNumber),
-          employeeNumber: emp?.employeeCode || row.employeeNumber,
-          department: row.department || emp?.department || "",
-          designation: row.designation || (emp as unknown as Record<string, string>)?.role || "",
-        };
-      });
-      setRows(enriched);
+      setRows(Array.isArray(data) ? data : []);
     } catch {
       // Backend endpoint may not be implemented yet — show empty
       setRows([]);
@@ -109,13 +127,20 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
 
   // Client-side filtering
   const filteredRows = useMemo(() => {
-    return rows.filter(r => {
+    return enrichedRows.filter(r => {
       if (employeeFilter && r.employeeNumber !== employeeFilter && r.employeeName !== employeeFilter) return false;
       if (leaveTypeFilter && r.leaveTypeCode !== leaveTypeFilter) return false;
       if (departmentFilter && r.department !== departmentFilter) return false;
       return true;
     });
-  }, [rows, employeeFilter, leaveTypeFilter, departmentFilter]);
+  }, [enrichedRows, employeeFilter, leaveTypeFilter, departmentFilter]);
+
+  // Manual page slice — defence against duplicate-key rendering bugs
+  // when backend returns rows without a reliable unique identifier.
+  const pagedRows = useMemo(() => {
+    const start = (current - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, current, pageSize]);
 
   const triggerDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -354,19 +379,35 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
           </Button>
         )}
         <Text type="secondary" style={{ fontSize: 12, lineHeight: "24px" }}>
-          {filteredRows.length} of {rows.length} records
+          {filteredRows.length} of {enrichedRows.length} records
         </Text>
       </div>
 
       <Table<LeaveRegisterRow>
-        dataSource={filteredRows}
+        dataSource={pagedRows}
         columns={columns}
-        rowKey={(record) =>
-          `${record.employeeNumber}-${record.leaveTypeCode}`
+        rowKey={(record, index) =>
+          `${(current - 1) * pageSize + (index ?? 0)}-${record.employeeNumber}-${record.leaveTypeCode}`
         }
         size="small"
         loading={loading}
-        pagination={{ pageSize: 50, showSizeChanger: true, pageSizeOptions: ["25", "50", "100"] }}
+        pagination={{
+          current,
+          pageSize,
+          total: filteredRows.length,
+          pageSizeOptions: ["10", "25", "50", "100"],
+          showSizeChanger: true,
+          showTotal: (total, range) =>
+            total === 0 ? "0 records" : `${range[0]}–${range[1]} of ${total}`,
+          onChange: (newPage, newSize) => {
+            if (newSize !== pageSize) {
+              setPageSize(newSize);
+              setCurrent(1);
+            } else {
+              setCurrent(newPage);
+            }
+          },
+        }}
         scroll={{ x: 1800 }}
         bordered
         summary={() =>

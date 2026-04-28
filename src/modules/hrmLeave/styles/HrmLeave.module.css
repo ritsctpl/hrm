@@ -4,6 +4,30 @@
   background: #f5f7fa;
 }
 
+/* Bound the AntD Tabs height so inner master-detail scroll works.
+   Targets the Tabs rendered directly inside the landing (Employee /
+   Supervisor roles). HR role uses HrLeaveLayout which has its own chain. */
+.landing > :global(.ant-tabs) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) > :global(.ant-tabs-content) {
+  height: 100%;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) > :global(.ant-tabs-content) > :global(.ant-tabs-tabpane) {
+  height: 100%;
+  overflow: hidden;
+}
+
 .filterBar {
   padding: 10px 16px;
   background: #ffffff;

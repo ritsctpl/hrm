@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Table, Tag, Empty, Typography } from "antd";
+import React, { useState } from "react";
+import { Table, Empty, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import DirectionTag from "../atoms/DirectionTag";
 import LeaveTypeTag from "../atoms/LeaveTypeTag";
@@ -67,6 +67,9 @@ const columns: ColumnsType<LedgerEntry> = [
 ];
 
 const LedgerHistoryTable: React.FC<LedgerHistoryTableProps> = ({ entries, loading }) => {
+  const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   return (
     <Table
       dataSource={entries}
@@ -74,7 +77,22 @@ const LedgerHistoryTable: React.FC<LedgerHistoryTableProps> = ({ entries, loadin
       rowKey="handle"
       loading={loading}
       size="small"
-      pagination={{ pageSize: 20, showSizeChanger: false }}
+      pagination={{
+        current,
+        pageSize,
+        pageSizeOptions: ["10", "25", "50", "100"],
+        showSizeChanger: true,
+        showTotal: (total, range) =>
+          total === 0 ? "0 records" : `${range[0]}–${range[1]} of ${total}`,
+        onChange: (newPage, newSize) => {
+          if (newSize !== pageSize) {
+            setPageSize(newSize);
+            setCurrent(1);
+          } else {
+            setCurrent(newPage);
+          }
+        },
+      }}
       locale={{ emptyText: <Empty description="No ledger entries" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
     />
   );
