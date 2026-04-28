@@ -2,6 +2,7 @@
 
 import { Tabs, Empty, Spin, Descriptions, Timeline, Typography, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import ApprovalActionBar from '../molecules/ApprovalActionBar';
 import AssetRequestStatusBadge from '../atoms/AssetRequestStatusBadge';
 import { HrmAssetService } from '../../services/hrmAssetService';
@@ -32,11 +33,12 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   } = useHrmAssetStore();
 
   const handleApproveSupervisor = async (requestId: string, remarks: string) => {
-    const { organizationId, userId, employeeName } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        organizationId: organizationId ?? '',
+        organizationId,
         requestId,
         action: 'APPROVE_SUPERVISOR',
         actorEmployeeId: userId ?? '',
@@ -54,11 +56,12 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleRejectSupervisor = async (requestId: string, remarks: string) => {
-    const { organizationId, userId, employeeName } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        organizationId: organizationId ?? '',
+        organizationId,
         requestId,
         action: 'REJECT_SUPERVISOR',
         actorEmployeeId: userId ?? '',
@@ -76,11 +79,12 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleApproveAdmin = async (requestId: string, remarks: string) => {
-    const { organizationId, userId, employeeName } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        organizationId: organizationId ?? '',
+        organizationId,
         requestId,
         action: 'APPROVE_ADMIN',
         actorEmployeeId: userId ?? '',
@@ -98,11 +102,12 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
   };
 
   const handleRejectAdmin = async (requestId: string, remarks: string) => {
-    const { organizationId, userId, employeeName } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId, employeeName } = parseCookies();
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
-        organizationId: organizationId ?? '',
+        organizationId,
         requestId,
         action: 'REJECT_ADMIN',
         actorEmployeeId: userId ?? '',

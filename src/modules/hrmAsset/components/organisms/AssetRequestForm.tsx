@@ -2,6 +2,7 @@
 
 import { Drawer, Form, Input, InputNumber, Select, Space, Button, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { requestFormRules } from '../../utils/assetValidations';
@@ -25,12 +26,13 @@ export default function AssetRequestForm() {
   };
 
   const handleSubmit = async () => {
-    const { organizationId, userId, employeeName, supervisorId, supervisorName } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId, employeeName, supervisorId, supervisorName } = parseCookies();
     try {
       const values = await form.validateFields();
       setSavingRequest(true);
       const res = await HrmAssetService.createAssetRequest({
-        organizationId: organizationId ?? '',
+        organizationId,
         employeeId: userId ?? '',
         employeeName: employeeName ?? '',
         categoryCode: values.categoryCode,

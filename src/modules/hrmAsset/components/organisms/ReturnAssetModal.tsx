@@ -2,6 +2,7 @@
 
 import { Modal, Form, Input, DatePicker, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
@@ -17,11 +18,12 @@ export default function ReturnAssetModal() {
   const [form] = Form.useForm();
 
   const handleOk = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       const values = await form.validateFields();
       await HrmAssetService.returnAsset({
-        organizationId: organizationId ?? '',
+        organizationId,
         assetId: selectedAsset!.assetId,
         returnedBy: userId ?? '',
         returnDate: dayjs(values.returnDate).format('YYYY-MM-DD'),

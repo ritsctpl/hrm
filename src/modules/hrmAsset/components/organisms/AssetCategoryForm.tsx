@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { categoryFormRules } from '../../utils/assetValidations';
@@ -32,12 +33,13 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
   };
 
   const handleSave = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setSaving(true);
       const payload = {
-        organizationId: organizationId ?? '',
+        organizationId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
         description: values.description,

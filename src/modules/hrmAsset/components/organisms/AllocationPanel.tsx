@@ -46,12 +46,13 @@ export default function AllocationPanel() {
   };
 
   const handleAllocate = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setAllocatingAsset(true);
       await HrmAssetService.allocateAsset({
-        organizationId: organizationId ?? '',
+        organizationId,
         requestId: selectedRequest!.requestId,
         assetId: values.assetId,
         allocationDate: dayjs(values.allocationDate).format('YYYY-MM-DD'),

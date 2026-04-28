@@ -2,6 +2,7 @@
 
 import { Descriptions, Button, Space, Popconfirm, Select, message } from 'antd';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import AssetStatusBadge from '../atoms/AssetStatusBadge';
 import QrDownloadButton from '../atoms/QrDownloadButton';
 import WarrantyReminderBanner from '../molecules/WarrantyReminderBanner';
@@ -32,10 +33,11 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
   const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
 
   const handleStatusChange = async (newStatus: string) => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       await HrmAssetService.updateStatus({
-        organizationId: organizationId ?? '',
+        organizationId,
         assetId: asset.assetId,
         newStatus,
         updatedBy: userId ?? '',

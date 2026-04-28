@@ -107,10 +107,11 @@ export default function AssetDetailPanel({
 
   const handleDeleteAsset = async () => {
     if (!selectedAsset) return;
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       await HrmAssetService.updateStatus({
-        organizationId: organizationId ?? '',
+        organizationId,
         assetId: selectedAsset.assetId,
         newStatus: 'RETIRED',
         updatedBy: userId ?? '',

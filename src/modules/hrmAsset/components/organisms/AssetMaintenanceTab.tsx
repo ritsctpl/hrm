@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Spin, Empty, Button, Form, Input, DatePicker, InputNumber, Checkbox, Drawer, Space, message } from 'antd';
 import AddIcon from '@mui/icons-material/Add';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import MaintenanceEventRow from '../molecules/MaintenanceEventRow';
 import { HrmAssetService } from '../../services/hrmAssetService';
@@ -25,12 +26,13 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
   const [form] = Form.useForm();
 
   const handleSave = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       const values = await form.validateFields();
       setSaving(true);
       const res = await HrmAssetService.addMaintenanceEvent({
-        organizationId: organizationId ?? '',
+        organizationId,
         assetId: asset.assetId,
         maintenanceDate: dayjs(values.maintenanceDate).format('YYYY-MM-DD'),
         vendor: values.vendor,

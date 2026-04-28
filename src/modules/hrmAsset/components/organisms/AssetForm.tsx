@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { Drawer, Form, Input, InputNumber, DatePicker, Select, Button, message, Row, Col, Divider } from 'antd';
 import { ShopOutlined, FileTextOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
@@ -68,7 +69,8 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
   };
 
   const handleSave = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     try {
       const values = await form.validateFields();
 
@@ -85,7 +87,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
 
       if (isEdit) {
         const updatePayload: UpdateAssetPayload = {
-          organizationId: organizationId ?? '',
+          organizationId,
           assetId: editAsset!.assetId,
           assetName: values.assetName,
           purchaseValueINR: values.purchaseValueINR,
@@ -103,7 +105,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         message.success('Asset updated');
       } else {
         const createPayload: CreateAssetPayload = {
-          organizationId: organizationId ?? '',
+          organizationId,
           categoryCode: values.categoryCode,
           assetName: values.assetName,
           purchaseValueINR: values.purchaseValueINR,

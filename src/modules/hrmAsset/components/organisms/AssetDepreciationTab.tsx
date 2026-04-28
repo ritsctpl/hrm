@@ -3,6 +3,7 @@
 import { Spin, Empty, Button, Popconfirm, message, Descriptions } from 'antd';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import DepreciationSnapshotRow from '../molecules/DepreciationSnapshotRow';
 import DepreciationBadge from '../atoms/DepreciationBadge';
 import { HrmAssetService } from '../../services/hrmAssetService';
@@ -29,11 +30,12 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
   } = useHrmAssetStore();
 
   const handleRunDepreciation = async () => {
-    const { organizationId, userId } = parseCookies();
+    const organizationId = getOrganizationId();
+    const { userId } = parseCookies();
     setRunningDepreciation(true);
     try {
       const result = await HrmAssetService.runDepreciation({
-        organizationId: organizationId ?? '',
+        organizationId,
         runBy: userId ?? '',
         asOfDate: new Date().toISOString().split('T')[0],
         prorateMidYear: false,
