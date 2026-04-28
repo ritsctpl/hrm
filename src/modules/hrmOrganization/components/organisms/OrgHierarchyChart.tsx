@@ -567,7 +567,7 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
         flexDirection: 'column',
       }}
     >
-      {/* Toolbar */}
+      {/* Toolbar — left side only (title + view switcher + tags). */}
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
           <ApartmentOutlined style={{ color: 'var(--hrm-accent, #1890ff)' }} />
@@ -595,17 +595,38 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
             <Tag color="cyan">{countHierarchy(empHierarchy)} Employees</Tag>
           )}
         </div>
-        <div className={styles.toolbarActions}>
-          <Button size="small" icon={<ZoomOutOutlined />} onClick={handleZoomOut} disabled={zoom <= 0.4} />
-          <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
-          <Button size="small" icon={<ZoomInOutlined />} onClick={handleZoomIn} disabled={zoom >= 1.8} />
-          <Tooltip title="Fit to screen">
-            <Button size="small" icon={<FullscreenOutlined />} onClick={handleFitToScreen}>
-              Fit
-            </Button>
-          </Tooltip>
-          <Button size="small" onClick={handleZoomResetFull}>100%</Button>
-        </div>
+      </div>
+
+      {/* Zoom / Fit / 100% controls — floated absolutely at the top-right
+          corner so they can never be pushed off-screen, hidden by
+          chart-content overlap, or affected by Tabs/parent overflow.
+          Inline styles + zIndex defeat any cascade-side gotcha. */}
+      <div
+        className={styles.toolbarActions}
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 16,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          background: 'var(--hrm-bg-white, #fff)',
+          padding: '4px 8px',
+          borderRadius: 6,
+          border: '1px solid var(--hrm-border-light, #f0f0f0)',
+          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
+        }}
+      >
+        <Button size="small" icon={<ZoomOutOutlined />} onClick={handleZoomOut} disabled={zoom <= 0.4} />
+        <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
+        <Button size="small" icon={<ZoomInOutlined />} onClick={handleZoomIn} disabled={zoom >= 1.8} />
+        <Tooltip title="Fit to screen">
+          <Button size="small" icon={<FullscreenOutlined />} onClick={handleFitToScreen}>
+            Fit
+          </Button>
+        </Tooltip>
+        <Button size="small" onClick={handleZoomResetFull}>100%</Button>
       </div>
 
       {/* Chart Viewport — clip-only container. The inner content is panned
