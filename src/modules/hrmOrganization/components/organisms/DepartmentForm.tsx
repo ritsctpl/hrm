@@ -98,14 +98,26 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     try {
       const result = await HrmEmployeeService.searchByKeyword(organizationId, keyword);
       const employees = result?.employees || [];
-      setEmployeeOptions(employees.map(buildEmployeeOption));
+      // Restrict the Head of Department picker to employees who belong
+      // to the BU the dept is being created/edited under. The backend
+      // filter scopes by org, but a department's HoD must come from the
+      // BU's people. EmployeeDirectoryRow.businessUnits is an array of
+      // BU handles the employee is mapped to. We only filter when a BU
+      // is selected — otherwise (no BU context yet) we show all org
+      // employees so existing flows aren't broken.
+      const filtered = selectedBuHandle
+        ? employees.filter((e) =>
+            Array.isArray(e.businessUnits) && e.businessUnits.includes(selectedBuHandle),
+          )
+        : employees;
+      setEmployeeOptions(filtered.map(buildEmployeeOption));
       if (!keyword) setEmployeesLoaded(true);
     } catch {
       setEmployeeOptions([]);
     } finally {
       setEmployeeSearchLoading(false);
     }
-  }, [buildEmployeeOption]);
+  }, [buildEmployeeOption, selectedBuHandle]);
 
   const handleEmployeeSearch = useCallback((keyword: string) => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
