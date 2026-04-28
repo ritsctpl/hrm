@@ -366,8 +366,11 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     },
     [viewMode],
   );
-  const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
-  const [empHierarchy, setEmpHierarchy] = useState<EmployeeHierarchyNode[]>([]);
+  // Raw fetched data — scoping/filtering happens in the memoized
+  // `employees` / `empHierarchy` derivations below so all downstream
+  // code (groupings, render, counts) sees only company-scoped data.
+  const [rawEmployees, setRawEmployees] = useState<EmployeeDirectoryRow[]>([]);
+  const [rawEmpHierarchy, setRawEmpHierarchy] = useState<EmployeeHierarchyNode[]>([]);
 
   useEffect(() => {
     fetchHierarchy();
@@ -397,13 +400,48 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
       ),
     ]).then(([dirRes, hier]) => {
       if (cancelled) return;
-      setEmployees((dirRes?.employees || []) as EmployeeDirectoryRow[]);
-      setEmpHierarchy(hier || []);
+      setRawEmployees((dirRes?.employees || []) as EmployeeDirectoryRow[]);
+      setRawEmpHierarchy(hier || []);
     });
     return () => {
       cancelled = true;
     };
   }, [orgName]);
+
+  // Company-scoped employees. Backend should already filter by
+  // organizationId, but with super admin spanning multiple orgs, defensive
+  // client-side scoping keeps the views accurate. We keep an employee only
+  // if at least one of their BUs belongs to the current company.
+  const employees = useMemo(() => {
+    const company = hierarchy.data;
+    const buSet = new Set<string>(
+      (company?.businessUnits || [])
+        .map((entry) => entry.businessUnit?.handle)
+        .filter((h): h is string => !!h),
+    );
+    if (buSet.size === 0) return rawEmployees;
+    return rawEmployees.filter(
+      (e) => Array.isArray(e.businessUnits) && e.businessUnits.some((bu) => buSet.has(bu)),
+    );
+  }, [rawEmployees, hierarchy.data]);
+
+  // Reporting Tree scoping. EmployeeHierarchyNode doesn't carry BU info,
+  // so we use the scoped `employees` set above as the source of truth: an
+  // employee is in-scope iff their handle appears in the scoped directory.
+  // Tree is pruned recursively — out-of-scope nodes are removed along with
+  // their entire subtree.
+  const empHierarchy = useMemo(() => {
+    const inScope = new Set(employees.map((e) => e.handle));
+    if (inScope.size === 0) return rawEmpHierarchy;
+    const prune = (nodes: EmployeeHierarchyNode[]): EmployeeHierarchyNode[] =>
+      nodes
+        .filter((n) => inScope.has(n.handle))
+        .map((n) => ({
+          ...n,
+          directReports: n.directReports ? prune(n.directReports) : [],
+        }));
+    return prune(rawEmpHierarchy);
+  }, [rawEmpHierarchy, employees]);
 
   // Group employees by department. Key on lowercased trimmed name AND code
   // since the dept might be referenced either way.
