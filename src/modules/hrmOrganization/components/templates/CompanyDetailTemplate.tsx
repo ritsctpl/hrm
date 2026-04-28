@@ -254,7 +254,7 @@ const CompanyDetailTemplate: React.FC = () => {
         tabBarExtraContent={
           <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             {activeDetailTab === 'profile' && !isEditing && data && (
-              <Can I="edit">
+              <Can I="edit" object="org_company_profile">
                 <Button
                   icon={<EditOutlined />}
                   onClick={handleEdit}
@@ -274,7 +274,7 @@ const CompanyDetailTemplate: React.FC = () => {
               </Button>
             )}
             {(isEditing || isNew) && (
-              <Can I={isNew ? 'add' : 'edit'}>
+              <Can I={isNew ? 'add' : 'edit'} object="org_company_profile">
                 <OrgSaveButton
                   loading={isSaving}
                   onClick={handleSave}

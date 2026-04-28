@@ -77,7 +77,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
             <>
               <img src={draft.logoUrl} alt="Company Logo" className={mainStyles.logoPreview} />
               {!disabled && (
-                <Can I="delete">
+                <Can I="delete" object="org_identity">
                 <Dropdown
                   menu={{
                     items: [
@@ -121,7 +121,7 @@ const CompanyIdentitySection: React.FC<CompanyIdentitySectionProps> = ({
         </div>
         <div className={mainStyles.logoInfo}>
           {!disabled && (
-            <Can I="add">
+            <Can I="add" object="org_identity">
               <Upload
                 showUploadList={false}
                 beforeUpload={handleLogoUpload as unknown as (file: RcFile, fileList: RcFile[]) => boolean}

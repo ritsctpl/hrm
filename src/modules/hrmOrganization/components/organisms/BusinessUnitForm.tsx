@@ -186,7 +186,7 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
       <div className={mainStyles.formActions}>
         <Button onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
         {!readOnly && (
-          <Can I={isNew ? 'add' : 'edit'}>
+          <Can I={isNew ? 'add' : 'edit'} object="org_business_unit">
             <OrgSaveButton
               loading={isSaving}
               onClick={handleSave}

@@ -48,7 +48,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
               />
             </Tooltip>
             {!isPrimary && !disabled && (
-              <Can I="edit">
+              <Can I="edit" object="org_bank_accounts">
                 <Tooltip title="Set as primary">
                   <Button
                     type="text"
@@ -66,7 +66,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
             )}
             {!disabled && (
               <>
-                <Can I="edit">
+                <Can I="edit" object="org_bank_accounts">
                   <Tooltip title="Edit">
                     <Button
                       type="text"
@@ -76,7 +76,7 @@ const OrgBankAccountCard: React.FC<OrgBankAccountCardProps> = ({
                     />
                   </Tooltip>
                 </Can>
-                <Can I="delete">
+                <Can I="delete" object="org_bank_accounts">
                   <Tooltip title="Delete">
                     <Button
                       type="text"

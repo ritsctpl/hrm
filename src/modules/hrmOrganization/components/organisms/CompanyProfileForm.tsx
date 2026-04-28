@@ -362,7 +362,7 @@ const CompanyProfileForm: React.FC = () => {
                 Cancel
               </Button>
             )}
-            <Can I={isNew ? 'add' : 'edit'}>
+            <Can I={isNew ? 'add' : 'edit'} object="org_company_profile">
               <OrgSaveButton
                 loading={isSaving}
                 onClick={handleSave}
@@ -375,7 +375,7 @@ const CompanyProfileForm: React.FC = () => {
 
       {/* Floating Save Button */}
       {(isEditing || isNew) && (
-        <Can I={isNew ? 'add' : 'edit'}>
+        <Can I={isNew ? 'add' : 'edit'} object="org_company_profile">
           <div style={{
             position: 'fixed',
             bottom: 24,

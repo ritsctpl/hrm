@@ -224,7 +224,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, readOnly = false }
 
       <div className={mainStyles.formActions}>
         <Button onClick={onClose}>Cancel</Button>
-        <Can I={isNew ? 'add' : 'edit'}>
+        <Can I={isNew ? 'add' : 'edit'} object="org_location">
           <OrgSaveButton
             loading={isSaving}
             onClick={handleSave}

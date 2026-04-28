@@ -249,7 +249,7 @@ const CompanyBankSection: React.FC<CompanyBankSectionProps> = ({
           }}>
             Cancel
           </Button>,
-          <Can key="submit" I={editingIndex !== null ? 'edit' : 'add'}>
+          <Can key="submit" I={editingIndex !== null ? 'edit' : 'add'} object="org_bank_accounts">
             <Button type="primary" onClick={handleSave}>
               {editingIndex !== null ? 'Update' : 'Save'}
             </Button>

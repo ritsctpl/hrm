@@ -281,7 +281,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
             // no need to enter edit mode first. The Popconfirm guards
             // against accidental taps since the button now sits next to
             // the passive View controls.
-            <Can I="delete">
+            <Can I="delete" object="org_department">
               <Popconfirm
                 title="Delete department"
                 description={`Delete "${selected.deptName}"? This cannot be undone.`}
@@ -424,7 +424,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
         <div style={{ flex: 1 }} />
         <Button onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
         {!readOnly && (
-          <Can I={isNew ? 'add' : 'edit'}>
+          <Can I={isNew ? 'add' : 'edit'} object="org_department">
             <OrgSaveButton
               loading={isSaving}
               onClick={handleSave}

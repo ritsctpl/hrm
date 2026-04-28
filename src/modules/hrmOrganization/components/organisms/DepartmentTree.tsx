@@ -286,7 +286,7 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onEdit, onAdd
             </span>
           )}
         </div>
-        <Can I="add">
+        <Can I="add" object="org_department">
           <Button type="primary" onClick={handleAdd} size="small" icon={<PlusOutlined />}>
             Add
           </Button>
