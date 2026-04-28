@@ -22,14 +22,14 @@
 
 /* ========== Toolbar ========== */
 .toolbar {
-  display: flex;
+  /* Grid layout guarantees a dedicated right column for the action
+     buttons (zoom -, %, zoom +, Fit, 100%) that NEVER collapses or
+     gets pushed off-screen, regardless of how wide the title +
+     segmented switcher + tags get on the left. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  /* Wrap to a second row instead of clipping toolbarActions off the
-     right edge when the left side gets wide (e.g. Reporting Tree's
-     wider Segmented control + tags). flex-shrink:0 on toolbarActions
-     keeps the zoom/Fit/100% controls intact. */
-  flex-wrap: wrap;
+  column-gap: 16px;
   row-gap: 8px;
   padding: 10px 16px;
   background: var(--hrm-bg-white, #fff);
@@ -53,15 +53,15 @@
   font-weight: 600;
   font-size: 15px;
   color: var(--hrm-text-primary, #1f1f1f);
+  white-space: nowrap;
 }
 
 .toolbarActions {
   display: flex;
   align-items: center;
   gap: 4px;
-  /* Never let the actions cluster shrink — even when toolbarLeft is
-     pushing for space, the zoom controls must stay visible. */
-  flex-shrink: 0;
+  /* Pinned to the right column of the grid. */
+  justify-self: end;
 }
 
 .zoomLabel {
