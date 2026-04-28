@@ -19,6 +19,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
   const {
     department,
     businessUnit,
+    companyProfile,
     setDepartmentDraft,
     setDepartmentSelectedBu,
     fetchDepartments,
@@ -28,6 +29,16 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
 
   const { draft, isSaving, isCreating, selected, errors, list, selectedBuHandle } = department;
   const isNew = isCreating && !selected;
+
+  // Scoping org id for picker fetches: prefer the company being viewed
+  // (companyProfile.data) over the global header selection (cookie). The
+  // dept being edited belongs to that company, so its HoD picker should
+  // pull from the same company's directory — even if the header switcher
+  // happens to show a different org.
+  const scopingOrgId =
+    ((companyProfile.data as unknown as { organizationId?: string })?.organizationId) ||
+    companyProfile.data?.site ||
+    getOrganizationId();
 
   // Keep the parent-department list populated: whenever a BU is active but
   // the list is empty (happens after setDepartmentSelectedBu, which clears
@@ -92,22 +103,25 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
   }, []);
 
   const loadEmployees = useCallback(async (keyword: string = '') => {
-    const organizationId = getOrganizationId();
-    if (!organizationId) return;
+    if (!scopingOrgId) return;
     setEmployeeSearchLoading(true);
     try {
-      const result = await HrmEmployeeService.searchByKeyword(organizationId, keyword);
+      const result = await HrmEmployeeService.searchByKeyword(scopingOrgId, keyword);
       const employees = result?.employees || [];
-      // Restrict the Head of Department picker to employees who belong
-      // to the BU the dept is being created/edited under. The backend
-      // filter scopes by org, but a department's HoD must come from the
-      // BU's people. EmployeeDirectoryRow.businessUnits is an array of
-      // BU handles the employee is mapped to. We only filter when a BU
-      // is selected — otherwise (no BU context yet) we show all org
-      // employees so existing flows aren't broken.
-      const filtered = selectedBuHandle
-        ? employees.filter((e) =>
-            Array.isArray(e.businessUnits) && e.businessUnits.includes(selectedBuHandle),
+      // Restrict to employees of the selected BU. The directory's
+      // businessUnits[] field carries strings like "BU_NAME - BU_CODE"
+      // (NOT UUID handles), so we resolve the selected BU's code from
+      // businessUnit.list and substring-match against each employee's
+      // entries. Falls open when no BU is selected.
+      const selectedBu = selectedBuHandle
+        ? businessUnit.list.find((bu) => bu.handle === selectedBuHandle)
+        : undefined;
+      const buCode = selectedBu?.buCode?.toLowerCase();
+      const filtered = buCode
+        ? employees.filter(
+            (e) =>
+              Array.isArray(e.businessUnits) &&
+              e.businessUnits.some((s) => s?.toLowerCase().includes(buCode)),
           )
         : employees;
       setEmployeeOptions(filtered.map(buildEmployeeOption));
@@ -117,7 +131,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     } finally {
       setEmployeeSearchLoading(false);
     }
-  }, [buildEmployeeOption, selectedBuHandle]);
+  }, [buildEmployeeOption, selectedBuHandle, scopingOrgId, businessUnit.list]);
 
   const handleEmployeeSearch = useCallback((keyword: string) => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -142,12 +156,11 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     const selectedId = draft?.headOfDepartmentEmployeeId;
     if (!selectedId) return;
     if (employeeOptions.some((opt) => opt.value === selectedId)) return;
-    const organizationId = getOrganizationId();
-    if (!organizationId) return;
+    if (!scopingOrgId) return;
     let cancelled = false;
     (async () => {
       try {
-        const result = await HrmEmployeeService.searchByKeyword(organizationId, selectedId);
+        const result = await HrmEmployeeService.searchByKeyword(scopingOrgId, selectedId);
         if (cancelled) return;
         const employees = result?.employees || [];
         const match = employees.find((e) => (e.employeeCode || e.handle) === selectedId) || employees[0];
@@ -164,7 +177,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
     return () => {
       cancelled = true;
     };
-  }, [draft?.headOfDepartmentEmployeeId, employeeOptions, buildEmployeeOption]);
+  }, [draft?.headOfDepartmentEmployeeId, employeeOptions, buildEmployeeOption, scopingOrgId]);
 
   // Parent department options. Guard against stale / soft-deleted rows the
   // backend may still return. The `active` field has been seen as a number,
