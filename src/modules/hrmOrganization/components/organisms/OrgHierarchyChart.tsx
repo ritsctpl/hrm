@@ -348,10 +348,24 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   const { hierarchy, fetchHierarchy } = useHrmOrganizationStore();
   const { data, isLoading } = hierarchy;
 
-  const [zoom, setZoom] = useState(1);
+  // Zoom is tracked per view so toggling between Org Structure and
+  // Reporting Tree doesn't drag one view's zoom onto the other — each
+  // view remembers where the user left it.
+  const [zoomByView, setZoomByView] = useState<Record<ViewMode, number>>({ org: 1, tree: 1 });
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>('org');
   const viewMode: ViewMode = forceViewMode ?? internalViewMode;
   const setViewMode = setInternalViewMode;
+  const zoom = zoomByView[viewMode];
+  const setZoom = useCallback(
+    (updater: number | ((prev: number) => number)) => {
+      setZoomByView((prev) => {
+        const cur = prev[viewMode];
+        const next = typeof updater === 'function' ? (updater as (n: number) => number)(cur) : updater;
+        return { ...prev, [viewMode]: next };
+      });
+    },
+    [viewMode],
+  );
   const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
   const [empHierarchy, setEmpHierarchy] = useState<EmployeeHierarchyNode[]>([]);
 
@@ -425,7 +439,22 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   // viewport is clipped; dragging slides the inner content under it.
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Pan is also per-view so each view keeps its own scroll position.
+  const [panByView, setPanByView] = useState<Record<ViewMode, { x: number; y: number }>>({
+    org: { x: 0, y: 0 },
+    tree: { x: 0, y: 0 },
+  });
+  const pan = panByView[viewMode];
+  const setPan = useCallback(
+    (updater: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
+      setPanByView((prev) => {
+        const cur = prev[viewMode];
+        const next = typeof updater === 'function' ? (updater as (p: { x: number; y: number }) => { x: number; y: number })(cur) : updater;
+        return { ...prev, [viewMode]: next };
+      });
+    },
+    [viewMode],
+  );
   const dragState = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
