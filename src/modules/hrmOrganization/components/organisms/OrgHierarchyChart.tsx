@@ -481,7 +481,7 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
       x: dragState.current.startPanX + dx,
       y: dragState.current.startPanY + dy,
     });
-  }, []);
+  }, [setPan]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     dragState.current = null;
@@ -492,7 +492,7 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
 
   // Reset pan when switching view mode or resetting zoom so the chart
   // re-centers. Otherwise you can end up "lost" after zooming out.
-  const resetPan = useCallback(() => setPan({ x: 0, y: 0 }), []);
+  const resetPan = useCallback(() => setPan({ x: 0, y: 0 }), [setPan]);
 
   // Fit-to-screen: compute a zoom factor that scales the tree to fit inside
   // the visible canvas width AND reset pan so everything is centered.

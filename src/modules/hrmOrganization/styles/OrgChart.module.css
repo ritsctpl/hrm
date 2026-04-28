@@ -25,16 +25,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Wrap to a second row instead of clipping toolbarActions off the
+     right edge when the left side gets wide (e.g. Reporting Tree's
+     wider Segmented control + tags). flex-shrink:0 on toolbarActions
+     keeps the zoom/Fit/100% controls intact. */
+  flex-wrap: wrap;
+  row-gap: 8px;
   padding: 10px 16px;
   background: var(--hrm-bg-white, #fff);
   border-bottom: 1px solid var(--hrm-border-light, #f0f0f0);
   flex-shrink: 0;
+  /* Keep the toolbar visually above any chart content that might
+     incidentally render on top in some browsers under transforms. */
+  position: relative;
+  z-index: 2;
 }
 
 .toolbarLeft {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .toolbarTitle {
@@ -47,6 +59,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  /* Never let the actions cluster shrink — even when toolbarLeft is
+     pushing for space, the zoom controls must stay visible. */
+  flex-shrink: 0;
 }
 
 .zoomLabel {
