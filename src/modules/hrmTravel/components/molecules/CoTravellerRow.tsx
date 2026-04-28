@@ -36,7 +36,7 @@ const CoTravellerRow: React.FC<Props> = ({ traveller, readonly, onRemove }) => {
         )}
       </span>
       {!readonly && onRemove && (
-        <Can I="delete">
+        <Can I="delete" object="travel_co_traveller">
           <Button
             type="text"
             danger

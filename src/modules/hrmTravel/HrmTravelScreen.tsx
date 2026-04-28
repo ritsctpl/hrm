@@ -239,21 +239,21 @@ const HrmTravelScreen: React.FC<Props> = ({
   const barActions = isReadonly ? (
     <Space>
       {canRecall && (
-        <Can I="edit">
+        <Can I="edit" object="travel_request">
           <Button icon={<RollbackOutlined />} onClick={() => setRecallModal(true)}>
             Recall
           </Button>
         </Can>
       )}
       {canCancel && (
-        <Can I="delete">
+        <Can I="delete" object="travel_request">
           <Button danger icon={<StopOutlined />} onClick={() => setCancelModal(true)}>
             Cancel Request
           </Button>
         </Can>
       )}
       {canDelete && (
-        <Can I="delete">
+        <Can I="delete" object="travel_request">
           <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
             Delete
           </Button>
@@ -262,12 +262,12 @@ const HrmTravelScreen: React.FC<Props> = ({
     </Space>
   ) : (
     <Space>
-      <Can I={isNew ? "add" : "edit"}>
+      <Can I={isNew ? "add" : "edit"} object="travel_request">
         <Button icon={<SaveOutlined />} onClick={handleSaveDraft} loading={saving} disabled={!formValid}>
           Save Draft
         </Button>
       </Can>
-      <Can I={isNew ? "add" : "edit"}>
+      <Can I={isNew ? "add" : "edit"} object="travel_request">
         <Button
           type="primary"
           icon={<SendOutlined />}
@@ -296,7 +296,7 @@ const HrmTravelScreen: React.FC<Props> = ({
       extra={
         <Space>
           {canRequestAdvance && (
-            <Can I="add">
+            <Can I="add" object="travel_request">
               <Button
                 type="primary"
                 size="small"
@@ -308,7 +308,7 @@ const HrmTravelScreen: React.FC<Props> = ({
             </Can>
           )}
           {canApproveAdvance && (
-            <Can I="edit">
+            <Can I="edit" object="travel_approval">
               <Button
                 type="primary"
                 size="small"
@@ -320,7 +320,7 @@ const HrmTravelScreen: React.FC<Props> = ({
             </Can>
           )}
           {canSettleAdvance && (
-            <Can I="edit">
+            <Can I="edit" object="travel_approval">
               <Button
                 size="small"
                 icon={<LinkOutlined />}
@@ -543,7 +543,7 @@ const HrmTravelScreen: React.FC<Props> = ({
       />
 
       {isApprover && request && (
-        <Can I="edit">
+        <Can I="edit" object="travel_approval">
           <ApprovalActionBar
             requestId={request.requestId}
             loading={approving}

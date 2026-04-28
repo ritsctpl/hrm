@@ -51,7 +51,7 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
             rows={2}
           />
           <Space style={{ justifyContent: "flex-end", width: "100%", display: "flex" }}>
-            <Can I="edit">
+            <Can I="edit" object="travel_approval">
               <Button
                 danger
                 icon={<CloseCircleOutlined />}
@@ -61,7 +61,7 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
                 Reject
               </Button>
             </Can>
-            <Can I="edit">
+            <Can I="edit" object="travel_approval">
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
@@ -83,7 +83,7 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
           <Button key="cancel" onClick={() => setRejectModal(false)}>
             Cancel
           </Button>,
-          <Can I="edit" key="ok">
+          <Can I="edit" object="travel_approval" key="ok">
             <Button
               type="primary"
               danger

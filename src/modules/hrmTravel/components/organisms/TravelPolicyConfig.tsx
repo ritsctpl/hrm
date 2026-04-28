@@ -691,7 +691,7 @@ const PolicyTypeForm: React.FC<{
       </Collapse>
 
       <div style={{ textAlign: "right", marginTop: 16, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>
-        <Can I={isNew ? "add" : "edit"}>
+        <Can I={isNew ? "add" : "edit"} object="travel_policy">
           <Button
             type="primary"
             icon={<SaveOutlined />}

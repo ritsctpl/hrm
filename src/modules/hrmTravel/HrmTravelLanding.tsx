@@ -19,6 +19,7 @@ import TravelReportScreen from "./components/organisms/TravelReportScreen";
 import HrmTravelScreen from "./HrmTravelScreen";
 import Can from "../hrmAccess/components/Can";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { useTravelPermissions } from "./hooks/useTravelPermissions";
 import { HrmTravelService } from "./services/hrmTravelService";
 import styles from "./styles/Travel.module.css";
 
@@ -30,7 +31,7 @@ const ADMIN_ROLES = ["ADMIN", "HR", "SUPERADMIN"];
 const HrmTravelLanding: React.FC = () => {
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const role = cookies.userRole ?? "EMPLOYEE";
+  const cookieRole = (cookies.userRole ?? "EMPLOYEE").toUpperCase();
   const employeeId =
     cookies.employeeId ??
     cookies.employeeCode ??
@@ -39,6 +40,18 @@ const HrmTravelLanding: React.FC = () => {
     cookies.user ??
     cookies.rl_user_id ??
     "";
+
+  // RBAC-driven role: when backend has published HRM_TRAVEL grants we trust
+  // them exclusively; the cookie role is only consulted as a fallback for
+  // environments where RBAC isn't wired yet.
+  const travelPerms = useTravelPermissions();
+  const isAdmin = travelPerms.rbacPublished
+    ? travelPerms.isHrAdmin
+    : ADMIN_ROLES.includes(cookieRole);
+  const isSupervisor = travelPerms.rbacPublished
+    ? travelPerms.isSupervisor
+    : !isAdmin && SUPERVISOR_ROLES.includes(cookieRole);
+  const role = isAdmin ? "HR" : isSupervisor ? "SUPERVISOR" : "EMPLOYEE";
 
   const {
     myRequests,
@@ -59,8 +72,19 @@ const HrmTravelLanding: React.FC = () => {
 
   const { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests } = useTravelData();
 
-  const isSupervisor = SUPERVISOR_ROLES.includes(role);
-  const isAdmin = ADMIN_ROLES.includes(role);
+  // Tab/data gates derived from RBAC (with cookie fallback already baked into
+  // isSupervisor/isAdmin above). When RBAC is published, fall back to the
+  // explicit object grants so unrelated module-level perms can't open the
+  // wrong queue.
+  const canSeeApprovals = travelPerms.rbacPublished
+    ? travelPerms.canViewApproval
+    : isSupervisor || isAdmin;
+  const canSeePolicy = travelPerms.rbacPublished
+    ? travelPerms.canManagePolicy
+    : isAdmin;
+  const canSeeReports = travelPerms.rbacPublished
+    ? travelPerms.canViewHistory || travelPerms.canViewApproval
+    : isSupervisor || isAdmin;
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -68,16 +92,16 @@ const HrmTravelLanding: React.FC = () => {
   }, [loadMyRequests, statusFilter, typeFilter, dateRange, searchTerm]);
 
   useEffect(() => {
-    if (isSupervisor || isAdmin) {
+    if (canSeeApprovals) {
       loadApproverInbox();
     }
-  }, [isSupervisor, isAdmin, loadApproverInbox]);
+  }, [canSeeApprovals, loadApproverInbox]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canSeePolicy) {
       loadPolicies();
     }
-  }, [isAdmin, loadPolicies]);
+  }, [canSeePolicy, loadPolicies]);
 
   const handleNewRequest = () => {
     setSelectedRequest(null);
@@ -97,7 +121,7 @@ const HrmTravelLanding: React.FC = () => {
 
   const handleActionComplete = () => {
     loadMyRequests();
-    if (isSupervisor || isAdmin) loadApproverInbox();
+    if (canSeeApprovals) loadApproverInbox();
     setSelectedRequest(null);
     setScreenMode("list");
   };
@@ -141,7 +165,7 @@ const HrmTravelLanding: React.FC = () => {
             <Button icon={<DownloadOutlined />} onClick={exportRequests}>
               Export CSV
             </Button>
-            <Can I="add">
+            <Can I="add" object="travel_request">
               <Button type="primary" icon={<PlusOutlined />} onClick={handleNewRequest}>
                 New Request
               </Button>
@@ -165,8 +189,10 @@ const HrmTravelLanding: React.FC = () => {
     </>
   );
 
-  // Employee only sees their requests
-  if (!isSupervisor && !isAdmin) {
+  // Employee only sees their requests — gate strictly by RBAC visibility of
+  // the supervisor / admin surfaces. When neither approval nor policy nor
+  // history visibility is granted, fall back to the single-tab employee view.
+  if (!canSeeApprovals && !canSeePolicy && !canSeeReports) {
     return (
       <ModuleAccessGate moduleCode="HRM_TRAVEL" appTitle="Travel Requests">
         <div className={`hrm-module-root ${styles.landing}`}>
@@ -199,9 +225,12 @@ const HrmTravelLanding: React.FC = () => {
     />
   );
 
-  const tabItems = [
+  const tabItems: { key: string; label: React.ReactNode; children: React.ReactNode }[] = [
     { key: "myRequests", label: "My Requests", children: myRequestsTab },
-    {
+  ];
+
+  if (canSeeApprovals) {
+    tabItems.push({
       key: "approvals",
       label: `Approvals (${pendingRequests.length})`,
       children: (
@@ -213,10 +242,10 @@ const HrmTravelLanding: React.FC = () => {
           escalatedCount={escalatedRequests.length}
         />
       ),
-    },
-  ];
+    });
+  }
 
-  if (isSupervisor || isAdmin) {
+  if (canSeeReports) {
     tabItems.push({
       key: "reportPendingAging",
       label: "Pending Aging Report",
@@ -256,7 +285,7 @@ const HrmTravelLanding: React.FC = () => {
     });
   }
 
-  if (isAdmin) {
+  if (canSeePolicy) {
     tabItems.push({
       key: "policyConfig",
       label: "Travel Policy",

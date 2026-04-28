@@ -118,7 +118,7 @@ const TravelListTable: React.FC<Props> = ({
               description="No travel requests yet"
             >
               {onNewRequest && (
-                <Can I="add">
+                <Can I="add" object="travel_request">
                   <Button type="primary" onClick={onNewRequest}>
                     + Create Travel Request
                   </Button>

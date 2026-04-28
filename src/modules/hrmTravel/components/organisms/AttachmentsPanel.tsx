@@ -25,7 +25,7 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
   return (
     <div>
       {!readonly && onUpload && (
-        <Can I="add">
+        <Can I="add" object="travel_attachment">
           <Upload
             accept=".pdf,.jpg,.jpeg,.png"
             showUploadList={false}
@@ -82,7 +82,7 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
                   View
                 </Button>,
                 !readonly && onDelete && (
-                  <Can I="delete" key="del">
+                  <Can I="delete" object="travel_attachment" key="del">
                     <Button
                       type="text"
                       danger
