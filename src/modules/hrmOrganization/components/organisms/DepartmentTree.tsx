@@ -122,12 +122,29 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onEdit, onAdd
           entries.push({ bu, depts: [] });
         }
       }
+      // After a department save, hrmOrganizationStore refreshes the
+      // BU-specific `department.hierarchy` for the active BU. The global
+      // hierarchy endpoint (used above) is sometimes slow to reflect the
+      // new dept due to backend caching/scoping. Override the matching
+      // BU's depts with the freshest BU-scoped hierarchy when available.
+      if (
+        department.selectedBuHandle &&
+        Array.isArray(department.hierarchy) &&
+        department.hierarchy.length > 0
+      ) {
+        const idx = entries.findIndex(
+          (e) => e.bu?.handle === department.selectedBuHandle,
+        );
+        if (idx >= 0) {
+          entries[idx] = { ...entries[idx], depts: department.hierarchy };
+        }
+      }
       setAllBuDepts(entries);
     } else {
       setLoadingAll(true);
       fetchHierarchy().finally(() => setLoadingAll(false));
     }
-  }, [hierarchyState.data, fetchHierarchy, businessUnit.list]);
+  }, [hierarchyState.data, fetchHierarchy, businessUnit.list, department.selectedBuHandle, department.hierarchy]);
 
   // Locate the BU owning a given dept (needed so DepartmentForm knows which
   // BU context to load).

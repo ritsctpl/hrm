@@ -171,6 +171,11 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
       .filter((d) => d.handle !== selected?.handle)
       .filter((d) => !isInactive(d as { active?: unknown; status?: unknown }))
       .filter((d) => !!d.deptName?.trim() && !!d.deptCode?.trim())
+      // Restrict to the currently-selected BU. Some backends include
+      // departments from other BUs in the list response when org-wide
+      // scoping is loose, which would let users pick an invalid parent
+      // outside the BU. Guard explicitly against that.
+      .filter((d) => !selectedBuHandle || (d as { buHandle?: string }).buHandle === selectedBuHandle)
       .map((d) => ({
         value: d.handle,
         label: `${d.deptName} (${d.deptCode})`,
@@ -187,7 +192,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
       });
     }
     return opts;
-  }, [list, selected?.handle, draft?.parentDeptHandle, draft]);
+  }, [list, selected?.handle, draft?.parentDeptHandle, draft, selectedBuHandle]);
 
   // Map handle -> readable label for the collapsed selector. Prefer the
   // departments list; fall back to the loaded draft's parentDeptName so a
