@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
-import { Form, Input, Radio, Button } from "antd";
+import React, { useMemo } from "react";
+import { Form, Input, Radio, Button, Select } from "antd";
 import type { TravelType, TravelMode } from "../../types/domain.types";
 import type { TravelFormState } from "../../types/ui.types";
 import type { TravelFormErrors } from "../../utils/travelValidations";
 import { ALLOWED_MODES_BY_TYPE, TRAVEL_MODE_LABELS } from "../../utils/travelConstants";
+import { COUNTRY_OPTIONS, COUNTRY_STATES } from "../../../hrmOrganization/utils/constants";
+import { STATE_CITIES } from "../../../hrmOrganization/utils/locationSearch";
 import ItineraryRow from "../molecules/ItineraryRow";
 import styles from "../../styles/TravelForm.module.css";
 
@@ -22,6 +24,26 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
   const allowedModes = formState.travelType
     ? ALLOWED_MODES_BY_TYPE[formState.travelType]
     : [];
+
+  // For DOMESTIC, country is implicitly India and hidden from the UI.
+  // For INTERNATIONAL, the user selects one of COUNTRY_OPTIONS.
+  const effectiveCountry =
+    formState.travelType === "INTERNATIONAL"
+      ? formState.destinationCountry || ""
+      : formState.travelType === "DOMESTIC"
+      ? "India"
+      : "";
+
+  const stateOptions = useMemo(() => {
+    if (!effectiveCountry) return [];
+    return (COUNTRY_STATES[effectiveCountry] || []).map((s) => ({ label: s, value: s }));
+  }, [effectiveCountry]);
+
+  const cityOptions = useMemo(() => {
+    const state = formState.destinationState || "";
+    if (!state) return [];
+    return (STATE_CITIES[state] || []).map((c) => ({ label: c, value: c }));
+  }, [formState.destinationState]);
 
   return (
     <Form layout="vertical" component="div">
@@ -56,8 +78,7 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
           <Input.TextArea
             placeholder="Official purpose description (max 500 characters)"
             maxLength={500}
-            showCount
-            rows={3}
+            rows={2}
             value={formState.purpose}
             onChange={(e) => onChange({ purpose: e.target.value })}
             disabled={readonly}
@@ -68,34 +89,6 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
       <div className={styles.formSection}>
         <div className={styles.sectionTitle}>Destination</div>
         <div className={styles.fieldRow}>
-          <Form.Item
-            label="City"
-            required
-            validateStatus={errors.destinationCity ? "error" : undefined}
-            help={errors.destinationCity}
-          >
-            <Input
-              placeholder="City"
-              value={formState.destinationCity}
-              onChange={(e) => onChange({ destinationCity: e.target.value })}
-              disabled={readonly}
-            />
-          </Form.Item>
-          {(formState.travelType === "DOMESTIC" || formState.travelType === "INTERNATIONAL") && (
-            <Form.Item
-              label="State"
-              required
-              validateStatus={errors.destinationState ? "error" : undefined}
-              help={errors.destinationState}
-            >
-              <Input
-                placeholder="State"
-                value={formState.destinationState}
-                onChange={(e) => onChange({ destinationState: e.target.value })}
-                disabled={readonly}
-              />
-            </Form.Item>
-          )}
           {formState.travelType === "INTERNATIONAL" && (
             <Form.Item
               label="Country"
@@ -103,14 +96,100 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
               validateStatus={errors.destinationCountry ? "error" : undefined}
               help={errors.destinationCountry}
             >
-              <Input
-                placeholder="Country"
-                value={formState.destinationCountry}
-                onChange={(e) => onChange({ destinationCountry: e.target.value })}
+              <Select
+                placeholder="Select country"
+                value={formState.destinationCountry || undefined}
+                onChange={(val) =>
+                  onChange({
+                    destinationCountry: val ?? "",
+                    destinationState: "",
+                    destinationCity: "",
+                  })
+                }
+                options={[...COUNTRY_OPTIONS]}
+                showSearch
+                allowClear
+                optionFilterProp="label"
                 disabled={readonly}
+                style={{ width: "100%" }}
               />
             </Form.Item>
           )}
+          {(formState.travelType === "DOMESTIC" || formState.travelType === "INTERNATIONAL") && (
+            <Form.Item
+              label="State"
+              required
+              validateStatus={errors.destinationState ? "error" : undefined}
+              help={errors.destinationState}
+            >
+              <Select
+                placeholder={
+                  formState.travelType === "INTERNATIONAL" && !formState.destinationCountry
+                    ? "Select country first"
+                    : "Select state"
+                }
+                value={formState.destinationState || undefined}
+                onChange={(val) =>
+                  onChange({ destinationState: val ?? "", destinationCity: "" })
+                }
+                options={stateOptions}
+                showSearch
+                allowClear
+                optionFilterProp="label"
+                disabled={
+                  readonly ||
+                  (formState.travelType === "INTERNATIONAL" && !formState.destinationCountry)
+                }
+                style={{ width: "100%" }}
+              />
+            </Form.Item>
+          )}
+          <Form.Item
+            label="City"
+            required
+            validateStatus={errors.destinationCity ? "error" : undefined}
+            help={errors.destinationCity}
+          >
+            {formState.travelType === "LOCAL" ? (
+              <Input
+                placeholder="City"
+                value={formState.destinationCity}
+                onChange={(e) => onChange({ destinationCity: e.target.value })}
+                disabled={readonly}
+              />
+            ) : (
+              <Select
+                placeholder={
+                  formState.destinationState ? "Select city" : "Select state first"
+                }
+                value={formState.destinationCity || undefined}
+                onChange={(val) => onChange({ destinationCity: val ?? "" })}
+                options={cityOptions}
+                showSearch
+                allowClear
+                optionFilterProp="label"
+                disabled={readonly || !formState.destinationState}
+                style={{ width: "100%" }}
+                popupRender={(menu) => (
+                  <>
+                    {menu}
+                    {formState.destinationState && (
+                      <div style={{ borderTop: "1px solid #f0f0f0", padding: "6px 10px" }}>
+                        <Input
+                          size="small"
+                          placeholder="Can't find it? Type a custom city + press Enter"
+                          onPressEnter={(e) => {
+                            const val = (e.target as HTMLInputElement).value.trim();
+                            if (val) onChange({ destinationCity: val });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              />
+            )}
+          </Form.Item>
         </div>
       </div>
 

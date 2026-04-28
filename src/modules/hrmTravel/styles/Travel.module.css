@@ -1,10 +1,27 @@
 .landing {
-  /* layout handled by .hrm-module-root */
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Make every active Ant Tabs pane inside the Travel module a bounded
+ * flex-column so descendants with flex:1 (masterDetail, screenContainer,
+ * detailBody) get real height instead of collapsing to content.
+ */
+.landing :global(.ant-tabs-tabpane-active) {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .masterDetail {
   display: flex;
   flex: 1;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   gap: 0;
 }
@@ -51,12 +68,43 @@
 .screenContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
   background: #f0f2f5;
+}
+
+/*
+ * Ant Tabs nested inside .screenContainer needs an explicit flex chain so the
+ * active tab pane can give .detailBody a bounded height — otherwise
+ * .detailBody's overflow-y: auto has nothing to scroll against.
+ */
+.screenContainer :global(.ant-tabs) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.screenContainer :global(.ant-tabs-content-holder) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.screenContainer :global(.ant-tabs-content) {
+  flex: 1;
+  height: 100%;
+}
+
+.screenContainer :global(.ant-tabs-tabpane-active) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .detailBody {
   flex: 1;
+  min-height: 0;
   padding: 0 16px 16px;
   overflow-y: auto;
 }
