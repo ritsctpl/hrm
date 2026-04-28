@@ -9,6 +9,7 @@ import DepartmentForm from '../organisms/DepartmentForm';
 import LocationTable from '../organisms/LocationTable';
 import LocationForm from '../organisms/LocationForm';
 import OrgHierarchyTree from '../organisms/OrgHierarchyTree';
+import OrgHierarchyChart from '../organisms/OrgHierarchyChart';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { Department, Location } from '../../types/domain.types';
@@ -174,6 +175,15 @@ const StructureTemplate: React.FC = () => {
       ),
       value: 'hierarchy',
     },
+    {
+      label: (
+        <span className={mainStyles.segmentLabel}>
+          <ApartmentOutlined />
+          Reporting Tree
+        </span>
+      ),
+      value: 'reporting',
+    },
   ];
 
   return (
@@ -237,6 +247,15 @@ const StructureTemplate: React.FC = () => {
       {activeView === 'hierarchy' && (
         <div className={mainStyles.hierarchyContainer}>
           <OrgHierarchyTree />
+        </div>
+      )}
+
+      {/* Reporting Tree View — embeds OrgHierarchyChart locked to the
+          'tree' (employee reporting) view; the inline segmented switcher
+          is hidden so this segment renders only the reporting tree. */}
+      {activeView === 'reporting' && (
+        <div className={mainStyles.hierarchyContainer}>
+          <OrgHierarchyChart forceViewMode="tree" />
         </div>
       )}
     </div>

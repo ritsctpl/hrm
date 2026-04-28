@@ -110,12 +110,24 @@ const DepartmentTree: React.FC<DepartmentTreeProps> = ({ onSelect, onEdit, onAdd
         bu: entry.businessUnit,
         depts: entry.departments || [],
       }));
+      // Merge in any BU from businessUnit.list that the hierarchy response
+      // omitted (typically: a freshly-created BU with zero departments,
+      // some backends only return BUs that already have at least one
+      // department). Without this, newly-created BUs are invisible in the
+      // tree until they have a department, which blocks the user from
+      // adding the first department under them.
+      const seen = new Set(entries.map((e) => e.bu?.handle).filter(Boolean));
+      for (const bu of businessUnit.list) {
+        if (bu.handle && !seen.has(bu.handle)) {
+          entries.push({ bu, depts: [] });
+        }
+      }
       setAllBuDepts(entries);
     } else {
       setLoadingAll(true);
       fetchHierarchy().finally(() => setLoadingAll(false));
     }
-  }, [hierarchyState.data, fetchHierarchy]);
+  }, [hierarchyState.data, fetchHierarchy, businessUnit.list]);
 
   // Locate the BU owning a given dept (needed so DepartmentForm knows which
   // BU context to load).

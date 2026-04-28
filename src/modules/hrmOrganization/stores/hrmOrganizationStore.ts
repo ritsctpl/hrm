@@ -966,8 +966,12 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       department: {
         ...state.department,
         selectedBuHandle: buHandle,
+        // NOTE: deliberately do NOT clear `draft` here. When the user picks
+        // a BU mid-form (during a create flow), they've often already typed
+        // a Department Code/Name; clearing the draft used to wipe their
+        // input. The dept list and hierarchy are scoped to the BU so we
+        // still reset those, but draft survives so partial input is kept.
         selected: null,
-        draft: null,
         list: [],
         hierarchy: [],
       },
@@ -979,16 +983,50 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   saveDepartment: async () => {
-    const { department, businessUnit } = get();
+    const { department, businessUnit, companyProfile } = get();
     const organizationId = getOrganizationId();
     const userId = getUserId();
     const buHandle = department.selectedBuHandle;
 
     if (!department.draft || !organizationId || !buHandle) return;
 
-    // Get the selected business unit to access companyHandle
+    // Look up the BU to read its companyHandle. If the BU isn't in the
+    // local list (stale cache, cross-company state), surface an error
+    // instead of silently aborting the save — the previous behavior was
+    // a silent return that left the user clicking "Save" with no
+    // feedback, especially after creating the second BU.
     const selectedBu = businessUnit.list.find((bu) => bu.handle === buHandle);
-    if (!selectedBu) return;
+    if (!selectedBu) {
+      set((state) => ({
+        department: {
+          ...state.department,
+          isSaving: false,
+          errors: {
+            _general:
+              'Selected Business Unit not found in current company. Please reload and try again.',
+          },
+        },
+      }));
+      return;
+    }
+
+    // Fall back to the active company's handle when the BU record itself
+    // doesn't carry one — some backend create paths return a BU without
+    // companyHandle, and the dept create payload requires it.
+    const companyHandle = selectedBu.companyHandle || companyProfile.data?.handle;
+    if (!companyHandle) {
+      set((state) => ({
+        department: {
+          ...state.department,
+          isSaving: false,
+          errors: {
+            _general:
+              'Business Unit is missing a company handle. Refresh the company profile and try again.',
+          },
+        },
+      }));
+      return;
+    }
 
     set((state) => ({
       department: { ...state.department, isSaving: true, errors: {} },
@@ -998,7 +1036,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       const payload: DepartmentRequest = {
         organizationId,
         buHandle,
-        companyHandle: selectedBu.companyHandle,
+        companyHandle,
         deptCode: department.draft.deptCode || '',
         deptName: department.draft.deptName || '',
         parentDeptHandle: department.draft.parentDeptHandle,

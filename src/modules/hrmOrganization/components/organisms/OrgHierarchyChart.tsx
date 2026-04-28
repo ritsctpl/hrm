@@ -335,12 +335,23 @@ const DeptCard: React.FC<{
 /* ------------------------------------------------------------------ */
 type ViewMode = 'org' | 'tree';
 
-const OrgHierarchyChart: React.FC = () => {
+interface OrgHierarchyChartProps {
+  /**
+   * When set, locks the chart to a single view and hides the segmented
+   * Org Structure / Reporting Tree switcher. Used by hosts that want to
+   * embed only one view (e.g. a dedicated Reporting Tree page).
+   */
+  forceViewMode?: ViewMode;
+}
+
+const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) => {
   const { hierarchy, fetchHierarchy } = useHrmOrganizationStore();
   const { data, isLoading } = hierarchy;
 
   const [zoom, setZoom] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>('org');
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>('org');
+  const viewMode: ViewMode = forceViewMode ?? internalViewMode;
+  const setViewMode = setInternalViewMode;
   const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
   const [empHierarchy, setEmpHierarchy] = useState<EmployeeHierarchyNode[]>([]);
 
@@ -524,16 +535,20 @@ const OrgHierarchyChart: React.FC = () => {
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
           <ApartmentOutlined style={{ color: 'var(--hrm-accent, #1890ff)' }} />
-          <span className={styles.toolbarTitle}>Organization Hierarchy</span>
-          <Segmented<ViewMode>
-            size="small"
-            value={viewMode}
-            onChange={(v) => setViewMode(v)}
-            options={[
-              { label: 'Org Structure', value: 'org' },
-              { label: 'Reporting Tree', value: 'tree' },
-            ]}
-          />
+          <span className={styles.toolbarTitle}>
+            {forceViewMode === 'tree' ? 'Reporting Tree' : forceViewMode === 'org' ? 'Org Structure' : 'Organization Hierarchy'}
+          </span>
+          {!forceViewMode && (
+            <Segmented<ViewMode>
+              size="small"
+              value={viewMode}
+              onChange={(v) => setViewMode(v)}
+              options={[
+                { label: 'Org Structure', value: 'org' },
+                { label: 'Reporting Tree', value: 'tree' },
+              ]}
+            />
+          )}
           {viewMode === 'org' ? (
             <>
               <Tag color="blue">{totalBUs} BUs</Tag>

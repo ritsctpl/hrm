@@ -16,7 +16,7 @@ export type CompanyTabKey = 'identity' | 'statutory' | 'bank' | 'address' | 'con
 
 export type BusinessUnitTabKey = 'general' | 'contact' | 'address' | 'statutory';
 
-export type StructureSubView = 'departments' | 'locations' | 'hierarchy';
+export type StructureSubView = 'departments' | 'locations' | 'hierarchy' | 'reporting';
 
 // Keep backward compat alias
 export type MainTabKey = DetailTabKey;
