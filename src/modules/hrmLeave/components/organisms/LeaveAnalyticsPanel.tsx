@@ -61,18 +61,25 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedDept, setSelectedDept] = useState<string | undefined>(undefined);
 
-  // Employee directory for resolving UUIDs → name / code / department.
+  // Employee directory for resolving UUID / code / composite IDs → name
+  // / code / department. Indexed under all three forms so backend rows
+  // produced before/after the composite-id rollout still resolve.
   const { employees: employeeDirectory } = useEmployeeOptions();
   const employeeIndex = useMemo(() => {
-    const byHandle = new Map<string, { name: string; code: string; department: string }>();
+    const byKey = new Map<string, { name: string; code: string; department: string }>();
     employeeDirectory.forEach((e) => {
-      byHandle.set(e.handle, {
+      const entry = {
         name: e.fullName,
         code: e.employeeCode,
         department: e.department,
-      });
+      };
+      if (e.handle) byKey.set(e.handle, entry);
+      if (e.employeeCode) byKey.set(e.employeeCode, entry);
+      if (e.employeeCode && e.fullName) {
+        byKey.set(`${e.employeeCode} - ${e.fullName}`, entry);
+      }
     });
-    return byHandle;
+    return byKey;
   }, [employeeDirectory]);
 
   // Absenteeism state

@@ -24,16 +24,29 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
 }) => {
   const { employees } = useEmployeeOptions();
 
-  // Resolve approver name from directory. The currentApproverId may be
-  // a raw handle or prefixed like "SUPERVISOR_<handle>".
+  // Resolve approver / employee identifier to a readable name. The id
+  // can arrive in any of these forms:
+  //   - composite "EMP-2 - Shanmathi M M" (current contract)
+  //   - role-prefixed composite "SUPERVISOR_EMP-2 - Shanmathi M M"
+  //   - role-prefixed UUID         "SUPERVISOR_<uuid>" (legacy)
+  //   - raw UUID handle (legacy)
+  //   - bare employee code "EMP-2"
   const resolveEmployeeName = (id: string | undefined): string => {
     if (!id) return "";
-    // Strip role prefix if present (e.g., "SUPERVISOR_uuid" → "uuid")
-    const rawHandle = id.includes("_") ? id.substring(id.indexOf("_") + 1) : id;
+    // Strip role prefix if present (e.g., "SUPERVISOR_..." → "...")
+    const stripped = id.includes("_") ? id.substring(id.indexOf("_") + 1) : id;
+    // Composite already contains a readable name — show it.
+    if (stripped.includes(" - ")) return stripped;
+    const code = stripped.includes(" - ")
+      ? stripped.split(" - ")[0]?.trim()
+      : stripped;
     const match = employees.find(
-      (e) => e.handle === id || e.handle === rawHandle || e.employeeCode === id || e.employeeCode === rawHandle,
+      (e) =>
+        e.handle === stripped ||
+        e.employeeCode === stripped ||
+        e.employeeCode === code,
     );
-    return match ? `${match.fullName} (${match.employeeCode})` : id;
+    return match ? `${match.employeeCode} - ${match.fullName}` : stripped;
   };
 
   const fromDate = new Date(request.startDate).toLocaleDateString("en-GB", {

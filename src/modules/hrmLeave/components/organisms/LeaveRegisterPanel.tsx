@@ -73,11 +73,17 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
     if (rows.length === 0) return [];
     if (employees.length === 0) return rows;
     return rows.map((row) => {
-      // Backend may return UUID in employeeNumber, or a code, or blank.
-      // Match against both handle (UUID) and employeeCode.
+      // Backend may return UUID handle, employeeCode, composite "CODE -
+      // Name", or blank in employeeNumber. Match against all three.
       const candidate = (row.employeeNumber ?? "").trim();
+      const candidateCode = candidate.includes(" - ")
+        ? candidate.split(" - ")[0]?.trim()
+        : candidate;
       const emp = employees.find(
-        (e) => e.handle === candidate || e.employeeCode === candidate,
+        (e) =>
+          e.handle === candidate ||
+          e.employeeCode === candidate ||
+          e.employeeCode === candidateCode,
       );
       if (!emp) return row;
       return {

@@ -7,8 +7,16 @@ import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeSe
 import type { EmployeeDirectoryRow } from "@/modules/hrmEmployee/types/api.types";
 
 export interface EmployeeOption {
+  /**
+   * Composite identifier `"<employeeCode> - <fullName>"` (e.g. "EMP-2 -
+   * Shanmathi M M"). The leave service stores and queries employees by
+   * this composite — sending raw UUID handle returns no rows / fails
+   * resolution. See `useEmployeeIdentity` doc for the contract.
+   */
   value: string;
   label: string;
+  /** Underlying directory row, in case a caller needs the UUID handle. */
+  handle: string;
 }
 
 export function useEmployeeOptions(): {
@@ -31,13 +39,20 @@ export function useEmployeeOptions(): {
         const rows = res.employees || [];
         setEmployees(rows);
         setOptions(
-          rows.map((emp) => ({
-            // Use handle as the option value so downstream API calls
-            // (fetchProfile, getEmployeeBalances, ...) get the UUID the
-            // backend identifies employees by, not the human-friendly code.
-            value: emp.handle,
-            label: `${emp.employeeCode} - ${emp.fullName}`,
-          })),
+          rows.map((emp) => {
+            const composite =
+              emp.employeeCode && emp.fullName
+                ? `${emp.employeeCode} - ${emp.fullName}`
+                : emp.employeeCode || emp.handle;
+            return {
+              // Composite is what the leave backend persists in employeeId
+              // fields and what it filters by. UUID handle stays available
+              // separately for the rare cross-module FK case.
+              value: composite,
+              label: composite,
+              handle: emp.handle,
+            };
+          }),
         );
       })
       .catch(() => {

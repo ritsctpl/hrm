@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
-import { LockOutlined, UnlockOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, ApartmentOutlined, DownloadOutlined, CalendarOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
 import HolidayCalendarView from './components/organisms/HolidayCalendarView';
@@ -61,6 +61,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   // Filter state for stats bar
   const [statsFilter, setStatsFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingIcal, setExportingIcal] = useState(false);
 
   // Filter holidays based on stats filter
   const filteredHolidays = useMemo(() => {
@@ -130,6 +132,47 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
       message.success('Holiday group unlocked');
     } catch {
       message.error('Failed to unlock group');
+    }
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const safeFileSegment = (s: string) => s.replace(/[^a-zA-Z0-9-_]+/g, '_').slice(0, 60);
+
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      const csvBlob = await HrmHolidayService.exportCsv({ organizationId, groupHandle: group.handle });
+      const withBom = new Blob(['﻿', csvBlob], { type: 'text/csv;charset=utf-8' });
+      triggerDownload(withBom, `holidays-${safeFileSegment(group.groupName)}-${group.year}.csv`);
+      message.success('CSV downloaded');
+    } catch {
+      message.error('Failed to export CSV');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
+  const handleExportIcal = async () => {
+    setExportingIcal(true);
+    try {
+      const ics = await HrmHolidayService.exportIcal({ organizationId, groupHandle: group.handle });
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      triggerDownload(blob, `holidays-${safeFileSegment(group.groupName)}-${group.year}.ics`);
+      message.success('Calendar file downloaded');
+    } catch {
+      message.error('Failed to export calendar');
+    } finally {
+      setExportingIcal(false);
     }
   };
 
@@ -229,6 +272,26 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
                 Map BU
               </Button>
             </Can>
+          )}
+          {permissions.canExport && holidays.length > 0 && (
+            <>
+              <Button
+                size="small"
+                icon={<DownloadOutlined />}
+                loading={exportingCsv}
+                onClick={handleExportCsv}
+              >
+                CSV
+              </Button>
+              <Button
+                size="small"
+                icon={<CalendarOutlined />}
+                loading={exportingIcal}
+                onClick={handleExportIcal}
+              >
+                iCal
+              </Button>
+            </>
           )}
           {/* {permissions.canImport && ( */}
             {/* <Button

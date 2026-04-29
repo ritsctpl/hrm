@@ -127,13 +127,19 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
     }
   };
 
-  /** Resolve createdBy (UUID or literal like "system") to a readable name */
+  /** Resolve createdBy (composite "CODE - Name", UUID, code, or literal
+   *  like "system") to a readable display string. */
   const resolveEmployee = (createdBy: string) => {
     if (!createdBy) return "—";
-    const emp = employees.find((e) => e.handle === createdBy);
+    const trimmed = createdBy.trim();
+    // Already in composite form — show as-is.
+    if (trimmed.includes(" - ")) return trimmed;
+    const emp = employees.find(
+      (e) => e.handle === trimmed || e.employeeCode === trimmed,
+    );
     if (emp) return `${emp.employeeCode} - ${emp.fullName}`;
     // Capitalise non-UUID literals like "system" → "System"
-    return createdBy.charAt(0).toUpperCase() + createdBy.slice(1);
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
   };
 
   const columns: ColumnsType<LedgerHistoryResponse> = [

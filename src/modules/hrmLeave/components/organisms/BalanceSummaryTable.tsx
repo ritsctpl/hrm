@@ -20,18 +20,24 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Index directory once so we can fall back to it when the backend
-  // response omits employee name / department (common today).
+  // Index directory by BOTH handle (UUID — for legacy backend rows) and
+  // composite "CODE - Name" (current contract) so we can fall back to it
+  // when the backend response omits employee name / department.
   const directoryIndex = useMemo(() => {
-    const byHandle = new Map<string, { name: string; code: string; department: string }>();
+    const byKey = new Map<string, { name: string; code: string; department: string }>();
     employees.forEach((e) => {
-      byHandle.set(e.handle, {
+      const entry = {
         name: e.fullName,
         code: e.employeeCode,
         department: e.department ?? "",
-      });
+      };
+      if (e.handle) byKey.set(e.handle, entry);
+      if (e.employeeCode) byKey.set(e.employeeCode, entry);
+      if (e.employeeCode && e.fullName) {
+        byKey.set(`${e.employeeCode} - ${e.fullName}`, entry);
+      }
     });
-    return byHandle;
+    return byKey;
   }, [employees]);
 
   // Filter + enrich rows. Attach a stable __idx so each row gets a unique

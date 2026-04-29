@@ -291,16 +291,37 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
     try {
       // Fetch user modules by organization
       const userModules = await HrmAccessService.fetchUserModulesByOrganization(userId);
-      const organizations = userModules.organizations || [];
 
-      // Determine current organization
-      let currentOrganizationId = initialOrganizationId || '';
+      // Defensive normalization: when the backend returns a null/blank
+      // `organizationId` for an org, derive it from `organizationName` so the
+      // employee's home org always has a usable id. Mirrors the super-admin
+      // path's `legalName → snake_case` derivation in fetchAllOrganizations.
+      // Without this, a null id makes downstream `find(o => o.id === ...)`
+      // return undefined and the user lands on "No Modules Accessible" even
+      // when the modules array is populated.
+      const organizations: OrganizationModules[] = (userModules.organizations || []).map(
+        (o) => {
+          const rawId = (o.organizationId ?? '').toString().trim();
+          const derivedId = rawId || (o.organizationName ?? '').trim().replace(/\s+/g, '_');
+          return { ...o, organizationId: derivedId };
+        },
+      );
+
+      const isInList = (id?: string) =>
+        !!id && organizations.some((o) => o.organizationId === id);
+
+      // Determine current organization. The `site` cookie passed in via
+      // initialOrganizationId is only honored when it actually matches one of
+      // the orgs the employee belongs to — otherwise it's a stale value from
+      // a prior session (e.g. a super-admin switcher write) and would
+      // silently zero out the module list.
+      let currentOrganizationId = isInList(initialOrganizationId) ? initialOrganizationId! : '';
       if (!currentOrganizationId && organizations.length > 0) {
         // Try to get site preference
         try {
           const sitePref = await HrmAccessService.getUserSitePreference(userId);
-          if (sitePref.success && sitePref.currentSite) {
-            currentOrganizationId = sitePref.currentSite;
+          if (sitePref.success && isInList(sitePref.currentSite || undefined)) {
+            currentOrganizationId = sitePref.currentSite!;
           }
         } catch {
           // ignore preference errors

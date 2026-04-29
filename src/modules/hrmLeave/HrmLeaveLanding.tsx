@@ -598,8 +598,9 @@ const HrmLeaveLanding: React.FC = () => {
     label: `${lt.code} - ${lt.name}`,
   }));
 
-  // Resolve ledger-filter employee UUID → "EMP-CODE · Full Name" for the
-  // card header (UUIDs are meaningless to HR users).
+  // ledgerEmployeeId is now a composite "EMP-CODE - Full Name" so it's
+  // already human-readable. Keep the lookup for safety in case of legacy
+  // UUID values lingering in store state.
   const ledgerEmployeeLabel = (() => {
     if (!ledgerEmployeeId) return "";
     const matchFromOptions = employeeOptions.find(
