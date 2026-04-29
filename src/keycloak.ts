@@ -44,11 +44,20 @@ export const getKeycloakInstance = async (): Promise<KeycloakInstance> => {
 
 export const getKeycloakInitOptions = async (): Promise<KeycloakInitOptions> => {
   const config = await fetchRuntimeConfig();
+  // Preserve the user's deep link across the Keycloak login round-trip.
+  // The previous `config.NEXT_PUBLIC_REDIRECT_URI` was a fixed string
+  // ("http://host:port/hrm"), which forced every refresh-triggered login
+  // back to the basePath root. Passing window.location.href instead keeps
+  // the user on whatever page they refreshed.
+  const redirectUri =
+    typeof window !== 'undefined' && window.location?.href
+      ? window.location.href
+      : config.NEXT_PUBLIC_REDIRECT_URI;
   return {
     onLoad: "login-required",
     checkLoginIframe: false,
     pkceMethod: "S256",
-    redirectUri: config.NEXT_PUBLIC_REDIRECT_URI,
+    redirectUri,
   };
 };
 
