@@ -135,6 +135,13 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const { searchKeyword, departmentFilter, statusFilter, buFilter, currentPage, pageSize } =
         get().directory;
 
+      // [DEBUG-ORG-ID] Trace the cookie value being sent to the directory
+      // endpoint. Remove once the "why RITS" investigation is closed.
+      console.log('[DEBUG-ORG-ID] fetchDirectory using organizationId from cookie', {
+        organizationId,
+        cookieRaw: typeof document !== 'undefined' ? document.cookie : '(no document)',
+      });
+
       // Always use the paginated directory endpoint so keyword and the
       // dropdown filters (department / status / BU) apply together. The
       // previous short-circuit to searchByKeyword silently dropped every
@@ -147,6 +154,14 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
         businessUnit: buFilter || undefined,
         page: currentPage - 1, // Backend expects 0-indexed page
         size: pageSize,        // Backend expects 'size' not 'pageSize'
+      });
+
+      // [DEBUG-ORG-ID] Show what came back so you can correlate with the
+      // organizationId sent above.
+      console.log('[DEBUG-ORG-ID] fetchDirectory response', {
+        organizationIdSent: organizationId,
+        totalCount: response.totalCount,
+        returned: response.employees?.length ?? 0,
       });
 
       const employees = (response.employees || []).map(mapDirectoryRowToSummary);

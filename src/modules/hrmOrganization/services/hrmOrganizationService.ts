@@ -48,28 +48,35 @@ export class HrmOrganizationService {
   /**
    * Fetch every org visible to the caller — used by the header switcher.
    *
-   * organizationId convention in this app: `legalName` with whitespace
-   * stripped. We NEVER use `handle` / UUID (those are persistence keys)
-   * and we NEVER fall back to a `site` field (that name is being retired).
+   * organizationId convention in this app: `legalName` trimmed, with
+   * whitespace runs collapsed to a single underscore. Example:
+   *   "RITS Consulting and Technology Pvt Ltd"
+   *      → "RITS_Consulting_and_Technology_Pvt_Ltd"
    *
-   * Source of truth for the id: backend-provided `organizationId` if
-   * present, otherwise derived from `legalName`.
+   * The id is ALWAYS derived from legalName here — we deliberately ignore
+   * any organizationId / handle / site field the backend reports, because
+   * those are inconsistent across tenants (some return a short tenant
+   * code like "RITS" for every record, which would dedupe distinct
+   * companies in the switcher down to one row).
    */
   static async fetchAllOrganizations(): Promise<OrganizationSummary[]> {
     const res = await api.post(`${this.BASE}/retrieveAll`, {});
     const raw = Array.isArray(res.data) ? res.data : (res.data?.organizations ?? []);
-    return (raw as Array<Record<string, unknown>>)
+    const mapped = (raw as Array<Record<string, unknown>>)
       .map((o) => {
-        const legalName = String(o.legalName ?? o.organizationName ?? o.name ?? '');
-        const backendId = String(o.organizationId ?? '').trim();
-        const derivedId = legalName.replace(/\s+/g, '');
-        const id = backendId || derivedId;
+        const legalName = String(o.legalName ?? o.organizationName ?? o.name ?? '').trim();
+        const id = legalName.replace(/\s+/g, '_');
         return {
           organizationId: id,
           organizationName: legalName || id,
         };
       })
       .filter((o) => o.organizationId);
+    // [DEBUG-ORG-ID] Trace where the cookie organizationId originates.
+    // Remove once the "why RITS" investigation is closed.
+    console.log('[DEBUG-ORG-ID] fetchAllOrganizations raw response', raw);
+    console.log('[DEBUG-ORG-ID] fetchAllOrganizations mapped', mapped);
+    return mapped;
   }
 
   // ============================================
