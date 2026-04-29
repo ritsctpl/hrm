@@ -431,7 +431,57 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   // BU_CODE") rather than UUID handles — so format mismatch wiped
   // every row. Backend scoping is the right enforcement point here.
   const employees = rawEmployees;
-  const empHierarchy = rawEmpHierarchy;
+
+  // Reporting Tree fallback: if the dedicated /employee/hierarchy
+  // endpoint returns nothing (observed when scoping discrepancies
+  // exist between the hierarchy table and the directory), build a
+  // tree directly from the directory using the reportingManager
+  // field. Employees whose manager is also in scope nest under that
+  // manager; otherwise they become roots. Avoids the "0 Employees /
+  // No employee hierarchy data" empty state when Org Structure
+  // (which uses the directory) clearly shows employees.
+  const empHierarchy = useMemo<EmployeeHierarchyNode[]>(() => {
+    if (rawEmpHierarchy.length > 0) return rawEmpHierarchy;
+    if (rawEmployees.length === 0) return [];
+
+    const byHandle = new Map<string, EmployeeHierarchyNode>();
+    for (const e of rawEmployees) {
+      byHandle.set(e.handle, {
+        handle: e.handle,
+        employeeCode: e.employeeCode,
+        fullName: e.fullName,
+        workEmail: e.workEmail,
+        status: e.status as unknown as string,
+        department: e.department || '',
+        role: e.role || '',
+        designation: '',
+        location: e.location || '',
+        reportingManager: e.reportingManager || '',
+        level: 0,
+        directReports: [],
+      });
+    }
+
+    const roots: EmployeeHierarchyNode[] = [];
+    for (const e of rawEmployees) {
+      const node = byHandle.get(e.handle);
+      if (!node) continue;
+      // reportingManager field has been observed as either a manager's
+      // handle or their employeeCode; try both lookups before giving up.
+      const mgrKey = (e.reportingManager || '').trim();
+      const managerNode =
+        (mgrKey && byHandle.get(mgrKey)) ||
+        rawEmployees
+          .map((c) => (c.employeeCode === mgrKey ? byHandle.get(c.handle) : undefined))
+          .find((n): n is EmployeeHierarchyNode => !!n);
+      if (managerNode && managerNode.handle !== node.handle) {
+        managerNode.directReports.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+    return roots;
+  }, [rawEmpHierarchy, rawEmployees]);
 
   // Group employees by department. Key on lowercased trimmed name AND code
   // since the dept might be referenced either way.
