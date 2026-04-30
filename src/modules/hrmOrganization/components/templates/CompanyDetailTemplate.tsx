@@ -9,8 +9,6 @@ import {
   ApartmentOutlined,
   EnvironmentOutlined,
   ClusterOutlined,
-  AuditOutlined,
-  BarChartOutlined,
   EditOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
@@ -23,8 +21,6 @@ import BusinessUnitTemplate from './BusinessUnitTemplate';
 import DepartmentTemplate from './DepartmentTemplate';
 import LocationTemplate from './LocationTemplate';
 import OrgHierarchyChart from '../organisms/OrgHierarchyChart';
-import OrgAuditLogPanel from '../organisms/OrgAuditLogPanel';
-import DataCompletenessPanel from '../organisms/DataCompletenessPanel';
 import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import type { DetailTabKey } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
@@ -195,31 +191,12 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <OrgHierarchyChart />,
       disabled: false,
     },
-    // Audit Log Tab - visible if user can view profile
-    permissions.canViewProfileTab && {
-      key: 'audit',
-      label: (
-        <span className={styles.tabLabel}>
-          <AuditOutlined />
-          Audit Log
-        </span>
-      ),
-      children: <OrgAuditLogPanel />,
-      disabled: isNew,
-    },
-    // Reports Tab — driven by the dedicated `org_reports` RBAC object
-    // (registered in moduleObjectRegistry). Super-admin always sees it.
-    (isSuperAdmin || permissions.canViewReports) && {
-      key: 'reports',
-      label: (
-        <span className={styles.tabLabel}>
-          <BarChartOutlined />
-          Reports
-        </span>
-      ),
-      children: <DataCompletenessPanel />,
-      disabled: isNew,
-    },
+    // Audit Log + Reports tabs hidden by product decision. Their
+    // implementations remain (OrgAuditLogPanel, DataCompletenessPanel)
+    // so re-enabling later is just a matter of restoring these entries.
+    // The corresponding RBAC objects (org_audit_log, org_reports) have
+    // also been removed from moduleObjectRegistry so they no longer
+    // appear in the Module Registry permission picker.
   ].filter(Boolean); // Remove false/undefined items
 
   return (
