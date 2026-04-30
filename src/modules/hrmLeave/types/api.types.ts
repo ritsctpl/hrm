@@ -28,6 +28,10 @@ export interface LeaveTypeRequest {
   activeStatus?: boolean;
   category?: string;
   sortOrder?: number;
+  /** Restricts this leave type to a gender. Default 'ALL' — every
+   *  employee sees it on the apply-leave drawer. Backend filters the
+   *  drawer's leave-type list by the requesting employee's gender. */
+  applicableGender?: 'ALL' | 'MALE' | 'FEMALE';
   createdBy?: string;
 }
 

@@ -309,6 +309,17 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       render: (v: string) => <Tag>{v}</Tag>,
     },
     {
+      title: "Gender",
+      dataIndex: "applicableGender",
+      key: "applicableGender",
+      width: 80,
+      render: (v?: string) => {
+        if (!v || v === "ALL") return <Tag>ALL</Tag>;
+        const color = v === "FEMALE" ? "magenta" : "blue";
+        return <Tag color={color}>{v}</Tag>;
+      },
+    },
+    {
       title: "Active",
       dataIndex: "active",
       key: "active",
@@ -477,6 +488,21 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           </Form.Item>
           <Form.Item name="halfDayAllowed" label="Half Day Allowed" valuePropName="checked">
             <Switch />
+          </Form.Item>
+          <Form.Item
+            name="applicableGender"
+            label="Applicable Gender"
+            tooltip="Restrict this leave type to a gender. Default ALL — visible to every employee."
+          >
+            <Select
+              allowClear
+              placeholder="ALL"
+              options={[
+                { label: "All", value: "ALL" },
+                { label: "Male", value: "MALE" },
+                { label: "Female", value: "FEMALE" },
+              ]}
+            />
           </Form.Item>
           <Form.Item name="sortOrder" label="Sort Order">
             <Input type="number" />
