@@ -13,7 +13,6 @@ import { HrmLeaveService } from "./services/hrmLeaveService";
 import { LeaveRequest } from "./types/domain.types";
 import { LeaveApprovalConfig } from "./types/api.types";
 import { LeavePermissions } from "./types/ui.types";
-import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
 import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import { HR_ROLES } from "./utils/constants";
 import styles from "./styles/HrmLeave.module.css";
@@ -46,33 +45,22 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   // approver can use the regular Approve / Reject path — others must
   // use Override.
   //
-  // currentApproverId can arrive in any of these forms (depending on
-  // backend rollout state):
-  //   - composite       "EMP-3 - suresh s"
-  //   - role-prefixed   "SUPERVISOR_EMP-3 - suresh s"
-  //   - bare code       "EMP-3"
-  //   - role-prefixed   "SUPERVISOR_<uuid>"  (legacy)
-  //   - raw UUID        (legacy)
-  // Match against composite, code, and handle so all forms resolve.
-  const currentEmployee = useCurrentEmployeeStore(s => s.data);
-  const myHandle = currentEmployee?.handle ?? "";
+  // currentApproverId is the composite "EMP-3 - suresh s", optionally
+  // role-prefixed (e.g. "SUPERVISOR_EMP-3 - suresh s"). Strip the
+  // prefix and match against the user's composite or bare code.
   const myCode = identity.employeeCode;
   const myComposite = identity.employeeIdWithName;
 
   const isCurrentApprover = (() => {
     const raw = request.currentApproverId;
     if (!raw) return false;
-    // Strip "SUPERVISOR_" / "HR_" / "MANAGER_" style prefix.
     const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
-    // Composite "CODE - Name" → take just the code for a robust match.
     const candidateCode = stripped.includes(" - ")
       ? stripped.split(" - ")[0]?.trim() ?? stripped
       : stripped;
-
     return Boolean(
-      (myComposite && (raw === myComposite || stripped === myComposite)) ||
-      (myCode && (candidateCode === myCode || stripped === myCode)) ||
-      (myHandle && (raw === myHandle || stripped === myHandle)),
+      (myComposite && stripped === myComposite) ||
+      (myCode && candidateCode === myCode),
     );
   })();
 

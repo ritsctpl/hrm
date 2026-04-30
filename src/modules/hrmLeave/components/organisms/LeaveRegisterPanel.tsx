@@ -64,47 +64,17 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
   const [pageSize, setPageSize] = useState(10);
 
   // Employee + Leave type dropdowns
-  const { options: employeeOptions, employees } = useEmployeeOptions();
+  const { options: employeeOptions } = useEmployeeOptions();
   const { options: leaveTypeOptions } = useLeaveTypeOptions();
 
-  // Enrichment derived from rows + employees so late-arriving directory data
-  // automatically fills in empty name/dept/designation fields.
-  const enrichedRows = useMemo<LeaveRegisterRow[]>(() => {
-    if (rows.length === 0) return [];
-    if (employees.length === 0) return rows;
-    return rows.map((row) => {
-      // Backend may return UUID handle, employeeCode, composite "CODE -
-      // Name", or blank in employeeNumber. Match against all three.
-      const candidate = (row.employeeNumber ?? "").trim();
-      const candidateCode = candidate.includes(" - ")
-        ? candidate.split(" - ")[0]?.trim()
-        : candidate;
-      const emp = employees.find(
-        (e) =>
-          e.handle === candidate ||
-          e.employeeCode === candidate ||
-          e.employeeCode === candidateCode,
-      );
-      if (!emp) return row;
-      return {
-        ...row,
-        employeeName: row.employeeName?.trim() || emp.fullName,
-        employeeNumber: emp.employeeCode || row.employeeNumber,
-        department: row.department?.trim() || emp.department || "",
-        designation:
-          row.designation?.trim() ||
-          ((emp as unknown as Record<string, string>)?.designation ??
-            (emp as unknown as Record<string, string>)?.role ??
-            ""),
-      };
-    });
-  }, [rows, employees]);
-
-  // Unique departments from enriched data
+  // Unique departments derived from the backend rows directly. Backend
+  // now returns populated employeeNumber / employeeName / department /
+  // designation, so the previous directory-based enrichment has been
+  // removed.
   const departmentOptions = useMemo(() => {
-    const depts = Array.from(new Set(enrichedRows.map(r => r.department).filter(Boolean)));
+    const depts = Array.from(new Set(rows.map(r => r.department).filter(Boolean)));
     return depts.map(d => ({ value: d, label: d }));
-  }, [enrichedRows]);
+  }, [rows]);
 
   const buildPayload = (): LeaveRegisterRequest => ({
     organizationId,
@@ -133,13 +103,13 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
 
   // Client-side filtering
   const filteredRows = useMemo(() => {
-    return enrichedRows.filter(r => {
+    return rows.filter(r => {
       if (employeeFilter && r.employeeNumber !== employeeFilter && r.employeeName !== employeeFilter) return false;
       if (leaveTypeFilter && r.leaveTypeCode !== leaveTypeFilter) return false;
       if (departmentFilter && r.department !== departmentFilter) return false;
       return true;
     });
-  }, [enrichedRows, employeeFilter, leaveTypeFilter, departmentFilter]);
+  }, [rows, employeeFilter, leaveTypeFilter, departmentFilter]);
 
   // Manual page slice — defence against duplicate-key rendering bugs
   // when backend returns rows without a reliable unique identifier.
@@ -385,7 +355,7 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
           </Button>
         )}
         <Text type="secondary" style={{ fontSize: 12, lineHeight: "24px" }}>
-          {filteredRows.length} of {enrichedRows.length} records
+          {filteredRows.length} of {rows.length} records
         </Text>
       </div>
 

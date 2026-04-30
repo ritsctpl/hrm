@@ -25,27 +25,14 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
   const { employees } = useEmployeeOptions();
 
   // Resolve approver / employee identifier to a readable name. The id
-  // can arrive in any of these forms:
-  //   - composite "EMP-2 - Shanmathi M M" (current contract)
-  //   - role-prefixed composite "SUPERVISOR_EMP-2 - Shanmathi M M"
-  //   - role-prefixed UUID         "SUPERVISOR_<uuid>" (legacy)
-  //   - raw UUID handle (legacy)
-  //   - bare employee code "EMP-2"
+  // is canonically the composite "EMP-2 - Shanmathi M M". When it
+  // arrives role-prefixed (e.g. "SUPERVISOR_EMP-2 - Shanmathi M M"),
+  // strip the prefix. Bare codes fall back to a directory lookup.
   const resolveEmployeeName = (id: string | undefined): string => {
     if (!id) return "";
-    // Strip role prefix if present (e.g., "SUPERVISOR_..." → "...")
     const stripped = id.includes("_") ? id.substring(id.indexOf("_") + 1) : id;
-    // Composite already contains a readable name — show it.
     if (stripped.includes(" - ")) return stripped;
-    const code = stripped.includes(" - ")
-      ? stripped.split(" - ")[0]?.trim()
-      : stripped;
-    const match = employees.find(
-      (e) =>
-        e.handle === stripped ||
-        e.employeeCode === stripped ||
-        e.employeeCode === code,
-    );
+    const match = employees.find((e) => e.employeeCode === stripped);
     return match ? `${match.employeeCode} - ${match.fullName}` : stripped;
   };
 

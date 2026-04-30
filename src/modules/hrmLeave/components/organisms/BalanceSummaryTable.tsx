@@ -6,7 +6,6 @@ import type { ColumnsType } from "antd/es/table";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { BalanceSummaryTableProps } from "../../types/ui.types";
 import { LeaveBalance } from "../../types/domain.types";
-import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 
 const { Text } = Typography;
 
@@ -16,53 +15,22 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
   onRowClick,
   selectedEmployeeId,
 }) => {
-  const { employees } = useEmployeeOptions();
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Index directory by BOTH handle (UUID — for legacy backend rows) and
-  // composite "CODE - Name" (current contract) so we can fall back to it
-  // when the backend response omits employee name / department.
-  const directoryIndex = useMemo(() => {
-    const byKey = new Map<string, { name: string; code: string; department: string }>();
-    employees.forEach((e) => {
-      const entry = {
-        name: e.fullName,
-        code: e.employeeCode,
-        department: e.department ?? "",
-      };
-      if (e.handle) byKey.set(e.handle, entry);
-      if (e.employeeCode) byKey.set(e.employeeCode, entry);
-      if (e.employeeCode && e.fullName) {
-        byKey.set(`${e.employeeCode} - ${e.fullName}`, entry);
-      }
-    });
-    return byKey;
-  }, [employees]);
-
-  // Filter + enrich rows. Attach a stable __idx so each row gets a unique
-  // rowKey even when backend omits employeeId (duplicate keys were causing
-  // pagination slicing to misbehave — rows from previous pages bled into
-  // later pages because React reused their DOM nodes).
+  // Filter rows for the selected employee. Backend now returns the
+  // populated employeeId / employeeName / employeeNumber / department
+  // fields directly, so the previous directory-based enrichment fallback
+  // has been removed.
+  // __idx is attached to keep rowKey unique even when two rows share
+  // leaveType+year (avoids the AntD pagination bleed bug).
   const enriched = useMemo(() => {
     const rows = selectedEmployeeId
       ? balances.filter((b) => !b.employeeId || b.employeeId === selectedEmployeeId)
       : balances;
+    return rows.map((row, idx) => ({ ...row, __idx: idx }));
+  }, [balances, selectedEmployeeId]);
 
-    return rows.map((row, idx) => {
-      const resolved = row.employeeId ? directoryIndex.get(row.employeeId) : undefined;
-      return {
-        ...row,
-        __idx: idx,
-        employeeName: row.employeeName?.trim() || resolved?.name || "",
-        employeeNumber: row.employeeNumber?.trim() || resolved?.code || "",
-        department: row.department?.trim() || resolved?.department || "",
-      };
-    });
-  }, [balances, selectedEmployeeId, directoryIndex]);
-
-  // Manual pagination slice — defence against AntD internal slicing bugs
-  // when duplicate keys or rapid re-renders are in play.
   const pagedData = useMemo(() => {
     const start = (current - 1) * pageSize;
     return enriched.slice(start, start + pageSize);
@@ -79,8 +47,8 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
             title: "Employee",
             key: "employee",
             render: (_: unknown, record: LeaveBalance) => {
-              const name = record.employeeName || "";
-              const code = record.employeeNumber || "";
+              const name = record.employeeName?.trim() || "";
+              const code = record.employeeNumber?.trim() || "";
               const display = name || code || "—";
               return (
                 <div>
@@ -104,7 +72,7 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
             dataIndex: "department",
             key: "department",
             width: 140,
-            render: (v: string) => v || <Text type="secondary">—</Text>,
+            render: (v: string) => v?.trim() || <Text type="secondary">—</Text>,
           } as const,
         ]
       : []),
@@ -177,8 +145,6 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       dataSource={pagedData}
       columns={columns}
       rowKey={(r) =>
-        // __idx guarantees uniqueness even when employeeId is missing and
-        // multiple rows share leaveType+year.
         `${(r as unknown as { __idx: number }).__idx}-${r.leaveTypeCode}-${r.year}`
       }
       loading={loading}
@@ -192,8 +158,6 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
         showTotal: (total, range) =>
           total === 0 ? "0 records" : `${range[0]}–${range[1]} of ${total}`,
         onChange: (newPage, newSize) => {
-          // Size changed → always jump to page 1. This avoids a stale
-          // `current` that would fall outside the new page count.
           if (newSize !== pageSize) {
             setPageSize(newSize);
             setCurrent(1);

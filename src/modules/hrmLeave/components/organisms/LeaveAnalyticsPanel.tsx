@@ -28,14 +28,10 @@ import {
   TopAbsenteeData,
 } from "../../types/api.types";
 import { buildYearOptions } from "../../utils/transformations";
-import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (v: string | undefined | null) => !!v && UUID_RE.test(v.trim());
 
 const formatDept = (val: string | undefined | null): string => {
   const trimmed = (val ?? "").trim();
-  if (!trimmed || trimmed.toLowerCase() === "unknown" || isUuid(trimmed)) {
+  if (!trimmed || trimmed.toLowerCase() === "unknown") {
     return "Unassigned";
   }
   return trimmed;
@@ -61,26 +57,6 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedDept, setSelectedDept] = useState<string | undefined>(undefined);
 
-  // Employee directory for resolving UUID / code / composite IDs → name
-  // / code / department. Indexed under all three forms so backend rows
-  // produced before/after the composite-id rollout still resolve.
-  const { employees: employeeDirectory } = useEmployeeOptions();
-  const employeeIndex = useMemo(() => {
-    const byKey = new Map<string, { name: string; code: string; department: string }>();
-    employeeDirectory.forEach((e) => {
-      const entry = {
-        name: e.fullName,
-        code: e.employeeCode,
-        department: e.department,
-      };
-      if (e.handle) byKey.set(e.handle, entry);
-      if (e.employeeCode) byKey.set(e.employeeCode, entry);
-      if (e.employeeCode && e.fullName) {
-        byKey.set(`${e.employeeCode} - ${e.fullName}`, entry);
-      }
-    });
-    return byKey;
-  }, [employeeDirectory]);
 
   // Absenteeism state
   const [absenteeismData, setAbsenteeismData] = useState<AbsenteeismData[]>([]);
@@ -168,7 +144,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       new Set(
         absenteeismData
           .map((d) => (d.department ?? "").trim())
-          .filter((d) => d && d.toLowerCase() !== "unknown" && !isUuid(d)),
+          .filter((d) => d && d.toLowerCase() !== "unknown"),
       ),
     ).sort();
     return depts.map((d) => ({ value: d, label: d }));
@@ -316,15 +292,8 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       title: "Employee",
       key: "employee",
       render: (_: unknown, record: TopAbsenteeData) => {
-        const resolved = employeeIndex.get(record.employeeId);
-        const name =
-          record.employeeName?.trim() ||
-          resolved?.name ||
-          "";
-        const code =
-          record.employeeNumber?.trim() ||
-          resolved?.code ||
-          "";
+        const name = record.employeeName?.trim() || "";
+        const code = record.employeeNumber?.trim() || "";
         return (
           <div>
             <Text strong>{name || code || "—"}</Text>
@@ -339,31 +308,14 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
           </div>
         );
       },
-      sorter: (a, b) => {
-        const an = a.employeeName || employeeIndex.get(a.employeeId)?.name || "";
-        const bn = b.employeeName || employeeIndex.get(b.employeeId)?.name || "";
-        return an.localeCompare(bn);
-      },
+      sorter: (a, b) => (a.employeeName || "").localeCompare(b.employeeName || ""),
     },
     {
       title: "Department",
       dataIndex: "department",
       key: "department",
-      render: (val: string, record: TopAbsenteeData) => {
-        const fromRecord = formatDept(val);
-        if (fromRecord !== "Unassigned") return fromRecord;
-        const resolved = employeeIndex.get(record.employeeId);
-        return formatDept(resolved?.department);
-      },
-      sorter: (a, b) => {
-        const ad = formatDept(a.department) !== "Unassigned"
-          ? formatDept(a.department)
-          : formatDept(employeeIndex.get(a.employeeId)?.department);
-        const bd = formatDept(b.department) !== "Unassigned"
-          ? formatDept(b.department)
-          : formatDept(employeeIndex.get(b.employeeId)?.department);
-        return ad.localeCompare(bd);
-      },
+      render: (val: string) => formatDept(val),
+      sorter: (a, b) => formatDept(a.department).localeCompare(formatDept(b.department)),
     },
     {
       title: "Total Leave Days",
