@@ -117,7 +117,10 @@ const TravelReportScreen: React.FC<Props> = ({
     const csv = [header, ...rows]
       .map((row) => row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
       .join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    // Prepend UTF-8 BOM so Excel renders non-ASCII employee / city
+    // names correctly (without it, names with diacritics or Tamil /
+    // Hindi characters appear garbled).
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

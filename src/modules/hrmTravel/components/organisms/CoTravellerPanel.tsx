@@ -38,11 +38,17 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
       {!readonly && (
         <div className={styles.searchRow}>
           <Input
-            placeholder="Search employee name or ID..."
+            placeholder="Type at least 2 characters to search..."
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
-              searchCoTravellers(e.target.value);
+              const next = e.target.value;
+              setQuery(next);
+              // Don't fire the directory search on single-character input —
+              // backend was getting flooded with one-char queries that
+              // return huge result sets.
+              if (next.trim().length >= 2) {
+                searchCoTravellers(next);
+              }
             }}
             style={{ flex: 1 }}
             suffix={coTravellerSearchLoading ? <Spin size="small" /> : null}
@@ -50,7 +56,7 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
         </div>
       )}
 
-      {!readonly && query.trim() && (
+      {!readonly && query.trim().length >= 2 && (
         <div
           style={{
             border: "1px solid #d9d9d9",

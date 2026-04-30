@@ -10,11 +10,24 @@ const { Text } = Typography;
 interface Props {
   requestId: string;
   loading?: boolean;
+  /** Optional — actor's role label shown in the card title. Defaults
+   *  to "Approver" so peer / admin / HR approvers don't see the
+   *  hardcoded "Supervisor" string. */
+  actorRole?: string;
   onApprove: (remarks?: string) => void;
   onReject: (remarks: string) => void;
 }
 
-const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onReject }) => {
+const formatActorRole = (role?: string) => {
+  if (!role) return "Approver";
+  // Convert "SUPERVISOR" / "HR_ADMIN" / "next_superior" → Title Case
+  return role
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, actorRole, onApprove, onReject }) => {
   const [remarks, setRemarks] = useState("");
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectRemarks, setRejectRemarks] = useState("");
@@ -40,12 +53,16 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, onApprove, onR
     <>
       <Card
         size="small"
-        title={<Text strong style={{ fontSize: 13 }}>Approval Action — Supervisor</Text>}
+        title={
+          <Text strong style={{ fontSize: 13 }}>
+            Approval Action — {formatActorRole(actorRole)}
+          </Text>
+        }
         style={{ borderColor: "#faad14", background: "#fffbe6", margin: "16px 16px 0" }}
       >
         <Space direction="vertical" style={{ width: "100%" }} size={8}>
           <Input.TextArea
-            placeholder="Remarks (mandatory for rejection)"
+            placeholder="Approval remarks (optional)"
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={2}

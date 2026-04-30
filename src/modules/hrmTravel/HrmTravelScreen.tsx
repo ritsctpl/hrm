@@ -547,6 +547,14 @@ const HrmTravelScreen: React.FC<Props> = ({
           <ApprovalActionBar
             requestId={request.requestId}
             loading={approving}
+            actorRole={
+              // Pull the role from the matching chain entry so the card
+              // title reflects the actual approval level (peer / HR /
+              // next-superior) instead of always saying "Supervisor".
+              request.approverChainSnapshot?.find(
+                (e) => e.approverId === request.currentApproverId,
+              )?.approverRole
+            }
             onApprove={(remarks) => approveRequest(request.handle, remarks).then(onActionComplete)}
             onReject={(remarks) => rejectRequest(request.handle, remarks).then(onActionComplete)}
           />
