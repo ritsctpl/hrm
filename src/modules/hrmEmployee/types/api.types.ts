@@ -111,6 +111,12 @@ export interface UpdateOfficialRequest {
   businessUnits: string[];
   /** Employee's date of joining (ISO YYYY-MM-DD). */
   joiningDate?: string;
+  /** Lifecycle stage — see EmploymentStatus enum in domain.types. */
+  employmentStatus?: import('./domain.types').EmploymentStatus;
+  /** End of probation (ISO YYYY-MM-DD). */
+  probationEndDate?: string;
+  /** Last working day for NOTICE_PERIOD / TERMINATED (ISO YYYY-MM-DD). */
+  lastWorkingDay?: string;
   modifiedBy: string;
 }
 

@@ -594,7 +594,6 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         endDayType: leaveFormState.endDayType,
         totalDays: leaveFormState.totalDays,
         reason: leaveFormState.reason,
-        attachmentPath: leaveFormState.attachmentPath ?? undefined,
         createdBy: submitterComposite,
         attachments: attachments.map((a) => ({
           name: a.name,

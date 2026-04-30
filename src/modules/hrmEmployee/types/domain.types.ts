@@ -5,6 +5,27 @@
  */
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE';
+
+/**
+ * Lifecycle stage of the employee — distinct from `EmployeeStatus`
+ * (which is the active/archived flag).
+ *
+ * Backend field name: `employmentStatus`. Pending BE schema work; FE
+ * already reads it where present so the wiring lights up the moment
+ * the column is added.
+ *
+ * Used by:
+ *   - Leave accrual engine — skip NOTICE_PERIOD employees after LWD
+ *   - Leave request validation — block leave during PROBATION when
+ *     the leave-type's `probationRestricted` flag is true
+ *   - Separation settlement — only TERMINATED / NOTICE_PERIOD rows
+ *     are eligible
+ */
+export type EmploymentStatus =
+  | 'PROBATION'
+  | 'PERMANENT'
+  | 'NOTICE_PERIOD'
+  | 'TERMINATED';
 export type SkillProficiency = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 export type MaritalStatus = 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
@@ -163,6 +184,16 @@ export interface OfficialDetails {
   businessUnits: string[];
   businessUnitNames?: string[];
   joiningDate?: string;
+  /** Lifecycle stage. Backend may return null while the schema is
+   *  rolling out — readers should treat null as PERMANENT. */
+  employmentStatus?: EmploymentStatus;
+  /** End of probation period. Optional even when employmentStatus is
+   *  PROBATION — leave engine falls back to joiningDate + policy
+   *  probationMonths when absent. */
+  probationEndDate?: string;
+  /** Last working day for NOTICE_PERIOD / TERMINATED employees.
+   *  Required for accrual cutoff and separation settlement. */
+  lastWorkingDay?: string;
 }
 
 export interface PersonalDetails {
