@@ -273,6 +273,11 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       businessUnits: (official.businessUnits as string[]) || [],
       businessUnitNames: (official.businessUnitNames as string[]) || undefined,
       joiningDate: (official.joiningDate as string) || undefined,
+      employmentStatus: (official.employmentStatus as
+        | import('../types/domain.types').EmploymentStatus
+        | undefined) || undefined,
+      probationEndDate: (official.probationEndDate as string) || undefined,
+      lastWorkingDay: (official.lastWorkingDay as string) || undefined,
     },
     personalDetails: {
       dateOfBirth: (personal.dateOfBirth as string) || undefined,
@@ -400,6 +405,9 @@ export function buildUpdateOfficialPayload(
     organizationName: officialData.organizationName || undefined,
     organizationHandle: officialData.organizationHandle || undefined,
     joiningDate: officialData.joiningDate || undefined,
+    employmentStatus: officialData.employmentStatus || undefined,
+    probationEndDate: officialData.probationEndDate || undefined,
+    lastWorkingDay: officialData.lastWorkingDay || undefined,
     modifiedBy,
   };
 

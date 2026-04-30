@@ -15,6 +15,20 @@ import { formatDate } from '../../utils/transformations';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import type { ProfileTabProps } from '../../types/ui.types';
+import type { EmploymentStatus } from '../../types/domain.types';
+
+const EMPLOYMENT_STATUS_OPTIONS: { label: string; value: EmploymentStatus }[] = [
+  { label: 'Probation', value: 'PROBATION' },
+  { label: 'Permanent', value: 'PERMANENT' },
+  { label: 'Notice Period', value: 'NOTICE_PERIOD' },
+  { label: 'Terminated', value: 'TERMINATED' },
+];
+
+const EMPLOYMENT_STATUS_LABEL: Record<EmploymentStatus, string> =
+  EMPLOYMENT_STATUS_OPTIONS.reduce(
+    (acc, opt) => ({ ...acc, [opt.value]: opt.label }),
+    {} as Record<EmploymentStatus, string>,
+  );
 import styles from '../../styles/HrmEmployeeTable.module.css';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 
@@ -241,6 +255,13 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         joiningDate: values.joiningDate
           ? values.joiningDate.format('YYYY-MM-DD')
           : officialDetails.joiningDate,
+        employmentStatus: values.employmentStatus || undefined,
+        probationEndDate: values.probationEndDate
+          ? values.probationEndDate.format('YYYY-MM-DD')
+          : undefined,
+        lastWorkingDay: values.lastWorkingDay
+          ? values.lastWorkingDay.format('YYYY-MM-DD')
+          : undefined,
       });
       setLocalEditing(false);
     } catch {
@@ -277,6 +298,13 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
             location: officialDetails.location,
             joiningDate: officialDetails.joiningDate
               ? dayjs(officialDetails.joiningDate)
+              : undefined,
+            employmentStatus: officialDetails.employmentStatus,
+            probationEndDate: officialDetails.probationEndDate
+              ? dayjs(officialDetails.probationEndDate)
+              : undefined,
+            lastWorkingDay: officialDetails.lastWorkingDay
+              ? dayjs(officialDetails.lastWorkingDay)
               : undefined,
           }}
         >
@@ -457,6 +485,58 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
             <Form.Item name="joiningDate" label="Joining Date">
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
+            <Form.Item name="employmentStatus" label="Employment Status">
+              <Select
+                allowClear
+                placeholder="Select status"
+                options={EMPLOYMENT_STATUS_OPTIONS}
+              />
+            </Form.Item>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, curr) =>
+                prev.employmentStatus !== curr.employmentStatus
+              }
+            >
+              {({ getFieldValue }) => {
+                const status = getFieldValue('employmentStatus') as
+                  | EmploymentStatus
+                  | undefined;
+                if (status === 'PROBATION') {
+                  return (
+                    <Form.Item
+                      name="probationEndDate"
+                      label="Probation End Date"
+                    >
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        format="YYYY-MM-DD"
+                      />
+                    </Form.Item>
+                  );
+                }
+                if (status === 'NOTICE_PERIOD' || status === 'TERMINATED') {
+                  return (
+                    <Form.Item
+                      name="lastWorkingDay"
+                      label="Last Working Day"
+                      rules={[
+                        {
+                          required: status === 'NOTICE_PERIOD',
+                          message: 'Required for Notice Period',
+                        },
+                      ]}
+                    >
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        format="YYYY-MM-DD"
+                      />
+                    </Form.Item>
+                  );
+                }
+                return null;
+              }}
+            </Form.Item>
           </div>
         </Form>
       </div>
@@ -486,6 +566,27 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           value={officialDetails.businessUnits?.join(', ') || '--'}
         />
         <EmpFieldLabel label="Joining Date" value={formatDate(officialDetails.joiningDate)} />
+        <EmpFieldLabel
+          label="Employment Status"
+          value={
+            officialDetails.employmentStatus
+              ? EMPLOYMENT_STATUS_LABEL[officialDetails.employmentStatus]
+              : '--'
+          }
+        />
+        {officialDetails.employmentStatus === 'PROBATION' && (
+          <EmpFieldLabel
+            label="Probation End Date"
+            value={formatDate(officialDetails.probationEndDate)}
+          />
+        )}
+        {(officialDetails.employmentStatus === 'NOTICE_PERIOD' ||
+          officialDetails.employmentStatus === 'TERMINATED') && (
+          <EmpFieldLabel
+            label="Last Working Day"
+            value={formatDate(officialDetails.lastWorkingDay)}
+          />
+        )}
       </div>
     </div>
   );
