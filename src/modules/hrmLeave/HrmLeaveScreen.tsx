@@ -41,18 +41,40 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const actorRole = (cookies.userRole ?? "").toUpperCase();
   const isHr = HR_ROLES.includes(actorRole);
 
-  // Resolve the logged-in user's employee handle to check if they're the
-  // actual current approver. HR can see all requests in Global Queue but
-  // can only Approve/Reject if they ARE the currentApprover. Otherwise
-  // they must use Override.
+  // Check whether the logged-in user is the named current approver. HR
+  // can see every request in the Global Queue, but only the named
+  // approver can use the regular Approve / Reject path — others must
+  // use Override.
+  //
+  // currentApproverId can arrive in any of these forms (depending on
+  // backend rollout state):
+  //   - composite       "EMP-3 - suresh s"
+  //   - role-prefixed   "SUPERVISOR_EMP-3 - suresh s"
+  //   - bare code       "EMP-3"
+  //   - role-prefixed   "SUPERVISOR_<uuid>"  (legacy)
+  //   - raw UUID        (legacy)
+  // Match against composite, code, and handle so all forms resolve.
   const currentEmployee = useCurrentEmployeeStore(s => s.data);
   const myHandle = currentEmployee?.handle ?? "";
-  const isCurrentApprover = Boolean(
-    request.currentApproverId &&
-    myHandle &&
-    (request.currentApproverId === myHandle ||
-     request.currentApproverId.endsWith(myHandle)),
-  );
+  const myCode = identity.employeeCode;
+  const myComposite = identity.employeeIdWithName;
+
+  const isCurrentApprover = (() => {
+    const raw = request.currentApproverId;
+    if (!raw) return false;
+    // Strip "SUPERVISOR_" / "HR_" / "MANAGER_" style prefix.
+    const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
+    // Composite "CODE - Name" → take just the code for a robust match.
+    const candidateCode = stripped.includes(" - ")
+      ? stripped.split(" - ")[0]?.trim() ?? stripped
+      : stripped;
+
+    return Boolean(
+      (myComposite && (raw === myComposite || stripped === myComposite)) ||
+      (myCode && (candidateCode === myCode || stripped === myCode)) ||
+      (myHandle && (raw === myHandle || stripped === myHandle)),
+    );
+  })();
 
   const [loading, setLoading] = React.useState(false);
   const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
