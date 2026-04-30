@@ -17,6 +17,8 @@ import { EmployeeKeycloakService } from '../../services/keycloakService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { HrmLeaveService } from '@/modules/hrmLeave/services/hrmLeaveService';
+import { COUNTRY_OPTIONS, COUNTRY_STATES } from '@/modules/hrmOrganization/utils/constants';
+import { STATE_CITIES } from '@/modules/hrmOrganization/utils/locationSearch';
 import dayjs from 'dayjs';
 
 /* Step 0: Basic Info */
@@ -468,40 +470,98 @@ const ContactStep: React.FC<{
       </div>
       <div className={formStyles.formRow}>
         <div className={formStyles.formField}>
-          <label className={formStyles.formFieldLabel}>City</label>
-          <Input
-            value={addr.city}
-            onChange={(e) =>
-              onChange({ presentAddress: { ...addr, city: e.target.value } })
+          <label className={formStyles.formFieldLabel}>Country</label>
+          <Select
+            showSearch
+            value={addr.country || 'India'}
+            options={[...COUNTRY_OPTIONS]}
+            onChange={(val) =>
+              onChange({
+                presentAddress: { ...addr, country: val, state: '', city: '' },
+              })
             }
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            style={{ width: '100%' }}
           />
         </div>
         <div className={formStyles.formField}>
           <label className={formStyles.formFieldLabel}>State</label>
-          <Input
-            value={addr.state}
-            onChange={(e) =>
-              onChange({ presentAddress: { ...addr, state: e.target.value } })
+          <Select
+            showSearch
+            allowClear
+            value={addr.state || undefined}
+            placeholder="Select state"
+            options={(COUNTRY_STATES[addr.country || 'India'] || []).map((s) => ({
+              label: s,
+              value: s,
+            }))}
+            onChange={(val) =>
+              onChange({
+                presentAddress: { ...addr, state: val ?? '', city: '' },
+              })
             }
+            disabled={!addr.country}
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            style={{ width: '100%' }}
           />
         </div>
       </div>
       <div className={formStyles.formRow}>
+        <div className={formStyles.formField}>
+          <label className={formStyles.formFieldLabel}>City</label>
+          <Select
+            showSearch
+            allowClear
+            value={addr.city || undefined}
+            placeholder={addr.state ? 'Select city' : 'Select state first'}
+            options={(STATE_CITIES[addr.state] || []).map((c) => ({
+              label: c,
+              value: c,
+            }))}
+            onChange={(val) =>
+              onChange({
+                presentAddress: { ...addr, city: val ?? '' },
+              })
+            }
+            disabled={!addr.state}
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            // Allow free text when the curated list misses a city.
+            popupRender={(menu) => (
+              <>
+                {menu}
+                {addr.state && (
+                  <div style={{ borderTop: '1px solid #f0f0f0', padding: '6px 10px' }}>
+                    <Input
+                      size="small"
+                      placeholder="Custom city — type + Enter"
+                      onPressEnter={(e) => {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val) {
+                          onChange({
+                            presentAddress: { ...addr, city: val },
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            style={{ width: '100%' }}
+          />
+        </div>
         <div className={formStyles.formField}>
           <label className={formStyles.formFieldLabel}>PIN Code</label>
           <Input
             value={addr.pinCode}
             onChange={(e) =>
               onChange({ presentAddress: { ...addr, pinCode: e.target.value } })
-            }
-          />
-        </div>
-        <div className={formStyles.formField}>
-          <label className={formStyles.formFieldLabel}>Country</label>
-          <Input
-            value={addr.country}
-            onChange={(e) =>
-              onChange({ presentAddress: { ...addr, country: e.target.value } })
             }
           />
         </div>
