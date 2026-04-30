@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Button, Descriptions, Divider, List, Space, Tag, Typography } from "antd";
+import React, { useState } from "react";
+import { Button, Descriptions, Divider, List, Space, Tag, Typography, message } from "antd";
 import {
   DownloadOutlined,
   EyeOutlined,
@@ -16,6 +16,8 @@ import HalfDayIndicator from "../atoms/HalfDayIndicator";
 import ValidationSummaryPanel from "../molecules/ValidationSummaryPanel";
 import ActionHistoryTimeline from "../molecules/ActionHistoryTimeline";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
+import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { LeaveRequestDetailProps } from "../../types/ui.types";
 import type { LeaveAttachment } from "../../types/domain.types";
 import { DAY_TYPE_LABELS } from "../../utils/constants";
@@ -49,19 +51,13 @@ const iconForAttachment = (att: { name?: string; contentType?: string }) => {
   return <FileTextOutlined />;
 };
 
-// Resolve a downloadable href for an attachment. Prefers a backend URL,
-// falls back to a base64 data URI, otherwise returns null (rendered as
-// a non-clickable label).
-const hrefForAttachment = (att: LeaveAttachment): string | null => {
-  if (att.downloadUrl) return att.downloadUrl;
-  if (att.contentBase64) {
-    // contentBase64 may already include the data: prefix from
-    // FileReader.readAsDataURL; only prepend when it doesn't.
-    if (att.contentBase64.startsWith("data:")) return att.contentBase64;
-    const ct = att.contentType || "application/octet-stream";
-    return `data:${ct};base64,${att.contentBase64}`;
-  }
-  return null;
+// Build a data: URI from an inline base64 payload. Used as a fallback
+// when the backend embeds bytes instead of exposing a download URL.
+const dataUriFromBase64 = (att: LeaveAttachment): string | null => {
+  if (!att.contentBase64) return null;
+  if (att.contentBase64.startsWith("data:")) return att.contentBase64;
+  const ct = att.contentType || "application/octet-stream";
+  return `data:${ct};base64,${att.contentBase64}`;
 };
 
 const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
@@ -73,6 +69,74 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
   onCancelled,
 }) => {
   const { employees } = useEmployeeOptions();
+  const identity = useEmployeeIdentity();
+  // Track per-attachment in-flight state so the user gets feedback
+  // while the authenticated download is being fetched.
+  const [busyAttachment, setBusyAttachment] = useState<string | null>(null);
+
+  /**
+   * Fetch the attachment via the authenticated axios instance, then
+   * either open it in a new tab (preview) or trigger a save dialog
+   * (download). Plain `<a href>` doesn't carry the gateway JWT, so we
+   * have to materialise a Blob first.
+   */
+  const handleAttachmentAction = async (
+    att: LeaveAttachment,
+    mode: "preview" | "download",
+  ) => {
+    // Inline base64 payload — no network round-trip needed.
+    const inline = dataUriFromBase64(att);
+    if (!att.downloadUrl && inline) {
+      if (mode === "preview") {
+        window.open(inline, "_blank", "noopener,noreferrer");
+      } else {
+        const a = document.createElement("a");
+        a.href = inline;
+        a.download = att.name || "attachment";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      return;
+    }
+    if (!att.downloadUrl) {
+      message.error("Attachment is unavailable — no download URL or content");
+      return;
+    }
+    setBusyAttachment(att.id);
+    try {
+      const blob = await HrmLeaveService.downloadAttachment(
+        att.downloadUrl,
+        identity.employeeIdWithName || undefined,
+      );
+      const blobUrl = URL.createObjectURL(blob);
+      if (mode === "preview") {
+        window.open(blobUrl, "_blank", "noopener,noreferrer");
+        // Revoke after a delay so the new tab has time to load.
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      } else {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = att.name || "attachment";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number } };
+      const status = apiErr?.response?.status;
+      if (status === 403) {
+        message.error("You do not have permission to download this attachment");
+      } else if (status === 404) {
+        message.error("Attachment not found on the server");
+      } else {
+        message.error("Failed to download attachment");
+      }
+    } finally {
+      setBusyAttachment(null);
+    }
+  };
 
   // Resolve approver / employee identifier to a readable name. The id
   // is canonically the composite "EMP-2 - Shanmathi M M". When it
@@ -187,20 +251,20 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
               bordered
               dataSource={items}
               renderItem={(att) => {
-                const href = hrefForAttachment(att);
+                const reachable = !!(att.downloadUrl || att.contentBase64);
                 const sizeLabel = formatSize(att.sizeBytes);
+                const isBusy = busyAttachment === att.id;
                 return (
                   <List.Item
                     actions={[
-                      href ? (
+                      reachable ? (
                         <Button
                           key="view"
                           type="link"
                           size="small"
                           icon={<EyeOutlined />}
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          loading={isBusy}
+                          onClick={() => handleAttachmentAction(att, "preview")}
                         >
                           View
                         </Button>
@@ -209,14 +273,14 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
                           No download URL
                         </Text>
                       ),
-                      href ? (
+                      reachable ? (
                         <Button
                           key="download"
                           type="link"
                           size="small"
                           icon={<DownloadOutlined />}
-                          href={href}
-                          download={att.name}
+                          loading={isBusy}
+                          onClick={() => handleAttachmentAction(att, "download")}
                         >
                           Download
                         </Button>
@@ -229,11 +293,26 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
                         <Text strong style={{ fontSize: 13 }}>
                           {att.name}
                         </Text>
-                        {(sizeLabel || att.contentType) && (
+                        {(sizeLabel || att.contentType || att.uploadedBy || att.uploadedAt) && (
                           <>
                             <br />
                             <Text type="secondary" style={{ fontSize: 11 }}>
-                              {[att.contentType, sizeLabel].filter(Boolean).join(" · ")}
+                              {[
+                                att.contentType,
+                                sizeLabel,
+                                att.uploadedBy,
+                                att.uploadedAt
+                                  ? new Date(att.uploadedAt).toLocaleString("en-GB", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </Text>
                           </>
                         )}

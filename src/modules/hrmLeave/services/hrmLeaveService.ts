@@ -388,6 +388,28 @@ export class HrmLeaveService {
     return response.data;
   }
 
+  // ── Leave Request Attachment Download ─────────────────────────────
+  /**
+   * Fetches a leave-request attachment as a Blob via the authenticated
+   * axios instance. Plain `<a href>` won't carry the gateway JWT, so
+   * the FE must fetch with auth and synthesize the download client-side.
+   *
+   * `downloadUrl` is the value the backend returns on each
+   * `LeaveRequestAttachment` row. May be app-relative (`/app/v1/...`)
+   * or a fully-qualified URL — axios handles both. The optional
+   * `userId` query is appended for the backend's 403 access check.
+   */
+  static async downloadAttachment(
+    downloadUrl: string,
+    userId?: string,
+  ): Promise<Blob> {
+    const url = userId
+      ? `${downloadUrl}${downloadUrl.includes("?") ? "&" : "?"}userId=${encodeURIComponent(userId)}`
+      : downloadUrl;
+    const response = await api.get(url, { responseType: "blob" });
+    return response.data;
+  }
+
   // ── SLA Escalations ────────────────────────────────────────────────
 
   static async triggerSlaEscalations(payload: SiteRequest): Promise<void> {
