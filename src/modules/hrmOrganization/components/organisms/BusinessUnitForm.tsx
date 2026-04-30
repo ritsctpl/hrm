@@ -175,7 +175,9 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
 
       <div className={formStyles.buFormSingle}>
         {generalContent}
-        <div className={formStyles.buFormSectionHeading}>Address</div>
+        <div className={formStyles.buFormSectionHeading}>
+          Address <span style={{ color: '#ff4d4f' }}>*</span>
+        </div>
         {addressContent}
       </div>
 

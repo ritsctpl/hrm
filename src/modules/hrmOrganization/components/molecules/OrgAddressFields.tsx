@@ -238,6 +238,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
           <div className={formStyles.addressFieldFull}>
             <OrgFormField
               label="Address Line 1"
+              required
               error={errors[`${prefix}.line1`]}
             >
               <Input
@@ -259,7 +260,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
             />
           </OrgFormField>
 
-          <OrgFormField label="State" error={errors[`${prefix}.state`]}>
+          <OrgFormField label="State" required error={errors[`${prefix}.state`]}>
             <Select
               value={address.state || undefined}
               onChange={(val) => {
@@ -277,7 +278,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
             />
           </OrgFormField>
 
-          <OrgFormField label="City" error={errors[`${prefix}.city`]}>
+          <OrgFormField label="City" required error={errors[`${prefix}.city`]}>
             <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Select
@@ -349,6 +350,7 @@ const OrgAddressFields: React.FC<OrgAddressFieldsProps> = ({
 
           <OrgFormField
             label={getCountryValidationSpec(address.country).postalLabel}
+            required
             error={pincodeError}
           >
             {(address.country || 'India') === 'India' ? (

@@ -7,10 +7,8 @@ import {
   ShopOutlined,
   BankOutlined,
   ApartmentOutlined,
-  EnvironmentOutlined,
   ClusterOutlined,
   AuditOutlined,
-  BarChartOutlined,
   EditOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
@@ -21,10 +19,8 @@ import OrgSaveButton from '../atoms/OrgSaveButton';
 import CompanyProfileTemplate from './CompanyProfileTemplate';
 import BusinessUnitTemplate from './BusinessUnitTemplate';
 import DepartmentTemplate from './DepartmentTemplate';
-import LocationTemplate from './LocationTemplate';
 import OrgHierarchyChart from '../organisms/OrgHierarchyChart';
 import OrgAuditLogPanel from '../organisms/OrgAuditLogPanel';
-import DataCompletenessPanel from '../organisms/DataCompletenessPanel';
 import type { DetailTabKey } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
 import { useOrganizationPermissions } from '@modules/hrmOrganization/hooks/useOrganizationPermissions';
@@ -115,10 +111,9 @@ const CompanyDetailTemplate: React.FC = () => {
   const profileComplete = profileFilledCount === profileFields.length && hasBankAccounts;
   const profilePartial = profileFilledCount > 0;
 
-  const { businessUnit, department, location } = useHrmOrganizationStore.getState();
+  const { businessUnit, department } = useHrmOrganizationStore.getState();
   const buComplete = (businessUnit.list?.length ?? 0) > 0;
   const deptComplete = (department.list?.length ?? 0) > 0;
-  const locComplete = (location.list?.length ?? 0) > 0;
 
   const StatusDot: React.FC<{ status: 'complete' | 'partial' | 'empty' }> = ({ status }) => {
     const color = status === 'complete' ? '#52c41a' : status === 'partial' ? '#faad14' : '#d9d9d9';
@@ -164,19 +159,6 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <DepartmentTemplate />,
       disabled: false,
     },
-    // Locations Tab
-    permissions.canViewLocation && {
-      key: 'locations',
-      label: (
-        <span className={styles.tabLabel}>
-          <EnvironmentOutlined />
-          Locations
-          {!isNew && <StatusDot status={locComplete ? 'complete' : 'empty'} />}
-        </span>
-      ),
-      children: <LocationTemplate />,
-      disabled: false,
-    },
     // Hierarchy Tab - visible if user can view any organizational structure
     (permissions.canViewBusinessUnit || permissions.canViewDepartment) && {
       key: 'hierarchy',
@@ -199,18 +181,6 @@ const CompanyDetailTemplate: React.FC = () => {
         </span>
       ),
       children: <OrgAuditLogPanel />,
-      disabled: isNew,
-    },
-    // Reports Tab - visible if user can view profile
-    permissions.canViewProfileTab && {
-      key: 'reports',
-      label: (
-        <span className={styles.tabLabel}>
-          <BarChartOutlined />
-          Reports
-        </span>
-      ),
-      children: <DataCompletenessPanel />,
       disabled: isNew,
     },
   ].filter(Boolean); // Remove false/undefined items

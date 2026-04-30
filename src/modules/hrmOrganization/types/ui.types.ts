@@ -10,7 +10,7 @@ import type { CompanyProfile, BusinessUnit, Department, DepartmentNode, Location
 // ============================================
 export type MainView = 'list' | 'detail';
 
-export type DetailTabKey = 'profile' | 'businessUnits' | 'departments' | 'locations' | 'hierarchy' | 'audit' | 'reports';
+export type DetailTabKey = 'profile' | 'businessUnits' | 'departments' | 'hierarchy' | 'audit';
 
 export type CompanyTabKey = 'identity' | 'statutory' | 'bank' | 'address' | 'contact';
 
