@@ -474,8 +474,17 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       companyProfile: {
         ...state.companyProfile,
         isEditing,
+        // When entering edit mode, copy server data into draft. Seed FY
+        // defaults so existing companies that never persisted these fields
+        // pass validation. Mirrors navigateToDetail's new-company seeding.
         draft: isEditing && state.companyProfile.data
-          ? { ...state.companyProfile.data }
+          ? {
+              ...state.companyProfile.data,
+              financialYearStartMonth:
+                state.companyProfile.data.financialYearStartMonth || 'April',
+              financialYearEndMonth:
+                state.companyProfile.data.financialYearEndMonth || 'March',
+            }
           : state.companyProfile.draft,
       },
     })),
@@ -560,6 +569,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         officialEmail: companyProfile.draft.officialEmail || '',
         officialPhone: companyProfile.draft.officialPhone || '',
         financialYearStartMonth: companyProfile.draft.financialYearStartMonth || 'April',
+        financialYearEndMonth: companyProfile.draft.financialYearEndMonth || 'March',
         registeredOfficeAddress,
         corporateOfficeAddress,
         bankAccounts,

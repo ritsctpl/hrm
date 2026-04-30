@@ -238,6 +238,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "org_chart", label: "Org Chart" },
     { code: "org_location", label: "Locations" },
     { code: "org_business_unit", label: "Business Units" },
+    { code: "org_reports", label: "Reports" },
   ],
 
   // ── Payroll ─────────────────────────────────────────────────────────

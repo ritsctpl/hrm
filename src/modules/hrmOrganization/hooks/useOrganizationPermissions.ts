@@ -47,6 +47,7 @@ export const useOrganizationPermissions = () => {
     const departmentPerms = resolveObject('org_department');
     const designationPerms = resolveObject('org_designation');
     const locationPerms = resolveObject('org_location');
+    const reportsPerms = resolveObject('org_reports');
 
     return {
       // Identity permissions
@@ -102,6 +103,12 @@ export const useOrganizationPermissions = () => {
       canAddLocation: locationPerms.canAdd,
       canEditLocation: locationPerms.canEdit,
       canDeleteLocation: locationPerms.canDelete,
+
+      // Reports permissions
+      canViewReports: reportsPerms.canView,
+      canAddReports: reportsPerms.canAdd,
+      canEditReports: reportsPerms.canEdit,
+      canDeleteReports: reportsPerms.canDelete,
 
       // Helper: Check if Profile tab should be visible
       canViewProfileTab: [

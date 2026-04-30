@@ -25,6 +25,7 @@ import LocationTemplate from './LocationTemplate';
 import OrgHierarchyChart from '../organisms/OrgHierarchyChart';
 import OrgAuditLogPanel from '../organisms/OrgAuditLogPanel';
 import DataCompletenessPanel from '../organisms/DataCompletenessPanel';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import type { DetailTabKey } from '../../types/ui.types';
 import styles from '../../styles/HrmOrganization.module.css';
 import { useOrganizationPermissions } from '@modules/hrmOrganization/hooks/useOrganizationPermissions';
@@ -45,6 +46,10 @@ const CompanyDetailTemplate: React.FC = () => {
 
   const { confirmNavigation } = useUnsavedChanges();
   const permissions = useOrganizationPermissions();
+  // Super-admin bypasses RBAC entirely — show every tab regardless of
+  // section permissions. This re-enables Locations + Reports tabs that
+  // are otherwise hidden for normal RBAC users (per BR-2026-151 scope).
+  const isSuperAdmin = useHrmRbacStore((s) => s.isSuperAdmin);
   const get = useHrmOrganizationStore.getState;
   const isNew = selectedCompanyHandle === 'new';
   const { isEditing, isSaving, errors, data } = companyProfile;
@@ -164,8 +169,9 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <DepartmentTemplate />,
       disabled: false,
     },
-    // Locations Tab
-    permissions.canViewLocation && {
+    // Locations Tab — super-admin sees this; normal RBAC users do not
+    // (kept hidden by default per BR-2026-151).
+    (isSuperAdmin || permissions.canViewLocation) && {
       key: 'locations',
       label: (
         <span className={styles.tabLabel}>
@@ -201,8 +207,9 @@ const CompanyDetailTemplate: React.FC = () => {
       children: <OrgAuditLogPanel />,
       disabled: isNew,
     },
-    // Reports Tab - visible if user can view profile
-    permissions.canViewProfileTab && {
+    // Reports Tab — driven by the dedicated `org_reports` RBAC object
+    // (registered in moduleObjectRegistry). Super-admin always sees it.
+    (isSuperAdmin || permissions.canViewReports) && {
       key: 'reports',
       label: (
         <span className={styles.tabLabel}>

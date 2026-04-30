@@ -404,12 +404,16 @@
   font-size: 12px;
 }
 
-/* Form panel */
+/* Form panel — flex column so the inner scroll wrapper (.buFormSingle)
+   gets a height-bounded parent and .formActions stays pinned at the
+   bottom even when validation errors inflate the form. */
 .formPanel {
   padding: 12px;
-  overflow: auto;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .formPanelHeader {
