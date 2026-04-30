@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmOrganizationService } from '../services/hrmOrganizationService';
+import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import { validateCompanyProfile, validateBusinessUnit } from '../utils/validations';
 import type {
   CompanyProfile,
@@ -329,8 +330,13 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Company List
   // ------------------------------------------
   fetchCompanyList: async () => {
-    const organizationId = getOrganizationId();
-    if (!organizationId) return;
+    // Super admin sees every company across all organizations, regardless
+    // of which org is currently selected in the header switcher. We pass
+    // an empty organizationId so the backend returns the unfiltered set.
+    // Non-super-admin users keep the org-scoped behavior.
+    const isSuperAdmin = useHrmRbacStore.getState().isSuperAdmin;
+    const organizationId = isSuperAdmin ? '' : getOrganizationId();
+    if (!isSuperAdmin && !organizationId) return;
 
     set((state) => ({
       companyList: { ...state.companyList, isLoading: true },
@@ -344,6 +350,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       try {
         data = await HrmOrganizationService.fetchAllCompanies(organizationId);
       } catch {
+        // For super admin the by-site fallback can't return the global set,
+        // so skip it — surface whatever retrieveAll returned (or the error).
+        if (isSuperAdmin) throw new Error('Failed to load companies');
         data = await HrmOrganizationService.fetchBySite(organizationId);
       }
 
@@ -498,6 +507,36 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     // Validate before saving
     const validationErrors = validateCompanyProfile(companyProfile.draft);
+
+    // Cross-entity GSTIN uniqueness check (client-side partial — full
+    // uniqueness across the database is enforced server-side):
+    // a company's GSTIN must not collide with any other loaded company's
+    // GSTIN, nor with any business unit's GSTIN visible in state.
+    const gstinForCheck = (
+      companyProfile.draft.gstIn || companyProfile.draft.gstin || ''
+    ).trim().toUpperCase();
+    if (gstinForCheck) {
+      const ownHandle = companyProfile.data?.handle;
+      const { companyList, businessUnit } = get();
+      const collidesWithCompany = (companyList.items || []).some((c) => {
+        const item = c as unknown as { handle?: string; gstIn?: string; gstin?: string };
+        if (item.handle && item.handle === ownHandle) return false;
+        const v = (item.gstIn || item.gstin || '').trim().toUpperCase();
+        return v && v === gstinForCheck;
+      });
+      const collidesWithBu = (businessUnit.list || []).some((bu) => {
+        const v = (bu.gstin || '').trim().toUpperCase();
+        return v && v === gstinForCheck;
+      });
+      if (collidesWithCompany) {
+        validationErrors.gstIn =
+          'This GSTIN is already used by another company.';
+      } else if (collidesWithBu) {
+        validationErrors.gstIn =
+          'This GSTIN is already used by a business unit.';
+      }
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       set((state) => ({
         companyProfile: {
@@ -592,7 +631,15 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
           payload
         );
       } else {
-        // CREATE: Call create endpoint if no handle exists (new company)
+        // CREATE: derive the new organization's id from the legalName
+        // (spaces → underscores) so each newly-created company gets a
+        // canonical, human-readable scoping id. Falls back to the active
+        // org id only if legalName is empty (which validation prevents).
+        const legalForId = (companyProfile.draft.legalName || '').trim();
+        const derivedOrgId = legalForId.replace(/\s+/g, '_');
+        if (derivedOrgId) {
+          payload.organizationId = derivedOrgId;
+        }
         payload.createdBy = userId;
         data = await HrmOrganizationService.createCompany(payload);
       }
@@ -750,6 +797,42 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
     // Validate before saving
     const validationErrors = validateBusinessUnit(businessUnit.draft);
+
+    // GSTIN must not collide with the parent company's GSTIN, with another
+    // BU's GSTIN, or with any other loaded company's GSTIN. Server-side
+    // full-uniqueness check still authoritative; this catches the obvious
+    // duplicates instantly without a round-trip.
+    const buGstin = (businessUnit.draft.gstin || '').trim().toUpperCase();
+    if (buGstin) {
+      const ownHandle = businessUnit.selected?.handle;
+      const companyGstin = (
+        companyProfile.data?.gstIn || companyProfile.data?.gstin || ''
+      ).trim().toUpperCase();
+      if (companyGstin && companyGstin === buGstin) {
+        validationErrors.gstin =
+          'This GSTIN is already used by the parent company.';
+      } else {
+        const collidesWithBu = (businessUnit.list || []).some((bu) => {
+          if (bu.handle && bu.handle === ownHandle) return false;
+          const v = (bu.gstin || '').trim().toUpperCase();
+          return v && v === buGstin;
+        });
+        const collidesWithCompany = ((get().companyList.items) || []).some((c) => {
+          const item = c as unknown as { handle?: string; gstIn?: string; gstin?: string };
+          if (item.handle && item.handle === companyProfile.data?.handle) return false;
+          const v = (item.gstIn || item.gstin || '').trim().toUpperCase();
+          return v && v === buGstin;
+        });
+        if (collidesWithBu) {
+          validationErrors.gstin =
+            'This GSTIN is already used by another business unit.';
+        } else if (collidesWithCompany) {
+          validationErrors.gstin =
+            'This GSTIN is already used by another company.';
+        }
+      }
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       set((state) => ({
         businessUnit: {
