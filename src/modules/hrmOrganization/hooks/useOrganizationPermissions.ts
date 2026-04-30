@@ -37,6 +37,18 @@ export const useOrganizationPermissions = () => {
       return moduleFallback;
     };
 
+    // Some objects were renamed (e.g. "location" → "org_location") but
+    // existing grants in the permissions collection still use the legacy
+    // key verbatim. Until RbacServiceImpl.getEffectivePermissions aliases
+    // legacy → new on the response, fall back to the legacy key when the
+    // new one is empty so old roles don't silently lose access.
+    const resolveObjectWithLegacy = (newName: string, legacyName: string) => {
+      const primary = resolveObject(newName);
+      const hasAnyGrant =
+        primary.canView || primary.canAdd || primary.canEdit || primary.canDelete;
+      return hasAnyGrant ? primary : resolveObject(legacyName);
+    };
+
     // Use backend object names from moduleObjectRegistry
     const identityPerms = resolveObject('org_identity');
     const statutoryPerms = resolveObject('org_statutory');
@@ -46,8 +58,8 @@ export const useOrganizationPermissions = () => {
     const businessUnitPerms = resolveObject('org_business_unit');
     const departmentPerms = resolveObject('org_department');
     const designationPerms = resolveObject('org_designation');
-    const locationPerms = resolveObject('org_location');
-    const reportsPerms = resolveObject('org_reports');
+    const locationPerms = resolveObjectWithLegacy('org_location', 'location');
+    const reportsPerms = resolveObjectWithLegacy('org_reports', 'reports');
 
     return {
       // Identity permissions
