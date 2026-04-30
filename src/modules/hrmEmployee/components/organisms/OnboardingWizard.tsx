@@ -724,6 +724,9 @@ const OnboardingWizard: React.FC = () => {
   const [businessUnits, setBusinessUnits] = useState<Array<{ label: string; value: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  // Map company handle → that company's own organizationId. Lets us
+  // re-scope dependent fetches (locations) to the selected company.
+  const [companyOrgIdByHandle, setCompanyOrgIdByHandle] = useState<Record<string, string>>({});
 
   // Cascading selection state
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>();
@@ -771,6 +774,33 @@ const OnboardingWizard: React.FC = () => {
     loadBusinessUnits();
   }, [selectedCompany]);
 
+  // Load locations when company is selected — scoped to that company's
+  // own organizationId, NOT the header switcher's. Lets each company's
+  // distinct location set populate the picker.
+  useEffect(() => {
+    const loadLocationsForCompany = async () => {
+      if (!selectedCompany) {
+        // No company selected — keep whatever generic set is already
+        // loaded (initial header-scoped fetch in fetchDropdownOptions).
+        return;
+      }
+      const companyOrgId = companyOrgIdByHandle[selectedCompany] || getOrganizationId();
+      if (!companyOrgId) return;
+      try {
+        const locationsData = await HrmOrganizationService.fetchAllLocations(companyOrgId);
+        setLocations(
+          (locationsData || []).map((loc) => ({
+            label: loc.name || loc.code || loc.id,
+            value: loc.id,
+          })),
+        );
+      } catch (error) {
+        console.error('Failed to load locations for company:', error);
+      }
+    };
+    loadLocationsForCompany();
+  }, [selectedCompany, companyOrgIdByHandle]);
+
   // Load departments when business unit is selected
   useEffect(() => {
     const loadDepartments = async () => {
@@ -811,11 +841,24 @@ const OnboardingWizard: React.FC = () => {
           value: company.handle,
         }));
         setCompanies(companyOptions);
+        // Stash each company's own organizationId for downstream
+        // location lookups. Backend includes both `organizationId` and
+        // `site` on the company record; prefer organizationId.
+        const orgIdMap: Record<string, string> = {};
+        companyData.forEach((c) => {
+          const cAny = c as unknown as { handle?: string; organizationId?: string; site?: string };
+          if (cAny.handle) {
+            orgIdMap[cAny.handle] = cAny.organizationId || cAny.site || organizationId;
+          }
+        });
+        setCompanyOrgIdByHandle(orgIdMap);
       } catch (error) {
         console.error('Failed to fetch companies:', error);
       }
 
-      // Fetch locations
+      // Initial locations fetch — scoped to header org. Replaced when a
+      // company is selected (see effect below) so the dropdown reflects
+      // the chosen company's locations.
       try {
         const locationsData = await HrmOrganizationService.fetchAllLocations(organizationId);
         setLocations(
