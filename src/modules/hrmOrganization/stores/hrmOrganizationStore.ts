@@ -376,7 +376,14 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   deleteCompany: async (handle) => {
-    const organizationId = getOrganizationId();
+    // Resolve the org id of the specific company being deleted from the
+    // loaded companyList — each row carries its own organizationId. Falls
+    // back to the cookie when the company isn't in the list (unlikely).
+    const matchInList = ((get().companyList.items) || []).find(
+      (c) => (c as unknown as { handle?: string }).handle === handle,
+    ) as unknown as { organizationId?: string; site?: string } | undefined;
+    const organizationId =
+      matchInList?.organizationId || matchInList?.site || getOrganizationId();
     const userId = getUserId();
     if (!organizationId || !userId) return;
 
@@ -512,7 +519,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveCompanyProfile: async () => {
     const { companyProfile, selectedCompanyHandle } = get();
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
 
     if (!companyProfile.draft || !organizationId) return;
@@ -709,7 +716,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Business Units
   // ------------------------------------------
   fetchBusinessUnits: async () => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const { companyProfile, selectedCompanyHandle } = get();
     const companyHandle = companyProfile.data?.handle || (selectedCompanyHandle !== 'new' ? selectedCompanyHandle : null);
 
@@ -801,7 +808,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveBusinessUnit: async () => {
     const { businessUnit, companyProfile, selectedCompanyHandle } = get();
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
     const companyHandle = companyProfile.data?.handle || selectedCompanyHandle;
 
@@ -952,7 +959,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteBusinessUnit: async (handle) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
     if (!organizationId) return;
 
@@ -1018,7 +1025,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Departments
   // ------------------------------------------
   fetchDepartments: async (buHandle) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     if (!organizationId || !buHandle) return;
 
     set((state) => ({
@@ -1116,7 +1123,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveDepartment: async () => {
     const { department, businessUnit, companyProfile } = get();
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
     const buHandle = department.selectedBuHandle;
 
@@ -1251,7 +1258,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteDepartment: async (handle) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
     if (!organizationId) return;
 
@@ -1329,7 +1336,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Locations
   // ------------------------------------------
   fetchLocations: async () => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     if (!organizationId) return;
 
     set((state) => ({
@@ -1392,7 +1399,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
 
   saveLocation: async () => {
     const { location } = get();
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
 
     if (!location.draft || !organizationId) return;
@@ -1478,7 +1485,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   },
 
   deleteLocation: async (id) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     const userId = getUserId();
     if (!organizationId) return;
 
@@ -1580,7 +1587,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Audit Log
   // ------------------------------------------
   fetchAuditLog: async (entityType?: string, entityHandle?: string) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     if (!organizationId) return;
 
     set((state) => ({
@@ -1617,7 +1624,7 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Data Completeness
   // ------------------------------------------
   fetchDataCompleteness: async (entityType?: string) => {
-    const organizationId = getOrganizationId();
+    const organizationId = getScopingOrgId(get);
     if (!organizationId) return;
 
     set((state) => ({
