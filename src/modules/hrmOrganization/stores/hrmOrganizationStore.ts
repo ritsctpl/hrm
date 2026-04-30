@@ -411,9 +411,21 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
     })),
 
   fetchCompanyProfile: async (handle?: string) => {
-    const organizationId = getOrganizationId();
     const targetHandle = handle || get().selectedCompanyHandle;
-    if (!organizationId || !targetHandle) return;
+    if (!targetHandle) return;
+
+    // Prefer the SELECTED company's own organizationId for /company/retrieve.
+    // The company list (fetchCompanyList) carries each row's organizationId,
+    // so for super admins (whose header cookie may point to any org) and for
+    // multi-company orgs the right scope is the company itself, not the
+    // global cookie. Falls back through the cookie if the company can't be
+    // found in companyList yet (e.g. deep link before list load).
+    const matchInList = (get().companyList.items || []).find(
+      (c) => (c as unknown as { handle?: string }).handle === targetHandle,
+    ) as unknown as { organizationId?: string; site?: string } | undefined;
+    const organizationId =
+      matchInList?.organizationId || matchInList?.site || getOrganizationId();
+    if (!organizationId) return;
 
     set((state) => ({
       companyProfile: { ...state.companyProfile, isLoading: true, errors: {} },
