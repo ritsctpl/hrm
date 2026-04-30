@@ -122,7 +122,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const isHrUser = allowEmployeeSelection;
 
   const [submitting, setSubmitting] = useState(false);
-  const [attachments, setAttachments] = useState<{ name: string; base64: string }[]>([]);
+  const [attachments, setAttachments] = useState<
+    { name: string; base64: string; contentType: string }[]
+  >([]);
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [blackouts, setBlackouts] = useState<LeaveBlackoutPeriod[]>([]);
@@ -457,7 +459,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     }
     try {
       const base64 = await fileToBase64(file);
-      setAttachments((prev) => [...prev, { name: file.name, base64 }]);
+      setAttachments((prev) => [
+        ...prev,
+        {
+          name: file.name,
+          base64,
+          contentType: file.type || "application/octet-stream",
+        },
+      ]);
       message.success(`${file.name} attached`);
     } catch {
       message.error("Failed to read file");
@@ -587,7 +596,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         reason: leaveFormState.reason,
         attachmentPath: leaveFormState.attachmentPath ?? undefined,
         createdBy: submitterComposite,
-        attachments: attachments.map((a) => a.base64),
+        attachments: attachments.map((a) => ({
+          name: a.name,
+          contentType: a.contentType,
+          contentBase64: a.base64,
+        })),
         handoverEmployeeId: handoverPerson,
       } as Parameters<typeof HrmLeaveService.submitLeaveRequest>[0];
       const result = await HrmLeaveService.submitLeaveRequest(payload);

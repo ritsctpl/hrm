@@ -10,6 +10,17 @@ export type LeaveRequestStatus =
 
 export type DayType = "FULL" | "FIRST_HALF" | "SECOND_HALF";
 
+export interface LeaveAttachment {
+  id: string;
+  name: string;
+  contentType?: string;
+  sizeBytes?: number;
+  downloadUrl?: string;
+  contentBase64?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
+}
+
 export type LedgerRefType =
   | "ACCRUAL"
   | "LEAVE"
@@ -58,6 +69,7 @@ export interface LeaveRequest {
   totalDays: number;
   reason: string;
   attachmentPath?: string;
+  attachments?: LeaveAttachment[];
   balanceBefore: number;
   balanceAfter: number;
   status: LeaveRequestStatus;

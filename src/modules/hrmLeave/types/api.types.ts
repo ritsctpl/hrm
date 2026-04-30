@@ -362,6 +362,33 @@ export interface LeaveAvailedReportRequest {
 
 // ── Leave Request ─────────────────────────────────────────────────────
 
+/** What the frontend uploads with a new leave request. Each file is sent
+ *  with its name + content type so the backend can persist a meaningful
+ *  display label and serve the right Content-Type on download. */
+export interface LeaveRequestAttachmentUpload {
+  name: string;
+  contentType: string;
+  /** Base64 string. Includes the data-URI prefix when produced by
+   *  FileReader.readAsDataURL — backend should strip if present. */
+  contentBase64: string;
+}
+
+/** What the backend returns for an existing attachment on a leave row.
+ *  Either downloadUrl OR contentBase64 must be populated; the FE
+ *  prefers downloadUrl when both are present. */
+export interface LeaveRequestAttachment {
+  id: string;
+  name: string;
+  contentType?: string;
+  sizeBytes?: number;
+  /** Pre-signed or app-relative URL the FE can use directly. */
+  downloadUrl?: string;
+  /** Inline base64 fallback when no URL is exposed. */
+  contentBase64?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
+}
+
 export interface LeaveRequestCreateDto {
   organizationId: string;
   employeeId: string;
@@ -372,7 +399,10 @@ export interface LeaveRequestCreateDto {
   endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
   totalDays: number;
   reason: string;
+  /** Legacy single-file path — kept for backward compatibility while
+   *  multi-attachment rolls out. New code should use `attachments`. */
   attachmentPath?: string;
+  attachments?: LeaveRequestAttachmentUpload[];
   createdBy: string;
 }
 
@@ -435,7 +465,11 @@ export interface LeaveRequest {
   endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
   totalDays: number;
   reason: string;
+  /** Legacy single-file path — present on rows that pre-date the
+   *  multi-attachment rollout. Approver UI shows this as one item. */
   attachmentPath?: string;
+  /** New canonical multi-attachment list. */
+  attachments?: LeaveRequestAttachment[];
   balanceBefore: number;
   balanceAfter: number;
   status: LeaveRequestStatus;
