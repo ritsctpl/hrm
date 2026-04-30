@@ -48,6 +48,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     if (!start || !end) return 0;
     const s = dayjs(start);
     const e = dayjs(end);
+
+    // Single-day case — only one half can apply. Subtracting 0.5 for both
+    // start and end on the same date (e.g. AM + AM) used to yield 0,
+    // which is wrong: a half-day is 0.5, a full day is 1.
+    if (s.isSame(e, "day")) {
+      const startIsHalf = sDayType !== "FULL";
+      const endIsHalf = eDayType !== "FULL";
+      return startIsHalf || endIsHalf ? 0.5 : 1;
+    }
+
     let days = e.diff(s, "day") + 1;
     if (sDayType !== "FULL") days -= 0.5;
     if (eDayType !== "FULL") days -= 0.5;
@@ -199,22 +209,26 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           disabledDate={(d) => (startDate ? d.isBefore(dayjs(startDate), "day") : false)}
           cellRender={(current) => cellRender(current as dayjs.Dayjs)}
         />
-        {halfDayAllowed && (
-          <Radio.Group
-            value={endDayType}
-            onChange={(e) =>
-              handleEndChange(endDate ? dayjs(endDate) : null, e.target.value)
-            }
-            size="small"
-            style={{ marginTop: 6 }}
-          >
-            {DAY_TYPE_OPTIONS.map((opt) => (
-              <Radio.Button key={opt.value} value={opt.value}>
-                {opt.label}
-              </Radio.Button>
-            ))}
-          </Radio.Group>
-        )}
+        {halfDayAllowed &&
+          // Hide the redundant To-date day-type picker when the range
+          // collapses to a single day — the From-date toggle alone fully
+          // describes whether the leave is full or half day.
+          !(startDate && endDate && dayjs(startDate).isSame(dayjs(endDate), "day")) && (
+            <Radio.Group
+              value={endDayType}
+              onChange={(e) =>
+                handleEndChange(endDate ? dayjs(endDate) : null, e.target.value)
+              }
+              size="small"
+              style={{ marginTop: 6 }}
+            >
+              {DAY_TYPE_OPTIONS.map((opt) => (
+                <Radio.Button key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Radio.Button>
+              ))}
+            </Radio.Group>
+          )}
       </div>
 
       {/* Days calculation display */}
