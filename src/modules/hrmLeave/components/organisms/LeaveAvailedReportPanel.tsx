@@ -10,9 +10,11 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from "antd";
+import { RobotOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs, { type Dayjs } from "dayjs";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
@@ -22,7 +24,7 @@ import { LedgerHistoryResponse } from "../../types/api.types";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -127,20 +129,34 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
     }
   };
 
-  /** Resolve createdBy to a readable display string. Backend stores the
-   *  composite "CODE - Name" canonically; only special literals like
-   *  "system" need formatting. */
+  /** Render the actor that created this ledger row.
+   *
+   *  WARNING: this is `createdBy` — the actor, not the leave-owner.
+   *  Backend's /reports/leave-availed currently doesn't return
+   *  employeeId on each row, so we can't show whose leave was
+   *  availed without a server-side response change. Until then,
+   *  "SYSTEM" entries are flagged with a robot icon so HR knows
+   *  the row is missing user attribution.
+   */
   const resolveEmployee = (createdBy: string) => {
-    if (!createdBy) return "—";
+    if (!createdBy) return <Text type="secondary">—</Text>;
     const trimmed = createdBy.trim();
     if (trimmed.includes(" - ")) return trimmed;
-    // Capitalise non-composite literals like "system" → "System"
+    if (trimmed.toLowerCase() === "system") {
+      return (
+        <Tooltip title="Created by automated process — backend response is missing the leave-owner's employeeId.">
+          <Tag icon={<RobotOutlined />} color="default">
+            System
+          </Tag>
+        </Tooltip>
+      );
+    }
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
   };
 
   const columns: ColumnsType<LedgerHistoryResponse> = [
     {
-      title: "Employee",
+      title: "Actor",
       dataIndex: "createdBy",
       key: "createdBy",
       render: (v: string) => resolveEmployee(v),
