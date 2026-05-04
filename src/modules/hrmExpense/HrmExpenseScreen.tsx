@@ -67,7 +67,17 @@ const HrmExpenseScreen: React.FC<Props> = ({
     addDraftItem,
     updateDraftItem,
     removeDraftItem,
+    setSelectedExpense,
   } = useHrmExpenseStore();
+
+  const refetchExpense = useCallback(async (handle: string) => {
+    try {
+      const fresh = await HrmExpenseService.getExpenseByHandle({ handle });
+      setSelectedExpense(fresh);
+    } catch (error: unknown) {
+      console.error("refetchExpense error:", error);
+    }
+  }, [setSelectedExpense]);
 
   const {
     saveDraft,
@@ -187,7 +197,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     try {
       await HrmExpenseService.uploadAttachment(handle, file, organizationId);
       message.success("Attachment uploaded.");
-      onActionComplete();
+      await refetchExpense(handle);
     } catch (error: unknown) {
       message.error(extractExpenseError(error, "Failed to upload attachment."));
       console.error("uploadAttachment error:", error);
@@ -202,7 +212,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     try {
       await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
       message.success("Receipt uploaded.");
-      onActionComplete();
+      await refetchExpense(expense.handle);
     } catch (error: unknown) {
       message.error(extractExpenseError(error, "Failed to upload receipt."));
       console.error("uploadLineReceipt error:", error);

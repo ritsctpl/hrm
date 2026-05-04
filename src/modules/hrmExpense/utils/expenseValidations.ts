@@ -21,7 +21,7 @@ export interface LineItemValidationContext {
 
 export interface LineItemError {
   handle: string;
-  field: "expenseDate" | "amount" | "attachment" | "perTripLimit";
+  field: "expenseDate" | "amount" | "attachment";
   message: string;
 }
 
@@ -73,14 +73,9 @@ export function validateLineItems(
       });
     }
 
-    // BR6: perTripLimit enforcement
-    if (cat?.perTripLimit != null && item.amount > cat.perTripLimit) {
-      errors.push({
-        handle: item.handle,
-        field: "perTripLimit",
-        message: `Amount exceeds per-trip limit of ${cat.perTripLimit} for category ${cat.categoryName}.`,
-      });
-    }
+    // BR6: per-trip / daily limit breaches are soft — surfaced via item.outOfPolicy
+    // and gated by BR1 (justification required). Submit proceeds with justification
+    // and the approver reviews the breach.
 
     // BR2: receipt required when category.requiresAttachment
     if (cat?.requiresAttachment && !item.attachmentRef) {
