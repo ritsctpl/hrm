@@ -440,8 +440,12 @@ export const validateCompanyProfile = (data: any): Record<string, string> => {
     const cinError = validateCIN(data.cin || '');
     if (cinError) errors.cin = cinError;
 
-    // GSTIN (optional, but must match format + PAN + state if provided)
-    if (data.gstIn && data.gstIn.trim()) {
+    // GSTIN required for Indian companies; format must match and the
+    // embedded PAN + state code must agree with the company PAN and the
+    // registered office state.
+    if (!data.gstIn || !data.gstIn.trim()) {
+      errors.gstIn = 'GSTIN is required';
+    } else {
       const registeredState = registeredAddress?.state;
       const gstinError = validateGSTIN(data.gstIn, data.pan, registeredState);
       if (gstinError) errors.gstIn = gstinError;

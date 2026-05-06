@@ -45,7 +45,7 @@ const INDIA_STATUTORY_FIELDS: ReadonlyArray<StatutoryFieldSpec> = [
   { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10, required: true, tooltip: 'Permanent Account Number — 5 letters + 4 digits + 1 letter' },
   { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10, required: true, tooltip: 'Tax Deduction Account Number — 4 letters + 5 digits + 1 letter' },
   { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21, required: true, tooltip: 'Corporate Identity Number — 21 character alphanumeric code issued by MCA' },
-  { key: 'gstIn', label: 'GSTIN', placeholder: 'e.g., 27AAPFU0939F1ZV', maxLength: 15, tooltip: 'GST Identification Number — 15 characters. Characters 3-12 must match your PAN' },
+  { key: 'gstIn', label: 'GSTIN', placeholder: 'e.g., 27AAPFU0939F1ZV', maxLength: 15, required: true, tooltip: 'GST Identification Number — 15 characters. Characters 3-12 must match your PAN' },
   { key: 'pfEstablishmentCode', label: 'PF Establishment Code', placeholder: 'Enter PF establishment code', tooltip: 'EPFO establishment code for provident fund' },
   { key: 'esicCode', label: 'ESIC Code', placeholder: 'Enter ESIC code', tooltip: 'Employees State Insurance Corporation code' },
   { key: 'msmeUdyam', label: 'MSME / Udyam No.', placeholder: 'Enter MSME / Udyam registration number', tooltip: 'Udyam registration number issued by MSME ministry' },
