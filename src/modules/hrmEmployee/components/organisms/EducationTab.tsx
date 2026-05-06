@@ -5,15 +5,24 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } from 'antd';
+import { AutoComplete, Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { useEmployeePermissions } from '../../hooks/useEmployeePermissions';
+import { DEGREE_OPTIONS, FIELD_OF_STUDY_OPTIONS } from '../../utils/constants';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EducationEntry } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
+
+// Pre-build the AutoComplete option arrays once. AutoComplete suggests
+// these on focus / type; the user can also accept any free-text value
+// not in the list, which removes the need for an explicit "Others" entry.
+const degreeAutoOptions = DEGREE_OPTIONS.map((d) => ({ value: d }));
+const fieldAutoOptions = FIELD_OF_STUDY_OPTIONS.map((f) => ({ value: f }));
+const filterCaseInsensitive = (input: string, option?: { value: string }) =>
+  (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase());
 
 const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   profile,
@@ -233,7 +242,12 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <AutoComplete
+                options={degreeAutoOptions}
+                placeholder="Select or type degree"
+                filterOption={filterCaseInsensitive}
+                allowClear
+              />
             </Form.Item>
             <Form.Item
               name="field"
@@ -241,7 +255,12 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <AutoComplete
+                options={fieldAutoOptions}
+                placeholder="Select or type field of study"
+                filterOption={filterCaseInsensitive}
+                allowClear
+              />
             </Form.Item>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -349,7 +368,12 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <AutoComplete
+                options={degreeAutoOptions}
+                placeholder="Select or type degree"
+                filterOption={filterCaseInsensitive}
+                allowClear
+              />
             </Form.Item>
             <Form.Item
               name="field"
@@ -357,7 +381,12 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <Input />
+              <AutoComplete
+                options={fieldAutoOptions}
+                placeholder="Select or type field of study"
+                filterOption={filterCaseInsensitive}
+                allowClear
+              />
             </Form.Item>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>

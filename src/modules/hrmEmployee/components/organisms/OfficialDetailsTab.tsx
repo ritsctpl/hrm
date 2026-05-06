@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { Button, Input, Form, Select, DatePicker, message } from 'antd';
+import { AutoComplete, Button, Input, Form, Select, DatePicker, message } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
@@ -14,6 +14,7 @@ import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import { formatDate } from '../../utils/transformations';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
+import { DESIGNATION_OPTIONS } from '../../utils/constants';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EmploymentStatus } from '../../types/domain.types';
 
@@ -432,22 +433,12 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
               label="Designation"
               rules={[{ required: true, message: 'Required' }]}
             >
-              <Select
-                showSearch
+              <AutoComplete
+                placeholder="Select or type designation"
                 allowClear
-                placeholder="Select designation"
-                options={[
-                  { label: 'Software Engineer', value: 'Software Engineer' },
-                  { label: 'Senior Software Engineer', value: 'Senior Software Engineer' },
-                  { label: 'Team Lead', value: 'Team Lead' },
-                  { label: 'Manager', value: 'Manager' },
-                  { label: 'Senior Manager', value: 'Senior Manager' },
-                  { label: 'Director', value: 'Director' },
-                  { label: 'HR Executive', value: 'HR Executive' },
-                  { label: 'HR Manager', value: 'HR Manager' },
-                ]}
+                options={DESIGNATION_OPTIONS.map((d) => ({ value: d }))}
                 filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
                 }
               />
             </Form.Item>

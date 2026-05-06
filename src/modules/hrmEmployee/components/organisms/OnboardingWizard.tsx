@@ -5,12 +5,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
+import { AutoComplete, Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
 import Can from '../../../hrmAccess/components/Can';
-import { ONBOARDING_STEPS } from '../../utils/constants';
+import { ONBOARDING_STEPS, DESIGNATION_OPTIONS } from '../../utils/constants';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
@@ -308,25 +308,15 @@ const OfficialStep: React.FC<{
       </div>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Designation</label>
-        <Select
-          showSearch
-          allowClear
-          value={draft.designation || undefined}
+        <AutoComplete
+          value={draft.designation || ''}
           onChange={(value) => onChange({ designation: value })}
-          placeholder="Select designation"
+          placeholder="Select or type designation"
           style={{ width: '100%' }}
-          options={[
-            { label: 'Software Engineer', value: 'Software Engineer' },
-            { label: 'Senior Software Engineer', value: 'Senior Software Engineer' },
-            { label: 'Team Lead', value: 'Team Lead' },
-            { label: 'Manager', value: 'Manager' },
-            { label: 'Senior Manager', value: 'Senior Manager' },
-            { label: 'Director', value: 'Director' },
-            { label: 'HR Executive', value: 'HR Executive' },
-            { label: 'HR Manager', value: 'HR Manager' },
-          ]}
+          allowClear
+          options={DESIGNATION_OPTIONS.map((d) => ({ value: d }))}
           filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
           }
         />
       </div>
