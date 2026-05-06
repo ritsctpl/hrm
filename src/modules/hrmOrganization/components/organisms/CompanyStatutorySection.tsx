@@ -33,14 +33,18 @@ interface StatutoryFieldSpec {
   placeholder: string;
   maxLength?: number;
   tooltip?: string;
+  required?: boolean;
 }
 
 // India-specific regulatory identifiers. These fields are collected only
-// when the company's registered office is in India.
+// when the company's registered office is in India. PAN/TAN/CIN are
+// legally mandatory for Indian companies — validateCompanyProfile rejects
+// the save when any is missing, so the labels carry a required asterisk
+// to match.
 const INDIA_STATUTORY_FIELDS: ReadonlyArray<StatutoryFieldSpec> = [
-  { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10, tooltip: 'Permanent Account Number — 5 letters + 4 digits + 1 letter' },
-  { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10, tooltip: 'Tax Deduction Account Number — 4 letters + 5 digits + 1 letter' },
-  { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21, tooltip: 'Corporate Identity Number — 21 character alphanumeric code issued by MCA' },
+  { key: 'pan', label: 'PAN', placeholder: 'e.g., ABCDE1234F', maxLength: 10, required: true, tooltip: 'Permanent Account Number — 5 letters + 4 digits + 1 letter' },
+  { key: 'tan', label: 'TAN', placeholder: 'e.g., ABCD12345E', maxLength: 10, required: true, tooltip: 'Tax Deduction Account Number — 4 letters + 5 digits + 1 letter' },
+  { key: 'cin', label: 'CIN', placeholder: 'e.g., U12345MH2000PTC123456', maxLength: 21, required: true, tooltip: 'Corporate Identity Number — 21 character alphanumeric code issued by MCA' },
   { key: 'gstIn', label: 'GSTIN', placeholder: 'e.g., 27AAPFU0939F1ZV', maxLength: 15, tooltip: 'GST Identification Number — 15 characters. Characters 3-12 must match your PAN' },
   { key: 'pfEstablishmentCode', label: 'PF Establishment Code', placeholder: 'Enter PF establishment code', tooltip: 'EPFO establishment code for provident fund' },
   { key: 'esicCode', label: 'ESIC Code', placeholder: 'Enter ESIC code', tooltip: 'Employees State Insurance Corporation code' },
@@ -172,6 +176,7 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
           <OrgViewField
             key={field.key}
             label={field.label}
+            required={field.required}
             value={(draft?.[field.key as keyof typeof draft] as string) || ''}
           />
         ) : (
@@ -187,6 +192,7 @@ const CompanyStatutorySection: React.FC<CompanyStatutorySectionProps> = ({
                 )}
               </span>
             }
+            required={field.required}
             error={errors[field.key]}
           >
             <Input
