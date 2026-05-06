@@ -21,6 +21,29 @@ import { COUNTRY_OPTIONS, COUNTRY_STATES } from '@/modules/hrmOrganization/utils
 import { STATE_CITIES } from '@/modules/hrmOrganization/utils/locationSearch';
 import dayjs from 'dayjs';
 
+// Onboarding's Location field is captured as "State, Country" — a free
+// combination of the two static lists from hrmOrganization/utils, NOT a
+// /location record. parseLocationState / parseLocationCountry split the
+// stored string back out for the dropdowns; composeLocation rebuilds it.
+function parseLocationState(value: string | undefined): string {
+  if (!value) return '';
+  const idx = value.lastIndexOf(',');
+  return idx >= 0 ? value.slice(0, idx).trim() : '';
+}
+
+function parseLocationCountry(value: string | undefined): string {
+  if (!value) return '';
+  const idx = value.lastIndexOf(',');
+  return idx >= 0 ? value.slice(idx + 1).trim() : value.trim();
+}
+
+function composeLocation(state: string, country: string): string {
+  const c = (country || '').trim();
+  const s = (state || '').trim();
+  if (s && c) return `${s}, ${c}`;
+  return c || s;
+}
+
 /* Step 0: Basic Info */
 const BasicStep: React.FC<{
   draft: Partial<CreateEmployeeRequest>;
@@ -110,7 +133,6 @@ const OfficialStep: React.FC<{
   // Dropdown props
   companies: Array<{ label: string; value: string }>;
   departments: Array<{ label: string; value: string }>;
-  locations: Array<{ label: string; value: string }>;
   businessUnits: Array<{ label: string; value: string }>;
   employees: Array<{ label: string; value: string }>;
   loadingOptions: boolean;
@@ -119,15 +141,14 @@ const OfficialStep: React.FC<{
   onCompanyChange: (value: string, label: string) => void;
   onBUChange: (value: string, label: string) => void;
   onDepartmentChange: (value: string, label: string) => void;
-}> = ({ 
-  draft, 
-  errors, 
-  onChange, 
-  keycloakSettings, 
+}> = ({
+  draft,
+  errors,
+  onChange,
+  keycloakSettings,
   onKeycloakChange,
   companies,
   departments,
-  locations,
   businessUnits,
   employees,
   loadingOptions,
@@ -308,44 +329,14 @@ const OfficialStep: React.FC<{
       </div>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
-          Location
-        </label>
-        {locations.length > 0 ? (
-          <Select
-            showSearch
-            allowClear
-            value={draft.location || undefined}
-            onChange={(value) => onChange({ location: value })}
-            status={errors.location ? 'error' : undefined}
-            placeholder="Select location"
-            style={{ width: '100%' }}
-            loading={loadingOptions}
-            options={locations}
-            filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
-          />
-        ) : (
-          <Input
-            value={draft.location || ''}
-            onChange={(e) => onChange({ location: e.target.value })}
-            status={errors.location ? 'error' : undefined}
-            placeholder="Enter location"
-          />
-        )}
-        {errors.location && (
-          <div className={formStyles.formFieldError}>{errors.location}</div>
-        )}
-      </div>
-    </div>
-    <div className={formStyles.formRow}>
-      <div className={formStyles.formField}>
-        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Joining Date
         </label>
         <DatePicker
           style={{ width: '100%' }}
           format="YYYY-MM-DD"
+          placeholder="Select joining date"
+          status={errors.joiningDate ? 'error' : undefined}
+          value={draft.joiningDate ? dayjs(draft.joiningDate) : null}
           onChange={(date) =>
             onChange({ joiningDate: date ? date.format('YYYY-MM-DD') : '' })
           }
@@ -354,8 +345,52 @@ const OfficialStep: React.FC<{
           <div className={formStyles.formFieldError}>{errors.joiningDate}</div>
         )}
       </div>
+    </div>
+    <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
-        {/* Empty field for layout balance */}
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Country
+        </label>
+        <Select
+          showSearch
+          value={parseLocationCountry(draft.location) || 'India'}
+          onChange={(value) => {
+            // Reset state when country switches — state list is country-scoped.
+            onChange({ location: composeLocation('', value) });
+          }}
+          placeholder="Select country"
+          style={{ width: '100%' }}
+          options={[...COUNTRY_OPTIONS]}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+        />
+      </div>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          State
+        </label>
+        <Select
+          showSearch
+          allowClear
+          value={parseLocationState(draft.location) || undefined}
+          onChange={(value) => {
+            const country = parseLocationCountry(draft.location) || 'India';
+            onChange({ location: composeLocation(value || '', country) });
+          }}
+          status={errors.location ? 'error' : undefined}
+          placeholder="Select state"
+          style={{ width: '100%' }}
+          options={(COUNTRY_STATES[parseLocationCountry(draft.location) || 'India'] || []).map(
+            (s) => ({ label: s, value: s }),
+          )}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+        />
+        {errors.location && (
+          <div className={formStyles.formFieldError}>{errors.location}</div>
+        )}
       </div>
     </div>
 
@@ -720,13 +755,9 @@ const OnboardingWizard: React.FC = () => {
   // Dropdown options state
   const [companies, setCompanies] = useState<Array<{ label: string; value: string }>>([]);
   const [departments, setDepartments] = useState<Array<{ label: string; value: string }>>([]);
-  const [locations, setLocations] = useState<Array<{ label: string; value: string }>>([]);
   const [businessUnits, setBusinessUnits] = useState<Array<{ label: string; value: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
-  // Map company handle → that company's own organizationId. Lets us
-  // re-scope dependent fetches (locations) to the selected company.
-  const [companyOrgIdByHandle, setCompanyOrgIdByHandle] = useState<Record<string, string>>({});
 
   // Cascading selection state
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>();
@@ -774,32 +805,8 @@ const OnboardingWizard: React.FC = () => {
     loadBusinessUnits();
   }, [selectedCompany]);
 
-  // Load locations when company is selected — scoped to that company's
-  // own organizationId, NOT the header switcher's. Lets each company's
-  // distinct location set populate the picker.
-  useEffect(() => {
-    const loadLocationsForCompany = async () => {
-      if (!selectedCompany) {
-        // No company selected — keep whatever generic set is already
-        // loaded (initial header-scoped fetch in fetchDropdownOptions).
-        return;
-      }
-      const companyOrgId = companyOrgIdByHandle[selectedCompany] || getOrganizationId();
-      if (!companyOrgId) return;
-      try {
-        const locationsData = await HrmOrganizationService.fetchAllLocations(companyOrgId);
-        setLocations(
-          (locationsData || []).map((loc) => ({
-            label: loc.name || loc.code || loc.id,
-            value: loc.id,
-          })),
-        );
-      } catch (error) {
-        console.error('Failed to load locations for company:', error);
-      }
-    };
-    loadLocationsForCompany();
-  }, [selectedCompany, companyOrgIdByHandle]);
+  // Location is now a Country + State combination from static lists, not
+  // sourced from /location or BU addresses — no per-company fetch needed.
 
   // Load departments when business unit is selected
   useEffect(() => {
@@ -841,34 +848,8 @@ const OnboardingWizard: React.FC = () => {
           value: company.handle,
         }));
         setCompanies(companyOptions);
-        // Stash each company's own organizationId for downstream
-        // location lookups. Backend includes both `organizationId` and
-        // `site` on the company record; prefer organizationId.
-        const orgIdMap: Record<string, string> = {};
-        companyData.forEach((c) => {
-          const cAny = c as unknown as { handle?: string; organizationId?: string; site?: string };
-          if (cAny.handle) {
-            orgIdMap[cAny.handle] = cAny.organizationId || cAny.site || organizationId;
-          }
-        });
-        setCompanyOrgIdByHandle(orgIdMap);
       } catch (error) {
         console.error('Failed to fetch companies:', error);
-      }
-
-      // Initial locations fetch — scoped to header org. Replaced when a
-      // company is selected (see effect below) so the dropdown reflects
-      // the chosen company's locations.
-      try {
-        const locationsData = await HrmOrganizationService.fetchAllLocations(organizationId);
-        setLocations(
-          locationsData.map((loc) => ({
-            label: loc.name || loc.code || loc.id,
-            value: loc.id,
-          }))
-        );
-      } catch (error) {
-        console.error('Failed to fetch locations:', error);
       }
 
       // Fetch employees for reporting manager dropdown
@@ -994,6 +975,37 @@ const OnboardingWizard: React.FC = () => {
       // Step 2: Create employee
       const newEmployeeHandle = await submitOnboarding();
 
+      // Step 2a: Persist joiningDate via /update-official.
+      // Backend's /employee/create currently drops joiningDate from the
+      // payload (the field reaches the server but isn't saved on the
+      // officialDetails record), so the profile reads back blank. The
+      // update-official endpoint does honour it — re-applying it here
+      // forces the save without requiring the user to edit afterwards.
+      if (newEmployeeHandle && draft.joiningDate) {
+        try {
+          const organizationId = getOrganizationId();
+          const cookies = parseCookies();
+          await HrmEmployeeService.updateOfficialDetails({
+            organizationId,
+            handle: newEmployeeHandle,
+            firstName: draft.firstName || '',
+            lastName: draft.lastName || '',
+            title: draft.title || '',
+            department: draft.department || '',
+            role: draft.role || draft.designation || 'EMPLOYEE',
+            businessUnits: draft.businessUnits || [],
+            location: draft.location,
+            joiningDate: draft.joiningDate,
+            modifiedBy: cookies.username || 'system',
+          });
+        } catch (err) {
+          console.warn('Failed to persist joiningDate via update-official:', err);
+          message.warning(
+            'Employee created, but joining date could not be saved automatically — please edit the profile to set it.'
+          );
+        }
+      }
+
       // Step 2b: Initialize leave balances for the new employee
       if (newEmployeeHandle) {
         try {
@@ -1051,15 +1063,14 @@ const OnboardingWizard: React.FC = () => {
         return <BasicStep draft={draft} errors={errors} onChange={updateOnboardingDraft} />;
       case 1:
         return (
-          <OfficialStep 
-            draft={draft} 
-            errors={errors} 
+          <OfficialStep
+            draft={draft}
+            errors={errors}
             onChange={updateOnboardingDraft}
             keycloakSettings={keycloakSettings}
             onKeycloakChange={setKeycloakSettings}
             companies={companies}
             departments={departments}
-            locations={locations}
             businessUnits={businessUnits}
             employees={employees}
             loadingOptions={loadingOptions}
