@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Select, Button, Space, Tooltip } from 'antd';
-import { ClearOutlined } from '@ant-design/icons';
+import { ClearOutlined, ReloadOutlined } from '@ant-design/icons';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { Role } from '../../types/domain.types';
 import type { ModuleRegistry } from '../../types/domain.types';
@@ -16,6 +16,7 @@ interface PermissionMatrixToolbarProps {
   onModuleFilterChange: (val: string | null) => void;
   onRoleFilterChange: (val: string | null) => void;
   onExport: () => void;
+  onRefresh?: () => void;
   isLoading: boolean;
 }
 
@@ -27,6 +28,7 @@ const PermissionMatrixToolbar: React.FC<PermissionMatrixToolbarProps> = ({
   onModuleFilterChange,
   onRoleFilterChange,
   onExport,
+  onRefresh,
   isLoading,
 }) => {
   return (
@@ -60,6 +62,17 @@ const PermissionMatrixToolbar: React.FC<PermissionMatrixToolbarProps> = ({
               }}
             >
               Reset
+            </Button>
+          </Tooltip>
+        )}
+        {onRefresh && (
+          <Tooltip title="Refresh matrix">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={onRefresh}
+              loading={isLoading}
+            >
+              Refresh
             </Button>
           </Tooltip>
         )}
