@@ -19,6 +19,12 @@ import type { ProfileTabProps } from '../../types/ui.types';
 import type { TrainingCert } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
+// "Issued" / "Valid From" can't be in the future — the cert had to have
+// been issued by the time it's recorded. "Valid To" / expiry stays
+// unrestricted because that's literally a future date.
+const disableFutureDate = (current: dayjs.Dayjs | null) =>
+  !!current && current.isAfter(dayjs().endOf('day'));
+
 const resolveName = (t: TrainingCert) => t.trainingName || t.name || '';
 const resolveProvider = (t: TrainingCert) => t.provider || t.issuer || '';
 const resolveValidityFrom = (t: TrainingCert) => t.validityFrom || t.issueDate || '';
@@ -275,9 +281,32 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
-            <Form.Item name="validityTo" label="Valid To" style={{ flex: 1 }}>
+            <Form.Item
+              name="validityTo"
+              label="Valid To"
+              dependencies={['validityFrom']}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    const from = getFieldValue('validityFrom') as dayjs.Dayjs | undefined;
+                    if (from && (value as dayjs.Dayjs).isBefore(from, 'day')) {
+                      return Promise.reject(new Error('Valid To cannot be before Valid From'));
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+              style={{ flex: 1 }}
+            >
+              {/* Valid To CAN be in the future — that's the whole point of
+                  an expiry date — so no disabledDate here. */}
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
           </div>
@@ -363,9 +392,32 @@ const TrainingCertTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = (
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
-            <Form.Item name="validityTo" label="Valid To" style={{ flex: 1 }}>
+            <Form.Item
+              name="validityTo"
+              label="Valid To"
+              dependencies={['validityFrom']}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    const from = getFieldValue('validityFrom') as dayjs.Dayjs | undefined;
+                    if (from && (value as dayjs.Dayjs).isBefore(from, 'day')) {
+                      return Promise.reject(new Error('Valid To cannot be before Valid From'));
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+              style={{ flex: 1 }}
+            >
+              {/* Valid To CAN be in the future — that's the whole point of
+                  an expiry date — so no disabledDate here. */}
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
           </div>

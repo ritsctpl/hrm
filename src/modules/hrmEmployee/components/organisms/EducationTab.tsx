@@ -248,13 +248,35 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             <Form.Item
               name="year"
               label="Year"
-              rules={[{ required: true, message: 'Required' }]}
+              rules={[
+                { required: true, message: 'Required' },
+                {
+                  type: 'number',
+                  min: 1950,
+                  max: new Date().getFullYear(),
+                  message: `Must be between 1950 and ${new Date().getFullYear()}`,
+                },
+              ]}
               style={{ flex: 1 }}
             >
-              <InputNumber style={{ width: '100%' }} min={1950} max={2100} />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={1950}
+                max={new Date().getFullYear()}
+              />
             </Form.Item>
-            <Form.Item name="grade" label="Grade / GPA" style={{ flex: 1 }}>
-              <Input />
+            <Form.Item
+              name="grade"
+              label="Grade / GPA"
+              rules={[
+                {
+                  pattern: /^([A-Za-z][A-Za-z+\-]{0,2}|\d{1,3}(\.\d{1,2})?%?)$/,
+                  message: 'Use a letter grade (A/A+/B-) or a number (85, 8.5, 85%)',
+                },
+              ]}
+              style={{ flex: 1 }}
+            >
+              <Input maxLength={6} placeholder="A+ / 85 / 8.5" />
             </Form.Item>
           </div>
         </Form>
@@ -342,13 +364,35 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             <Form.Item
               name="year"
               label="Year"
-              rules={[{ required: true, message: 'Required' }]}
+              rules={[
+                { required: true, message: 'Required' },
+                {
+                  type: 'number',
+                  min: 1950,
+                  max: new Date().getFullYear(),
+                  message: `Must be between 1950 and ${new Date().getFullYear()}`,
+                },
+              ]}
               style={{ flex: 1 }}
             >
-              <InputNumber style={{ width: '100%' }} min={1950} max={2100} />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={1950}
+                max={new Date().getFullYear()}
+              />
             </Form.Item>
-            <Form.Item name="grade" label="Grade / GPA" style={{ flex: 1 }}>
-              <Input />
+            <Form.Item
+              name="grade"
+              label="Grade / GPA"
+              rules={[
+                {
+                  pattern: /^([A-Za-z][A-Za-z+\-]{0,2}|\d{1,3}(\.\d{1,2})?%?)$/,
+                  message: 'Use a letter grade (A/A+/B-) or a number (85, 8.5, 85%)',
+                },
+              ]}
+              style={{ flex: 1 }}
+            >
+              <Input maxLength={6} placeholder="A+ / 85 / 8.5" />
             </Form.Item>
           </div>
         </Form>

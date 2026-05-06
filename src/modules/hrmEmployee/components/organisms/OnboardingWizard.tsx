@@ -780,6 +780,14 @@ const OnboardingWizard: React.FC = () => {
     password: string;
   } | null>(null);
 
+  // Re-entry guard: handleSubmitWithKeycloak does its own pre-flight
+  // checks (email + employee code + Keycloak conflict modal) before the
+  // store-level isSaving flag goes true. Without this, a second click
+  // on Submit during that window would fire a second create flow and
+  // could even race the Modal.confirm — leading to "I clicked Cancel
+  // and the employee got created anyway".
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Dropdown options state
@@ -991,6 +999,8 @@ const OnboardingWizard: React.FC = () => {
   };
 
   const handleSubmitWithKeycloak = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       // Final guard before /create — re-check Employee Code uniqueness
       // and Work Email availability against the org. The Step-0→1 hop
@@ -1034,11 +1044,29 @@ const OnboardingWizard: React.FC = () => {
         });
 
         if (!keycloakResult.succes) {
-          // Check if user already exists
+          // Check if user already exists. Use Modal.confirm with explicit
+          // button labels — the previous window.confirm wording ("Do you
+          // want to continue creating the employee without creating a new
+          // Keycloak user?") was easy to misread, leaving HR unsure
+          // whether Cancel aborted the whole flow or just the Keycloak
+          // step. Modal.confirm with okText: 'Create employee anyway' /
+          // cancelText: 'Cancel — do not create' makes the choice
+          // unambiguous.
           if (keycloakResult.error?.includes('User exists')) {
-            const proceed = window.confirm(
-              'A Keycloak user with this email already exists. Do you want to continue creating the employee without creating a new Keycloak user?'
-            );
+            const proceed = await new Promise<boolean>((resolve) => {
+              Modal.confirm({
+                title: 'Keycloak user already exists for this email',
+                content:
+                  'A login already exists in Keycloak for this email. ' +
+                  'The new employee will reuse that login (no new credentials will be created). ' +
+                  'Do you want to continue and create the employee anyway?',
+                okText: 'Create employee anyway',
+                cancelText: 'Cancel — do not create',
+                okButtonProps: { danger: true },
+                onOk: () => resolve(true),
+                onCancel: () => resolve(false),
+              });
+            });
             if (!proceed) {
               return;
             }
@@ -1150,6 +1178,8 @@ const OnboardingWizard: React.FC = () => {
 
     } catch (error: any) {
       message.error(error.message || 'Failed to create employee');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1217,7 +1247,8 @@ const OnboardingWizard: React.FC = () => {
           <Can key="submit" I="add">
             <Button
               type="primary"
-              loading={isSaving}
+              loading={isSaving || isSubmitting}
+              disabled={isSaving || isSubmitting}
               onClick={handleSubmitWithKeycloak}
             >
               Submit

@@ -162,7 +162,14 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
               label="Date of Birth"
               rules={[{ required: false }]}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                // Future DOB is nonsensical; cap at today.
+                disabledDate={(current) =>
+                  !!current && current.isAfter(dayjs().endOf('day'))
+                }
+              />
             </Form.Item>
             <Form.Item
               name="gender"

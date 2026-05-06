@@ -17,6 +17,12 @@ import type { ProfileTabProps } from '../../types/ui.types';
 import type { PreviousExperience } from '../../types/domain.types';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
+// Block selecting any date strictly after today. Past employment can't
+// have ended in the future, and a job we haven't started yet doesn't
+// belong in "previous experience" either.
+const disableFutureDate = (current: dayjs.Dayjs | null) =>
+  !!current && current.isAfter(dayjs().endOf('day'));
+
 const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   profile,
   onRefresh,
@@ -240,15 +246,36 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
             <Form.Item
               name="toDate"
               label="To Date"
-              rules={[{ required: true, message: 'Required' }]}
+              dependencies={['fromDate']}
+              rules={[
+                { required: true, message: 'Required' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    const from = getFieldValue('fromDate') as dayjs.Dayjs | undefined;
+                    if (from && (value as dayjs.Dayjs).isBefore(from, 'day')) {
+                      return Promise.reject(new Error('To Date cannot be before From Date'));
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
           </div>
           <Form.Item name="description" label="Description">
@@ -331,15 +358,36 @@ const PreviousExperienceTab: React.FC<ProfileTabProps & { onRefresh: () => void 
               rules={[{ required: true, message: 'Required' }]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
             <Form.Item
               name="toDate"
               label="To Date"
-              rules={[{ required: true, message: 'Required' }]}
+              dependencies={['fromDate']}
+              rules={[
+                { required: true, message: 'Required' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value) return Promise.resolve();
+                    const from = getFieldValue('fromDate') as dayjs.Dayjs | undefined;
+                    if (from && (value as dayjs.Dayjs).isBefore(from, 'day')) {
+                      return Promise.reject(new Error('To Date cannot be before From Date'));
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
               style={{ flex: 1 }}
             >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                disabledDate={disableFutureDate}
+              />
             </Form.Item>
           </div>
           <Form.Item name="description" label="Description">
