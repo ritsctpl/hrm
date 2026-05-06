@@ -67,7 +67,12 @@ export function useCan(moduleCode?: string, objectName?: string): ModulePermissi
   // the inflated actions from userModulesByOrganization.
   // Before cache loads, return EMPTY so isAdmin etc. start false.
   if (!objectName && resolvedCode) {
-    const rootCode = getRootObjectCode(resolvedCode);
+    // Pass loaded object codes so runtime-registered modules detect
+    // their root via the `*_module` convention.
+    const rootCode = getRootObjectCode(
+      resolvedCode,
+      cacheForModule ? Object.keys(cacheForModule) : undefined,
+    );
     if (rootCode && cacheForModule !== undefined) {
       return cacheForModule[rootCode] || EMPTY;
     }

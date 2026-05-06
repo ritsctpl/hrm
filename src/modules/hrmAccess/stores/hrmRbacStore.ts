@@ -545,7 +545,12 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
       // Module-level perms (permissionsByModule) are corrected to mirror
       // the effective root object perms, NOT the coarse user-modules
       // actions — so Can without `object` honors the explicit root grant.
-      const rootCode = getRootObjectCode(moduleCode);
+      // For runtime-registered modules (no hardcoded registry entry),
+      // derive the root from the loaded objects via the `*_module`
+      // convention so root detection works for both hardcoded and
+      // dynamic modules.
+      const loadedObjectCodes = Object.keys(sectionPerms);
+      const rootCode = getRootObjectCode(moduleCode, loadedObjectCodes);
       const allObjectCodes = getObjectCodesForModule(moduleCode);
       const hasAnyRegisteredObjectGrants = allObjectCodes.some(code => sectionPerms[code]);
 

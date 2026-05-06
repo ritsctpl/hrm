@@ -78,10 +78,23 @@ export const MODULE_TO_APP_URL: Record<string, string> = Object.fromEntries(
  * The first entry in each module's list is the ROOT object — it controls
  * module-level V/A/E/D (main record create/edit/delete). Convention:
  * `{prefix}_module` e.g., `employee_module`, `leave_module`.
+ *
+ * For modules registered at runtime (not in this hardcoded registry),
+ * pass the loaded `objectCodes` so we can detect the root via the
+ * `*_module` naming convention. Falls back to the first object code
+ * when no entry matches (so a root row still renders for arbitrary
+ * runtime modules).
  */
-export function getRootObjectCode(moduleCode: string): string | undefined {
+export function getRootObjectCode(
+  moduleCode: string,
+  objectCodes?: readonly string[],
+): string | undefined {
   const objs = MODULE_OBJECT_REGISTRY[moduleCode];
-  return objs?.[0]?.code;
+  if (objs && objs.length > 0) return objs[0].code;
+  if (objectCodes && objectCodes.length > 0) {
+    return objectCodes.find((c) => /_module$/i.test(c)) ?? objectCodes[0];
+  }
+  return undefined;
 }
 
 export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {

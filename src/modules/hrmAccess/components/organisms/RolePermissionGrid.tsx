@@ -110,8 +110,11 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                 modules.find((m) => m.moduleCode === moduleCode)?.moduleName ?? moduleCode;
               const objKeys = Object.keys(modPerms);
 
-              const rootCode = getRootObjectCode(moduleCode);
               const allObjKeys = objKeys.filter((k) => k !== '__module__');
+              // Pass loaded object codes so runtime-registered modules
+              // (not in MODULE_OBJECT_REGISTRY) still detect a root via
+              // the `*_module` naming convention.
+              const rootCode = getRootObjectCode(moduleCode, allObjKeys);
               const rootKey = allObjKeys.find((k) => k === rootCode);
               const childObjKeys = allObjKeys.filter((k) => k !== rootCode);
 
