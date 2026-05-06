@@ -6,7 +6,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import type { PermissionMatrixGridProps } from '../../types/ui.types';
 import type { PermissionsMatrixResponse } from '../../types/api.types';
 import { PERMISSION_ACTIONS } from '../../utils/rbacConstants';
-import { getObjectLabel } from '../../utils/moduleObjectRegistry';
+import { getObjectLabel, getRootObjectCode } from '../../utils/moduleObjectRegistry';
 import styles from '../../styles/PermissionMatrix.module.css';
 
 const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
@@ -110,6 +110,11 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
               ? `${group.moduleName} > ${getObjectLabel(group.objectName)}`
               : group.moduleName;
             const isObject = group.objectName !== null;
+            const rootCode = getRootObjectCode(group.moduleCode);
+            // A row is "module-level" (gets the Add column) when it's the
+            // synthetic module summary row (objectName == null) or when it
+            // represents the registered root object (e.g. employee_module).
+            const isRootRow = !isObject || group.objectName === rootCode;
 
             return (
               <tr
@@ -119,16 +124,26 @@ const PermissionMatrixGrid: React.FC<PermissionMatrixGridProps> = ({
                 <td className={styles.moduleLabel}>{label}</td>
                 {visibleRoles.flatMap((role) =>
                   PERMISSION_ACTIONS.map((action) => {
+                    // Add and Delete are module-level only — render empty
+                    // on non-root rows.
+                    if ((action === 'ADD' || action === 'DELETE') && !isRootRow) {
+                      return (
+                        <td
+                          key={`${group.moduleCode}-${group.objectName ?? '__module__'}-${role.roleCode}-${action}`}
+                          className={styles.matrixCell}
+                        />
+                      );
+                    }
                     // Find if this role has this action for this module/object
                     const hasPermission = group.permissions.some((perm) => {
                       const actionMatch = perm.action === action;
-                      const roleHasAccess = 
-                        perm.roleAccess?.[role.roleCode] || 
+                      const roleHasAccess =
+                        perm.roleAccess?.[role.roleCode] ||
                         perm.rolesWithAccess?.includes(role.roleCode) ||
                         false;
                       return actionMatch && roleHasAccess;
                     });
-                    
+
                     return (
                       <td key={`${group.moduleCode}-${group.objectName ?? '__module__'}-${role.roleCode}-${action}`} className={styles.matrixCell}>
                         {hasPermission ? (

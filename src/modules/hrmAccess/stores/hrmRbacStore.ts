@@ -572,6 +572,20 @@ export const useHrmRbacStore = create<HrmRbacState & HrmRbacActions>((set, get) 
 
       const correctedModulePerms: ModulePermissions = { ...rootPerms };
 
+      // Object-level Add and Delete are no longer surfaced in the role
+      // editor — only root (Module Access) carries Add/Delete. At the
+      // consumer side, treat object-level Edit as also granting Add and
+      // Delete for that object: an admin who unchecks Edit on
+      // `expense_category` should not see the in-section "Add Category"
+      // or "Delete Category" buttons. This keeps existing
+      // <Can I="add" object="X"> / <Can I="delete" object="X"> callsites
+      // working without per-callsite edits.
+      for (const code of Object.keys(sectionPerms)) {
+        if (code === rootCode) continue;
+        const p = sectionPerms[code];
+        if (p) sectionPerms[code] = { ...p, canAdd: p.canEdit, canDelete: p.canEdit };
+      }
+
       set(state => ({
         sectionPermissionCache: {
           ...state.sectionPermissionCache,

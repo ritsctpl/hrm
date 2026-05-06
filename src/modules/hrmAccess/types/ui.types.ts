@@ -49,6 +49,8 @@ export interface RbacPermissionGroupRowProps {
   permissions: Permission[];
   selectedHandles: Set<string>;
   disabled: boolean;
+  /** True for the root (Module Access) row; false for child object rows. Defaults to true. */
+  isRootObject?: boolean;
   onChange: (permissionHandle: string) => void;
 }
 

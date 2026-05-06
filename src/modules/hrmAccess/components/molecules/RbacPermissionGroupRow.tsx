@@ -15,6 +15,7 @@ const RbacPermissionGroupRow: React.FC<RbacPermissionGroupRowProps> = ({
   permissions,
   selectedHandles,
   disabled,
+  isRootObject = true,
   onChange,
 }) => {
   const getPermissionForAction = (action: PermissionAction) =>
@@ -27,6 +28,12 @@ const RbacPermissionGroupRow: React.FC<RbacPermissionGroupRowProps> = ({
     <tr className={isObjectRow ? styles.objectRow : styles.moduleRow}>
       <td className={styles.permLabel}>{label}</td>
       {PERMISSION_ACTIONS.map((action) => {
+        // Non-root objects don't expose Add or Delete at the object level.
+        // Module-level (root) governs record create/delete; object-level
+        // Edit covers in-section add/edit/delete buttons.
+        if ((action === 'ADD' || action === 'DELETE') && !isRootObject) {
+          return <td key={action} className={styles.permCell} />;
+        }
         const perm = getPermissionForAction(action);
         return (
           <td key={action} className={styles.permCell}>

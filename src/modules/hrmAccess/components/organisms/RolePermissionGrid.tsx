@@ -118,11 +118,14 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
               // Cascade: when ROOT object checkbox is toggled, cascade to
               // ALL child objects for the same action. Children independently
               // toggled do NOT cascade upward to the root.
+              // ADD and DELETE are module-level only — not exposed on child
+              // rows — so we skip cascading them to children.
               const handleRootToggle = (handle: string) => {
                 const rootPerms = rootKey ? (modPerms[rootKey] ?? []) : [];
                 const toggledPerm = rootPerms.find((p) => p.handle === handle);
                 onToggle(handle);
                 if (!toggledPerm) return;
+                if (toggledPerm.action === 'ADD' || toggledPerm.action === 'DELETE') return;
                 const willBeChecked = !selectedHandles.has(handle);
                 for (const objKey of childObjKeys) {
                   const childPerm = (modPerms[objKey] ?? []).find(
@@ -156,10 +159,14 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                       permissions={modPerms[rootKey]}
                       selectedHandles={selectedHandles}
                       disabled={disabled}
+                      isRootObject={true}
                       onChange={handleRootToggle}
                     />
                   )}
-                  {/* Child object rows — independent, no upward cascade */}
+                  {/* Child object rows — independent, no upward cascade.
+                      Add and Delete columns are hidden on child rows;
+                      object-level Edit gates add, edit, and delete buttons
+                      within the section. */}
                   {childObjKeys.map((objKey) => (
                     <RbacPermissionGroupRow
                       key={`${moduleCode}-${objKey}`}
@@ -169,6 +176,7 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                       permissions={modPerms[objKey]}
                       selectedHandles={selectedHandles}
                       disabled={disabled}
+                      isRootObject={false}
                       onChange={onToggle}
                     />
                   ))}
