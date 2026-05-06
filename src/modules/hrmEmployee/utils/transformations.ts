@@ -136,6 +136,7 @@ export function buildCreateRequest(
     location: draft.location,
     businessUnits: draft.businessUnits || [],
     reportingManager: draft.reportingManager,
+    reportingManagerName: draft.reportingManagerName,
     designation: draft.designation,
     joiningDate: draft.joiningDate || undefined,
     organizationHandle,

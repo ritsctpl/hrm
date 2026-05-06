@@ -72,6 +72,10 @@ export interface CreateEmployeeRequest {
   location?: string;
   businessUnits: string[];
   reportingManager?: string;
+  /** Display name of the reporting manager (e.g. "John Doe (EMP0012)"). Sent
+   *  alongside the handle so the review step + backend audit trail can show
+   *  the human-readable label instead of the UUID. */
+  reportingManagerName?: string;
   nickName?: string;
   createdBy: string;
   organizationHandle?: string;
@@ -107,6 +111,8 @@ export interface UpdateOfficialRequest {
   department: string;
   role?: string;
   reportingManager?: string;
+  /** Display name of the reporting manager — see CreateEmployeeRequest. */
+  reportingManagerName?: string;
   location?: string;
   businessUnits: string[];
   /** Employee's date of joining (ISO YYYY-MM-DD). */

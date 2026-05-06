@@ -317,7 +317,12 @@ const OfficialStep: React.FC<{
           showSearch
           allowClear
           value={draft.reportingManager || undefined}
-          onChange={(value) => onChange({ reportingManager: value })}
+          onChange={(value, option: any) =>
+            onChange({
+              reportingManager: value,
+              reportingManagerName: value ? option?.label || '' : '',
+            })
+          }
           placeholder="Select reporting manager"
           style={{ width: '100%' }}
           loading={loadingOptions}
@@ -692,7 +697,7 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
       </div>
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Reporting Manager</span>
-        <span className={formStyles.reviewValue}>{draft.reportingManager || '--'}</span>
+        <span className={formStyles.reviewValue}>{draft.reportingManagerName || '--'}</span>
       </div>
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Business Units</span>
@@ -996,6 +1001,8 @@ const OnboardingWizard: React.FC = () => {
             role: draft.role || draft.designation || 'EMPLOYEE',
             businessUnits: draft.businessUnits || [],
             location: draft.location,
+            reportingManager: draft.reportingManager,
+            reportingManagerName: draft.reportingManagerName,
             joiningDate: draft.joiningDate,
             modifiedBy: cookies.username || 'system',
           });
