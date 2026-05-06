@@ -4,8 +4,8 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { AutoComplete, Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm } from 'antd';
+import React, { useState, useCallback, useMemo } from 'react';
+import { AutoComplete, Button, Input, InputNumber, Modal, Empty, Form, message, Popconfirm, Select, Space } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -23,6 +23,88 @@ const degreeAutoOptions = DEGREE_OPTIONS.map((d) => ({ value: d }));
 const fieldAutoOptions = FIELD_OF_STUDY_OPTIONS.map((f) => ({ value: f }));
 const filterCaseInsensitive = (input: string, option?: { value: string }) =>
   (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase());
+
+// Letter grades commonly used across Indian + international institutions.
+// O = Outstanding, F = Fail. Kept narrow on purpose — exotic grading
+// scales should pick "Percentage" instead and enter the number.
+const LETTER_GRADE_OPTIONS = [
+  'O', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E', 'F',
+] as const;
+const LETTER_GRADE_SET = new Set<string>(LETTER_GRADE_OPTIONS);
+
+type GradeMode = 'grade' | 'percentage';
+
+// Decide which input mode to use when a stored value comes back from the
+// API. "85" or "85%" → percentage; "A+" → grade; empty / unknown →
+// default to grade so the dropdown shows up first (matches the user's
+// "if grade will give option to choose" preference).
+function detectGradeMode(value: string | undefined): GradeMode {
+  if (!value) return 'grade';
+  const trimmed = value.trim();
+  if (!trimmed) return 'grade';
+  if (LETTER_GRADE_SET.has(trimmed.toUpperCase())) return 'grade';
+  // A pure number, or number followed by %, is a percentage.
+  if (/^\d{1,3}(\.\d{1,2})?%?$/.test(trimmed)) return 'percentage';
+  // Anything else (free-typed text) — treat as grade so the user can edit.
+  return 'grade';
+}
+
+// Form-control component for the Grade/Percentage field. Wraps an
+// Ant Form.Item so antd's getValueProps / onChange wiring works
+// transparently — the parent form sees a single string value (e.g. "A+"
+// or "85%") and doesn't need to know about the internal mode toggle.
+const GradeInput: React.FC<{
+  value?: string;
+  onChange?: (v: string) => void;
+}> = ({ value, onChange }) => {
+  // Mode is local UI state only. Initialized from the incoming value,
+  // then driven by the user's mode-select. Switching modes clears the
+  // value so the user doesn't end up with "A+%" type artifacts.
+  const initialMode = useMemo(() => detectGradeMode(value), [value]);
+  const [mode, setMode] = useState<GradeMode>(initialMode);
+
+  const handleModeChange = (next: GradeMode) => {
+    if (next === mode) return;
+    setMode(next);
+    onChange?.('');
+  };
+
+  return (
+    <Space.Compact style={{ width: '100%' }}>
+      <Select
+        value={mode}
+        onChange={handleModeChange}
+        style={{ width: 130, flexShrink: 0 }}
+        options={[
+          { label: 'Letter Grade', value: 'grade' },
+          { label: 'Percentage', value: 'percentage' },
+        ]}
+      />
+      {mode === 'grade' ? (
+        <Select
+          value={value || undefined}
+          onChange={(v) => onChange?.(v || '')}
+          allowClear
+          showSearch
+          placeholder="Select grade"
+          style={{ flex: 1 }}
+          options={LETTER_GRADE_OPTIONS.map((g) => ({ value: g, label: g }))}
+        />
+      ) : (
+        <InputNumber
+          value={value ? Number(value.toString().replace(/%$/, '')) : undefined}
+          onChange={(v) => onChange?.(v == null ? '' : `${v}%`)}
+          min={0}
+          max={100}
+          step={0.01}
+          placeholder="0–100"
+          style={{ flex: 1, width: '100%' }}
+          addonAfter="%"
+        />
+      )}
+    </Space.Compact>
+  );
+};
 
 const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   profile,
@@ -286,16 +368,10 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             </Form.Item>
             <Form.Item
               name="grade"
-              label="Grade / GPA"
-              rules={[
-                {
-                  pattern: /^([A-Za-z][A-Za-z+\-]{0,2}|\d{1,3}(\.\d{1,2})?%?)$/,
-                  message: 'Use a letter grade (A/A+/B-) or a number (85, 8.5, 85%)',
-                },
-              ]}
+              label="Grade / Percentage"
               style={{ flex: 1 }}
             >
-              <Input maxLength={6} placeholder="A+ / 85 / 8.5" />
+              <GradeInput />
             </Form.Item>
           </div>
         </Form>
@@ -412,16 +488,10 @@ const EducationTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
             </Form.Item>
             <Form.Item
               name="grade"
-              label="Grade / GPA"
-              rules={[
-                {
-                  pattern: /^([A-Za-z][A-Za-z+\-]{0,2}|\d{1,3}(\.\d{1,2})?%?)$/,
-                  message: 'Use a letter grade (A/A+/B-) or a number (85, 8.5, 85%)',
-                },
-              ]}
+              label="Grade / Percentage"
               style={{ flex: 1 }}
             >
-              <Input maxLength={6} placeholder="A+ / 85 / 8.5" />
+              <GradeInput />
             </Form.Item>
           </div>
         </Form>
