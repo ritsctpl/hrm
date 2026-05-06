@@ -125,6 +125,7 @@ export function buildCreateRequest(
 ): CreateEmployeeRequest {
   return {
     organizationId,
+    employeeCode: draft.employeeCode?.trim() || undefined,
     firstName: draft.firstName || '',
     lastName: draft.lastName || '',
     fullName: `${draft.firstName || ''} ${draft.lastName || ''}`.trim() || undefined,
@@ -156,6 +157,11 @@ export function validateOnboardingStep(
   const errors: Record<string, string> = {};
 
   if (step === 0) {
+    if (!draft.employeeCode?.trim()) {
+      errors.employeeCode = 'Employee Code is required';
+    } else if (!/^[A-Za-z0-9_-]{2,20}$/.test(draft.employeeCode.trim())) {
+      errors.employeeCode = '2–20 chars, letters/numbers/_/- only';
+    }
     if (!draft.firstName?.trim()) errors.firstName = 'First name is required';
     if (!draft.lastName?.trim()) errors.lastName = 'Last name is required';
     if (!draft.workEmail?.trim()) {

@@ -54,6 +54,27 @@ const BasicStep: React.FC<{
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Employee Code
+        </label>
+        <Input
+          value={draft.employeeCode || ''}
+          onChange={(e) =>
+            onChange({ employeeCode: e.target.value.toUpperCase().replace(/\s+/g, '') })
+          }
+          status={errors.employeeCode ? 'error' : undefined}
+          placeholder="e.g. EMP0012"
+          maxLength={20}
+          style={{ width: '100%' }}
+        />
+        {errors.employeeCode && (
+          <div className={formStyles.formFieldError}>{errors.employeeCode}</div>
+        )}
+      </div>
+      <div className={formStyles.formField} />
+    </div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           First Name
         </label>
         <Input
@@ -658,6 +679,10 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
     <div className={formStyles.reviewSection}>
       <div className={formStyles.reviewSectionTitle}>Basic Info</div>
       <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Employee Code</span>
+        <span className={formStyles.reviewValue}>{draft.employeeCode || '--'}</span>
+      </div>
+      <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Name</span>
         <span className={formStyles.reviewValue}>
           {draft.firstName} {draft.lastName}
@@ -763,6 +788,13 @@ const OnboardingWizard: React.FC = () => {
   const [businessUnits, setBusinessUnits] = useState<Array<{ label: string; value: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  // Existing employee codes within the org — used to block duplicates at
+  // the wizard level since there's no /employee/check-code endpoint.
+  // Populated from the same /directory call that builds the reporting
+  // manager dropdown, so it's free of extra round-trips.
+  const [existingEmployeeCodes, setExistingEmployeeCodes] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
 
   // Cascading selection state
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>();
@@ -857,14 +889,23 @@ const OnboardingWizard: React.FC = () => {
         console.error('Failed to fetch companies:', error);
       }
 
-      // Fetch employees for reporting manager dropdown
+      // Fetch employees for reporting manager dropdown + capture the set
+      // of existing employee codes for client-side duplicate detection.
       try {
         const employeesData = await HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 });
+        const rows = employeesData.employees || [];
         setEmployees(
-          (employeesData.employees || []).map((emp) => ({
+          rows.map((emp) => ({
             label: `${emp.fullName} (${emp.employeeCode})`,
             value: emp.handle,
-          }))
+          })),
+        );
+        setExistingEmployeeCodes(
+          new Set(
+            rows
+              .map((emp) => (emp.employeeCode || '').trim().toUpperCase())
+              .filter((c): c is string => !!c),
+          ),
         );
       } catch (error) {
         console.error('Failed to fetch employees:', error);
@@ -910,40 +951,76 @@ const OnboardingWizard: React.FC = () => {
   const isLastStep = currentStep === 3;
 
   const handleNext = async () => {
-    // If on Basic Info step (step 0), validate email before proceeding
-    if (currentStep === 0 && draft.workEmail) {
-      setCheckingEmail(true);
-      try {
-        const cookies = parseCookies();
-        const organizationId = getOrganizationId();
-        
-        console.log('Checking email availability for:', draft.workEmail);
-        const result = await HrmEmployeeService.checkEmailAvailability(organizationId, draft.workEmail);
-        console.log('Email check result:', result);
-        
-        // If email is NOT available (already taken), show error and stop
-        if (!result.available) {
-          message.error('This email is already registered. Please use a different email.');
+    // Step 0 → 1: enforce duplicate Employee Code + email uniqueness
+    // before letting the user move on. Both checks block hard — a
+    // network failure on the email check used to "warn and proceed",
+    // but that loophole let duplicates slip through whenever the API
+    // hiccuped, so it now blocks too.
+    if (currentStep === 0) {
+      const code = (draft.employeeCode || '').trim().toUpperCase();
+      if (code && existingEmployeeCodes.has(code)) {
+        message.error(`Employee Code "${code}" is already in use within this organization.`);
+        return;
+      }
+
+      if (draft.workEmail) {
+        setCheckingEmail(true);
+        try {
+          const organizationId = getOrganizationId();
+          const result = await HrmEmployeeService.checkEmailAvailability(
+            organizationId,
+            draft.workEmail,
+          );
+          if (!result.available) {
+            message.error('This email is already registered. Please use a different email.');
+            return;
+          }
+        } catch (error) {
+          console.error('Email check failed:', error);
+          message.error(
+            'Could not verify email availability — please retry. Duplicate emails are not allowed within an organization.',
+          );
+          return;
+        } finally {
           setCheckingEmail(false);
-          return; // Don't proceed to next step
         }
-        
-        // Email is available, proceed to next step
-        console.log('Email is available, proceeding to next step');
-      } catch (error) {
-        console.error('Email check failed:', error);
-        message.warning('Could not verify email availability. Please proceed with caution.');
-      } finally {
-        setCheckingEmail(false);
       }
     }
-    
-    // Proceed to next step
+
     setOnboardingStep(currentStep + 1);
   };
 
   const handleSubmitWithKeycloak = async () => {
     try {
+      // Final guard before /create — re-check Employee Code uniqueness
+      // and Work Email availability against the org. The Step-0→1 hop
+      // already ran these, but the user could have circled back via
+      // Previous, edited, then jumped to Submit without revalidating.
+      const code = (draft.employeeCode || '').trim().toUpperCase();
+      if (code && existingEmployeeCodes.has(code)) {
+        message.error(`Employee Code "${code}" is already in use within this organization.`);
+        return;
+      }
+      if (draft.workEmail) {
+        try {
+          const organizationId = getOrganizationId();
+          const result = await HrmEmployeeService.checkEmailAvailability(
+            organizationId,
+            draft.workEmail,
+          );
+          if (!result.available) {
+            message.error('This email is already registered. Please use a different email.');
+            return;
+          }
+        } catch (error) {
+          console.error('Pre-submit email check failed:', error);
+          message.error(
+            'Could not verify email availability — please retry. Duplicate emails are not allowed within an organization.',
+          );
+          return;
+        }
+      }
+
       // Step 1: Create Keycloak user if requested
       if (keycloakSettings.createKeycloakUser) {
         const username = keycloakSettings.username || draft.workEmail || '';
