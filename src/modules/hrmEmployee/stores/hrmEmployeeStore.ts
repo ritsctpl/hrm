@@ -73,7 +73,10 @@ export interface HrmEmployeeState {
   closeOnboarding: () => void;
   setOnboardingStep: (step: number) => void;
   updateOnboardingDraft: (data: Partial<CreateEmployeeRequest>) => void;
-  submitOnboarding: () => Promise<string | undefined>;
+  submitOnboarding: () => Promise<
+    | { handle: string; employeeCode?: string; fullName?: string }
+    | undefined
+  >;
 
   // Utility
   reset: () => void;
@@ -377,7 +380,31 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       // Refresh directory
       await get().fetchDirectory();
 
-      return created?.handle;
+      // Extract identifiers from the create response. Backend returns the
+      // full profile shape, so employeeCode lives nested under
+      // basicDetails / officialDetails — fall through both. fullName is
+      // needed by callers that build composite "EMP - Name" identifiers
+      // for downstream services (e.g. leave-balance/initialize, which
+      // indexes balances by employeeCode and would otherwise receive the
+      // UUID handle and silently store the row under the wrong key).
+      const rawCreated = created as unknown as {
+        handle?: string;
+        employeeCode?: string;
+        fullName?: string;
+        basicDetails?: { employeeCode?: string; fullName?: string };
+        officialDetails?: { employeeCode?: string };
+      };
+      if (!rawCreated?.handle) return undefined;
+      return {
+        handle: rawCreated.handle,
+        employeeCode:
+          rawCreated.employeeCode ||
+          rawCreated.basicDetails?.employeeCode ||
+          rawCreated.officialDetails?.employeeCode,
+        fullName:
+          rawCreated.fullName ||
+          rawCreated.basicDetails?.fullName,
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create employee';
       message.error(msg);

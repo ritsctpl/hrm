@@ -973,7 +973,8 @@ const OnboardingWizard: React.FC = () => {
       }
 
       // Step 2: Create employee
-      const newEmployeeHandle = await submitOnboarding();
+      const created = await submitOnboarding();
+      const newEmployeeHandle = created?.handle;
 
       // Step 2a: Persist joiningDate via /update-official.
       // Backend's /employee/create currently drops joiningDate from the
@@ -1006,13 +1007,24 @@ const OnboardingWizard: React.FC = () => {
         }
       }
 
-      // Step 2b: Initialize leave balances for the new employee
+      // Step 2b: Initialize leave balances for the new employee.
+      // /leave-balance/initialize indexes by employeeCode (the
+      // human-readable id like "EMP0012"), and the leave management UI
+      // reads balances using the composite "EMP0012 - John Doe" id —
+      // never the UUID handle. Passing the handle here would store the
+      // row under a key the leave UI never queries, so the new employee
+      // appears with no balances even though the API call succeeded.
+      // See useEmployeeIdentity.ts contract for the employeeCode rule.
       if (newEmployeeHandle) {
+        const leaveEmployeeId =
+          created?.employeeCode && created?.fullName
+            ? `${created.employeeCode} - ${created.fullName}`
+            : created?.employeeCode || newEmployeeHandle;
         try {
           const organizationId = getOrganizationId();
           await HrmLeaveService.initializeBalances({
             organizationId,
-            employeeId: newEmployeeHandle,
+            employeeId: leaveEmployeeId,
             joiningDate: draft.joiningDate || dayjs().format('YYYY-MM-DD'),
           });
           message.success(`Leave balances initialized for ${dayjs(draft.joiningDate || undefined).year()}`);
