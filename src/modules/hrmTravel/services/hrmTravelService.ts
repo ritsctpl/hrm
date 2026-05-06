@@ -194,9 +194,10 @@ export class HrmTravelService {
     form.append("file", file);
     form.append("handle", handle);
     form.append("organizationId", organizationId);
-    const { data } = await api.post(`${this.BASE}/attachments/upload`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // Do NOT set Content-Type here. Axios auto-sets
+    // `multipart/form-data; boundary=...` from the FormData body. Setting
+    // it manually drops the boundary and the BE multipart parser 500s.
+    const { data } = await api.post(`${this.BASE}/attachments/upload`, form);
     return data;
   }
 

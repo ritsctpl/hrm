@@ -3,23 +3,19 @@
 import { useCallback } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
-import { parseCookies } from "nookies";
 import { HrmTravelService } from "../services/hrmTravelService";
 import { useHrmTravelStore } from "../stores/hrmTravelStore";
+import { useEmployeeIdentity } from "../../hrmAccess/hooks/useEmployeeIdentity";
 import type { TravelFormState } from "../types/ui.types";
 import type { TravelMode, TravelType } from "../types/domain.types";
 
 export function useTravelMutations() {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    "";
+  const identity = useEmployeeIdentity();
+  // Backend enforces composite "EMP001 - Full Name" for actor fields
+  // (submittedBy, createdBy, actorEmpId, cancelledBy, deletedBy).
+  const actorId = identity.employeeIdWithName;
+  const actorName = identity.fullName || identity.employeeCode;
 
   const {
     setSaving,
@@ -51,7 +47,7 @@ export function useTravelMutations() {
         endHour: form.endHour || undefined,
         remarks: form.remarks || undefined,
         coTravellerEmpIds: form.coTravellerIds,
-        createdBy: employeeId,
+        createdBy: actorId,
       };
       if (existingHandle) {
         const updated = await HrmTravelService.updateDraft({ ...payload, handle: existingHandle });
@@ -73,12 +69,12 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, actorId]);
 
   const submitRequest = useCallback(async (handle: string) => {
     setSubmitting(true);
     try {
-      const updated = await HrmTravelService.submitRequest({ organizationId, handle, submittedBy: employeeId });
+      const updated = await HrmTravelService.submitRequest({ organizationId, handle, submittedBy: actorId });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Travel request submitted successfully.");
@@ -89,7 +85,7 @@ export function useTravelMutations() {
     } finally {
       setSubmitting(false);
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, actorId]);
 
   const approveRequest = useCallback(async (handle: string, remarks?: string) => {
     setApproving(true);
@@ -97,8 +93,8 @@ export function useTravelMutations() {
       const updated = await HrmTravelService.approveRequest({ organizationId,
         travelRequestHandle: handle,
         action: "APPROVE",
-        actorEmpId: employeeId,
-        actorName: employeeId,
+        actorEmpId: actorId,
+        actorName,
         actorRole: "SUPERVISOR",
         remarks,
       });
@@ -113,7 +109,7 @@ export function useTravelMutations() {
     } finally {
       setApproving(false);
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, actorId, actorName]);
 
   const rejectRequest = useCallback(async (handle: string, remarks: string) => {
     setApproving(true);
@@ -121,8 +117,8 @@ export function useTravelMutations() {
       const updated = await HrmTravelService.rejectRequest({ organizationId,
         travelRequestHandle: handle,
         action: "REJECT",
-        actorEmpId: employeeId,
-        actorName: employeeId,
+        actorEmpId: actorId,
+        actorName,
         actorRole: "SUPERVISOR",
         remarks,
       });
@@ -137,12 +133,12 @@ export function useTravelMutations() {
     } finally {
       setApproving(false);
     }
-  }, [organizationId, employeeId]);
+  }, [organizationId, actorId, actorName]);
 
   const cancelRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
     try {
-      const updated = await HrmTravelService.cancelRequest({ handle, cancelledBy: employeeId, reason });
+      const updated = await HrmTravelService.cancelRequest({ handle, cancelledBy: actorId, reason });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Request cancelled.");
@@ -153,7 +149,7 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [organizationId]);
+  }, [organizationId, actorId]);
 
   const recallRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
@@ -174,7 +170,7 @@ export function useTravelMutations() {
   const deleteRequest = useCallback(async (handle: string) => {
     setSaving(true);
     try {
-      await HrmTravelService.deleteRequest({ organizationId, requestId: handle, deletedBy: employeeId });
+      await HrmTravelService.deleteRequest({ organizationId, requestId: handle, deletedBy: actorId });
       removeMyRequest(handle);
       setSelectedRequest(null);
       setScreenMode("list");
@@ -184,7 +180,7 @@ export function useTravelMutations() {
     } finally {
       setSaving(false);
     }
-  }, [organizationId]);
+  }, [organizationId, actorId]);
 
   return {
     saveDraft,

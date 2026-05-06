@@ -13,7 +13,7 @@ import {
   CheckOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
-import { parseCookies } from "nookies";
+import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import TravelScreenHeader from "./components/organisms/TravelScreenHeader";
 import { useHrmTravelStore } from "./stores/hrmTravelStore";
 import { useTravelMutations } from "./hooks/useTravelMutations";
@@ -57,9 +57,10 @@ const HrmTravelScreen: React.FC<Props> = ({
   onBack,
   onActionComplete,
 }) => {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
+  const identity = useEmployeeIdentity();
+  // Backend enforces composite "EMP001 - Full Name" for actor fields.
+  const actorId = identity.employeeIdWithName;
 
   const { formState, updateFormState, activeDetailTab, setActiveDetailTab, approving, saving } =
     useHrmTravelStore();
@@ -171,7 +172,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         const result = await HrmTravelService.approveAdvance({
           organizationId,
           handle: advance.handle,
-          approvedBy: employeeId,
+          approvedBy: actorId,
           remarks: advanceApprovalRemarks || undefined,
         });
         setAdvance(result);
@@ -194,7 +195,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         organizationId,
         handle: advance.handle,
         expenseHandle: settleExpenseHandle.trim(),
-        settledBy: employeeId,
+        settledBy: actorId,
       });
       setAdvance(result);
       setSettleAdvanceModal(false);
@@ -213,11 +214,11 @@ const HrmTravelScreen: React.FC<Props> = ({
     try {
       const result = await HrmTravelService.requestAdvance({ organizationId,
         travelHandle: request.handle,
-        employeeId,
+        employeeId: actorId,
         amount: advanceAmount,
         currency: advanceCurrency,
         purpose: request.purpose,
-        requestedBy: employeeId,
+        requestedBy: actorId,
       });
       setAdvance(result);
       setAdvanceModalOpen(false);

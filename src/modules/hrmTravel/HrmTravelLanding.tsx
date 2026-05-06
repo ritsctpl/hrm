@@ -8,6 +8,7 @@ import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmTravelStore } from "./stores/hrmTravelStore";
 import { useTravelData } from "./hooks/useTravelData";
+import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import TravelSearchBar from "./components/molecules/TravelSearchBar";
 import TravelListTable from "./components/organisms/TravelListTable";
 import ApproverInboxTable from "./components/organisms/ApproverInboxTable";
@@ -32,14 +33,9 @@ const HrmTravelLanding: React.FC = () => {
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
   const cookieRole = (cookies.userRole ?? "EMPLOYEE").toUpperCase();
-  const employeeId =
-    cookies.employeeId ??
-    cookies.employeeCode ??
-    cookies.username ??
-    cookies.userId ??
-    cookies.user ??
-    cookies.rl_user_id ??
-    "";
+  const identity = useEmployeeIdentity();
+  // Reports filter records by bare employeeCode, not composite/email.
+  const employeeId = identity.employeeCode;
 
   // RBAC-driven role: when backend has published HRM_TRAVEL grants we trust
   // them exclusively; the cookie role is only consulted as a fallback for
@@ -97,11 +93,13 @@ const HrmTravelLanding: React.FC = () => {
     }
   }, [canSeeApprovals, loadApproverInbox]);
 
+  // Policies must be loaded for ALL users (not just admins) so the request
+  // form can filter the travel-mode options by the active policy's
+  // allowedModes. If the retrieve endpoint denies non-admins, the call
+  // silently falls back to [] and the form uses the hardcoded defaults.
   useEffect(() => {
-    if (canSeePolicy) {
-      loadPolicies();
-    }
-  }, [canSeePolicy, loadPolicies]);
+    loadPolicies();
+  }, [loadPolicies]);
 
   const handleNewRequest = () => {
     setSelectedRequest(null);

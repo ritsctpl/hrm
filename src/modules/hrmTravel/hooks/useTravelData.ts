@@ -3,14 +3,16 @@
 import { useCallback } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from "antd";
-import { parseCookies } from "nookies";
 import { HrmTravelService } from "../services/hrmTravelService";
 import { useHrmTravelStore } from "../stores/hrmTravelStore";
+import { useEmployeeIdentity } from "../../hrmAccess/hooks/useEmployeeIdentity";
 
 export function useTravelData() {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId = cookies.employeeId ?? cookies.userId ?? cookies.user ?? cookies.rl_user_id ?? "";
+  const identity = useEmployeeIdentity();
+  // Filter endpoints (my-requests / approver-inbox / export) match records by
+  // bare employeeCode, NOT composite "EMP001 - Full Name".
+  const employeeId = identity.employeeCode;
 
   const {
     setMyRequests,
@@ -26,6 +28,7 @@ export function useTravelData() {
   } = useHrmTravelStore();
 
   const loadMyRequests = useCallback(async () => {
+    if (!identity.isReady) return;
     setListLoading(true);
     setError(null);
     try {
@@ -44,9 +47,10 @@ export function useTravelData() {
     } finally {
       setListLoading(false);
     }
-  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, identity.isReady, statusFilter, typeFilter, searchTerm, dateRange]);
 
   const loadApproverInbox = useCallback(async () => {
+    if (!identity.isReady) return;
     setInboxLoading(true);
     try {
       const data = await HrmTravelService.getApproverInbox({ organizationId,
@@ -59,7 +63,7 @@ export function useTravelData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [organizationId, employeeId, activeInboxTab]);
+  }, [organizationId, employeeId, identity.isReady, activeInboxTab]);
 
   const loadPolicies = useCallback(async () => {
     try {
@@ -73,6 +77,7 @@ export function useTravelData() {
   }, [organizationId]);
 
   const exportRequests = useCallback(async () => {
+    if (!identity.isReady) return;
     try {
       const blob = await HrmTravelService.exportRequests({ organizationId,
         employeeId,
@@ -92,7 +97,7 @@ export function useTravelData() {
     } catch {
       message.error("Failed to export travel requests.");
     }
-  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, identity.isReady, statusFilter, typeFilter, searchTerm, dateRange]);
 
   return { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests };
 }

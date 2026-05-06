@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { Alert, Input, Typography, Spin } from "antd";
-import { useHrmTravelStore } from "../../stores/hrmTravelStore";
-import { useCoTravellerSearch } from "../../hooks/useCoTravellerSearch";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Select, Spin, Typography } from "antd";
+import { getOrganizationId } from "@/utils/cookieUtils";
+import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import CoTravellerRow from "../molecules/CoTravellerRow";
 import type { CoTravellerDto } from "../../types/domain.types";
+import type { EmployeeDirectoryRow } from "../../../hrmEmployee/types/api.types";
 import styles from "../../styles/TravelForm.module.css";
 
 const { Text } = Typography;
@@ -18,90 +20,106 @@ interface Props {
   error?: string;
 }
 
-const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, readonly, error }) => {
-  const [query, setQuery] = useState("");
-  const { eligibleCoTravellers, coTravellerSearchLoading } = useHrmTravelStore();
-  const { searchCoTravellers } = useCoTravellerSearch();
+interface DirectoryOption {
+  value: string;
+  label: string;
+  row: EmployeeDirectoryRow;
+}
 
-  const addedIds = new Set(coTravellers.map((t) => t.employeeId));
+const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, readonly, error }) => {
+  const organizationId = getOrganizationId();
+  const identity = useEmployeeIdentity();
+  const [options, setOptions] = useState<DirectoryOption[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const addedIds = useMemo(
+    () => new Set(coTravellers.map((t) => t.employeeId)),
+    [coTravellers],
+  );
+
+  const fetchDirectory = useCallback(
+    async (query: string) => {
+      setSearching(true);
+      try {
+        const res = await HrmEmployeeService.searchByKeyword(organizationId, query);
+        const rows = (res?.employees ?? []).filter(
+          (r) =>
+            r.employeeCode &&
+            r.employeeCode !== identity.employeeCode &&
+            !addedIds.has(r.employeeCode),
+        );
+        setOptions(
+          rows.map((r) => ({
+            value: r.employeeCode,
+            label: `${r.fullName} — ${r.employeeCode}${r.department ? ` (${r.department})` : ""}`,
+            row: r,
+          })),
+        );
+      } catch {
+        setOptions([]);
+      } finally {
+        setSearching(false);
+      }
+    },
+    [organizationId, identity.employeeCode, addedIds],
+  );
+
+  // Preload the full org directory so the dropdown is populated by default.
+  // Typing then refines via backend keyword search.
+  useEffect(() => {
+    fetchDirectory("");
+  }, [fetchDirectory]);
+
+  const handleSearch = useCallback(
+    (raw: string) => {
+      const query = raw.trim();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      // Empty input → reload the default full list. Otherwise debounce the
+      // remote search so we don't hammer the directory endpoint per keystroke.
+      debounceRef.current = setTimeout(() => {
+        fetchDirectory(query);
+      }, query ? 300 : 0);
+    },
+    [fetchDirectory],
+  );
+
+  const handleSelect = (value: string, opt: DirectoryOption) => {
+    const r = opt.row;
+    onAdd({
+      employeeId: r.employeeCode,
+      employeeName: r.fullName,
+      department: r.department ?? "",
+      hasConflict: false,
+    });
+    setOptions((prev) => prev.filter((o) => o.value !== value));
+  };
 
   return (
     <div>
       {error && (
-        <Alert
-          type="error"
-          showIcon
-          message={error}
-          style={{ marginBottom: 12 }}
-        />
+        <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} />
       )}
       {!readonly && (
         <div className={styles.searchRow}>
-          <Input
-            placeholder="Type at least 2 characters to search..."
-            value={query}
-            onChange={(e) => {
-              const next = e.target.value;
-              setQuery(next);
-              // Don't fire the directory search on single-character input —
-              // backend was getting flooded with one-char queries that
-              // return huge result sets.
-              if (next.trim().length >= 2) {
-                searchCoTravellers(next);
-              }
-            }}
-            style={{ flex: 1 }}
-            suffix={coTravellerSearchLoading ? <Spin size="small" /> : null}
+          <Select
+            showSearch
+            value={null}
+            placeholder="Select an employee or type to filter..."
+            filterOption={false}
+            onSearch={handleSearch}
+            onSelect={handleSelect as never}
+            options={options}
+            loading={searching}
+            notFoundContent={searching ? <Spin size="small" /> : "No employees found"}
+            style={{ flex: 1, width: "100%" }}
+            allowClear
           />
         </div>
       )}
 
-      {!readonly && query.trim().length >= 2 && (
-        <div
-          style={{
-            border: "1px solid #d9d9d9",
-            borderRadius: 6,
-            marginBottom: 12,
-            maxHeight: 200,
-            overflowY: "auto",
-          }}
-        >
-          {coTravellerSearchLoading ? (
-            <div style={{ padding: 12, textAlign: "center" }}><Spin size="small" /></div>
-          ) : eligibleCoTravellers.length === 0 ? (
-            <div style={{ padding: "10px 12px", color: "#8c8c8c", fontSize: 13 }}>
-              No employees found for &quot;{query.trim()}&quot;
-            </div>
-          ) : (
-            eligibleCoTravellers.map((t) => (
-              <div
-                key={t.employeeId}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "8px 12px",
-                  cursor: addedIds.has(t.employeeId) ? "default" : "pointer",
-                  borderBottom: "1px solid #f5f5f5",
-                  background: addedIds.has(t.employeeId) ? "#fafafa" : "#fff",
-                }}
-                onClick={() => !addedIds.has(t.employeeId) && onAdd(t)}
-              >
-                <span style={{ flex: 1, fontSize: 13 }}>
-                  {t.employeeName} ({t.employeeId}) — {t.department}
-                </span>
-                {addedIds.has(t.employeeId) && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Added
-                  </Text>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
       <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-        Only employees sharing the same supervisor are shown.
+        All employees are listed by default — type to filter by name, code, email, or department.
       </Text>
 
       {coTravellers.length === 0 ? (

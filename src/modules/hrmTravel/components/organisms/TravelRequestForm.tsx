@@ -8,6 +8,7 @@ import type { TravelFormErrors } from "../../utils/travelValidations";
 import { ALLOWED_MODES_BY_TYPE, TRAVEL_MODE_LABELS } from "../../utils/travelConstants";
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from "../../../hrmOrganization/utils/constants";
 import { STATE_CITIES } from "../../../hrmOrganization/utils/locationSearch";
+import { useHrmTravelStore } from "../../stores/hrmTravelStore";
 import ItineraryRow from "../molecules/ItineraryRow";
 import styles from "../../styles/TravelForm.module.css";
 
@@ -21,9 +22,18 @@ interface Props {
 const TRAVEL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
 
 const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, errors = {} }) => {
-  const allowedModes = formState.travelType
-    ? ALLOWED_MODES_BY_TYPE[formState.travelType]
-    : [];
+  const policies = useHrmTravelStore((s) => s.policies);
+  // Allowed modes come from the admin's saved policy for this travel type.
+  // If no policy is configured (or the retrieve was denied), fall back to
+  // the hardcoded constant so the form still renders.
+  const allowedModes = useMemo<TravelMode[]>(() => {
+    if (!formState.travelType) return [];
+    const policy = policies.find((p) => p.travelType === formState.travelType);
+    if (policy?.allowedModes && policy.allowedModes.length > 0) {
+      return policy.allowedModes;
+    }
+    return ALLOWED_MODES_BY_TYPE[formState.travelType];
+  }, [formState.travelType, policies]);
 
   // For DOMESTIC, country is implicitly India and hidden from the UI.
   // For INTERNATIONAL, the user selects one of COUNTRY_OPTIONS.
@@ -44,6 +54,24 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
     if (!state) return [];
     return (STATE_CITIES[state] || []).map((c) => ({ label: c, value: c }));
   }, [formState.destinationState]);
+
+  // LOCAL travel asks only for a city (no country/state); offer the full
+  // Indian city list de-duplicated and sorted, with a custom-entry fallback.
+  const localCityOptions = useMemo(() => {
+    const indianStates = COUNTRY_STATES["India"] || [];
+    const seen = new Set<string>();
+    const cities: string[] = [];
+    indianStates.forEach((s) => {
+      (STATE_CITIES[s] || []).forEach((c) => {
+        if (!seen.has(c)) {
+          seen.add(c);
+          cities.push(c);
+        }
+      });
+    });
+    cities.sort((a, b) => a.localeCompare(b));
+    return cities.map((c) => ({ label: c, value: c }));
+  }, []);
 
   return (
     <Form layout="vertical" component="div">
@@ -151,11 +179,31 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
             help={errors.destinationCity}
           >
             {formState.travelType === "LOCAL" ? (
-              <Input
-                placeholder="City"
-                value={formState.destinationCity}
-                onChange={(e) => onChange({ destinationCity: e.target.value })}
+              <Select
+                placeholder="Select city"
+                value={formState.destinationCity || undefined}
+                onChange={(val) => onChange({ destinationCity: val ?? "" })}
+                options={localCityOptions}
+                showSearch
+                allowClear
+                optionFilterProp="label"
                 disabled={readonly}
+                style={{ width: "100%" }}
+                popupRender={(menu) => (
+                  <>
+                    {menu}
+                    <div style={{ borderTop: "1px solid #f0f0f0", padding: "6px 10px" }}>
+                      <Input
+                        size="small"
+                        placeholder="Can't find it? Type a custom city + press Enter"
+                        onPressEnter={(e) => {
+                          const val = (e.target as HTMLInputElement).value.trim();
+                          if (val) onChange({ destinationCity: val });
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               />
             ) : (
               <Select

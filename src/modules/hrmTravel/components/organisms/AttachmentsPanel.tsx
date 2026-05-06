@@ -26,38 +26,33 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
     <div>
       {!readonly && onUpload && (
         <Can I="add" object="travel_attachment">
-          <Upload
+          <Upload.Dragger
+            style={{ marginBottom: 16 }}
             accept=".pdf,.jpg,.jpeg,.png"
+            multiple={false}
             showUploadList={false}
             beforeUpload={(file) => {
               const sizeMb = file.size / (1024 * 1024);
               if (sizeMb > 5) {
                 message.error("File size must be under 5 MB.");
-                return false;
+                return Upload.LIST_IGNORE;
               }
               if (attachments.length >= 5) {
                 message.error("Maximum 5 files allowed.");
-                return false;
+                return Upload.LIST_IGNORE;
               }
               onUpload(file);
               return false;
             }}
           >
-            <Upload.Dragger
-              style={{ marginBottom: 16 }}
-              accept=".pdf,.jpg,.jpeg,.png"
-              showUploadList={false}
-              beforeUpload={() => false}
-            >
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-              </p>
-              <p>Drag and drop files here, or click to choose</p>
-              <p style={{ fontSize: 12, color: "#8c8c8c" }}>
-                Allowed: PDF, JPG, PNG — Max 5 MB each — Up to 5 files
-              </p>
-            </Upload.Dragger>
-          </Upload>
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+            </p>
+            <p>Drag and drop files here, or click to choose</p>
+            <p style={{ fontSize: 12, color: "#8c8c8c" }}>
+              Allowed: PDF, JPG, PNG — Max 5 MB each — Up to 5 files
+            </p>
+          </Upload.Dragger>
         </Can>
       )}
 

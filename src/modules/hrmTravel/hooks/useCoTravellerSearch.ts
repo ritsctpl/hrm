@@ -2,23 +2,17 @@
 
 import { useCallback, useRef } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { parseCookies } from "nookies";
 import { message } from "antd";
 import { HrmTravelService } from "../services/hrmTravelService";
 import { useHrmTravelStore } from "../stores/hrmTravelStore";
+import { useEmployeeIdentity } from "../../hrmAccess/hooks/useEmployeeIdentity";
 
 export function useCoTravellerSearch() {
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId =
-    cookies.empId        ??
-    cookies.employeeId   ??
-    cookies.employeeCode ??
-    cookies.username     ??
-    cookies.userId       ??
-    cookies.user         ??
-    cookies.rl_user_id   ??
-    "";
+  const identity = useEmployeeIdentity();
+  // Backend filters eligible co-travellers by bare employeeCode (same supervisor),
+  // not composite or email.
+  const employeeId = identity.employeeCode;
 
   const { setEligibleCoTravellers, setCoTravellerSearchLoading } = useHrmTravelStore();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,8 +24,8 @@ export function useCoTravellerSearch() {
       return;
     }
 
-    if (!employeeId) {
-      message.error("Employee ID not found in session. Cannot search co-travellers.");
+    if (!identity.isReady || !employeeId) {
+      message.error("Employee identity still loading — try again in a moment.");
       return;
     }
 
@@ -51,7 +45,7 @@ export function useCoTravellerSearch() {
         setCoTravellerSearchLoading(false);
       }
     }, 300);
-  }, [organizationId, employeeId, setEligibleCoTravellers, setCoTravellerSearchLoading]);
+  }, [organizationId, employeeId, identity.isReady, setEligibleCoTravellers, setCoTravellerSearchLoading]);
 
   return { searchCoTravellers };
 }
