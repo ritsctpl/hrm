@@ -294,10 +294,78 @@ export function getTaxIdLabel(country?: string): string {
   return getCountryValidationSpec(country).taxIdLabel;
 }
 
-// Cross-validate an address block against the pincode-derived truth stamped
-// by OrgAddressFields after a successful India Post verification. Only fires
-// for India; no-op otherwise. Catches the "user pincode-verified, then
-// manually changed state/city to mismatch" case.
+// Common alternate / colloquial city spellings → curated city name in
+// STATE_CITIES. Lets findStateForCity() catch a state mismatch even when
+// the user types a legacy spelling that isn't in the dropdown's options
+// (e.g. "Bangalore" instead of "Bengaluru"). Keys are lowercase.
+const CITY_ALIASES: Record<string, string> = {
+  bangalore: 'Bengaluru',
+  bombay: 'Mumbai',
+  madras: 'Chennai',
+  calcutta: 'Kolkata',
+  cochin: 'Kochi',
+  trivandrum: 'Thiruvananthapuram',
+  mysore: 'Mysuru',
+  mangalore: 'Mangaluru',
+  hubli: 'Hubballi',
+  belgaum: 'Belagavi',
+  gulbarga: 'Kalaburagi',
+  shimoga: 'Shivamogga',
+  tumkur: 'Tumakuru',
+  pondicherry: 'Puducherry',
+  baroda: 'Vadodara',
+  poona: 'Pune',
+  gurgaon: 'Gurugram',
+  trichy: 'Tiruchirappalli',
+  allahabad: 'Prayagraj',
+  cawnpore: 'Kanpur',
+  benares: 'Varanasi',
+  banaras: 'Varanasi',
+};
+
+// Reverse map: lowercase city name → state name. Built lazily from
+// STATE_CITIES + CITY_ALIASES on first lookup so import order doesn't
+// matter. A city that appears in multiple states' lists keeps the first
+// occurrence (currently no real collisions in the dataset).
+let cityToStateCache: Map<string, string> | null = null;
+function getCityToStateMap(): Map<string, string> {
+  if (cityToStateCache) return cityToStateCache;
+  // Lazy require to avoid a hard top-level dependency if this module is
+  // imported in a tree that doesn't have locationSearch (e.g. tests).
+  const { STATE_CITIES } = require('./locationSearch') as {
+    STATE_CITIES: Record<string, string[]>;
+  };
+  const map = new Map<string, string>();
+  for (const [state, cities] of Object.entries(STATE_CITIES)) {
+    for (const city of cities) {
+      const key = city.toLowerCase();
+      if (!map.has(key)) map.set(key, state);
+    }
+  }
+  for (const [alias, canonical] of Object.entries(CITY_ALIASES)) {
+    const state = map.get(canonical.toLowerCase());
+    if (state) map.set(alias, state);
+  }
+  cityToStateCache = map;
+  return map;
+}
+
+function findStateForCity(cityName: string | undefined): string | null {
+  if (!cityName) return null;
+  const key = cityName.trim().toLowerCase();
+  if (!key) return null;
+  return getCityToStateMap().get(key) ?? null;
+}
+
+// Cross-validate an address block. Two layers of defence:
+//   1. Stamp-based — compare against _verifiedPincode/_verifiedState/_verifiedCity
+//      that OrgAddressFields stamps after a successful India Post lookup.
+//   2. Static — look up the entered city in our curated state→city map (with
+//      aliases) and flag if its known state doesn't match the entered state.
+//      Catches typed-by-hand mismatches like "Tamil Nadu + Bangalore" even
+//      when the user never triggered (or skipped) the online verification.
+// Both layers fire; #2 is the one that closes the "able to cheat the system"
+// hole when verification didn't run.
 function crossValidateAddress(
   prefix: string,
   addr: Record<string, any> | undefined | null,
@@ -306,15 +374,30 @@ function crossValidateAddress(
   if (!addr) return errs;
   const country = (addr.country || 'India').trim();
   if (country.toLowerCase() !== 'india') return errs;
+
+  // Layer 1: pincode-stamped truth.
   const vPin = addr._verifiedPincode;
   const vState = addr._verifiedState;
   const vCity = addr._verifiedCity;
-  if (!vPin) return errs;
-  if (vState && addr.state && addr.state !== vState) {
-    errs[`${prefix}.state`] = `State doesn't match PIN ${vPin} (expected ${vState})`;
+  if (vPin) {
+    if (vState && addr.state && addr.state !== vState) {
+      errs[`${prefix}.state`] = `State doesn't match PIN ${vPin} (expected ${vState})`;
+    }
+    if (vCity && addr.city && addr.city !== vCity) {
+      errs[`${prefix}.city`] = `City doesn't match PIN ${vPin} (expected ${vCity})`;
+    }
   }
-  if (vCity && addr.city && addr.city !== vCity) {
-    errs[`${prefix}.city`] = `City doesn't match PIN ${vPin} (expected ${vCity})`;
+
+  // Layer 2: static city → state lookup. Only flag when both city and
+  // state are present AND the city is one we recognize. Unknown / custom
+  // cities can't be validated this way and are left for the verification
+  // path to catch. Skip if Layer 1 already flagged the same field.
+  if (addr.city && addr.state) {
+    const knownState = findStateForCity(addr.city);
+    if (knownState && knownState !== addr.state && !errs[`${prefix}.state`]) {
+      errs[`${prefix}.state`] =
+        `${addr.city} is in ${knownState}, not ${addr.state}`;
+    }
   }
   return errs;
 }
@@ -517,6 +600,7 @@ export const validateBusinessUnit = (data: any, existingCodes?: string[]): Recor
     if (pincodeError) {
       errors['address.pincode'] = pincodeError;
     }
+    Object.assign(errors, crossValidateAddress('address', data.address));
   } else {
     errors['address'] = 'Address is required';
   }
@@ -558,6 +642,17 @@ export const validateLocation = (data: any, existingCodes?: string[]): Record<st
   const pincodeError = validatePincode(data.pincode || '', data.country);
   if (pincodeError) {
     errors.pincode = pincodeError;
+  }
+
+  // Cross-validate state/city against the PIN-derived truth and the
+  // static city → state map. Location's data is flat (no `address`
+  // wrapper), so we run the check with an empty prefix and re-key the
+  // errors back to flat field names the form reads.
+  const cross = crossValidateAddress('', data);
+  for (const [k, v] of Object.entries(cross)) {
+    // crossValidateAddress emits keys like ".state" / ".city" with our
+    // empty prefix — strip the leading dot.
+    errors[k.replace(/^\./, '')] = v;
   }
 
   return errors;

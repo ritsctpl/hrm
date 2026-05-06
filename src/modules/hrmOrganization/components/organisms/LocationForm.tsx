@@ -65,11 +65,14 @@ const LocationForm: React.FC<LocationFormProps> = ({ onClose, readOnly = false }
     try {
       await saveLocation();
       message.success(isNew ? 'Location created' : 'Location updated');
+      // Close the side panel on success — keeping it open after save
+      // forces the user to X out manually before adding the next one.
+      onClose();
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to save location';
       message.error(errorMsg);
     }
-  }, [saveLocation, isNew]);
+  }, [saveLocation, isNew, onClose]);
 
   return (
     <div className={mainStyles.formPanel}>

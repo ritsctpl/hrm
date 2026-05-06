@@ -66,11 +66,11 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
   const handleSave = useCallback(async () => {
     try {
       await saveBusinessUnit();
-      
+
       // Get the updated state after save completes
       const updatedState = get().businessUnit;
       const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
-      
+
       if (errorKeys.length > 0) {
         // Show validation errors
         const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
@@ -79,13 +79,15 @@ const BusinessUnitForm: React.FC<BusinessUnitFormProps> = ({ onClose, readOnly =
         // Show API error as popup
         message.error(updatedState.errors._general);
       } else {
-        // Show success only if no errors
+        // Success — show toast and close the side panel so the user
+        // doesn't have to manually X out after each save.
         message.success(isNew ? 'Business unit created' : 'Business unit updated');
+        onClose();
       }
     } catch {
       message.error('Failed to save business unit');
     }
-  }, [saveBusinessUnit, isNew]);
+  }, [saveBusinessUnit, isNew, onClose, get]);
 
   const buCountry = draft?.address?.country || 'India';
   const isIndianBu = buCountry.trim().toLowerCase() === 'india';

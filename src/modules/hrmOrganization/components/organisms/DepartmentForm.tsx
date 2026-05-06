@@ -267,12 +267,23 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({ onClose, readOnly = fal
   const handleSave = useCallback(async () => {
     try {
       await saveDepartment();
-      message.success(isNew ? 'Department created' : 'Department updated');
+      // saveDepartment doesn't throw; it writes errors to store state.
+      // Read them back to decide whether to celebrate or surface a message.
+      const post = useHrmOrganizationStore.getState().department;
+      const errorKeys = Object.keys(post.errors).filter((k) => k !== '_general');
+      if (errorKeys.length > 0) {
+        message.error(errorKeys.map((k) => `${k}: ${post.errors[k]}`).join('\n'));
+      } else if (post.errors._general) {
+        message.error(post.errors._general);
+      } else {
+        message.success(isNew ? 'Department created' : 'Department updated');
+        onClose();
+      }
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to save department';
       message.error(errorMsg);
     }
-  }, [saveDepartment, isNew]);
+  }, [saveDepartment, isNew, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!selected?.handle) return;
