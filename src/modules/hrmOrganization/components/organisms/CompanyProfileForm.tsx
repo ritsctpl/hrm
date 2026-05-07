@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Button, Spin, Skeleton, message, Tooltip } from 'antd';
+import { Button, Spin, Skeleton, message, Tooltip, notification } from 'antd';
 import { EditOutlined, CloseOutlined, CheckCircleOutlined, FileTextOutlined, BankOutlined, EnvironmentOutlined, CalendarOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import CompanyIdentitySection from './CompanyIdentitySection';
 import CompanyStatutorySection from './CompanyStatutorySection';
@@ -50,7 +50,20 @@ const CompanyProfileForm: React.FC = () => {
   const permissions = useOrganizationPermissions();
   const get = useHrmOrganizationStore.getState;
 
-  const { isLoading, isSaving, isEditing, data, errors } = companyProfile;
+  const { isLoading, isSaving, isEditing, data, errors, isInitializing } = companyProfile;
+
+  // Show a non-blocking loader while the post-create bootstrap runs —
+  // backend registers ~19 modules, seeds permissions, provisions admin.
+  useEffect(() => {
+    if (!isInitializing) return;
+    const hide = message.loading(
+      'Initializing organization (registering modules, permissions, admin user)...',
+      0,
+    );
+    return () => {
+      hide();
+    };
+  }, [isInitializing]);
   const [activeSection, setActiveSection] = useState<string>('identity');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -81,10 +94,31 @@ const CompanyProfileForm: React.FC = () => {
         setShowSaveSuccess(true);
         setTimeout(() => setShowSaveSuccess(false), 1500);
       }
+
+      // Surface the post-create initialization result. Set by
+      // saveCompanyProfile only on CREATE; UPDATE leaves it null.
+      // Initialization failure is a warning, not a blocker.
+      const initResult = get().companyProfile.lastInitResult;
+      if (initResult) {
+        if (initResult.success) {
+          notification.success({
+            message: 'Organization initialized',
+            description: `Admin user: ${initResult.adminUserId || `${initResult.organizationId}_admin`}`,
+            duration: 6,
+          });
+        } else {
+          notification.warning({
+            message: 'Organization initialization failed',
+            description: initResult.message,
+            duration: 8,
+          });
+        }
+        get().clearLastInitResult();
+      }
     } catch {
       message.error('Failed to save company profile');
     }
-  }, [saveCompanyProfile]);
+  }, [saveCompanyProfile, get]);
 
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);

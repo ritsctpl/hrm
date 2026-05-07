@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useCallback } from 'react';
-import { Tabs, Breadcrumb, Card, Tag, Spin, Button, message } from 'antd';
+import { Tabs, Breadcrumb, Card, Tag, Spin, Button, message, notification } from 'antd';
 import {
   HomeOutlined,
   ShopOutlined,
@@ -61,10 +61,10 @@ const CompanyDetailTemplate: React.FC = () => {
   const handleSave = useCallback(async () => {
     try {
       await saveCompanyProfile();
-      
+
       const updatedState = get().companyProfile;
       const errorKeys = Object.keys(updatedState.errors).filter(key => key !== '_general');
-      
+
       if (errorKeys.length > 0) {
         const errorMessages = errorKeys.map(key => `${key}: ${updatedState.errors[key]}`).join('\n');
         message.error(errorMessages);
@@ -73,10 +73,32 @@ const CompanyDetailTemplate: React.FC = () => {
       } else {
         message.success('Company profile saved successfully');
       }
+
+      // Surface the post-create initialization result. Set by
+      // saveCompanyProfile's CREATE branch — null on UPDATE so this
+      // notification fires once per new organization. Initialization
+      // failure is a warning, never a blocker on the save flow.
+      const initResult = get().companyProfile.lastInitResult;
+      if (initResult) {
+        if (initResult.success) {
+          notification.success({
+            message: 'Organization initialized',
+            description: `Admin user: ${initResult.adminUserId || `${initResult.organizationId}_admin`}`,
+            duration: 6,
+          });
+        } else {
+          notification.warning({
+            message: 'Organization initialization failed',
+            description: initResult.message,
+            duration: 8,
+          });
+        }
+        get().clearLastInitResult();
+      }
     } catch {
       message.error('Failed to save company profile');
     }
-  }, [saveCompanyProfile]);
+  }, [saveCompanyProfile, get]);
 
   // Load company profile on mount
   useEffect(() => {
@@ -84,6 +106,20 @@ const CompanyDetailTemplate: React.FC = () => {
       fetchCompanyProfile(selectedCompanyHandle);
     }
   }, [isNew, selectedCompanyHandle, fetchCompanyProfile]);
+
+  // Surface a non-blocking "Initializing organization..." toast while the
+  // post-create bootstrap is running. Backend registers ~19 modules, seeds
+  // permissions, and provisions the admin user — can take a few seconds.
+  useEffect(() => {
+    if (!companyProfile.isInitializing) return;
+    const hide = message.loading(
+      'Initializing organization (registering modules, permissions, admin user)...',
+      0,
+    );
+    return () => {
+      hide();
+    };
+  }, [companyProfile.isInitializing]);
 
   // Once company profile loads, fetch BUs and locations
   useEffect(() => {

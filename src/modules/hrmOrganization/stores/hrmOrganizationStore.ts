@@ -73,6 +73,7 @@ export interface HrmOrganizationState {
   saveCompanyProfile: () => Promise<void>;
   setCompanyError: (field: string, error: string) => void;
   clearCompanyErrors: () => void;
+  clearLastInitResult: () => void;
   setSameAsRegisteredOffice: (value: boolean) => void;
 
   // Business Unit Actions
@@ -139,6 +140,8 @@ const initialCompanyProfileState: CompanyProfileState = {
   isEditing: false,
   isLoading: false,
   isSaving: false,
+  isInitializing: false,
+  lastInitResult: null,
   activeTab: 'identity',
   errors: {},
   draft: null,
@@ -670,15 +673,82 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
       if (savedData.gstin && !savedData.gstIn) {
         savedData.gstIn = savedData.gstin;
       }
+      const wasCreate = !existingHandle;
+      // Keep isSaving true while a CREATE is followed by initialization so
+      // the save button stays in loading state for the full bootstrap.
       set((state) => ({
         companyProfile: {
           ...state.companyProfile,
           data: savedData,
           draft: { ...savedData },
-          isSaving: false,
+          isSaving: wasCreate,
+          isInitializing: wasCreate,
           isEditing: false,
+          // Reset any stale init result from a prior save before we run
+          // this CREATE's initialization (or skip on UPDATE).
+          lastInitResult: null,
         },
       }));
+
+      // Bootstrap a freshly created organization — register modules, seed
+      // permissions, and provision the {orgId}_admin user. Run only on
+      // CREATE; updates reuse an already-initialized org. Failures don't
+      // block the save — they surface as a warning to the user.
+      if (wasCreate) {
+        const newOrgId =
+          (savedData as { organizationId?: string }).organizationId ||
+          payload.organizationId ||
+          '';
+        if (newOrgId) {
+          try {
+            const initRes = await HrmOrganizationService.initializeOrganization(newOrgId);
+            set((state) => ({
+              companyProfile: {
+                ...state.companyProfile,
+                isSaving: false,
+                isInitializing: false,
+                lastInitResult: {
+                  organizationId: newOrgId,
+                  success: !!initRes.success,
+                  message: initRes.message || 'Initialization completed',
+                  adminUserId: initRes.adminUserId,
+                },
+              },
+            }));
+          } catch (initErr: unknown) {
+            const anyErr = initErr as {
+              response?: { data?: { message?: string } };
+              message?: string;
+            };
+            const msg =
+              anyErr?.response?.data?.message ||
+              anyErr?.message ||
+              'Failed to initialize organization';
+            console.error('initializeOrganization error:', msg, initErr);
+            set((state) => ({
+              companyProfile: {
+                ...state.companyProfile,
+                isSaving: false,
+                isInitializing: false,
+                lastInitResult: {
+                  organizationId: newOrgId,
+                  success: false,
+                  message: msg,
+                },
+              },
+            }));
+          }
+        } else {
+          // No org id available — clear flags but don't fabricate a result.
+          set((state) => ({
+            companyProfile: {
+              ...state.companyProfile,
+              isSaving: false,
+              isInitializing: false,
+            },
+          }));
+        }
+      }
     } catch (error: unknown) {
       const conflictMsg = describeCompanyConflict(error);
       const errMsg =
@@ -705,6 +775,11 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   clearCompanyErrors: () =>
     set((state) => ({
       companyProfile: { ...state.companyProfile, errors: {} },
+    })),
+
+  clearLastInitResult: () =>
+    set((state) => ({
+      companyProfile: { ...state.companyProfile, lastInitResult: null },
     })),
 
   setSameAsRegisteredOffice: (value) =>

@@ -57,6 +57,20 @@ export interface CompanyProfileState {
   isEditing: boolean;
   isLoading: boolean;
   isSaving: boolean;
+  /** Active while POST /hrm-service/initialize/org is running for a freshly created org. */
+  isInitializing: boolean;
+  /**
+   * Result of the post-create initialize call, set by saveCompanyProfile
+   * when a CREATE finishes (and reset on the next save). Templates read
+   * this once after `await saveCompanyProfile()` returns, surface the
+   * appropriate toast, and call clearLastInitResult().
+   */
+  lastInitResult: {
+    organizationId: string;
+    success: boolean;
+    message: string;
+    adminUserId?: string;
+  } | null;
   activeTab: CompanyTabKey;
   errors: Record<string, string>;
   draft: Partial<CompanyProfile> | null;

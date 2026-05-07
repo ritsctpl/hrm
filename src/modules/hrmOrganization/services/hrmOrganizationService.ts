@@ -98,6 +98,28 @@ export class HrmOrganizationService {
     return res.data;
   }
 
+  /**
+   * Bootstrap a freshly-created organization — registers the standard
+   * module set, seeds default permissions, and creates the
+   * `${organizationId}_admin` Keycloak user. The backend treats repeat
+   * calls as no-ops via the `alreadyInitialized` flag, but the UI flow
+   * only calls this once after a successful CREATE.
+   */
+  static async initializeOrganization(organizationId: string): Promise<{
+    success: boolean;
+    alreadyInitialized: boolean;
+    message: string;
+    organizationSite?: string;
+    adminUserId?: string;
+    keycloakUserCreated?: boolean;
+    modulesRegistered?: number;
+    permissionsCreated?: number;
+    rolePermissionsAssigned?: number;
+  }> {
+    const res = await api.post('/hrm-service/initialize/org', { organizationId });
+    return res.data;
+  }
+
   /** Update company. Backend expects { handle, companyProfileRequest: {...} } */
   static async updateCompany(
     handle: string,
