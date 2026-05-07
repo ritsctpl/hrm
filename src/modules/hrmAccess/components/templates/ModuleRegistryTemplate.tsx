@@ -6,7 +6,12 @@ import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { HrmAccessService } from '../../services/hrmAccessService';
 import { useHrmAccessStore } from '../../stores/hrmAccessStore';
-import { getObjectsForModule, getObjectsByAppUrl, getModuleCodeByAppUrl } from '../../utils/moduleObjectRegistry';
+import {
+  getObjectsForModule,
+  getObjectsByAppUrl,
+  getModuleCodeByAppUrl,
+  deriveRootObjectCode,
+} from '../../utils/moduleObjectRegistry';
 import { useHrmRbacStore } from '../../stores/hrmRbacStore';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import { MdDelete } from 'react-icons/md';
@@ -102,6 +107,15 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ organizationId, user }) => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      // Always include the Module Access root object so the role
+      // permission grid renders a top-level row and Add/Delete cascade
+      // continues to work. Easy to forget when typing tags by hand,
+      // so we enforce it on save regardless of what the user picked.
+      const rootCode = deriveRootObjectCode(values.moduleCode);
+      const inputObjects: string[] = values.defaultPermissionObjects || [];
+      if (rootCode && !inputObjects.includes(rootCode)) {
+        values.defaultPermissionObjects = [rootCode, ...inputObjects];
+      }
       if (editingHandle) {
         // Update the module
         await HrmAccessService.updateModule(editingHandle, { ...values, organizationId });
@@ -285,12 +299,21 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ organizationId, user }) => {
             icon={<EditOutlined />}
             onClick={() => {
               setEditingHandle(record.handle);
+              const existingObjects = record.defaultPermissionObjects || [];
+              // Inject the Module Access root if a previously-saved module
+              // is missing it — guarantees the role grid always has a root
+              // row when this module's permissions are edited.
+              const rootCode = deriveRootObjectCode(record.moduleCode, existingObjects);
+              const seededObjects =
+                rootCode && !existingObjects.includes(rootCode)
+                  ? [rootCode, ...existingObjects]
+                  : existingObjects;
               form.setFieldsValue({
                 moduleCode: record.moduleCode,
                 moduleName: record.moduleName,
                 moduleCategory: record.moduleCategory,
                 description: record.description || '',
-                defaultPermissionObjects: record.defaultPermissionObjects || [],
+                defaultPermissionObjects: seededObjects,
                 appUrl: (record as any).appUrl || '',
                 type: (record as any).type || 'CORE',
                 isActive: record.isActive,
@@ -392,6 +415,20 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ organizationId, user }) => {
               onChange={(e) => {
                 const value = e.target.value.toUpperCase().replace(/[^A-Z_]/g, '');
                 form.setFieldsValue({ moduleCode: value });
+                // Seed Module Access into the objects list as soon as the
+                // module code is typed in the create flow. Users routinely
+                // forget to add it manually, which leaves the role grid
+                // without a root row.
+                if (!editingHandle) {
+                  const currentObjects: string[] =
+                    form.getFieldValue('defaultPermissionObjects') || [];
+                  const rootCode = deriveRootObjectCode(value, currentObjects);
+                  if (rootCode && !currentObjects.includes(rootCode)) {
+                    form.setFieldsValue({
+                      defaultPermissionObjects: [rootCode, ...currentObjects],
+                    });
+                  }
+                }
               }}
             />
           </Form.Item>
@@ -459,8 +496,8 @@ const ModuleRegistryTemplate: React.FC<Props> = ({ organizationId, user }) => {
                   label="Permission Objects"
                   extra={
                     known.length > 0
-                      ? `${known.length} predefined objects matched from ${matchSource}. You can also type custom ones.`
-                      : 'Type object codes (e.g., flow_record, flow_settings) and press Enter.'
+                      ? `${known.length} predefined objects matched from ${matchSource}. Module Access is auto-included on save. You can also type custom objects.`
+                      : 'Type object codes (e.g., flow_record, flow_settings) and press Enter. Module Access is auto-included on save.'
                   }
                 >
                   <Select

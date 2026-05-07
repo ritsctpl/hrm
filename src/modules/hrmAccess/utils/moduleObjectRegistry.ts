@@ -97,6 +97,30 @@ export function getRootObjectCode(
   return undefined;
 }
 
+/**
+ * Like getRootObjectCode, but always returns a code for a non-empty
+ * moduleCode by deriving one from the module name when no entry is
+ * registered yet. Used by the Module Registry form so newly-created
+ * modules automatically include a Module Access object — without it,
+ * the role permission grid has no root row and Add/Delete cascade
+ * stops working.
+ *
+ * Derivation: strip a leading `HRM_` and lower-case the remainder,
+ * then append `_module`. e.g. `HRM_FOO` → `foo_module`,
+ * `CUSTOM_BAR` → `custom_bar_module`.
+ */
+export function deriveRootObjectCode(
+  moduleCode: string,
+  objectCodes?: readonly string[],
+): string | undefined {
+  const fromRegistry = getRootObjectCode(moduleCode, objectCodes);
+  if (fromRegistry) return fromRegistry;
+  if (!moduleCode) return undefined;
+  const base = moduleCode.toLowerCase().replace(/^hrm_/, '').trim();
+  if (!base) return undefined;
+  return `${base}_module`;
+}
+
 export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   // ── Access Control ──────────────────────────────────────────────────
   HRM_ACCESS: [
