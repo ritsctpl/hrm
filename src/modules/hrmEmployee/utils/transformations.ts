@@ -280,11 +280,27 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       businessUnits: (official.businessUnits as string[]) || [],
       businessUnitNames: (official.businessUnitNames as string[]) || undefined,
       joiningDate: (official.joiningDate as string) || undefined,
-      employmentStatus: (official.employmentStatus as
+      // Defensive fallback for employmentStatus: backend's /profile
+      // currently doesn't include the field inside officialDetails for
+      // some records (it lives at the root or on basicDetails for older
+      // rows). Walk all three layers so the UI doesn't render '--' right
+      // after a successful save just because of response shape drift.
+      employmentStatus: ((official.employmentStatus
+        || (raw.employmentStatus as unknown)
+        || ((raw.basicDetails as Record<string, unknown> | undefined)?.employmentStatus)
+        || undefined) as
         | import('../types/domain.types').EmploymentStatus
-        | undefined) || undefined,
-      probationEndDate: (official.probationEndDate as string) || undefined,
-      lastWorkingDay: (official.lastWorkingDay as string) || undefined,
+        | undefined),
+      probationEndDate:
+        (official.probationEndDate as string)
+        || (raw.probationEndDate as string)
+        || ((raw.basicDetails as Record<string, unknown> | undefined)?.probationEndDate as string)
+        || undefined,
+      lastWorkingDay:
+        (official.lastWorkingDay as string)
+        || (raw.lastWorkingDay as string)
+        || ((raw.basicDetails as Record<string, unknown> | undefined)?.lastWorkingDay as string)
+        || undefined,
     },
     personalDetails: {
       dateOfBirth: (personal.dateOfBirth as string) || undefined,

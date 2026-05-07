@@ -6,9 +6,13 @@
 
 'use client';
 
-import React, { useState, useImperativeHandle, forwardRef, useCallback } from 'react';
-import { Button, Input, Form, Divider, Select, message } from 'antd';
+import React, { useState, useImperativeHandle, forwardRef, useCallback, useEffect, useRef } from 'react';
+import { AutoComplete, Button, Input, Form, Divider, Select, Tooltip, message } from 'antd';
 import {
+  CheckCircleFilled,
+  CloseCircleFilled,
+  LoadingOutlined,
+  WarningFilled,
   EditOutlined,
   SaveOutlined,
   CloseOutlined,
@@ -20,8 +24,54 @@ import EmpFieldLabel from '../atoms/EmpFieldLabel';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EmergencyContact } from '../../types/domain.types';
 import { COUNTRY_OPTIONS, COUNTRY_STATE_MAP } from '../../utils/constants';
+// Pincode utilities live in hrmOrganization (single source of truth for
+// the same auto-fill UX used in Org Setup → Locations / BU addresses).
+// Cross-module import is acceptable here per the EN-PINCODE doc; if these
+// utilities ever move to a shared location, only these import paths need
+// to change.
+import {
+  searchPincodesByPrefix,
+  type PincodeEntry,
+} from '../../../hrmOrganization/utils/pincodeData';
+import {
+  verifyPincode,
+  isSixDigits,
+  type PincodeVerificationStatus,
+} from '../../../hrmOrganization/utils/pincodeVerification';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
+
+// Visual indicator for the live India-Post verification suffix on the
+// PIN/ZIP input — shared between Present and Permanent address blocks.
+const PincodeStatusIcon: React.FC<{
+  status: PincodeVerificationStatus;
+  message?: string;
+}> = ({ status, message: msg }) => {
+  switch (status) {
+    case 'loading':
+      return <LoadingOutlined style={{ color: '#1890ff' }} />;
+    case 'success':
+      return (
+        <Tooltip title={msg}>
+          <CheckCircleFilled style={{ color: '#52c41a' }} />
+        </Tooltip>
+      );
+    case 'error':
+      return (
+        <Tooltip title={msg}>
+          <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+        </Tooltip>
+      );
+    case 'network-error':
+      return (
+        <Tooltip title={msg || 'Could not verify pincode online — format OK'}>
+          <WarningFilled style={{ color: '#faad14' }} />
+        </Tooltip>
+      );
+    default:
+      return null;
+  }
+};
 
 export interface ContactDetailsTabHandle {
   save: () => Promise<void>;
@@ -66,13 +116,260 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
 
   const handlePresentCountryChange = (value: string) => {
     setPresentCountry(value);
-    form.setFieldValue('presentState', undefined);
+    // Country change invalidates state + city + pin — they're scoped
+    // per-country (state list comes from COUNTRY_STATE_MAP, pincode
+    // dataset is India-only).
+    form.setFieldsValue({
+      presentState: undefined,
+      presentCity: undefined,
+      presentPinZip: undefined,
+    });
+    setPresentVerifyStatus('idle');
+    setPresentVerifyMessage('');
+    setPresentPincodeOptions([]);
   };
 
   const handlePermanentCountryChange = (value: string) => {
     setPermanentCountry(value);
-    form.setFieldValue('permanentState', undefined);
+    form.setFieldsValue({
+      permanentState: undefined,
+      permanentCity: undefined,
+      permanentPinZip: undefined,
+    });
+    setPermanentVerifyStatus('idle');
+    setPermanentVerifyMessage('');
+    setPermanentPincodeOptions([]);
   };
+
+  // ── Pincode auto-fill state ──────────────────────────────────────
+  // Each address block (present, permanent) gets its own slice of
+  // suggestion options + live verification status. Refs hold the
+  // debounce timer + abort controller so the in-flight verify can be
+  // cancelled when the user keeps typing.
+  const [presentPincodeOptions, setPresentPincodeOptions] = useState<
+    Array<{ value: string; label: React.ReactNode }>
+  >([]);
+  const [presentVerifyStatus, setPresentVerifyStatus] =
+    useState<PincodeVerificationStatus>('idle');
+  const [presentVerifyMessage, setPresentVerifyMessage] = useState('');
+  const presentDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const presentAbortRef = useRef<AbortController | null>(null);
+  const presentLastVerifiedRef = useRef('');
+
+  const [permanentPincodeOptions, setPermanentPincodeOptions] = useState<
+    Array<{ value: string; label: React.ReactNode }>
+  >([]);
+  const [permanentVerifyStatus, setPermanentVerifyStatus] =
+    useState<PincodeVerificationStatus>('idle');
+  const [permanentVerifyMessage, setPermanentVerifyMessage] = useState('');
+  const permanentDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const permanentAbortRef = useRef<AbortController | null>(null);
+  const permanentLastVerifiedRef = useRef('');
+
+  const presentPinValue = Form.useWatch('presentPinZip', form);
+  const permanentPinValue = Form.useWatch('permanentPinZip', form);
+
+  // Suggest pincodes from the local dataset as the user types (India only).
+  useEffect(() => {
+    if (presentCountry !== 'India') {
+      setPresentPincodeOptions([]);
+      return;
+    }
+    const pin = (presentPinValue ?? '').toString().trim();
+    if (pin.length < 3) {
+      setPresentPincodeOptions([]);
+      return;
+    }
+    let cancelled = false;
+    searchPincodesByPrefix(pin, 20).then((rows: PincodeEntry[]) => {
+      if (cancelled) return;
+      setPresentPincodeOptions(
+        rows.map((r) => ({
+          value: r.pincode,
+          label: (
+            <span>
+              <strong>{r.pincode}</strong>{' '}
+              <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+                {r.city}, {r.state}
+              </span>
+            </span>
+          ),
+        })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [presentPinValue, presentCountry]);
+
+  useEffect(() => {
+    if (permanentCountry !== 'India') {
+      setPermanentPincodeOptions([]);
+      return;
+    }
+    const pin = (permanentPinValue ?? '').toString().trim();
+    if (pin.length < 3) {
+      setPermanentPincodeOptions([]);
+      return;
+    }
+    let cancelled = false;
+    searchPincodesByPrefix(pin, 20).then((rows: PincodeEntry[]) => {
+      if (cancelled) return;
+      setPermanentPincodeOptions(
+        rows.map((r) => ({
+          value: r.pincode,
+          label: (
+            <span>
+              <strong>{r.pincode}</strong>{' '}
+              <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+                {r.city}, {r.state}
+              </span>
+            </span>
+          ),
+        })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [permanentPinValue, permanentCountry]);
+
+  // Live verification against India Post once a full 6-digit pincode is
+  // entered. Debounced 500ms; aborts the previous fetch on each keystroke.
+  // On success, auto-fills state + city.
+  useEffect(() => {
+    if (presentCountry !== 'India') {
+      setPresentVerifyStatus('idle');
+      setPresentVerifyMessage('');
+      return;
+    }
+    const pin = (presentPinValue ?? '').toString().trim();
+    if (!isSixDigits(pin)) {
+      setPresentVerifyStatus('idle');
+      setPresentVerifyMessage('');
+      return;
+    }
+    if (pin === presentLastVerifiedRef.current) return;
+
+    if (presentDebounceRef.current) clearTimeout(presentDebounceRef.current);
+    if (presentAbortRef.current) presentAbortRef.current.abort();
+
+    setPresentVerifyStatus('loading');
+    setPresentVerifyMessage('Verifying...');
+
+    const controller = new AbortController();
+    presentAbortRef.current = controller;
+
+    presentDebounceRef.current = setTimeout(async () => {
+      const result = await verifyPincode(pin, controller.signal);
+      if (controller.signal.aborted) return;
+      presentLastVerifiedRef.current = pin;
+      setPresentVerifyStatus(result.status);
+      setPresentVerifyMessage(result.message || '');
+      if (result.status === 'success') {
+        const validStates = COUNTRY_STATE_MAP['India'] || [];
+        const matchedState = result.state && validStates.find(
+          (s) => s.toLowerCase() === result.state!.toLowerCase(),
+        );
+        const patch: Record<string, unknown> = {};
+        if (matchedState) patch.presentState = matchedState;
+        else if (result.state) patch.presentState = result.state;
+        if (result.city) patch.presentCity = result.city;
+        if (Object.keys(patch).length > 0) form.setFieldsValue(patch);
+      }
+    }, 500);
+
+    return () => {
+      if (presentDebounceRef.current) clearTimeout(presentDebounceRef.current);
+      controller.abort();
+    };
+  }, [presentPinValue, presentCountry, form]);
+
+  useEffect(() => {
+    if (permanentCountry !== 'India') {
+      setPermanentVerifyStatus('idle');
+      setPermanentVerifyMessage('');
+      return;
+    }
+    const pin = (permanentPinValue ?? '').toString().trim();
+    if (!isSixDigits(pin)) {
+      setPermanentVerifyStatus('idle');
+      setPermanentVerifyMessage('');
+      return;
+    }
+    if (pin === permanentLastVerifiedRef.current) return;
+
+    if (permanentDebounceRef.current) clearTimeout(permanentDebounceRef.current);
+    if (permanentAbortRef.current) permanentAbortRef.current.abort();
+
+    setPermanentVerifyStatus('loading');
+    setPermanentVerifyMessage('Verifying...');
+
+    const controller = new AbortController();
+    permanentAbortRef.current = controller;
+
+    permanentDebounceRef.current = setTimeout(async () => {
+      const result = await verifyPincode(pin, controller.signal);
+      if (controller.signal.aborted) return;
+      permanentLastVerifiedRef.current = pin;
+      setPermanentVerifyStatus(result.status);
+      setPermanentVerifyMessage(result.message || '');
+      if (result.status === 'success') {
+        const validStates = COUNTRY_STATE_MAP['India'] || [];
+        const matchedState = result.state && validStates.find(
+          (s) => s.toLowerCase() === result.state!.toLowerCase(),
+        );
+        const patch: Record<string, unknown> = {};
+        if (matchedState) patch.permanentState = matchedState;
+        else if (result.state) patch.permanentState = result.state;
+        if (result.city) patch.permanentCity = result.city;
+        if (Object.keys(patch).length > 0) form.setFieldsValue(patch);
+      }
+    }, 500);
+
+    return () => {
+      if (permanentDebounceRef.current) clearTimeout(permanentDebounceRef.current);
+      controller.abort();
+    };
+  }, [permanentPinValue, permanentCountry, form]);
+
+  // When the user picks a row from the AutoComplete, copy the matching
+  // city + state from the dataset entry directly (no API round-trip).
+  const handlePresentPincodeSelect = useCallback(
+    async (pin: string) => {
+      const rows = await searchPincodesByPrefix(pin, 1);
+      if (rows[0]) {
+        form.setFieldsValue({
+          presentState: rows[0].state,
+          presentCity: rows[0].city,
+          presentPinZip: pin,
+        });
+        // Stamp the verified ref so the live-verification effect doesn't
+        // immediately re-fire for the same pin.
+        presentLastVerifiedRef.current = pin;
+        setPresentVerifyStatus('success');
+        setPresentVerifyMessage(`${rows[0].city}, ${rows[0].state}`);
+      }
+    },
+    [form],
+  );
+
+  const handlePermanentPincodeSelect = useCallback(
+    async (pin: string) => {
+      const rows = await searchPincodesByPrefix(pin, 1);
+      if (rows[0]) {
+        form.setFieldsValue({
+          permanentState: rows[0].state,
+          permanentCity: rows[0].city,
+          permanentPinZip: pin,
+        });
+        permanentLastVerifiedRef.current = pin;
+        setPermanentVerifyStatus('success');
+        setPermanentVerifyMessage(`${rows[0].city}, ${rows[0].state}`);
+      }
+    },
+    [form],
+  );
 
   const handleCopyPresentToPermanent = useCallback(() => {
     const present = {
@@ -231,10 +528,10 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
             </Form.Item>
           </div>
 
+          {/* Field order: Country → State → City → PIN/ZIP. Country drives
+              the state list; state drives city; PIN is the most specific
+              and lives last (matching OrgAddressFields in Organization Setup). */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <Form.Item name="presentCity" label="City">
-              <Input placeholder="City" />
-            </Form.Item>
             <Form.Item
               name="presentCountry"
               label="Country"
@@ -262,11 +559,40 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
                   label: state,
                 }))}
                 disabled={!presentCountry}
+                showSearch
                 allowClear
               />
             </Form.Item>
+            <Form.Item name="presentCity" label="City">
+              <Input placeholder="City" />
+            </Form.Item>
             <Form.Item name="presentPinZip" label="PIN/ZIP Code">
-              <Input placeholder="PIN/ZIP Code" />
+              {presentCountry === 'India' ? (
+                <AutoComplete
+                  options={presentPincodeOptions}
+                  onSelect={handlePresentPincodeSelect}
+                  // AutoComplete delegates value/onChange to its child Input;
+                  // typing 3+ digits triggers the suggestion effect above
+                  // and selecting one auto-fills state + city.
+                  popupMatchSelectWidth={300}
+                >
+                  <Input
+                    placeholder="PIN Code"
+                    maxLength={6}
+                    inputMode="numeric"
+                    suffix={
+                      isSixDigits((presentPinValue ?? '').toString()) ? (
+                        <PincodeStatusIcon
+                          status={presentVerifyStatus}
+                          message={presentVerifyMessage}
+                        />
+                      ) : null
+                    }
+                  />
+                </AutoComplete>
+              ) : (
+                <Input placeholder="PIN/ZIP Code" />
+              )}
             </Form.Item>
           </div>
 
@@ -296,9 +622,6 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <Form.Item name="permanentCity" label="City">
-              <Input placeholder="City" />
-            </Form.Item>
             <Form.Item
               name="permanentCountry"
               label="Country"
@@ -326,11 +649,37 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
                   label: state,
                 }))}
                 disabled={!permanentCountry}
+                showSearch
                 allowClear
               />
             </Form.Item>
+            <Form.Item name="permanentCity" label="City">
+              <Input placeholder="City" />
+            </Form.Item>
             <Form.Item name="permanentPinZip" label="PIN/ZIP Code">
-              <Input placeholder="PIN/ZIP Code" />
+              {permanentCountry === 'India' ? (
+                <AutoComplete
+                  options={permanentPincodeOptions}
+                  onSelect={handlePermanentPincodeSelect}
+                  popupMatchSelectWidth={300}
+                >
+                  <Input
+                    placeholder="PIN Code"
+                    maxLength={6}
+                    inputMode="numeric"
+                    suffix={
+                      isSixDigits((permanentPinValue ?? '').toString()) ? (
+                        <PincodeStatusIcon
+                          status={permanentVerifyStatus}
+                          message={permanentVerifyMessage}
+                        />
+                      ) : null
+                    }
+                  />
+                </AutoComplete>
+              ) : (
+                <Input placeholder="PIN/ZIP Code" />
+              )}
             </Form.Item>
           </div>
 
@@ -438,6 +787,8 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
 
   return (
     <div className={styles.tabContent}>
+      {/* Field order: Country → State → City → PIN/ZIP, matching the
+          edit-mode grid above and OrgAddressFields in Org Setup. */}
       <div className={styles.detailGrid}>
         <EmpFieldLabel
           label="Present Address"
@@ -448,16 +799,16 @@ const ContactDetailsTab = forwardRef<ContactDetailsTabHandle, ProfileTabProps>((
           value={permanentAddr}
         />
         <EmpFieldLabel
-          label="City"
-          value={city}
-        />
-        <EmpFieldLabel
           label="Country"
           value={country}
         />
         <EmpFieldLabel
           label="State/Province"
           value={state}
+        />
+        <EmpFieldLabel
+          label="City"
+          value={city}
         />
         <EmpFieldLabel
           label="PIN/ZIP Code"
