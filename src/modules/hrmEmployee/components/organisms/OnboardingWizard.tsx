@@ -1124,16 +1124,37 @@ const OnboardingWizard: React.FC = () => {
             : created?.employeeCode || newEmployeeHandle;
         try {
           const organizationId = getOrganizationId();
-          await HrmLeaveService.initializeBalances({
+          const { msg } = await HrmLeaveService.initializeBalances({
             organizationId,
             employeeId: leaveEmployeeId,
             joiningDate: draft.joiningDate || dayjs().format('YYYY-MM-DD'),
           });
-          message.success(`Leave balances initialized for ${dayjs(draft.joiningDate || undefined).year()}`);
-        } catch {
-          message.warning(
-            'Employee created. Leave balances could not be initialized automatically — HR can adjust manually.'
-          );
+          // BE emits "0 leave types processed" when the org has no
+          // active leave types/policies — surface as a warning so HR
+          // knows nothing was actually created.
+          if (/0 leave types processed/i.test(msg)) {
+            message.warning(
+              'Employee created, but no leave balances were initialized — no leave types are configured for this organization yet. Ask your admin to set them up.'
+            );
+          } else {
+            message.success(`Leave balances initialized for ${dayjs(draft.joiningDate || undefined).year()}`);
+          }
+        } catch (err) {
+          const initErr = err as { errorCode?: string; message?: string };
+          const errorCode = initErr?.errorCode;
+          const errMsg = initErr?.message || 'Unknown error';
+          if (
+            errorCode === 'NO_LEAVE_TYPES_CONFIGURED' ||
+            errorCode === 'NO_LEAVE_POLICY_CONFIGURED'
+          ) {
+            message.warning(
+              `Employee created, but leave balances could not be initialized: ${errMsg}. Ask your admin to configure leave types and policies.`
+            );
+          } else {
+            message.warning(
+              `Employee created. Leave balances could not be initialized: ${errMsg}`
+            );
+          }
         }
       }
 

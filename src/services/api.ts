@@ -180,6 +180,11 @@ api.interceptors.response.use(
 
       // Backend wrapper format 1: { handle, message_details, errorCode, response }
       if ('response' in data && 'message_details' in data) {
+        // Preserve message_details on the response so callers can read
+        // post-success diagnostics (e.g., leave-balance/initialize emits
+        // "0 leave types processed" when the org has no leave config —
+        // the unwrapped payload alone doesn't surface this signal).
+        (response as any).messageDetails = data.message_details;
         response.data = data.response ?? [];
       }
       // Backend wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }

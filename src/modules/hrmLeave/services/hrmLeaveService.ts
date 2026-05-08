@@ -434,8 +434,14 @@ export class HrmLeaveService {
   }
 
   // ── Balance Initialization (GAP-06) ─────────────────────────────
-  static async initializeBalances(payload: InitializeBalanceRequest): Promise<void> {
-    await api.post(`${this.BASE}/leave-balance/initialize`, payload);
+  static async initializeBalances(
+    payload: InitializeBalanceRequest
+  ): Promise<{ msg: string }> {
+    const res = await api.post(
+      `${this.BASE}/leave-balance/initialize`,
+      payload
+    );
+    return { msg: (res as { messageDetails?: { msg?: string } }).messageDetails?.msg ?? "" };
   }
 
   // ── Approval Delegation ────────────────────────────────────────────
