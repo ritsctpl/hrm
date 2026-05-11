@@ -136,9 +136,26 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
 
   // Client-side filtering — runs after enrichment so the dept / employee
   // filters match the directory-resolved values too.
+  //
+  // employeeFilter comes from the directory selector as the composite
+  // "EMP-3 - Name" form. Row data carries the plain code in
+  // employeeNumber. The previous comparison checked composite === code
+  // (always false) so the filter never matched anything. Extract the
+  // bare code from the composite before comparing.
   const filteredRows = useMemo(() => {
-    return enrichedRows.filter(r => {
-      if (employeeFilter && r.employeeNumber !== employeeFilter && r.employeeName !== employeeFilter) return false;
+    const filterCode = employeeFilter
+      ? employeeFilter.includes(" - ")
+        ? employeeFilter.split(" - ")[0]?.trim() ?? employeeFilter
+        : employeeFilter
+      : "";
+    return enrichedRows.filter((r) => {
+      if (employeeFilter) {
+        const matchesComposite =
+          r.employeeNumber === employeeFilter || r.employeeName === employeeFilter;
+        const matchesCode =
+          !!filterCode && (r.employeeNumber === filterCode);
+        if (!matchesComposite && !matchesCode) return false;
+      }
       if (leaveTypeFilter && r.leaveTypeCode !== leaveTypeFilter) return false;
       if (departmentFilter && r.department !== departmentFilter) return false;
       return true;

@@ -28,6 +28,7 @@ import {
   TopAbsenteeData,
 } from "../../types/api.types";
 import { buildYearOptions } from "../../utils/transformations";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 
 const formatDept = (val: string | undefined | null): string => {
   const trimmed = (val ?? "").trim();
@@ -137,18 +138,26 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     fetchTopAbsentees();
   }, [fetchAbsenteeism, fetchTrend, fetchTopAbsentees]);
 
-  // ── Department options derived from absenteeism data ────────────────
-
+  // ── Department options ───────────────────────────────────────────────
+  // Sourcing departments from absenteeism response alone made the filter
+  // unusable: the dropdown stayed empty until after the first /absenteeism
+  // call resolved, and even then it only listed depts that had non-zero
+  // absenteeism for the selected year. Combine the absenteeism rows with
+  // the employee directory so every real department shows up in the
+  // selector regardless of load order or current-period activity.
+  const { employees: directoryEmployees } = useEmployeeOptions();
   const departmentOptions = useMemo(() => {
-    const depts = Array.from(
-      new Set(
-        absenteeismData
-          .map((d) => (d.department ?? "").trim())
-          .filter((d) => d && d.toLowerCase() !== "unknown"),
-      ),
-    ).sort();
-    return depts.map((d) => ({ value: d, label: d }));
-  }, [absenteeismData]);
+    const depts = new Set<string>();
+    for (const row of absenteeismData) {
+      const d = (row.department ?? "").trim();
+      if (d && d.toLowerCase() !== "unknown") depts.add(d);
+    }
+    for (const emp of directoryEmployees) {
+      const d = (emp.department ?? "").trim();
+      if (d && d.toLowerCase() !== "unknown") depts.add(d);
+    }
+    return Array.from(depts).sort().map((d) => ({ value: d, label: d }));
+  }, [absenteeismData, directoryEmployees]);
 
   // ── Summary Stats ───────────────────────────────────────────────────
 

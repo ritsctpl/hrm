@@ -63,11 +63,17 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
 
   const buildPayload = (values: FormValues) => {
     const [from, to] = values.dateRange;
+    // Department + employeeId were collected by the form but dropped here,
+    // so QA reported the filters "didn't work" — the request didn't carry
+    // them. Both fields are accepted by /report/leave-availed and the
+    // export endpoint, so include them when set.
     return {
       organizationId,
       fromDate: from.format("YYYY-MM-DD"),
       toDate: to.format("YYYY-MM-DD"),
       leaveTypeCode: values.leaveTypeCode || undefined,
+      employeeId: values.employeeId || undefined,
+      deptId: values.department || undefined,
     };
   };
 
