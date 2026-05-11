@@ -79,7 +79,25 @@ function mapTravelRequest(raw: any): TravelRequest {
     slaBreached: raw.slaBreached ?? false,
     rejectionReason: raw.rejectionReason,
     cancellationReason: raw.cancellationReason,
-    coTravellers: Array.isArray(raw.coTravellers) ? raw.coTravellers : [],
+    coTravellers: Array.isArray(raw.coTravellers)
+      ? raw.coTravellers.map((c: unknown): CoTravellerDto => {
+          // BE may return either a bare employeeId string (when only IDs
+          // are persisted) or a full {employeeId, employeeName, ...} DTO.
+          // Normalise so renderers don't get a string with no .employeeId
+          // / .employeeName accessors and silently render blank cells.
+          if (typeof c === "string") {
+            return { employeeId: c, employeeName: c, department: "", hasConflict: false };
+          }
+          const o = c as Record<string, unknown>;
+          return {
+            employeeId: String(o.employeeId ?? o.empId ?? ""),
+            employeeName: String(o.employeeName ?? o.fullName ?? o.name ?? ""),
+            department: String(o.department ?? ""),
+            hasConflict: !!o.hasConflict,
+            conflictReason: o.conflictReason as string | undefined,
+          };
+        })
+      : [],
     attachments: Array.isArray(raw.attachments) ? raw.attachments : [],
     actionHistory: Array.isArray(raw.actionHistory)
       ? raw.actionHistory.map(mapAction)
@@ -203,6 +221,38 @@ export class HrmTravelService {
 
   static async deleteAttachment(payload: { organizationId: string; handle: string; attachmentId: string }): Promise<void> {
     await api.post(`${this.BASE}/attachments/delete`, payload);
+  }
+
+  /**
+   * Fetch an attachment as a blob so the FE can preview (open in tab) or
+   * download (synthesize an <a download> click). Cookie-only auth wouldn't
+   * work for a same-window download because the JWT lives in localStorage —
+   * we have to go through axios so the Authorization header is attached.
+   *
+   * Sends every reasonable alias for the attachment id (attachmentId,
+   * attachmentRef, attachmentHandle) and the parent travel handle under
+   * three names (handle, travelHandle, travelRequestHandle) so whichever
+   * shape the BE handler expects, it lands. Pruning happens once BE
+   * confirms the canonical field names.
+   */
+  static async downloadAttachment(payload: {
+    organizationId: string;
+    handle: string;
+    attachmentId: string;
+  }): Promise<Blob> {
+    const body = {
+      organizationId: payload.organizationId,
+      handle: payload.handle,
+      travelHandle: payload.handle,
+      travelRequestHandle: payload.handle,
+      attachmentId: payload.attachmentId,
+      attachmentRef: payload.attachmentId,
+      attachmentHandle: payload.attachmentId,
+    };
+    const response = await api.post(`${this.BASE}/attachments/download`, body, {
+      responseType: "blob",
+    });
+    return response.data;
   }
 
   // ── Policy ───────────────────────────────────────────────────────────

@@ -62,8 +62,16 @@ const HrmTravelScreen: React.FC<Props> = ({
   // Backend enforces composite "EMP001 - Full Name" for actor fields.
   const actorId = identity.employeeIdWithName;
 
-  const { formState, updateFormState, activeDetailTab, setActiveDetailTab, approving, saving } =
-    useHrmTravelStore();
+  const {
+    formState,
+    updateFormState,
+    activeDetailTab,
+    setActiveDetailTab,
+    approving,
+    saving,
+    setSelectedRequest,
+    updateMyRequest,
+  } = useHrmTravelStore();
 
   const { saveDraft, submitRequest, approveRequest, rejectRequest, cancelRequest, recallRequest, deleteRequest } =
     useTravelMutations();
@@ -73,6 +81,14 @@ const HrmTravelScreen: React.FC<Props> = ({
   const [recallModal, setRecallModal] = useState(false);
   const [recallReason, setRecallReason] = useState("");
   const [deleteModal, setDeleteModal] = useState(false);
+
+  // Co-traveller details (name, department, conflict flag) added during the
+  // current session. formState only carries the IDs that get submitted, so
+  // for create / edit-draft mode we need a parallel store of full DTOs to
+  // render the list — pulling from `request.coTravellers` alone misses any
+  // freshly-picked entries on a new request (request is null) and is also
+  // empty for an existing draft until a save round-trip refreshes it.
+  const [pendingCoTravellers, setPendingCoTravellers] = useState<CoTravellerDto[]>([]);
 
   // Travel Advance state
   const [advance, setAdvance] = useState<TravelAdvance | null>(null);
@@ -128,13 +144,40 @@ const HrmTravelScreen: React.FC<Props> = ({
     if (!formState.coTravellerIds.includes(traveller.employeeId)) {
       updateFormState({ coTravellerIds: [...formState.coTravellerIds, traveller.employeeId] });
     }
+    setPendingCoTravellers((prev) =>
+      prev.some((p) => p.employeeId === traveller.employeeId) ? prev : [...prev, traveller],
+    );
   };
 
   const handleCoTravellerRemove = (employeeId: string) => {
     updateFormState({
       coTravellerIds: formState.coTravellerIds.filter((id) => id !== employeeId),
     });
+    setPendingCoTravellers((prev) => prev.filter((p) => p.employeeId !== employeeId));
   };
+
+  // Reset session-pending entries when switching requests / leaving create.
+  // Without this, the list from a freshly-cancelled new request would leak
+  // into the next "New Request" click.
+  useEffect(() => {
+    setPendingCoTravellers([]);
+  }, [request?.handle, mode]);
+
+  // Refresh the currently-selected request from BE so newly-uploaded /
+  // deleted attachments and any other server-side changes (e.g. derived
+  // co-traveller details) appear immediately, WITHOUT closing the screen
+  // or navigating back to the list. Calling onActionComplete() here would
+  // pop the user back to the list — that's the post-submit / post-approve
+  // flow and is wrong for transient operations like attachment upload.
+  const refreshCurrentRequest = useCallback(async (handle: string) => {
+    try {
+      const fresh = await HrmTravelService.getRequestByHandle({ organizationId, handle });
+      setSelectedRequest(fresh);
+      updateMyRequest(handle, fresh);
+    } catch {
+      // Non-fatal — list will reconcile on next navigation.
+    }
+  }, [organizationId]);
 
   const handleUpload = async (file: File) => {
     let handle = request?.handle;
@@ -150,17 +193,39 @@ const HrmTravelScreen: React.FC<Props> = ({
 
     try {
       await HrmTravelService.uploadAttachment(handle, file, organizationId);
-      onActionComplete();
+      await refreshCurrentRequest(handle);
       message.success("Attachment uploaded.");
-    } catch {
-      message.error("Failed to upload attachment.");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "";
+      message.error(
+        detail
+          ? `Failed to upload attachment: ${detail}`
+          : "Failed to upload attachment.",
+      );
     }
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!request?.handle) return;
-    await HrmTravelService.deleteAttachment({ organizationId, handle: request.handle, attachmentId });
-    onActionComplete();
+    try {
+      await HrmTravelService.deleteAttachment({ organizationId, handle: request.handle, attachmentId });
+      await refreshCurrentRequest(request.handle);
+      message.success("Attachment deleted.");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "";
+      message.error(
+        detail ? `Failed to delete attachment: ${detail}` : "Failed to delete attachment.",
+      );
+    }
+  };
+
+  const handleAttachmentPreview = async (att: { attachmentId: string }): Promise<Blob> => {
+    if (!request?.handle) throw new Error("No request handle");
+    return HrmTravelService.downloadAttachment({
+      organizationId,
+      handle: request.handle,
+      attachmentId: att.attachmentId,
+    });
   };
 
   // Travel Advance handlers
@@ -284,9 +349,19 @@ const HrmTravelScreen: React.FC<Props> = ({
 
   const coTravellers = isReadonly
     ? request?.coTravellers ?? []
-    : (request?.coTravellers?.filter((t) =>
-        formState.coTravellerIds.includes(t.employeeId)
-      ) ?? []);
+    : (() => {
+        // Build an id → DTO lookup that prefers session-pending entries (most
+        // up-to-date conflict flag from the picker) but falls back to the
+        // server-saved list for previously-attached travellers on an edited
+        // draft. Order is dictated by formState.coTravellerIds so the list
+        // mirrors add/remove order rather than fetch order.
+        const byId = new Map<string, CoTravellerDto>();
+        (request?.coTravellers ?? []).forEach((t) => byId.set(t.employeeId, t));
+        pendingCoTravellers.forEach((t) => byId.set(t.employeeId, t));
+        return formState.coTravellerIds
+          .map((id) => byId.get(id))
+          .filter((t): t is CoTravellerDto => !!t);
+      })();
 
   // Travel Advance section (visible only for APPROVED requests)
   const advanceSection = request?.status === "APPROVED" ? (
@@ -472,6 +547,7 @@ const HrmTravelScreen: React.FC<Props> = ({
             readonly={isReadonly}
             onUpload={handleUpload}
             onDelete={handleDeleteAttachment}
+            onPreview={handleAttachmentPreview}
           />
         </div>
       ),

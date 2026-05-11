@@ -64,6 +64,7 @@ const HrmTravelLanding: React.FC = () => {
     setSelectedRequest,
     setScreenMode,
     resetFormState,
+    setActiveDetailTab,
   } = useHrmTravelStore();
 
   const { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests } = useTravelData();
@@ -104,6 +105,9 @@ const HrmTravelLanding: React.FC = () => {
   const handleNewRequest = () => {
     setSelectedRequest(null);
     resetFormState();
+    // Always land on Details when creating — last-viewed tab (e.g. Co-Travellers
+    // / Attachments) should not leak into a fresh request.
+    setActiveDetailTab("details");
     setScreenMode("create");
   };
 

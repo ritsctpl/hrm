@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Upload, Button, List, Typography, message } from "antd";
-import { UploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
+import { UploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined, DownloadOutlined } from "@ant-design/icons";
 import type { TravelAttachment } from "../../types/domain.types";
 import Can from "../../../hrmAccess/components/Can";
 
@@ -13,6 +13,7 @@ interface Props {
   readonly?: boolean;
   onUpload?: (file: File) => Promise<void>;
   onDelete?: (attachmentId: string) => void;
+  onPreview?: (attachment: TravelAttachment) => Promise<Blob>;
 }
 
 function formatBytes(bytes: number): string {
@@ -21,7 +22,50 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, onDelete }) => {
+const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, onDelete, onPreview }) => {
+  const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
+
+  const fetchBlob = async (att: TravelAttachment): Promise<Blob | null> => {
+    if (!onPreview) {
+      message.error("Preview is not available — no download handler wired up.");
+      return null;
+    }
+    setBusyAttachmentId(att.attachmentId);
+    try {
+      return await onPreview(att);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 403) message.error("You do not have permission to access this file.");
+      else if (status === 404) message.error("Attachment not found on the server.");
+      else message.error("Failed to fetch attachment.");
+      return null;
+    } finally {
+      setBusyAttachmentId(null);
+    }
+  };
+
+  const handleView = async (att: TravelAttachment) => {
+    const blob = await fetchBlob(att);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    // Revoke after a delay so the new tab has time to render the resource.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const handleDownload = async (att: TravelAttachment) => {
+    const blob = await fetchBlob(att);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = att.fileName || "attachment";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       {!readonly && onUpload && (
@@ -73,8 +117,20 @@ const AttachmentsPanel: React.FC<Props> = ({ attachments, readonly, onUpload, on
                   type="link"
                   size="small"
                   icon={<EyeOutlined />}
+                  loading={busyAttachmentId === att.attachmentId}
+                  onClick={() => handleView(att)}
                 >
-                  View
+                  Preview
+                </Button>,
+                <Button
+                  key="download"
+                  type="link"
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  loading={busyAttachmentId === att.attachmentId}
+                  onClick={() => handleDownload(att)}
+                >
+                  Download
                 </Button>,
                 !readonly && onDelete && (
                   <Can I="delete" object="travel_attachment" key="del">
