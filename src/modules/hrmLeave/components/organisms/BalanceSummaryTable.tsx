@@ -6,6 +6,7 @@ import type { ColumnsType } from "antd/es/table";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { BalanceSummaryTableProps } from "../../types/ui.types";
 import { LeaveBalance } from "../../types/domain.types";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 
 const { Text } = Typography;
 
@@ -18,18 +19,53 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Filter rows for the selected employee. Backend now returns the
-  // populated employeeId / employeeName / employeeNumber / department
-  // fields directly, so the previous directory-based enrichment fallback
-  // has been removed.
-  // __idx is attached to keep rowKey unique even when two rows share
-  // leaveType+year (avoids the AntD pagination bleed bug).
+  // Backend was supposed to start returning populated employeeName /
+  // employeeNumber / department on each balance row, but in practice the
+  // values come through blank for many records — so the Balance Summary
+  // table rendered empty Employee + Department cells. Pull the employee
+  // directory once and use it as a fallback enrichment source. Keys are
+  // the composite "EMP-2 - Name" (what leave-service stores in
+  // employeeId), the raw code, and the handle UUID — leave-service is
+  // inconsistent about which one it returns on balance rows.
+  const { employees } = useEmployeeOptions();
+  const employeeLookup = useMemo(() => {
+    const map = new Map<string, { name: string; code: string; department: string }>();
+    for (const emp of employees) {
+      const entry = {
+        name: emp.fullName || "",
+        code: emp.employeeCode || "",
+        department: emp.department || "",
+      };
+      const composite =
+        emp.employeeCode && emp.fullName
+          ? `${emp.employeeCode} - ${emp.fullName}`
+          : "";
+      if (composite) map.set(composite, entry);
+      if (emp.employeeCode) map.set(emp.employeeCode, entry);
+      if (emp.handle) map.set(emp.handle, entry);
+    }
+    return map;
+  }, [employees]);
+
+  // Filter rows for the selected employee, then layer the directory
+  // lookup over each row so blanks in employeeName / employeeNumber /
+  // department get filled where possible. __idx keeps rowKey unique
+  // even when two rows share leaveType+year (AntD pagination bleed).
   const enriched = useMemo(() => {
     const rows = selectedEmployeeId
       ? balances.filter((b) => !b.employeeId || b.employeeId === selectedEmployeeId)
       : balances;
-    return rows.map((row, idx) => ({ ...row, __idx: idx }));
-  }, [balances, selectedEmployeeId]);
+    return rows.map((row, idx) => {
+      const fallback = row.employeeId ? employeeLookup.get(row.employeeId) : undefined;
+      return {
+        ...row,
+        employeeName: row.employeeName?.trim() || fallback?.name || "",
+        employeeNumber: row.employeeNumber?.trim() || fallback?.code || "",
+        department: row.department?.trim() || fallback?.department || "",
+        __idx: idx,
+      };
+    });
+  }, [balances, selectedEmployeeId, employeeLookup]);
 
   const pagedData = useMemo(() => {
     const start = (current - 1) * pageSize;

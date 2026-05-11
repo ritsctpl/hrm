@@ -64,6 +64,31 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
     );
   })();
 
+  // Self-approval guard. When an employee is configured as their own
+  // reporting manager (e.g., a one-person team or a workflow misconfig),
+  // the backend may route the request to themselves. The UI must refuse
+  // to surface Approve / Reject for that case — otherwise the requester
+  // can rubber-stamp their own leave. Match the requester against every
+  // form of "self" we know about (composite, plain code, UUID handle)
+  // so a mismatch in storage shape can't sneak through.
+  const isSelfRequest = (() => {
+    if (!request?.employeeId) return false;
+    const requesterRaw = request.employeeId;
+    const requesterCode = requesterRaw.includes(" - ")
+      ? requesterRaw.split(" - ")[0]?.trim() ?? requesterRaw
+      : requesterRaw;
+    const myIdentities = [
+      myComposite,
+      myCode,
+      identity.handle,
+      cookies.userId,
+      cookies.employeeCode,
+    ].filter((v): v is string => typeof v === "string" && v.length > 0);
+    return myIdentities.some(
+      (mine) => mine === requesterRaw || mine === requesterCode,
+    );
+  })();
+
   const [loading, setLoading] = React.useState(false);
   const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
   const { removeFromPending, updateGlobalQueueRequest, updateMyRequest } = useHrmLeaveStore();
@@ -89,6 +114,13 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   })();
 
   const handleApprove = async () => {
+    // Defence in depth: even if the buttons are hidden, refuse to call
+    // /approve when the actor IS the requester. Stops anyone driving the
+    // store directly or pasting a curl from the network tab.
+    if (isSelfRequest) {
+      message.error("You cannot approve your own leave request. Please ask another approver.");
+      return;
+    }
     setLoading(true);
     try {
       await HrmLeaveService.approveRequest({ organizationId,
@@ -108,6 +140,10 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   };
 
   const handleReject = async (remarks: string) => {
+    if (isSelfRequest) {
+      message.error("You cannot reject your own leave request.");
+      return;
+    }
     setLoading(true);
     try {
       await HrmLeaveService.rejectRequest({ organizationId,
@@ -210,14 +246,37 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         onCancelled={onActionComplete}
       />
 
+      {/* Self-approval guard: when the signed-in user is the requester,
+          the regular approve/reject path is forbidden. Show a clear
+          banner + leave only Escalate / Reassign available so the
+          request can still move to a valid approver. canOverride
+          (HR-only) is also withheld here — HR users acting on their
+          OWN request should not be able to self-override. */}
+      {isSelfRequest && isCurrentApprover && (
+        <div
+          style={{
+            padding: "8px 12px",
+            background: "#fff7e6",
+            border: "1px solid #ffd591",
+            borderRadius: 6,
+            margin: "8px 0",
+            color: "#874d00",
+            fontSize: 13,
+          }}
+        >
+          You are the named approver for your own leave request. Self-approval is not allowed —
+          please <strong>Reassign</strong> or <strong>Escalate</strong> to another approver.
+        </div>
+      )}
+
       <LeaveRequestApprovalPanel
         request={request}
         permissions={permissions}
-        onApprove={isCurrentApprover ? handleApprove : undefined}
-        onReject={isCurrentApprover ? handleReject : undefined}
+        onApprove={isCurrentApprover && !isSelfRequest ? handleApprove : undefined}
+        onReject={isCurrentApprover && !isSelfRequest ? handleReject : undefined}
         onEscalate={isCurrentApprover && permissions.canEscalate ? handleEscalate : undefined}
         onReassign={isCurrentApprover ? handleReassign : undefined}
-        onOverride={permissions.canOverride ? handleOverride : undefined}
+        onOverride={permissions.canOverride && !isSelfRequest ? handleOverride : undefined}
         loading={loading}
       />
 

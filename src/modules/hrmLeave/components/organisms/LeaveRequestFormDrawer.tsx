@@ -172,9 +172,23 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     return name || code || "";
   })();
 
+  // Resolution priority (most → least authoritative):
+  //   1. profileLabel — the freshly-fetched profile fullName + code.
+  //   2. useEmployeeIdentity composite — the canonical "<code> - <name>"
+  //      contract used everywhere in the leave module. Trust it before
+  //      reaching into cookies, because cookies are notoriously stale /
+  //      missing for Reporting Manager logins (those frequently lack
+  //      cookies.fullName / cookies.employeeName, which used to leave
+  //      this label rendering only the email or "Current user").
+  //   3. matchedEmployee — directory lookup by handle / code / email.
+  //   4. cookies — last-ditch fallbacks, may render an email.
   // Use || (not ??) so empty-string cookies fall through.
   const employeeDisplayName =
     profileLabel ||
+    (identity.isReady && identity.employeeCode && identity.fullName
+      ? `${identity.employeeCode} - ${identity.fullName}`
+      : "") ||
+    identity.employeeIdWithName ||
     (matchedEmployee
       ? `${matchedEmployee.employeeCode} - ${matchedEmployee.fullName}`
       : "") ||

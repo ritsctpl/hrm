@@ -30,6 +30,7 @@ import { AccrualRunPanelProps } from "../../types/ui.types";
 import { AccrualBatch } from "../../types/api.types";
 import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
+import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -157,6 +158,26 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [batchesPage, setBatchesPage] = useState(1);
   const [batchesPageSize, setBatchesPageSize] = useState(10);
+
+  // Directory lookup for the preview enrichment fallback: backend's
+  // accrual preview occasionally returns empty `employeeName` even when
+  // `employeeId` (composite or code) is populated, so each line was
+  // rendering with a blank name. Build a Map keyed by composite, code,
+  // and handle so whichever shape `employeeId` arrives in, we can match.
+  const { employees: directoryRows } = useEmployeeOptions();
+  const directoryNameLookup = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const emp of directoryRows) {
+      const fullName = emp.fullName || "";
+      if (!fullName) continue;
+      if (emp.employeeCode && emp.fullName) {
+        map.set(`${emp.employeeCode} - ${emp.fullName}`, fullName);
+      }
+      if (emp.employeeCode) map.set(emp.employeeCode, fullName);
+      if (emp.handle) map.set(emp.handle, fullName);
+    }
+    return map;
+  }, [directoryRows]);
 
   // Auto-fill periodStart/periodEnd whenever the period selector or year
   // changes.  Keeps the run window consistent with the selected period so
@@ -458,9 +479,23 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
           )}
 
           <div className={styles.accrualLines}>
-            {(accrualPreview.lines ?? []).map((line, i) => (
-              <AccrualPreviewLine key={`${line.employeeId}-${i}`} line={line} />
-            ))}
+            {(accrualPreview.lines ?? []).map((line, i) => {
+              // Fall back to the directory lookup if the preview line came
+              // back with an empty employeeName — fixes the bug where the
+              // accrual preview rendered just leave-type + days with no
+              // identifying employee.
+              const resolvedName =
+                line.employeeName?.trim()
+                || directoryNameLookup.get(line.employeeId)
+                || line.employeeId
+                || "—";
+              return (
+                <AccrualPreviewLine
+                  key={`${line.employeeId}-${i}`}
+                  line={{ ...line, employeeName: resolvedName }}
+                />
+              );
+            })}
           </div>
 
           {accrualPreview.canPost && (

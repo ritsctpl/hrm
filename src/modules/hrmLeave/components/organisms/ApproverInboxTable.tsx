@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Checkbox, Empty, Spin, Typography, Button, Modal, Input, message } from "antd";
+import { parseCookies } from "nookies";
 import ApproverRequestRow from "../molecules/ApproverRequestRow";
 import { ApproverInboxTableProps } from "../../types/ui.types";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
+import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
+import { HR_ROLES } from "../../utils/constants";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -35,11 +38,40 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
     return match ? `${match.fullName} (${match.employeeCode})` : "";
   };
 
+  // Defensive FE filter: backend's pending-for-approver API has been
+  // observed to leak requests to higher-level supervisors before they've
+  // been escalated, so a 2nd-level RM sees a request that should still
+  // be sitting with the direct manager. Drop any row whose
+  // currentApproverId doesn't match the logged-in user. HR users keep
+  // the full list (they have legitimate cross-org visibility via the
+  // Global Queue elsewhere; this is the Approvals tab specifically).
+  const identity = useEmployeeIdentity();
+  const cookies = parseCookies();
+  const isHr = HR_ROLES.includes((role || "").toUpperCase());
+  const myComposite = identity.employeeIdWithName;
+  const myCode = identity.employeeCode;
+  const myHandle = identity.handle;
+  const visibleRequests = useMemo(() => {
+    if (isHr) return requests;
+    const myIds = [myComposite, myCode, myHandle, cookies.userId, cookies.employeeCode]
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+    return requests.filter((req) => {
+      const raw = req.currentApproverId;
+      if (!raw) return false;
+      // Strip role prefix like "SUPERVISOR_EMP-3 - John" → "EMP-3 - John"
+      const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
+      const code = stripped.includes(" - ")
+        ? stripped.split(" - ")[0]?.trim() ?? stripped
+        : stripped;
+      return myIds.some((mine) => mine === stripped || mine === code);
+    });
+  }, [requests, isHr, myComposite, myCode, myHandle, cookies.userId, cookies.employeeCode]);
+
   const [bulkLoading, setBulkLoading] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemarks, setRejectRemarks] = useState("");
 
-  const visibleIds = requests.map((r) => r.handle);
+  const visibleIds = visibleRequests.map((r) => r.handle);
   const selectedIds = selectedRequestIds.filter((id) => visibleIds.includes(id));
   const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const someSelected = selectedIds.length > 0 && !allSelected;
@@ -118,7 +150,7 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
     );
   }
 
-  if (requests.length === 0) {
+  if (visibleRequests.length === 0) {
     return (
       <div className={styles.panelEmpty}>
         <Empty description="No pending approvals" image={Empty.PRESENTED_IMAGE_SIMPLE} />
@@ -126,13 +158,13 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
     );
   }
 
-  const slaBreachedCount = requests.filter((r) => r.slaBreached).length;
+  const slaBreachedCount = visibleRequests.filter((r) => r.slaBreached).length;
 
   return (
     <div className={styles.requestsList}>
       <div className={styles.requestsListHeader}>
         <Text strong>
-          Pending Approvals ({requests.length})
+          Pending Approvals ({visibleRequests.length})
           {slaBreachedCount > 0 && (
             <span style={{ color: "#ff4d4f", marginLeft: 8, fontSize: 12 }}>
               {slaBreachedCount} SLA breached
@@ -195,7 +227,7 @@ const ApproverInboxTable: React.FC<ApproverInboxTableProps> = ({
         </Text>
       </div>
 
-      {requests.map((req) => (
+      {visibleRequests.map((req) => (
         <div
           key={req.handle}
           style={{ display: "flex", alignItems: "flex-start" }}
