@@ -42,7 +42,6 @@ export interface ExpenseReport {
   financeUserId?: string;
   financeUserName?: string;
   items: ExpenseItem[];
-  attachments?: ExpenseAttachment[];
   approvalHistory: ExpenseApprovalAction[];
   status: ExpenseStatus;
   currentApproverId?: string;
@@ -71,17 +70,8 @@ export interface ExpenseItem {
   distanceKm?: number;
   ratePerKm?: number;
   mileageAmount?: number;
-  attachmentRef?: string;
+  attachmentRefs?: string[];
   outOfPolicy: boolean;
-}
-
-export interface ExpenseAttachment {
-  attachmentId: string;
-  fileName: string;
-  fileSizeBytes: number;
-  linkedLineItemId?: string;
-  uploadedAt: string;
-  uploadedBy: string;
 }
 
 export interface ExpenseApprovalAction {

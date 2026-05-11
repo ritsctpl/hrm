@@ -77,8 +77,8 @@ export function validateLineItems(
     // and gated by BR1 (justification required). Submit proceeds with justification
     // and the approver reviews the breach.
 
-    // BR2: receipt required when category.requiresAttachment
-    if (cat?.requiresAttachment && !item.attachmentRef) {
+    // BR2: receipt required when category.requiresAttachment.
+    if (cat?.requiresAttachment && !item.attachmentRefs?.length) {
       errors.push({
         handle: item.handle,
         field: "attachment",

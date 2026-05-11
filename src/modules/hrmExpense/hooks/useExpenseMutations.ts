@@ -75,7 +75,7 @@ export function useExpenseMutations() {
           fromLocation: item.fromLocation || undefined,
           toLocation: item.toLocation || undefined,
           distanceKm: item.distanceKm ?? undefined,
-          attachmentRef: item.attachmentRef || undefined,
+          attachmentRefs: item.attachmentRefs ?? [],
         })),
         createdBy: employeeId,
       };

@@ -32,7 +32,7 @@ export interface ExpenseItemDto {
   fromLocation?: string;
   toLocation?: string;
   distanceKm?: number;
-  attachmentRef?: string;
+  attachmentRefs?: string[];
 }
 
 export interface ExpenseCreatePayload {
@@ -49,7 +49,6 @@ export interface ExpenseCreatePayload {
   toDate: string;
   outOfPolicyJustification?: string;
   items: ExpenseItemDto[];
-  attachmentRefs?: string[];
   createdBy: string;
 }
 
