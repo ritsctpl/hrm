@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Popconfirm, Skeleton, message, Tooltip } from 'antd';
 import {
   SearchOutlined,
@@ -17,11 +17,13 @@ import {
   ApartmentOutlined,
   TeamOutlined,
   ClearOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import Can from '../../../hrmAccess/components/Can';
 import { useCan } from '../../../hrmAccess/hooks/useCan';
 import { useHrmRbacStore } from '../../../hrmAccess/stores/hrmRbacStore';
+import InitializeOrgModal from '../organisms/InitializeOrgModal';
 import styles from '../../styles/HrmOrganization.module.css';
 
 const OrganizationListTemplate: React.FC = () => {
@@ -32,6 +34,7 @@ const OrganizationListTemplate: React.FC = () => {
     navigateToDetail,
     deleteCompany,
   } = useHrmOrganizationStore();
+  const [initializeModalOpen, setInitializeModalOpen] = useState(false);
 
   // RBAC scoping: regular users only see the organizations they're explicitly
   // assigned to (from `userModulesByOrganization`). Admins (anyone with
@@ -180,11 +183,26 @@ const OrganizationListTemplate: React.FC = () => {
           </Tooltip>
         )}
         <Can I="add">
+          <Tooltip title="Bootstrap an organization — register modules, seed permissions, create admin user">
+            <Button
+              icon={<ThunderboltOutlined />}
+              onClick={() => setInitializeModalOpen(true)}
+            >
+              Initialize
+            </Button>
+          </Tooltip>
+        </Can>
+        <Can I="add">
           <Button type="primary" icon={<PlusOutlined />} onClick={() => navigateToDetail('new')}>
             Add Company
           </Button>
         </Can>
       </div>
+
+      <InitializeOrgModal
+        open={initializeModalOpen}
+        onClose={() => setInitializeModalOpen(false)}
+      />
 
       {/* ───── Content ───── */}
       {companyList.isLoading ? (

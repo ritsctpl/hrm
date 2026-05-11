@@ -38,6 +38,38 @@ export interface OrganizationSummary {
   organizationName: string;
 }
 
+/**
+ * POST /hrm-service/initialize/org
+ *
+ * BE only requires `organizationId`. The optional admin email / password
+ * fields are sent from the explicit Initialize-button modal so users can
+ * override the auto-derived admin user; BE will start honouring them once
+ * the contract is updated.
+ */
+export interface InitializeOrgRequest {
+  organizationId: string;
+  adminEmail?: string;
+  password?: string;
+  sendCredentialsEmail?: boolean;
+}
+
+export interface InitializeOrgResponse {
+  success: boolean;
+  alreadyInitialized: boolean;
+  message: string;
+  organizationSite?: string;
+  organizationName?: string;
+  organizationHandle?: string | null;
+  adminUserId?: string;
+  adminEmployeeId?: string;
+  keycloakUserCreated?: boolean;
+  roleAssigned?: string;
+  modulesRegistered?: number;
+  permissionsCreated?: number;
+  rolePermissionsAssigned?: number;
+  timestamp?: string;
+}
+
 export class HrmOrganizationService {
   private static readonly BASE = '/hrm-service/organization';
 
@@ -99,25 +131,25 @@ export class HrmOrganizationService {
   }
 
   /**
-   * Bootstrap a freshly-created organization — registers the standard
-   * module set, seeds default permissions, and creates the
-   * `${organizationId}_admin` Keycloak user. The backend treats repeat
-   * calls as no-ops via the `alreadyInitialized` flag, but the UI flow
-   * only calls this once after a successful CREATE.
+   * Bootstrap an organization — registers the standard module set, seeds
+   * default permissions, and creates the `${organizationId}_admin` Keycloak
+   * user. The backend treats repeat calls as no-ops via the
+   * `alreadyInitialized` flag.
+   *
+   * Accepts either a bare organizationId (post-create auto-init flow) or a
+   * full payload with optional admin email/password overrides for the
+   * explicit Initialize-button flow on the company list. BE currently
+   * derives the admin user from the org's officialEmail and ignores
+   * client-supplied overrides — the optional fields are sent for forward
+   * compatibility once BE accepts them.
    */
-  static async initializeOrganization(organizationId: string): Promise<{
-    success: boolean;
-    alreadyInitialized: boolean;
-    message: string;
-    organizationSite?: string;
-    adminUserId?: string;
-    keycloakUserCreated?: boolean;
-    modulesRegistered?: number;
-    permissionsCreated?: number;
-    rolePermissionsAssigned?: number;
-  }> {
-    const res = await api.post('/hrm-service/initialize/org', { organizationId });
-    return res.data;
+  static async initializeOrganization(
+    payload: string | InitializeOrgRequest
+  ): Promise<InitializeOrgResponse> {
+    const body: InitializeOrgRequest =
+      typeof payload === 'string' ? { organizationId: payload } : payload;
+    const res = await api.post('/hrm-service/initialize/org', body);
+    return res.data as InitializeOrgResponse;
   }
 
   /** Update company. Backend expects { handle, companyProfileRequest: {...} } */

@@ -55,6 +55,13 @@ export interface HrmOrganizationState {
   auditLog: { entries: OrgAuditLogEntry[]; isLoading: boolean; entityTypeFilter: string; entityHandleFilter: string };
   dataCompleteness: { rows: DataCompletenessRow[]; isLoading: boolean };
 
+  // Set of org ids known to be initialized (post-create auto-init OR explicit
+  // Initialize-button success in the current session). Used by the Initialize
+  // modal to grey out / hide already-bootstrapped orgs so users don't try to
+  // re-init — BE is idempotent but the UX should still prevent the request.
+  initializedOrgIds: string[];
+  markOrgInitialized: (organizationId: string) => void;
+
   // Navigation Actions
   navigateToList: () => void;
   navigateToDetail: (companyHandle: string) => void;
@@ -284,6 +291,17 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
   // Audit & Reports
   auditLog: { entries: [], isLoading: false, entityTypeFilter: 'COMPANY_PROFILE', entityHandleFilter: '' },
   dataCompleteness: { rows: [], isLoading: false },
+
+  initializedOrgIds: [],
+  markOrgInitialized: (organizationId: string) => {
+    if (!organizationId) return;
+    set((state) => {
+      const id = organizationId.toUpperCase();
+      const existing = new Set(state.initializedOrgIds.map((x) => x.toUpperCase()));
+      if (existing.has(id)) return state;
+      return { initializedOrgIds: [...state.initializedOrgIds, id] };
+    });
+  },
 
   // ------------------------------------------
   // Navigation
@@ -702,6 +720,9 @@ export const useHrmOrganizationStore = create<HrmOrganizationState>((set, get) =
         if (newOrgId) {
           try {
             const initRes = await HrmOrganizationService.initializeOrganization(newOrgId);
+            if (initRes.success || initRes.alreadyInitialized) {
+              get().markOrgInitialized(newOrgId);
+            }
             set((state) => ({
               companyProfile: {
                 ...state.companyProfile,
