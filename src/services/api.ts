@@ -143,8 +143,14 @@ api.interceptors.request.use(
 
       }
 
-      // Set default content-type if not already set
-      if (!config.headers['Content-Type']) {
+      // Set default content-type if not already set. Skip for FormData
+      // bodies — axios needs to auto-set `multipart/form-data; boundary=…`
+      // and forcing application/json here drops the boundary, making the
+      // BE multipart parser 500 / 415 on file uploads (travel attachments,
+      // company logo, employee photo, etc.).
+      const isFormData =
+        typeof FormData !== 'undefined' && config.data instanceof FormData;
+      if (!config.headers['Content-Type'] && !isFormData) {
         config.headers['Content-Type'] = 'application/json';
       }
       // console.log("API request interceptor:", config);
