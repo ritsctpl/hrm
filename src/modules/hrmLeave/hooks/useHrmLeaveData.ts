@@ -121,10 +121,18 @@ export function useHrmLeaveData(employeeId: string, role: string) {
     }
   }, [organizationId, setLeaveTypes]);
 
-  const loadBalanceSummary = useCallback(async (year: number) => {
+  const loadBalanceSummary = useCallback(async (
+    year: number,
+    filters?: { deptId?: string; buId?: string },
+  ) => {
     setBalanceSummaryLoading(true);
     try {
-      const res = await HrmLeaveService.getBalanceSummaryReport({ organizationId, year });
+      const res = await HrmLeaveService.getBalanceSummaryReport({
+        organizationId,
+        year,
+        deptId: filters?.deptId || undefined,
+        buId: filters?.buId || undefined,
+      });
       // LeaveBalanceResponse is structurally identical to LeaveBalance domain type
       setBalanceSummary(res as unknown as import("../types/domain.types").LeaveBalance[]);
     } catch {

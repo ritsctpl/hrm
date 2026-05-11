@@ -362,6 +362,13 @@ export interface LeaveAvailedReportRequest {
   fromDate: string;
   toDate: string;
   leaveTypeCode?: string;
+  /** Backend now resolves via resolveCandidates — accepts handle / code /
+   *  composite. Sent when the user picks an Employee in the report
+   *  filter; absent for org-wide reports. */
+  employeeId?: string;
+  /** Optional department-name filter; backend matches via employee-master
+   *  enrichment, same as global-queue. */
+  deptId?: string;
 }
 
 // ── Leave Request ─────────────────────────────────────────────────────

@@ -240,7 +240,20 @@ const HrmLeaveLanding: React.FC = () => {
     openCompOffForm,
   } = useHrmLeaveStore();
 
-  const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
+  const { options: employeeOptions, employees: directoryEmployees, loading: employeeOptionsLoading } = useEmployeeOptions();
+
+  // Department filter for the HR Ledger / Balance Summary view. BE now
+  // accepts `deptId` on /leave-balance/retrieve so the dropdown actually
+  // narrows the response (per BE confirmation 2026-05-11).
+  const [ledgerDeptFilter, setLedgerDeptFilter] = useState<string | undefined>(undefined);
+  const ledgerDeptOptions = useMemo(() => {
+    const depts = new Set<string>();
+    for (const emp of directoryEmployees) {
+      const d = (emp.department || "").trim();
+      if (d) depts.add(d);
+    }
+    return Array.from(depts).sort().map((d) => ({ value: d, label: d }));
+  }, [directoryEmployees]);
 
   // Ledger panel action modals (Manual / Bulk / Comp-Off) — kept at the top
   // of the page so users don't have to scroll past tables to reach the forms.
@@ -274,9 +287,9 @@ const HrmLeaveLanding: React.FC = () => {
   useEffect(() => {
     if (permissions.canViewAll) {
       loadLeaveTypes();
-      loadBalanceSummary(balancesYear);
+      loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter });
     }
-  }, [organizationId, balancesYear, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
+  }, [organizationId, balancesYear, ledgerDeptFilter, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
 
   useEffect(() => {
     loadLedgerHistory();
@@ -644,6 +657,25 @@ const HrmLeaveLanding: React.FC = () => {
           onChange={(value) => setLedgerLeaveTypeFilter(value ?? null)}
           options={leaveTypeOptions}
           style={{ minWidth: 200 }}
+        />
+        {/* Department filter narrows the Balance Summary report when no
+            specific employee is selected — backend /leave-balance/retrieve
+            applies it to the employee-master enrichment, matching BE
+            change confirmed 2026-05-11. Ledger History remains employee-
+            scoped (full dept-level ledger aggregation is a BE follow-up). */}
+        <span className={styles.ledgerToolbarLabel}>Department</span>
+        <Select
+          allowClear
+          showSearch
+          placeholder="All departments"
+          value={ledgerDeptFilter}
+          onChange={(value) => setLedgerDeptFilter(value || undefined)}
+          options={ledgerDeptOptions}
+          style={{ minWidth: 180 }}
+          disabled={!!ledgerEmployeeId}
+          filterOption={(input, option) =>
+            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+          }
         />
         <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
           Refresh
