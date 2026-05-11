@@ -113,14 +113,15 @@ export class HrmExpenseService {
   }
 
   // ── Attachments ──────────────────────────────────────────────────────
-  // lineIndex: 0-based index of the line item to bind the receipt to.
-  // Omit or pass -1 for an expense-level (unbound) attachment.
-  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex?: number): Promise<ReceiptUploadResponse> {
+  // Receipts are line-bound only. lineIndex is the 0-based index of the
+  // target line item. Expense-level attachments (lineIndex = -1) are no
+  // longer supported — see src/docs/expense/receipts-redesign-prompt.md.
+  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex: number): Promise<ReceiptUploadResponse> {
     const form = new FormData();
     form.append("file", file);
     form.append("expenseId", expenseId);
     form.append("organizationId", organizationId);
-    form.append("lineIndex", String(lineIndex ?? -1));
+    form.append("lineIndex", String(lineIndex));
     // Do NOT set Content-Type here. The browser/axios auto-sets it to
     // `multipart/form-data; boundary=----WebKitFormBoundaryXXX` when
     // given a FormData body. Setting it manually without the boundary
@@ -129,16 +130,37 @@ export class HrmExpenseService {
     return data;
   }
 
+  static async deleteReceipt(payload: {
+    organizationId: string;
+    expenseId: string;
+    lineIndex: number;
+    attachmentId: string;
+  }): Promise<void> {
+    await api.post(`${this.BASE}/receipt/delete`, payload);
+  }
+
   /**
    * Fetch a receipt as a binary blob. The caller wraps the blob in a
    * URL via URL.createObjectURL() and opens / displays it.
    *
-   * Backend endpoint convention: `POST /expense/receipt/download` with
-   * `{ organizationId, attachmentRef }` returning the file as
-   * application/pdf or image/* with `responseType: blob`.
+   * BE resolves the file by (expenseId, lineIndex, attachmentRef) — same
+   * tuple as /receipt/delete. Sending only attachmentRef caused 500s
+   * because the receipt store is keyed under the parent expense + line.
    */
-  static async downloadReceipt(payload: { organizationId: string; attachmentRef: string }): Promise<Blob> {
-    const response = await api.post(`${this.BASE}/receipt/download`, payload, {
+  static async downloadReceipt(payload: {
+    organizationId: string;
+    expenseId?: string;
+    lineIndex?: number;
+    attachmentRef: string;
+    attachmentId?: string;
+  }): Promise<Blob> {
+    // Mirror delete's field name as a safety net — different BE handlers
+    // have used `attachmentRef` and `attachmentId` interchangeably.
+    const body = {
+      ...payload,
+      attachmentId: payload.attachmentId ?? payload.attachmentRef,
+    };
+    const response = await api.post(`${this.BASE}/receipt/download`, body, {
       responseType: "blob",
     });
     return response.data;

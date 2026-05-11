@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, Alert, message } from "antd";
+import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, message } from "antd";
 import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined, CheckSquareOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
@@ -10,7 +10,6 @@ import { useExpenseMutations } from "./hooks/useExpenseMutations";
 import ExpenseHeaderForm from "./components/organisms/ExpenseHeaderForm";
 import ExpenseLineItemsTable from "./components/organisms/ExpenseLineItemsTable";
 import MileageLineItemsTable from "./components/organisms/MileageLineItemsTable";
-import ExpenseAttachmentsPanel from "./components/organisms/ExpenseAttachmentsPanel";
 import ExpenseApprovalTimeline from "./components/organisms/ExpenseApprovalTimeline";
 import SupervisorApprovalBar from "./components/molecules/SupervisorApprovalBar";
 import FinanceApprovalPanel from "./components/organisms/FinanceApprovalPanel";
@@ -183,39 +182,41 @@ const HrmExpenseScreen: React.FC<Props> = ({
     onActionComplete();
   }, [formState, expense?.handle, expense?.items, draftItems, categories, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
 
-  const handleUploadAttachment = async (file: File) => {
-    let handle = expense?.handle;
-    if (!handle) {
-      // Auto-save draft so the attachment has a parent expense to bind to.
-      const saved = await saveDraft(formState, undefined);
-      if (!saved) {
-        message.warning("Could not save draft. Please save manually before uploading attachments.");
-        return;
-      }
-      handle = saved.handle;
-    }
-    try {
-      await HrmExpenseService.uploadAttachment(handle, file, organizationId);
-      message.success("Attachment uploaded.");
-      await refetchExpense(handle);
-    } catch (error: unknown) {
-      message.error(extractExpenseError(error, "Failed to upload attachment."));
-      console.error("uploadAttachment error:", error);
-    }
-  };
-
-  const handleUploadLineReceipt = async (lineIndex: number, file: File) => {
+  const handleUploadLineReceipts = async (lineIndex: number, files: File[]) => {
+    // Receipts attach to a persisted expense + line item, so the user must
+    // explicitly save the draft first. Auto-saving on upload was creating
+    // expense records without the user clicking Save / Submit, which read
+    // as the request "submitting itself" — undo that and prompt instead.
     if (!expense?.handle) {
-      message.info("Please save the expense as a draft first to upload line receipts.");
+      message.info("Please click Save Draft first, then upload receipts.");
       return;
     }
     try {
-      await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
-      message.success("Receipt uploaded.");
+      for (const file of files) {
+        await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
+      }
+      message.success(files.length === 1 ? "Receipt uploaded." : `${files.length} receipts uploaded.`);
       await refetchExpense(expense.handle);
     } catch (error: unknown) {
       message.error(extractExpenseError(error, "Failed to upload receipt."));
-      console.error("uploadLineReceipt error:", error);
+      console.error("uploadLineReceipts error:", error);
+    }
+  };
+
+  const handleDeleteLineReceipt = async (lineIndex: number, attachmentId: string) => {
+    if (!expense?.handle) return;
+    try {
+      await HrmExpenseService.deleteReceipt({
+        organizationId,
+        expenseId: expense.handle,
+        lineIndex,
+        attachmentId,
+      });
+      message.success("Receipt removed.");
+      await refetchExpense(expense.handle);
+    } catch (error: unknown) {
+      message.error(extractExpenseError(error, "Failed to remove receipt."));
+      console.error("deleteLineReceipt error:", error);
     }
   };
 
@@ -312,7 +313,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
         distanceKm: item.distanceKm,
         ratePerKm: item.ratePerKm,
         mileageAmount: item.mileageAmount,
-        attachmentRef: item.attachmentRef,
+        attachmentRefs: item.attachmentRefs ?? [],
         outOfPolicy: item.outOfPolicy ?? false,
       });
     },
@@ -349,6 +350,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
         <ExpenseLineItemsTable
           lineItems={regularItems}
           categories={categories}
+          expenseId={expense?.handle}
           readonly={isReadonly}
           outOfPolicy={isReadonly ? expense?.outOfPolicy : draftOutOfPolicy}
           justification={formState.outOfPolicyJustification}
@@ -358,7 +360,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
           onAddItem={handleAddDraftItem}
           onUpdateItem={handleUpdateDraftItem}
           onRemoveItem={handleRemoveDraftItem}
-          onUploadReceipt={expense?.handle ? handleUploadLineReceipt : undefined}
+          onUploadReceipts={handleUploadLineReceipts}
+          onDeleteReceipt={expense?.handle ? handleDeleteLineReceipt : undefined}
         />
       </div>
     );
@@ -448,30 +451,6 @@ const HrmExpenseScreen: React.FC<Props> = ({
       label: `Line Items${expenseItems.length ? ` (${expenseItems.length})` : ""}`,
       children: lineItemsTab,
     },
-    {
-      key: "attachments",
-      label: `Attachments${expense?.attachments?.length ? ` (${expense.attachments.length})` : ""}`,
-      children: (
-        <div className={styles.detailBody}>
-          {isNew && (
-            <Alert
-              type="info"
-              showIcon
-              message="Save as draft to enable attachment uploads — uploading will auto-save the draft."
-              style={{ marginBottom: 12 }}
-            />
-          )}
-          <ExpenseAttachmentsPanel
-            attachments={expense?.attachments ?? []}
-            readonly={isReadonly}
-            isFinance={isFinance}
-            originalsReceived={isFinance ? financePanel.originalsReceived : expense?.originalsReceived}
-            onOriginalsChange={(v) => updateFinancePanel({ originalsReceived: v })}
-            onUpload={handleUploadAttachment}
-          />
-        </div>
-      ),
-    },
   ];
 
   if (!isNew && expense) {
@@ -557,23 +536,6 @@ const HrmExpenseScreen: React.FC<Props> = ({
           <div style={{ marginTop: 16 }}>
             <h3 style={{ margin: "8px 0 12px", fontSize: 14, fontWeight: 600 }}>Line Items</h3>
             {lineItemsTab}
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <h3 style={{ margin: "8px 0 12px", fontSize: 14, fontWeight: 600 }}>Attachments</h3>
-            <Alert
-              type="info"
-              showIcon
-              message="Save as draft to enable attachment uploads — uploading will auto-save the draft."
-              style={{ marginBottom: 12 }}
-            />
-            <ExpenseAttachmentsPanel
-              attachments={expense?.attachments ?? []}
-              readonly={false}
-              isFinance={isFinance}
-              originalsReceived={isFinance ? financePanel.originalsReceived : expense?.originalsReceived}
-              onOriginalsChange={(v) => updateFinancePanel({ originalsReceived: v })}
-              onUpload={handleUploadAttachment}
-            />
           </div>
         </div>
       ) : (

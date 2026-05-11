@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm, Tooltip, Upload, Empty, message, Space } from "antd";
+import { Table, Button, InputNumber, DatePicker, Select, Input, Typography, Popconfirm, Tooltip, Empty, message, Space } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, DeleteOutlined, WarningOutlined, PaperClipOutlined, EditOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, WarningOutlined, EditOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import type { ExpenseItem, ExpenseCategory } from "../../types/domain.types";
 import type { LineItemError } from "../../utils/expenseValidations";
-import ReceiptThumbnail from "../molecules/ReceiptThumbnail";
+import LineReceiptStrip from "../molecules/LineReceiptStrip";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
 import Can from "../../../hrmAccess/components/Can";
@@ -18,6 +18,7 @@ const { Text } = Typography;
 interface Props {
   lineItems: ExpenseItem[];
   categories: ExpenseCategory[];
+  expenseId?: string;
   readonly?: boolean;
   outOfPolicy?: boolean;
   justification?: string;
@@ -27,7 +28,8 @@ interface Props {
   onAddItem?: (item: Partial<ExpenseItem>) => void;
   onUpdateItem?: (handle: string, changes: Partial<ExpenseItem>) => void;
   onRemoveItem?: (handle: string) => void;
-  onUploadReceipt?: (lineIndex: number, file: File) => void;
+  onUploadReceipts?: (lineIndex: number, files: File[]) => void | Promise<void>;
+  onDeleteReceipt?: (lineIndex: number, attachmentId: string) => void | Promise<void>;
 }
 
 const dateFormat = "DD/MM/YYYY";
@@ -38,7 +40,6 @@ interface NewItemRow {
   description: string;
   amount: number | null;
   currency: string;
-  attachmentRef: string | null;
 }
 
 const defaultNewRow: NewItemRow = {
@@ -47,12 +48,12 @@ const defaultNewRow: NewItemRow = {
   description: "",
   amount: null,
   currency: "INR",
-  attachmentRef: null,
 };
 
 const ExpenseLineItemsTable: React.FC<Props> = ({
   lineItems,
   categories,
+  expenseId,
   readonly,
   outOfPolicy,
   justification = "",
@@ -62,7 +63,8 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
   onAddItem,
   onUpdateItem,
   onRemoveItem,
-  onUploadReceipt,
+  onUploadReceipts,
+  onDeleteReceipt,
 }) => {
   const [newRow, setNewRow] = useState<NewItemRow>({ ...defaultNewRow });
   const [adding, setAdding] = useState(false);
@@ -77,7 +79,6 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       description: item.description,
       amount: item.amount,
       currency: item.currency,
-      attachmentRef: item.attachmentRef ?? null,
     });
   };
 
@@ -107,7 +108,6 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       description: editRow.description,
       amount: editRow.amount,
       currency: editRow.currency,
-      attachmentRef: editRow.attachmentRef || undefined,
       outOfPolicy:
         (category?.dailyLimit != null && editRow.amount > category.dailyLimit) ||
         (category?.perTripLimit != null && editRow.amount > category.perTripLimit),
@@ -204,16 +204,29 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       },
     },
     {
-      title: "Receipt",
-      key: "receipt",
-      width: 110,
-      render: (_, r, index) => (
-        <ReceiptThumbnail
-          attachmentId={r.attachmentRef}
-          fileName={r.categoryName}
-          onUpload={!readonly && onUploadReceipt ? (file) => onUploadReceipt(index, file) : undefined}
-        />
-      ),
+      title: "Receipts",
+      key: "receipts",
+      width: 180,
+      render: (_, r, index) => {
+        return (
+          <LineReceiptStrip
+            attachmentRefs={r.attachmentRefs ?? []}
+            expenseId={expenseId}
+            lineIndex={index}
+            readonly={readonly}
+            onUpload={
+              !readonly && onUploadReceipts
+                ? (files) => onUploadReceipts(index, files)
+                : undefined
+            }
+            onDelete={
+              !readonly && onDeleteReceipt
+                ? (attachmentId) => onDeleteReceipt(index, attachmentId)
+                : undefined
+            }
+          />
+        );
+      },
     },
     !readonly && {
       title: "",
@@ -289,7 +302,6 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       description: newRow.description,
       amount: newRow.amount,
       currency: newRow.currency,
-      attachmentRef: newRow.attachmentRef || undefined,
       outOfPolicy:
         (category?.dailyLimit != null && newRow.amount > category.dailyLimit) ||
         (category?.perTripLimit != null && newRow.amount > category.perTripLimit),
@@ -381,18 +393,6 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
                   value={newRow.amount ?? undefined}
                   onChange={(v) => setNewRow((p) => ({ ...p, amount: v }))}
                 />
-                <Upload
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  showUploadList={false}
-                  beforeUpload={(file) => {
-                    setNewRow((p) => ({ ...p, attachmentRef: file.name }));
-                    return false;
-                  }}
-                >
-                  <Button size="small" icon={<PaperClipOutlined />}>
-                    {newRow.attachmentRef ?? "Receipt"}
-                  </Button>
-                </Upload>
                 <Button type="primary" size="small" onClick={handleAddRow}>Add</Button>
                 <Button size="small" onClick={() => { setAdding(false); setNewRow({ ...defaultNewRow }); }}>Cancel</Button>
               </div>
