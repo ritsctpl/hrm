@@ -30,6 +30,7 @@ export function useExpenseMutations() {
     setSelectedExpense,
     setScreenMode,
     draftItems,
+    setDraftItems,
   } = useHrmExpenseStore();
 
   const resolveTravelHandle = useCallback(async (value?: string) => {
@@ -86,13 +87,20 @@ export function useExpenseMutations() {
         });
         updateMyExpense(existingHandle, updated);
         setSelectedExpense(updated);
+        // Rehydrate draftItems from the BE response so newly minted item
+        // handles (and any server-side trimming) replace the local copies.
+        setDraftItems(updated.items ?? []);
         message.success("Draft saved.");
         return updated;
       } else {
         const created = await HrmExpenseService.createDraft(basePayload);
         addMyExpense(created);
         setSelectedExpense(created);
-        setScreenMode("view");
+        // Keep the user in their current screen mode after save — flipping
+        // to "view" locked the form into read-only, leaving no path to
+        // upload receipts or click Submit. The user transitions to view
+        // (or back to list) on their own via Submit / Back.
+        setDraftItems(created.items ?? []);
         message.success("Draft created.");
         return created;
       }

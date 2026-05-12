@@ -66,6 +66,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
     addDraftItem,
     updateDraftItem,
     removeDraftItem,
+    setDraftItems,
     setSelectedExpense,
   } = useHrmExpenseStore();
 
@@ -73,10 +74,14 @@ const HrmExpenseScreen: React.FC<Props> = ({
     try {
       const fresh = await HrmExpenseService.getExpenseByHandle({ handle });
       setSelectedExpense(fresh);
+      // Keep the editable line-item table in sync so newly uploaded
+      // receipts (attachmentRefs from BE) appear immediately. Without
+      // this the strip still shows the pre-upload draftItems snapshot.
+      setDraftItems(fresh.items ?? []);
     } catch (error: unknown) {
       console.error("refetchExpense error:", error);
     }
-  }, [setSelectedExpense]);
+  }, [setSelectedExpense, setDraftItems]);
 
   const {
     saveDraft,
@@ -183,20 +188,28 @@ const HrmExpenseScreen: React.FC<Props> = ({
   }, [formState, expense?.handle, expense?.items, draftItems, categories, saveDraft, submitExpense, setActiveDetailTab, onActionComplete]);
 
   const handleUploadLineReceipts = async (lineIndex: number, files: File[]) => {
-    // Receipts attach to a persisted expense + line item, so the user must
-    // explicitly save the draft first. Auto-saving on upload was creating
-    // expense records without the user clicking Save / Submit, which read
-    // as the request "submitting itself" — undo that and prompt instead.
-    if (!expense?.handle) {
-      message.info("Please click Save Draft first, then upload receipts.");
-      return;
+    let handle = expense?.handle;
+    // Receipts attach to a persisted line item, so a draft has to exist
+    // first. Auto-save silently if needed — the visible toast makes it
+    // clear we're persisting a DRAFT, not submitting. (Earlier attempt
+    // to require an explicit Save Draft click left users with no path:
+    // the upload UI disappeared as soon as they saved.)
+    if (!handle) {
+      message.loading({ content: "Saving draft to attach receipt…", key: "auto-save-draft" });
+      const saved = await saveDraft(formState, undefined);
+      message.destroy("auto-save-draft");
+      if (!saved) {
+        message.warning("Could not save draft. Please save manually before uploading receipts.");
+        return;
+      }
+      handle = saved.handle;
     }
     try {
       for (const file of files) {
-        await HrmExpenseService.uploadAttachment(expense.handle, file, organizationId, lineIndex);
+        await HrmExpenseService.uploadAttachment(handle, file, organizationId, lineIndex);
       }
       message.success(files.length === 1 ? "Receipt uploaded." : `${files.length} receipts uploaded.`);
-      await refetchExpense(expense.handle);
+      await refetchExpense(handle);
     } catch (error: unknown) {
       message.error(extractExpenseError(error, "Failed to upload receipt."));
       console.error("uploadLineReceipts error:", error);
