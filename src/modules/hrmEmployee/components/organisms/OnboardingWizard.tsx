@@ -892,10 +892,17 @@ const OnboardingWizard: React.FC = () => {
       try {
         const employeesData = await HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 });
         const rows = employeesData.employees || [];
+        // reportingManager is read by BE workflow services (expense /
+        // travel / leave) to populate currentApproverId on submitted
+        // requests. The supervisor / approver inbox queries filter by
+        // bare employeeCode, so this Select MUST store the manager's
+        // employeeCode, never their UUID handle. Previously we stored
+        // emp.handle here, which left every employee's approver chain
+        // unresolvable — supervisor inbox showed 0 records.
         setEmployees(
           rows.map((emp) => ({
             label: `${emp.fullName} (${emp.employeeCode})`,
-            value: emp.handle,
+            value: emp.employeeCode,
           })),
         );
         setExistingEmployeeCodes(

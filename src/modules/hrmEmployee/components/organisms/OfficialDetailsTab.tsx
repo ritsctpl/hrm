@@ -205,13 +205,19 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         message.error('Failed to load locations');
       }
 
-      // Fetch employees for reporting manager dropdown
+      // Fetch employees for reporting manager dropdown.
+      // The reporting manager Select MUST store the manager's employeeCode,
+      // not their UUID handle. BE workflow services (expense / travel /
+      // leave) read employee.reportingManager to populate currentApproverId
+      // on submitted requests; supervisor inbox queries filter by bare
+      // employeeCode. Storing UUID here was breaking every approval inbox
+      // (supervisor inbox returned 0 records).
       try {
         const employeesData = await HrmEmployeeService.fetchDirectory({ organizationId, page: 0, size: 1000 });
         setEmployees(
           (employeesData.employees || []).map((emp) => ({
             label: `${emp.fullName} (${emp.employeeCode})`,
-            value: emp.handle,
+            value: emp.employeeCode,
           }))
         );
       } catch (error) {
