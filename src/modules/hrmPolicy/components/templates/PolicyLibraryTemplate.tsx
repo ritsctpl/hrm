@@ -2,11 +2,10 @@
 
 import React from "react";
 import { Space, Select, Input, Button, Segmented } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyLibraryList from "../organisms/PolicyLibraryList";
 import PolicyLibraryGrid from "../organisms/PolicyLibraryGrid";
-import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyLanding.module.css";
 
 const { Option } = Select;
@@ -19,13 +18,12 @@ interface PolicyLibraryTemplateProps {
   filterCategoryId: string;
   filterDocType: string;
   searchText: string;
-  canAdmin: boolean;
   onPolicyClick: (policy: PolicyDocument) => void;
   onViewModeChange: (mode: "grid" | "list") => void;
   onSearch: (text: string) => void;
   onCategoryFilter: (id: string) => void;
   onDocTypeFilter: (type: string) => void;
-  onCreatePolicy: () => void;
+  onApplyFilters: () => void;
 }
 
 const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
@@ -36,13 +34,12 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
   filterCategoryId,
   filterDocType,
   searchText,
-  canAdmin,
   onPolicyClick,
   onViewModeChange,
   onSearch,
   onCategoryFilter,
   onDocTypeFilter,
-  onCreatePolicy,
+  onApplyFilters,
 }) => {
   // Client-side filtering by search text
   const filteredPolicies = React.useMemo(() => {
@@ -107,6 +104,14 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
           <Option value="GUIDELINE">Guideline</Option>
           <Option value="CODE_OF_CONDUCT">Code of Conduct</Option>
         </Select>
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={onApplyFilters}
+          loading={loading}
+        >
+          Go
+        </Button>
       </Space>
       <Space>
         <Segmented
@@ -144,11 +149,6 @@ const PolicyLibraryTemplate: React.FC<PolicyLibraryTemplateProps> = ({
             },
           ]}
         />
-        <Can I="add">
-          <Button type="primary" icon={<PlusOutlined />} onClick={onCreatePolicy}>
-            New Policy
-          </Button>
-        </Can>
       </Space>
     </div>
     <div className={viewMode === "grid" ? styles.libraryGrid : styles.libraryList}>

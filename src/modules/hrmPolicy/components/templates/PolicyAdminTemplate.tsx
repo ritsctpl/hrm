@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button, Space, Select, Input } from "antd";
+import { TagsOutlined } from "@ant-design/icons";
 import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyAdminTable from "../organisms/PolicyAdminTable";
 import PolicyFormDrawer from "../organisms/PolicyFormDrawer";
+import CategoryManagementModal from "../organisms/CategoryManagementModal";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyAdmin.module.css";
 
@@ -35,6 +37,7 @@ interface PolicyAdminTemplateProps {
   onDocTypeFilter?: (type: string) => void;
   onStatusFilter?: (status: string) => void;
   onRefresh?: () => void;
+  onCategoriesChanged?: () => void;
 }
 
 const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
@@ -62,7 +65,10 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   onDocTypeFilter,
   onStatusFilter,
   onRefresh,
+  onCategoriesChanged,
 }) => {
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+
   // Client-side filtering and sorting
   const filteredPolicies = React.useMemo(() => {
     let result = policies;
@@ -152,6 +158,11 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       </Space>
       <Space>
         <Button onClick={onRefresh}>Go</Button>
+        <Can I="add">
+          <Button icon={<TagsOutlined />} onClick={() => setCategoryModalOpen(true)}>
+            Manage Categories
+          </Button>
+        </Can>
         <Can I="edit"><Button onClick={onSupersede}>Supersede Policy</Button></Can>
         <Can I="add"><Button type="primary" onClick={onCreateNew}>New Policy</Button></Can>
       </Space>
@@ -172,6 +183,13 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       organizationId={organizationId}
       onClose={onDrawerClose}
       onSaved={onDrawerSaved}
+    />
+    <CategoryManagementModal
+      open={categoryModalOpen}
+      organizationId={organizationId}
+      categories={categories}
+      onClose={() => setCategoryModalOpen(false)}
+      onChanged={() => onCategoriesChanged?.()}
     />
   </div>
   );

@@ -93,11 +93,13 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           <Tooltip title="View Details">
             <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
           </Tooltip>
-          <Can I="edit">
-            <Tooltip title="Edit Policy">
-              <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
-            </Tooltip>
-          </Can>
+          {(record.status === "DRAFT" || record.status === "REVIEW") && (
+            <Can I="edit">
+              <Tooltip title="Edit Policy">
+                <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+              </Tooltip>
+            </Can>
+          )}
           {record.status === "DRAFT" && (
             <Can I="edit">
               <Popconfirm

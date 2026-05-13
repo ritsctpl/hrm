@@ -102,9 +102,13 @@ const HrmPolicyLanding: React.FC = () => {
     loadCategories();
   }, []);
 
+  // Initial library load only — subsequent fetches are user-driven via the
+  // explicit "Go" button on the Library toolbar (per UX request to stop
+  // auto-firing on every filter change).
   useEffect(() => {
     loadPolicies();
-  }, [libraryFilterCategoryId, libraryFilterDocType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (activeTab === "admin" && canAdminPolicies) {
@@ -254,13 +258,12 @@ const HrmPolicyLanding: React.FC = () => {
           filterCategoryId={libraryFilterCategoryId}
           filterDocType={libraryFilterDocType}
           searchText={librarySearchText}
-          canAdmin={modulePerms.canAdd}
           onPolicyClick={handlePolicyClick}
           onViewModeChange={setViewMode}
           onSearch={setLibrarySearchText}
           onCategoryFilter={setLibraryFilterCategoryId}
           onDocTypeFilter={setLibraryFilterDocType}
-          onCreatePolicy={() => openFormDrawer()}
+          onApplyFilters={loadPolicies}
         />
       ),
     },
@@ -298,6 +301,7 @@ const HrmPolicyLanding: React.FC = () => {
           onDocTypeFilter={setAdminFilterDocType}
           onStatusFilter={setAdminFilterStatus}
           onRefresh={loadAdminPolicies}
+          onCategoriesChanged={loadCategories}
         />
       ),
     });

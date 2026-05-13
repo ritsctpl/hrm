@@ -180,7 +180,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
         </Space>
       }
     >
-      <Form form={form} layout="vertical" requiredMark="optional">
+      <Form form={form} layout="vertical">
         <Form.Item
           name="title"
           label="Title"
@@ -222,12 +222,7 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
         </Form.Item>
         
         <Form.Item
-          label={
-            <span>
-              PDF Document
-              {!editPolicy && <span style={{ color: '#ff4d4f', marginLeft: 4 }}>*</span>}
-            </span>
-          }
+          label="PDF Document"
           required={!editPolicy}
           help={!editPolicy && !pdfFile ? "PDF document is required for new policies" : undefined}
           validateStatus={!editPolicy && !pdfFile ? "error" : undefined}
