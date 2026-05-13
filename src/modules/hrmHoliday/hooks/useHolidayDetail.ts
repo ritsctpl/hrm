@@ -60,9 +60,12 @@ export function useHolidayDetail(organizationId: string, groupHandle: string) {
     setAuditLogsLoading(true);
     try {
       const res = await HrmHolidayService.getGroupAuditLog({ organizationId, groupHandle });
-      if (res.success) {
-        setAuditLogs(res.data);
-      }
+      // The global axios interceptor strips the {success, message, data}
+      // wrapper for HRM service endpoints, so `res` arrives as the raw
+      // array. Fall back to res.data only when the wrapper survived
+      // (e.g. against a backend variant without `messageCode`).
+      const payload = (res as any)?.data ?? res;
+      setAuditLogs(Array.isArray(payload) ? payload : []);
     } catch {
       message.error('Failed to load audit logs');
     } finally {
@@ -74,11 +77,10 @@ export function useHolidayDetail(organizationId: string, groupHandle: string) {
     setCategoriesLoading(true);
     try {
       const res = await HrmHolidayService.listCategories({ organizationId, activeOnly: true });
-      if (res.success) {
-        const mapped = res.data.map((c) => ({
-          ...c,
-        }));
-        setCategories(mapped);
+      // Same wrapped/unwrapped duality as loadAuditLogs.
+      const payload = (res as any)?.data ?? res;
+      if (Array.isArray(payload)) {
+        setCategories(payload.map((c) => ({ ...c })));
       }
     } catch {
       // silently ignore — default categories still show

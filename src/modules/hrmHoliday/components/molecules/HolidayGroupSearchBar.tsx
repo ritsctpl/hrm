@@ -25,6 +25,7 @@ export default function HolidayGroupSearchBar({
   onSettings,
   canManageSettings,
   hasSelectedGroup,
+  canSeeDraftGroups = true,
 }: HolidayGroupSearchBarProps) {
   const yearOptions = getYearOptions(3);
 
@@ -39,17 +40,26 @@ export default function HolidayGroupSearchBar({
           placeholder="Year"
         />
         <Select
-          value={searchParams.status || undefined}
+          value={
+            canSeeDraftGroups
+              ? searchParams.status || undefined
+              : HOLIDAY_GROUP_STATUSES.PUBLISHED
+          }
           onChange={(status) => onSearchChange({ status: status || undefined })}
-          allowClear
+          allowClear={canSeeDraftGroups}
+          disabled={!canSeeDraftGroups}
           placeholder="All Status"
           style={{ width: 140 }}
-          options={[
-            { value: undefined, label: 'All Status' },
-            { value: HOLIDAY_GROUP_STATUSES.DRAFT, label: 'Draft' },
-            { value: HOLIDAY_GROUP_STATUSES.PUBLISHED, label: 'Published' },
-            { value: HOLIDAY_GROUP_STATUSES.LOCKED, label: 'Locked' },
-          ]}
+          options={
+            canSeeDraftGroups
+              ? [
+                  { value: undefined, label: 'All Status' },
+                  { value: HOLIDAY_GROUP_STATUSES.DRAFT, label: 'Draft' },
+                  { value: HOLIDAY_GROUP_STATUSES.PUBLISHED, label: 'Published' },
+                  { value: HOLIDAY_GROUP_STATUSES.LOCKED, label: 'Locked' },
+                ]
+              : [{ value: HOLIDAY_GROUP_STATUSES.PUBLISHED, label: 'Published' }]
+          }
         />
         <Search
           value={searchParams.search}

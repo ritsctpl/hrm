@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message, Modal } from 'antd';
@@ -17,6 +17,7 @@ import { useHrmHolidayStore } from './stores/hrmHolidayStore';
 import { HrmHolidayService } from './services/hrmHolidayService';
 import { useHolidayPermissions } from './hooks/useHolidayPermissions';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
 import type { HolidayGroup } from './types/domain.types';
 import styles from './styles/HrmHoliday.module.css';
 
@@ -24,7 +25,8 @@ export default function HrmHolidayLanding() {
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
   const userRole = cookies.userRole ?? 'EMPLOYEE';
-  const username = cookies.username ?? 'system';
+  const { employeeCode } = useEmployeeIdentity();
+  const username = employeeCode || cookies.username || 'system';
 
   const {
     groups,
@@ -61,10 +63,16 @@ export default function HrmHolidayLanding() {
     setGroupsLoading(true);
     setGroupsError(null);
     try {
+      // Non-manager employees only see PUBLISHED groups — DRAFT and LOCKED
+      // states are admin/manager surface area. Force the filter regardless
+      // of whatever the (disabled) status dropdown currently holds.
+      const effectiveStatus = permissions.seeDraftGroups
+        ? searchParams.status
+        : 'PUBLISHED';
       const res = await HrmHolidayService.listGroups({ organizationId,
         year: searchParams.year,
-        status: searchParams.status,
-        requestingUserRole: '',
+        status: effectiveStatus,
+        requestingUserRole: userRole,
         buHandle: searchParams.buHandle,
         search: searchParams.search?.trim() || undefined,
       });
@@ -88,9 +96,33 @@ export default function HrmHolidayLanding() {
     }
   };
 
+  // Debounce search-driven refetches by 300ms so each keystroke doesn't
+  // fire a request. Other filters (year / status / BU) refetch immediately.
   useEffect(() => {
-    fetchGroups();
+    const timer = setTimeout(() => {
+      fetchGroups();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [organizationId, searchParams.year, searchParams.status, searchParams.buHandle, searchParams.search, userRole]);
+
+  // Client-side filter as a safety net — applies the search term against
+  // groupName / groupCode / description even if the backend ignores the
+  // `search` query param. Empty term passes everything through.
+  const filteredGroups = useMemo(() => {
+    const term = (searchParams.search ?? '').trim().toLowerCase();
+    if (!term) return groups;
+    return groups.filter((g) => {
+      const haystack = [
+        g.groupName,
+        (g as { groupCode?: string }).groupCode,
+        g.description,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [groups, searchParams.search]);
 
   const handleGroupCreated = (group: HolidayGroup) => {
     closeGroupCreateModal();
@@ -132,6 +164,7 @@ export default function HrmHolidayLanding() {
             handle: selectedGroup.handle,
             organizationId,
             deletedBy: username,
+            deletedByRole: userRole,
           });
           
           message.success('Holiday group deleted successfully');
@@ -158,11 +191,12 @@ export default function HrmHolidayLanding() {
         onDuplicateYear={selectedGroup ? openDuplicateModal : undefined}
         canManageSettings={permissions.canManageSettings}
         hasSelectedGroup={!!selectedGroup}
+        canSeeDraftGroups={permissions.seeDraftGroups}
       />
 
       <HolidaysMasterDetail>
         <HolidayGroupsTable
-          groups={groups}
+          groups={filteredGroups}
           loading={groupsLoading}
           error={groupsError}
           selectedHandle={selectedGroup?.handle}

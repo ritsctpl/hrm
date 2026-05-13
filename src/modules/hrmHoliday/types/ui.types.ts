@@ -180,4 +180,9 @@ export interface HolidayGroupSearchBarProps {
   onSettings?: () => void;
   canManageSettings: boolean;
   hasSelectedGroup?: boolean;
+  /**
+   * When false, the status filter is locked to PUBLISHED — non-manager
+   * employees can't browse DRAFT or LOCKED groups.
+   */
+  canSeeDraftGroups?: boolean;
 }

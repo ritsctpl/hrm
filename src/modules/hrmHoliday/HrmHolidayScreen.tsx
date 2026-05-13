@@ -22,6 +22,7 @@ import type { Holiday } from './types/domain.types';
 import { useHolidayDetail } from './hooks/useHolidayDetail';
 import type { HrmHolidayScreenProps } from './types/ui.types';
 import Can from '../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
 import styles from './styles/HolidayDetail.module.css';
 
 export default function HrmHolidayScreen({ group, organizationId, permissions }: HrmHolidayScreenProps) {
@@ -90,11 +91,13 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
   }, []);
 
   const cookies = parseCookies();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userId = employeeCode;
+  const userRole = cookies.userRole ?? '';
 
   const handlePublish = async (comment?: string) => {
     try {
-      await HrmHolidayService.publishGroup({ organizationId, groupHandle: group.handle, comment, publishedBy: userId });
+      await HrmHolidayService.publishGroup({ organizationId, groupHandle: group.handle, comment, publishedBy: userId, publishedByRole: userRole });
       updateGroupStatus(group.handle, 'PUBLISHED');
       closePublishModal();
       message.success('Holiday group published');
@@ -105,7 +108,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   const handleDeleteHoliday = async (holiday: Holiday) => {
     try {
-      await HrmHolidayService.deleteHoliday({ organizationId, handle: holiday.handle, deletedBy: userId });
+      await HrmHolidayService.deleteHoliday({ organizationId, handle: holiday.handle, deletedBy: userId, deletedByRole: userRole });
       await loadHolidays({ groupHandle: group.handle, category: categoryFilter ?? undefined });
       message.success('Holiday deleted successfully');
     } catch {
@@ -115,7 +118,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   const handleLock = async (reason: string) => {
     try {
-      await HrmHolidayService.lockGroup({ organizationId, groupHandle: group.handle, reason, lockedBy: userId });
+      await HrmHolidayService.lockGroup({ organizationId, groupHandle: group.handle, reason, lockedBy: userId, lockedByRole: userRole });
       updateGroupStatus(group.handle, 'LOCKED');
       closeLockModal();
       message.success('Holiday group locked');
@@ -126,7 +129,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   const handleUnlock = async (reason: string) => {
     try {
-      await HrmHolidayService.unlockGroup({ organizationId, groupHandle: group.handle, reason, unlockedBy: userId });
+      await HrmHolidayService.unlockGroup({ organizationId, groupHandle: group.handle, reason, unlockedBy: userId, unlockedByRole: userRole });
       updateGroupStatus(group.handle, 'PUBLISHED');
       closeUnlockModal();
       message.success('Holiday group unlocked');
@@ -263,7 +266,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
             </Can>
           )}
           {permissions.canMapBu && (
-            <Can I="edit">
+            <Can I="edit" passIf={permissions.canMapBu}>
               <Button
                 size="small"
                 icon={<ApartmentOutlined />}

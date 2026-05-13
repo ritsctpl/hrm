@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Drawer, Button, Select, Checkbox, Divider, message, Typography, Spin } from 'antd';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import BuMappingRow from '../molecules/BuMappingRow';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
@@ -11,6 +10,7 @@ import { useHrmHolidayStore } from '../../stores/hrmHolidayStore';
 import type { BuMappingPanelProps } from '../../types/ui.types';
 import type { BusinessUnit, Department } from '../../../hrmOrganization/types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function BuMappingPanel({
@@ -38,9 +38,9 @@ export default function BuMappingPanel({
   
   const { addMapping, removeMapping } = useHrmHolidayStore();
 
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userId = employeeCode;
 
   // Fetch Companies when panel opens
   useEffect(() => {

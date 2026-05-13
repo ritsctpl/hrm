@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Drawer, Button, Upload, Typography, Alert, Divider, Space, message } from 'antd';
 import type { UploadFile } from 'antd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import ImportPreviewRow from '../molecules/ImportPreviewRow';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
@@ -13,6 +12,7 @@ import type { ImportPanelProps } from '../../types/ui.types';
 import type { HolidayImportRow } from '../../types/api.types';
 import type { ImportError } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function ImportPanel({
@@ -28,9 +28,9 @@ export default function ImportPanel({
   const [committing, setCommitting] = useState(false);
   const { importResult, setImportResult, setImportLoading } = useHrmHolidayStore();
 
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userId = employeeCode;
 
   const parseFile = async (file: File): Promise<HolidayImportRow[]> => {
     return new Promise((resolve) => {

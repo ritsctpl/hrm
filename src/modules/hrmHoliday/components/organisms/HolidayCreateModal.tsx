@@ -9,6 +9,7 @@ import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
 import type { HolidayResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 
 interface HolidayCreateModalProps {
   open: boolean;
@@ -22,7 +23,9 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
   const [saving, setSaving] = useState(false);
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userRole = cookies.userRole ?? '';
+  const userId = employeeCode;
 
   const handleOk = async () => {
     try {
@@ -42,6 +45,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
             category: values.category || 'NATIONAL',
             reason: values.description,
             createdBy: userId,
+            createdByRole: userRole,
           })
         )
       );

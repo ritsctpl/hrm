@@ -32,9 +32,10 @@ export const groupFormRules = {
     { required: true, message: 'Group name is required' },
     { max: 120, message: 'Group name must be 120 characters or less' },
   ],
-  year: [
-    { required: true, message: 'Year is required' },
-  ],
+  // Year is intentionally optional — multi-year / rolling groups don't
+  // pin to a single calendar year, and individual holidays carry their
+  // own date.
+  year: [],
   description: [
     { max: 512, message: 'Description must be 512 characters or less' },
   ],

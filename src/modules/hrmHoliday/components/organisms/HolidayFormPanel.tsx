@@ -10,6 +10,7 @@ import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayFormPanelProps } from '../../types/ui.types';
 import type { Holiday } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import styles from '../../styles/HolidayForm.module.css';
 
 export default function HolidayFormPanel({
@@ -52,10 +53,17 @@ export default function HolidayFormPanel({
     }
   }, [open, holiday, form]);
 
+  const { employeeCode } = useEmployeeIdentity();
+  const cookies = parseCookies();
+  const userRole = cookies.userRole ?? '';
+
   const handleSubmit = async () => {
-    const cookies = parseCookies();
     const organizationId = getOrganizationId();
-    const userId = cookies.userId ?? '';
+    // BE-side audit records `performedBy` / `performedByRole` — previously
+    // the cookie userId was empty in many sessions, so the audit log
+    // showed "" for the actor. useEmployeeIdentity() resolves the
+    // employeeCode (e.g. EMP0012) which is the canonical identifier.
+    const userId = employeeCode;
 
     try {
       const values = await form.validateFields();
@@ -82,6 +90,7 @@ export default function HolidayFormPanel({
           visibility: values.visibility,
           notes: values.notes,
           modifiedBy: userId,
+          modifiedByRole: userRole,
         });
         if (res && res.success) {
           message.success(res.message || 'Holiday updated successfully');
@@ -109,6 +118,7 @@ export default function HolidayFormPanel({
           visibility: values.visibility,
           notes: values.notes,
           createdBy: userId,
+          createdByRole: userRole,
         });
         if (res && res.success) {
           message.success(res.message || 'Holiday created successfully');

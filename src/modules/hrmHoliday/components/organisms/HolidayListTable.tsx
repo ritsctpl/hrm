@@ -89,7 +89,12 @@ export default function HolidayListTable({
             render: (_: unknown, record: Holiday) => (
               <Space size="small">
                 {canEdit && (
-                  <Can I="edit">
+                  // canEdit is already derived from a role-based
+                  // permission upstream (permissions.canEdit on the
+                  // screen) and the group's status. Use passIf so the
+                  // role grant satisfies the RBAC gate without requiring
+                  // a duplicate explicit HRM_HOLIDAY edit grant.
+                  <Can I="edit" passIf>
                     <Tooltip title="Edit">
                       <Button
                         type="text"
@@ -101,7 +106,7 @@ export default function HolidayListTable({
                   </Can>
                 )}
                 {canDelete && (
-                  <Can I="delete">
+                  <Can I="delete" passIf>
                     <Popconfirm
                       title="Delete Holiday"
                       description={`Are you sure you want to delete "${record.name}"?`}

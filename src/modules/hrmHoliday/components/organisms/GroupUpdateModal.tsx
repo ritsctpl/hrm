@@ -8,6 +8,7 @@ import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
 import { groupFormRules } from '../../utils/validations';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 
 interface GroupUpdateModalProps {
   open: boolean;
@@ -19,6 +20,9 @@ interface GroupUpdateModalProps {
 export default function GroupUpdateModal({ open, group, onClose, onUpdated }: GroupUpdateModalProps) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const { employeeCode } = useEmployeeIdentity();
+  const cookies = parseCookies();
+  const userRole = cookies.userRole ?? '';
 
   useEffect(() => {
     if (open && group) {
@@ -30,9 +34,7 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
   }, [open, group, form]);
 
   const handleOk = async () => {
-    const cookies = parseCookies();
     const organizationId = getOrganizationId();
-    const userId = cookies.userId ?? '';
 
     try {
       const values = await form.validateFields();
@@ -41,7 +43,8 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
         handle: group.handle,
         groupName: values.groupName,
         description: values.description,
-        modifiedBy: userId,
+        modifiedBy: employeeCode,
+        modifiedByRole: userRole,
       });
 
       // Response is unwrapped by interceptor

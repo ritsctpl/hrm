@@ -9,6 +9,7 @@ import type { DuplicateGroupModalProps } from '../../types/ui.types';
 import type { DuplicateGroupResponse } from '../../types/api.types';
 import { getYearOptions } from '../../utils/formatters';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 
 export default function DuplicateGroupModal({
   open,
@@ -19,9 +20,9 @@ export default function DuplicateGroupModal({
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const yearOptions = getYearOptions(3).filter((y) => y.value !== sourceGroup.year);
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userId = employeeCode;
 
   const handleOk = async () => {
     try {

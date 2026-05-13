@@ -183,7 +183,21 @@ export const useHrmHolidayStore = create<HrmHolidayState>((set) => ({
   setGroupsLoading: (groupsLoading) => set({ groupsLoading }),
   setGroupsError: (groupsError) => set({ groupsError }),
   selectGroup: (selectedGroup) =>
-    set({ selectedGroup, holidays: [], calendarData: null, auditLogs: [] }),
+    set((s) => {
+      // Re-clicking the same group is a no-op so the holiday list /
+      // calendar / audit don't get wiped (the screen's load effect is
+      // keyed on group.handle and won't re-fire for an identical handle,
+      // which previously left the right panel blank with no refetch).
+      if (s.selectedGroup?.handle === selectedGroup?.handle) {
+        return { selectedGroup };
+      }
+      return {
+        selectedGroup,
+        holidays: [],
+        calendarData: null,
+        auditLogs: [],
+      };
+    }),
   updateGroupStatus: (handle, status) =>
     set((s) => ({
       groups: s.groups.map((g) => (g.handle === handle ? { ...g, status } : g)),

@@ -19,10 +19,16 @@ export interface CreateHolidayGroupRequest {
   organizationId: string;
   groupCode?: string;
   groupName: string;
-  year: number;
+  /**
+   * Year is optional — a group can be open-ended (multi-year / rolling)
+   * and individual holidays carry their own date.
+   */
+  year?: number;
   description?: string;
   colorScheme?: Record<string, string>;
   createdBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  createdByRole?: string;
 }
 
 export interface UpdateHolidayGroupRequest {
@@ -33,6 +39,8 @@ export interface UpdateHolidayGroupRequest {
   status?: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
   colorScheme?: Record<string, string>;
   modifiedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  modifiedByRole?: string;
 }
 
 export interface HolidayGroupSearchRequest {
@@ -64,6 +72,8 @@ export interface HolidayGroupDeleteRequest {
   organizationId: string;
   handle: string;
   deletedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  deletedByRole?: string;
 }
 
 export interface CreateHolidayRequest {
@@ -81,6 +91,8 @@ export interface CreateHolidayRequest {
   visibility?: 'PUBLIC' | 'BU_ONLY' | 'DEPT_SPECIFIC';
   notes?: string;
   createdBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  createdByRole?: string;
 }
 
 export interface UpdateHolidayRequest {
@@ -98,6 +110,8 @@ export interface UpdateHolidayRequest {
   visibility?: 'PUBLIC' | 'BU_ONLY' | 'DEPT_SPECIFIC';
   notes?: string;
   modifiedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  modifiedByRole?: string;
 }
 
 export interface BulkCreateHolidayRequest {
@@ -111,6 +125,8 @@ export interface HolidayDeleteRequest {
   organizationId: string;
   handle: string;
   deletedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  deletedByRole?: string;
 }
 
 export interface PublishGroupRequest {
@@ -118,6 +134,8 @@ export interface PublishGroupRequest {
   groupHandle: string;
   comment?: string;
   publishedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  publishedByRole?: string;
 }
 
 export interface LockGroupRequest {
@@ -125,6 +143,8 @@ export interface LockGroupRequest {
   groupHandle: string;
   reason: string;
   lockedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  lockedByRole?: string;
 }
 
 export interface UnlockGroupRequest {
@@ -132,6 +152,8 @@ export interface UnlockGroupRequest {
   groupHandle: string;
   reason: string;
   unlockedBy: string;
+  /** Role of the user performing the action — for audit-log `performedByRole`. */
+  unlockedByRole?: string;
 }
 
 export interface AddBuMappingRequest {

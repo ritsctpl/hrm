@@ -11,6 +11,7 @@ import type { HolidayGroupResponse } from '../../types/api.types';
 import { groupFormRules } from '../../utils/validations';
 import { getYearOptions } from '../../utils/formatters';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 
 export default function GroupCreateModal({ open, onClose, onCreated }: GroupCreateModalProps) {
   const [form] = Form.useForm();
@@ -18,7 +19,8 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
   const yearOptions = getYearOptions(3);
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const userId = cookies.userId ?? '';
+  const { employeeCode } = useEmployeeIdentity();
+  const userRole = cookies.userRole ?? '';
 
   const handleOk = async () => {
     try {
@@ -28,7 +30,8 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
         groupName: values.groupName,
         year: values.year,
         description: values.description,
-        createdBy: userId,
+        createdBy: employeeCode,
+        createdByRole: userRole,
       }) as any as HolidayGroupResponse;
       
       // After interceptor unwrapping, res contains the group object directly
@@ -72,9 +75,8 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
         <Form.Item label="Group Name" name="groupName" rules={groupFormRules.groupName}>
           <Input placeholder="e.g. India Holidays 2026" maxLength={120} />
         </Form.Item>
-        <Form.Item label="Year" name="year" rules={groupFormRules.year}
-          initialValue={new Date().getFullYear()}>
-          <Select options={yearOptions} />
+        <Form.Item label="Year (optional)" name="year" rules={groupFormRules.year}>
+          <Select options={yearOptions} allowClear placeholder="Leave blank for multi-year group" />
         </Form.Item>
         <Form.Item label="Description" name="description" rules={groupFormRules.description}>
           <Input.TextArea rows={2} maxLength={512} placeholder="Optional description" />
