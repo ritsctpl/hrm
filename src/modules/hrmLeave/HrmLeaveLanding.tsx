@@ -675,7 +675,13 @@ const HrmLeaveLanding: React.FC = () => {
           min={2000}
           max={2100}
           value={ledgerYear}
-          onChange={(value) => value && setLedgerYear(value)}
+          onChange={(value) => {
+            if (!value) return;
+            setLedgerYear(value);
+            // Balance Summary uses its own `balancesYear` — keep it in sync
+            // so the Admin Ledger toolbar refreshes both panels together.
+            setBalancesYear(value);
+          }}
           style={{ width: 100 }}
         />
         <span className={styles.ledgerToolbarLabel}>Type</span>
@@ -706,7 +712,15 @@ const HrmLeaveLanding: React.FC = () => {
             (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
           }
         />
-        <Button icon={<ReloadOutlined />} onClick={() => loadLedgerHistory()}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={() => {
+            loadLedgerHistory();
+            if (permissions.canViewAll) {
+              loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter });
+            }
+          }}
+        >
           Refresh
         </Button>
         <div style={{ flex: 1 }} />
