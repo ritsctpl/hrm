@@ -61,6 +61,17 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
     const cookies = parseCookies();
     const loginId =
       cookies.rl_user_id || cookies.userId || cookies.username || '';
+    // Reporting Manager / supervisor logins often arrive with a USERNAME
+    // (not an email) in cookies.userId / cookies.username. searchByKeyword
+    // does a fulltext scan, so it can return loosely-matched rows that
+    // don't actually belong to the signed-in user. Capture every form of
+    // self-identity we trust from cookies for a strict match before
+    // resorting to email matching, then refuse to fall back to "first
+    // row" — that fallback used to load a stranger's profile into
+    // currentEmployeeStore for users whose loginId didn't match any
+    // workEmail.
+    const cookieEmail = (cookies.email || cookies.preferred_username || '').trim();
+    const cookieEmployeeCode = (cookies.employeeCode || '').trim();
 
     if (!organizationId || !loginId) return;
 
@@ -76,9 +87,23 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
       (async () => {
         const response = await HrmEmployeeService.searchByKeyword(organizationId, loginId);
         const items = (response?.employees || []) as EmployeeDirectoryRow[];
+        const lowerLogin = loginId.toLowerCase();
+        const lowerEmail = cookieEmail.toLowerCase();
+        // Matching order, strictest first. NEVER fall back to items[0]
+        // — that used to silently load a different person's profile
+        // when the signed-in user's login didn't exactly match any
+        // directory workEmail. For an RM whose login is a username
+        // and not the email, the cookieEmployeeCode path is the
+        // authoritative tiebreaker.
         const match =
-          items.find(e => e.workEmail?.toLowerCase() === loginId.toLowerCase()) ||
-          items[0];
+          items.find((e) => (e.workEmail || '').toLowerCase() === lowerLogin) ||
+          (lowerEmail
+            ? items.find((e) => (e.workEmail || '').toLowerCase() === lowerEmail)
+            : undefined) ||
+          (cookieEmployeeCode
+            ? items.find((e) => e.employeeCode === cookieEmployeeCode)
+            : undefined) ||
+          null;
         if (!match) return null;
 
         // Directory rows often omit photo data. Fetch the full profile to

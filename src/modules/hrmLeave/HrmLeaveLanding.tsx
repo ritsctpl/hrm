@@ -450,10 +450,39 @@ const HrmLeaveLanding: React.FC = () => {
   // ── SUPERVISOR VIEW ────────────────────────────────────────────────
 
   if (SUPERVISOR_ROLES.includes(role)) {
+    // Filter pendingRequests to ones whose currentApproverId actually
+    // matches the signed-in user. Done here (not inside ApproverInboxTable)
+    // so the tab badge "Approvals (N)" and the displayed list always
+    // show the same number — previously the badge read raw
+    // pendingRequests.length even when defensive filtering hid rows.
+    // The strict same-string / strict-code match mirrors the BE's
+    // approver resolution; HR users keep the full list.
+    const myComposite = identity.employeeIdWithName;
+    const myCode = identity.employeeCode;
+    const myHandle = identity.handle;
+    const myIds = [
+      myComposite,
+      myCode,
+      myHandle,
+      cookies.userId,
+      cookies.employeeCode,
+    ].filter((v): v is string => typeof v === "string" && v.length > 0);
+    const approverFiltered = isHrAdmin
+      ? pendingRequests
+      : pendingRequests.filter((req) => {
+          const raw = req.currentApproverId;
+          if (!raw) return false;
+          const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
+          const code = stripped.includes(" - ")
+            ? stripped.split(" - ")[0]?.trim() ?? stripped
+            : stripped;
+          return myIds.some((mine) => mine === stripped || mine === code);
+        });
+
     const approvalTab = (
       <LeaveMasterDetail leftWidth="45%">
         <ApproverInboxTable
-          requests={pendingRequests}
+          requests={approverFiltered}
           loading={pendingRequestsLoading}
           selectedHandle={selectedRequest?.handle}
           onRowClick={setSelectedRequest}
@@ -529,7 +558,7 @@ const HrmLeaveLanding: React.FC = () => {
       : "Comp-Off Approvals";
 
     const tabItems = [
-      { key: "approvals", label: `Approvals (${pendingRequests.length})`, children: approvalTab },
+      { key: "approvals", label: `Approvals (${approverFiltered.length})`, children: approvalTab },
       { key: "myRequests", label: "My Requests", children: myRequestsTab },
       { key: "teamHistory", label: "Team History", children: teamHistoryTab },
       { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
