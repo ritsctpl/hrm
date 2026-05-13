@@ -5,6 +5,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { Tabs, Button, Descriptions, Modal, Input, Space, Typography, Tag, Tooltip, message } from "antd";
 import { SaveOutlined, SendOutlined, DeleteOutlined, StopOutlined, RollbackOutlined, CheckSquareOutlined } from "@ant-design/icons";
 import { parseCookies } from "nookies";
+import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseMutations } from "./hooks/useExpenseMutations";
 import ExpenseHeaderForm from "./components/organisms/ExpenseHeaderForm";
@@ -49,6 +50,9 @@ const HrmExpenseScreen: React.FC<Props> = ({
 }) => {
   const cookies = parseCookies();
   const organizationId = getOrganizationId();
+  // uploadedBy on /receipt/upload follows the actor *By contract: BE wants
+  // composite "EMP-x - Full Name" so it can audit who uploaded the file.
+  const uploadedBy = useEmployeeIdentity().employeeIdWithName;
 
   const {
     formState,
@@ -189,6 +193,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
   const handleUploadLineReceipts = async (lineIndex: number, files: File[]) => {
     let handle = expense?.handle;
+    let itemsForLineHandle = expense?.items;
     // Receipts attach to a persisted line item, so a draft has to exist
     // first. Auto-save silently if needed — the visible toast makes it
     // clear we're persisting a DRAFT, not submitting. (Earlier attempt
@@ -203,10 +208,18 @@ const HrmExpenseScreen: React.FC<Props> = ({
         return;
       }
       handle = saved.handle;
+      itemsForLineHandle = saved.items;
     }
+    // BE may key receipts by line handle rather than (or in addition to)
+    // index. Resolve from the freshly-saved items so reorderings don't
+    // break the upload.
+    const lineHandle = itemsForLineHandle?.[lineIndex]?.handle;
     try {
       for (const file of files) {
-        await HrmExpenseService.uploadAttachment(handle, file, organizationId, lineIndex);
+        await HrmExpenseService.uploadAttachment(handle, file, organizationId, lineIndex, {
+          lineHandle,
+          uploadedBy,
+        });
       }
       message.success(files.length === 1 ? "Receipt uploaded." : `${files.length} receipts uploaded.`);
       await refetchExpense(handle);

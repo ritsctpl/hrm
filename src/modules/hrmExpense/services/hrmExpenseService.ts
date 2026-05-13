@@ -116,12 +116,35 @@ export class HrmExpenseService {
   // Receipts are line-bound only. lineIndex is the 0-based index of the
   // target line item. Expense-level attachments (lineIndex = -1) are no
   // longer supported — see src/docs/expense/receipts-redesign-prompt.md.
-  static async uploadAttachment(expenseId: string, file: File, organizationId: string, lineIndex: number): Promise<ReceiptUploadResponse> {
+  //
+  // The form ships every plausible field name BE handlers have used so a
+  // missing required field never blows up as HRM_INTERNAL / 500: parent
+  // expense under three aliases (expenseId / expenseHandle /
+  // expenseRequestHandle), line under two (lineIndex + lineHandle when
+  // known), and the actor as `uploadedBy` (composite "EMP-x - Name" per
+  // the project identity contract).
+  static async uploadAttachment(
+    expenseId: string,
+    file: File,
+    organizationId: string,
+    lineIndex: number,
+    opts?: { lineHandle?: string; uploadedBy?: string },
+  ): Promise<ReceiptUploadResponse> {
     const form = new FormData();
     form.append("file", file);
     form.append("expenseId", expenseId);
+    form.append("expenseHandle", expenseId);
+    form.append("expenseRequestHandle", expenseId);
     form.append("organizationId", organizationId);
     form.append("lineIndex", String(lineIndex));
+    if (opts?.lineHandle) {
+      form.append("lineHandle", opts.lineHandle);
+      form.append("expenseItemHandle", opts.lineHandle);
+    }
+    if (opts?.uploadedBy) {
+      form.append("uploadedBy", opts.uploadedBy);
+      form.append("createdBy", opts.uploadedBy);
+    }
     // Do NOT set Content-Type here. The browser/axios auto-sets it to
     // `multipart/form-data; boundary=----WebKitFormBoundaryXXX` when
     // given a FormData body. Setting it manually without the boundary
