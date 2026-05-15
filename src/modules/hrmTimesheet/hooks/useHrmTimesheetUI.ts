@@ -9,6 +9,18 @@ import { HrmTimesheetService } from '../services/hrmTimesheetService';
 import { mapTimesheetResponse, useHrmTimesheetData } from './useHrmTimesheetData';
 import { resolveEmployeeId } from '../utils/resolveEmployeeId';
 
+function extractBackendMsg(error: any, fallback: string): string {
+  return (
+    error?.response?.data?.message_details?.msg ||
+    error?.response?.data?.message ||
+    error?.response?.data?.response ||
+    error?.response?.data?.error ||
+    error?.response?.data?.errorCode ||
+    error?.message ||
+    fallback
+  );
+}
+
 export function useHrmTimesheetUI() {
   const store = useHrmTimesheetStore();
   const { loadWeeklyTimesheets, loadDayTimesheet, loadPendingApprovals } = useHrmTimesheetData();
@@ -62,18 +74,21 @@ export function useHrmTimesheetUI() {
       return;
     }
     store.setSubmittingTimesheet(true);
+    const payload = {
+      organizationId,
+      employeeId,
+      timesheetHandle: handle,
+      submittedBy: employeeId,
+    };
     try {
-      await HrmTimesheetService.submitTimesheet({ organizationId,
-        employeeId,
-        timesheetHandle: handle,
-        submittedBy: employeeId,
-      });
+      await HrmTimesheetService.submitTimesheet(payload);
       message.success('Timesheet submitted for approval');
       await loadDayTimesheet(store.selectedDate);
       await loadWeeklyTimesheets();
-    } catch (err) {
-      message.error('Failed to submit timesheet');
-      console.error(err);
+    } catch (err: any) {
+      console.error('[submitTimesheet] payload:', payload);
+      console.error('[submitTimesheet] response:', err?.response?.data);
+      message.error(extractBackendMsg(err, 'Failed to submit timesheet'));
     } finally {
       store.setSubmittingTimesheet(false);
     }
@@ -81,12 +96,14 @@ export function useHrmTimesheetUI() {
 
   const submitWeek = useCallback(async () => {
     store.setSubmittingWeek(true);
+    const payload = {
+      organizationId,
+      employeeId,
+      weekStartDate: store.selectedWeekStart,
+      submittedBy: employeeId,
+    };
     try {
-      const result = await HrmTimesheetService.bulkSubmitWeekly({ organizationId,
-        employeeId,
-        weekStartDate: store.selectedWeekStart,
-        submittedBy: employeeId,
-      });
+      const result = await HrmTimesheetService.bulkSubmitWeekly(payload);
       if (result.submittedDays === 0 && (result.skippedDays ?? 0) > 0) {
         message.info('All days already submitted for this week');
       } else {
@@ -96,9 +113,10 @@ export function useHrmTimesheetUI() {
         message.warning(`${result.errors.length} day(s) failed to submit`);
       }
       await loadWeeklyTimesheets();
-    } catch (err) {
-      message.error('Failed to submit week');
-      console.error(err);
+    } catch (err: any) {
+      console.error('[submitWeek] payload:', payload);
+      console.error('[submitWeek] response:', err?.response?.data);
+      message.error(extractBackendMsg(err, 'Failed to submit week'));
     } finally {
       store.setSubmittingWeek(false);
     }
