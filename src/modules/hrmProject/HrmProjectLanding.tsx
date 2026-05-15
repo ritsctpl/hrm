@@ -22,12 +22,22 @@ import styles from './styles/HrmProject.module.css';
 
 /* ── Client Management Drawer ─────────────────────────────────────── */
 interface ClientRecord {
-  handle?: string;
-  clientCode: string;
-  clientName: string;
+  id?: string;
+  code: string;
+  name: string;
   contactPerson?: string;
   email?: string;
   phone?: string;
+}
+
+function extractClientErrorMsg(error: any, fallback: string): string {
+  return (
+    error?.response?.data?.message_details?.msg ||
+    error?.response?.data?.message ||
+    error?.response?.data?.response ||
+    error?.message ||
+    fallback
+  );
 }
 
 function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -44,7 +54,9 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
     try {
       const data = await HrmProjectService.listClients(organizationId);
       setClients(Array.isArray(data) ? data : []);
-    } catch { /* ignore */ } finally {
+    } catch (error: any) {
+      message.error(extractClientErrorMsg(error, 'Failed to load clients'));
+    } finally {
       setLoading(false);
     }
   }, [organizationId]);
@@ -57,29 +69,50 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      if (editingClient?.handle) {
-        await HrmProjectService.updateClient(editingClient.handle, { ...values, organizationId, modifiedBy: user });
+      if (editingClient?.id) {
+        await HrmProjectService.updateClient({
+          organizationId,
+          id: editingClient.id,
+          name: values.name,
+          contactPerson: values.contactPerson,
+          email: values.email,
+          phone: values.phone,
+          modifiedBy: user,
+        });
         message.success('Client updated');
       } else {
-        await HrmProjectService.createClient({ ...values, organizationId, createdBy: user });
+        await HrmProjectService.createClient({
+          organizationId,
+          code: values.code,
+          name: values.name,
+          contactPerson: values.contactPerson,
+          email: values.email,
+          phone: values.phone,
+          createdBy: user,
+        });
         message.success('Client created');
       }
       setFormOpen(false);
       loadClients();
-    } catch { /* validation or api error */ }
+    } catch (error: any) {
+      if (error?.errorFields) return; // antd validation
+      message.error(extractClientErrorMsg(error, 'Failed to save client'));
+    }
   };
 
   const handleDelete = async (record: ClientRecord) => {
     try {
-      await HrmProjectService.deleteClient(organizationId, record.handle ?? '', user);
+      await HrmProjectService.deleteClient(organizationId, record.id ?? '', user);
       message.success('Client deleted');
       loadClients();
-    } catch { message.error('Delete failed'); }
+    } catch (error: any) {
+      message.error(extractClientErrorMsg(error, 'Delete failed'));
+    }
   };
 
   const columns = [
-    { title: 'Code', dataIndex: 'clientCode', key: 'clientCode', width: 120 },
-    { title: 'Name', dataIndex: 'clientName', key: 'clientName' },
+    { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
+    { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Contact', dataIndex: 'contactPerson', key: 'contactPerson' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     {
@@ -108,7 +141,7 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
       <Table
         dataSource={clients}
         columns={columns}
-        rowKey={(r) => r.handle ?? r.clientCode}
+        rowKey={(r) => r.id ?? r.code}
         loading={loading}
         size="small"
         locale={{ emptyText: <Empty description="No clients found" /> }}
@@ -126,10 +159,10 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
         ]}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="clientCode" label="Code" rules={[{ required: true }]}>
+          <Form.Item name="code" label="Code" rules={[{ required: true }]}>
             <Input disabled={!!editingClient} />
           </Form.Item>
-          <Form.Item name="clientName" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           <Form.Item name="contactPerson" label="Contact Person"><Input /></Form.Item>

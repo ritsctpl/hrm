@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { Button, Select, Space, Spin, Popconfirm } from 'antd';
+import { Button, Select, Space, Spin, Popconfirm, Tooltip, Alert } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import AllocationRow from '../molecules/AllocationRow';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
@@ -40,8 +40,24 @@ export default function ProjectAllocationsTab() {
     if (selectedProject) cancelAllocation(a.handle, selectedProject.handle);
   };
 
+  const projectStatus = selectedProject?.status;
+  const blockedStatuses = new Set(['ON_HOLD', 'COMPLETED', 'CANCELLED']);
+  const canAddAllocation = !!projectStatus && !blockedStatuses.has(projectStatus);
+  const inactiveReason =
+    projectStatus && blockedStatuses.has(projectStatus)
+      ? `Allocations cannot be added to ${projectStatus.replace('_', ' ')} projects`
+      : '';
+
   return (
     <div className={styles.allocationsTab}>
+      {!canAddAllocation && projectStatus && (
+        <Alert
+          type="info"
+          showIcon
+          message={inactiveReason}
+          style={{ marginBottom: 12 }}
+        />
+      )}
       <div className={styles.allocationsHeader}>
         <Space>
           <Select
@@ -54,9 +70,16 @@ export default function ProjectAllocationsTab() {
           />
         </Space>
         <Can I="add">
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAllocationForm}>
-            Add Allocation
-          </Button>
+          <Tooltip title={canAddAllocation ? '' : inactiveReason}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openAllocationForm}
+              disabled={!canAddAllocation}
+            >
+              Add Allocation
+            </Button>
+          </Tooltip>
         </Can>
       </div>
 

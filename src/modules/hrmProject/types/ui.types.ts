@@ -38,12 +38,14 @@ export interface ProjectFormValues {
 export interface AllocationFormValues {
   employeeId: string;
   employeeName: string;
+  role: string;
+  bookingType: 'FIRM' | 'TENTATIVE';
   hoursPerDay: number;
   startDate: string;
   endDate: string;
   recurring: boolean;
-  recurrencePattern: 'DAILY' | 'WEEKDAYS' | 'CUSTOM';
-  recurrenceDays: string[];
+  recurrencePattern: 'WEEKLY' | 'MONTHLY' | null;
+  recurrenceDays: number[];
 }
 
 export interface ProjectKpis {

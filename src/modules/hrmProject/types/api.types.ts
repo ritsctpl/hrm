@@ -111,12 +111,14 @@ export interface AllocationRequest {
   projectHandle: string;
   employeeId: string;
   employeeName?: string;
+  role: string;
+  bookingType: 'FIRM' | 'TENTATIVE';
   hoursPerDay: number;
   startDate: string;
   endDate: string;
   recurring: boolean;
-  recurrencePattern?: 'DAILY' | 'WEEKDAYS' | 'CUSTOM';
-  recurrenceDays?: string[];
+  recurrencePattern?: 'WEEKLY' | 'MONTHLY' | null;
+  recurrenceDays?: number[] | null;
   createdBy: string;
 }
 
@@ -132,9 +134,10 @@ export interface AllocationResponse {
   startDate: string;
   endDate: string;
   bookingType: string;
+  role?: string;
   recurring: boolean;
-  recurrencePattern?: string;
-  recurrenceDays?: string[];
+  recurrencePattern?: string | null;
+  recurrenceDays?: number[] | null;
   status: string;
   approvalRemarks?: string;
   totalAllocatedHours: number;
@@ -156,10 +159,10 @@ export interface AllocationDayResponse {
 
 export interface AllocationApprovalRequest {
   organizationId: string;
-  allocationHandle: string;
-  action: 'APPROVED' | 'REJECTED';
+  handle: string;
+  approved: boolean;
+  approvedBy: string;
   remarks?: string;
-  approverEmployeeId: string;
 }
 
 export interface CapacityCheckRequest {
@@ -167,6 +170,7 @@ export interface CapacityCheckRequest {
   employeeId: string;
   startDate: string;
   endDate: string;
+  requestedHoursPerDay?: number;
 }
 
 export interface CapacityCheckResponse {
@@ -261,29 +265,38 @@ export interface ResourceCalendarResponse {
 
 export interface ClientRequest {
   organizationId: string;
-  clientCode: string;
-  clientName: string;
+  code: string;
+  name: string;
   contactPerson?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
+  email?: string;
+  phone?: string;
   createdBy: string;
 }
 
-export interface ClientResponse {
-  handle: string;
+export interface ClientUpdateRequest {
   organizationId: string;
-  clientCode: string;
-  clientName: string;
+  id: string;
+  name?: string;
   contactPerson?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
-  active: number;
-  createdDateTime: string;
-  modifiedDateTime: string;
-  createdBy: string;
+  email?: string;
+  phone?: string;
   modifiedBy: string;
+}
+
+export interface ClientResponse {
+  id?: string;
+  handle?: string;
+  organizationId: string;
+  code: string;
+  name: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  active?: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+  createdBy?: string;
+  modifiedBy?: string;
 }
 
 // ─── Billing Types ───────────────────────────────────────────────────────────
@@ -291,11 +304,9 @@ export interface ClientResponse {
 export interface BillingConfigRequest {
   organizationId: string;
   projectHandle: string;
-  billingModel: 'TIME_AND_MATERIAL' | 'FIXED_PRICE' | 'MILESTONE' | 'RETAINER';
+  billingType: 'TIME_MATERIAL' | 'FIXED_PRICE' | 'RETAINER';
   currency: string;
   hourlyRate?: number;
-  fixedAmount?: number;
-  billingCycle?: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
   configuredBy: string;
 }
 

@@ -4,7 +4,8 @@ export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANC
 export type ProjectType = 'INTERNAL' | 'EXTERNAL';
 export type AllocationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type MilestoneStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
-export type RecurrencePattern = 'DAILY' | 'WEEKDAYS' | 'CUSTOM';
+export type RecurrencePattern = 'WEEKLY' | 'MONTHLY';
+export type BookingType = 'FIRM' | 'TENTATIVE';
 export type CapacityStatus = 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
 
 export interface Milestone {
@@ -75,10 +76,11 @@ export interface ResourceAllocation {
   hoursPerDay: number;
   startDate: string;
   endDate: string;
-  bookingType: string;
+  bookingType: BookingType | string;
+  role?: string;
   recurring: boolean;
-  recurrencePattern?: RecurrencePattern;
-  recurrenceDays?: string[];
+  recurrencePattern?: RecurrencePattern | null;
+  recurrenceDays?: number[] | null;
   status: AllocationStatus;
   approvalRemarks?: string;
   totalAllocatedHours: number;

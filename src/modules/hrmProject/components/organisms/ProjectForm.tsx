@@ -1,13 +1,19 @@
 'use client';
-import { useState } from 'react';
-import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Divider, Radio } from 'antd';
+import { useEffect, useState } from 'react';
+import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Divider, Radio, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import type { ProjectFormValues } from '../../types/ui.types';
 import Can from '../../../hrmAccess/components/Can';
+import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
+import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
+import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
+import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
+import type { BusinessUnit, Department } from '@/modules/hrmOrganization/types/domain.types';
 import styles from '../../styles/HrmProject.module.css';
 
 let milestoneKey = 0;
@@ -22,6 +28,49 @@ export default function ProjectForm() {
   const [milestones, setMilestones] = useState(
     editingProject?.milestones.map((m) => ({ key: m.milestoneId, ...m })) ?? []
   );
+
+  const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
+  const [loadingBUs, setLoadingBUs] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
+
+  const watchBuCode = Form.useWatch('buCode', form);
+  const watchPm = Form.useWatch('projectManagerId', form);
+
+  useEffect(() => {
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
+    setLoadingEmployees(true);
+    HrmEmployeeService.fetchDirectory({ organizationId, isActive: true, size: 500 })
+      .then((res) => setEmployees(res?.employees ?? []))
+      .catch(() => message.error('Failed to load employees'))
+      .finally(() => setLoadingEmployees(false));
+    setLoadingBUs(true);
+    HrmOrganizationService.fetchBusinessUnitsBySite(organizationId)
+      .then((data) => setBusinessUnits(data ?? []))
+      .catch(() => message.error('Failed to load business units'))
+      .finally(() => setLoadingBUs(false));
+  }, []);
+
+  useEffect(() => {
+    const organizationId = getOrganizationId();
+    if (!organizationId || !watchBuCode) {
+      setDepartments([]);
+      return;
+    }
+    const bu = businessUnits.find((b) => b.buCode === watchBuCode);
+    if (!bu?.handle) {
+      setDepartments([]);
+      return;
+    }
+    setLoadingDepts(true);
+    HrmOrganizationService.fetchDepartments(organizationId, bu.handle)
+      .then((data) => setDepartments(data ?? []))
+      .catch(() => message.error('Failed to load departments'))
+      .finally(() => setLoadingDepts(false));
+  }, [watchBuCode, businessUnits]);
 
   const handleSubmit = async (values: ProjectFormValues) => {
     const formValues: ProjectFormValues = {
@@ -86,14 +135,50 @@ export default function ProjectForm() {
       )}
       <Space style={{ display: 'flex' }}>
         <Form.Item name="buCode" label="Business Unit" rules={[{ required: true }]} style={{ flex: 1 }}>
-          <Input placeholder="BU Code" />
+          <Select
+            placeholder="Select Business Unit"
+            loading={loadingBUs}
+            showSearch
+            allowClear
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            options={businessUnits.map((bu) => ({
+              value: bu.buCode,
+              label: `${bu.buCode} - ${bu.buName}`,
+            }))}
+            onChange={() => form.setFieldValue('departmentCode', undefined)}
+          />
         </Form.Item>
         <Form.Item name="departmentCode" label="Department" style={{ flex: 1 }}>
-          <Input placeholder="Department" />
+          <Select
+            placeholder={watchBuCode ? 'Select Department' : 'Select BU first'}
+            loading={loadingDepts}
+            showSearch
+            allowClear
+            disabled={!watchBuCode}
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            options={departments.map((d) => ({
+              value: d.deptCode,
+              label: `${d.deptCode} - ${d.deptName}`,
+            }))}
+          />
         </Form.Item>
       </Space>
       <Form.Item name="projectManagerId" label="Project Manager" rules={[{ required: true }]}>
-        <Input placeholder="Employee ID" />
+        <HrmEmployeePicker
+          value={watchPm}
+          loading={loadingEmployees}
+          placeholder="Search project manager..."
+          options={employees.map((e) => ({
+            handle: e.employeeCode,
+            name: e.fullName,
+            employeeCode: e.employeeCode,
+          }))}
+          onSelect={(emp) => form.setFieldValue('projectManagerId', emp.employeeCode)}
+        />
       </Form.Item>
 
       <Divider orientation="left">Planning</Divider>

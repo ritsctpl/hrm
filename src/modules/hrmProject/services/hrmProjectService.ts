@@ -14,6 +14,7 @@ import type {
   ResourceUtilizationReport,
   CapacityDemandReport,
   ClientRequest,
+  ClientUpdateRequest,
   ClientResponse,
   BillingConfigRequest,
   BillingSummaryResponse,
@@ -186,13 +187,13 @@ export class HrmProjectService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async updateClient(handle: string, payload: Partial<ClientRequest>): Promise<ClientResponse> {
-    const res = await api.post(`${BASE}/client/update`, { handle, ...payload });
+  static async updateClient(payload: ClientUpdateRequest): Promise<ClientResponse> {
+    const res = await api.post(`${BASE}/client/update`, payload);
     return res.data;
   }
 
-  static async deleteClient(organizationId: string, handle: string, deletedBy: string): Promise<void> {
-    await api.post(`${BASE}/client/delete`, { organizationId, handle, deletedBy });
+  static async deleteClient(organizationId: string, id: string, deletedBy: string): Promise<void> {
+    await api.post(`${BASE}/client/delete`, { organizationId, id, deletedBy });
   }
 
   // ─── Billing ───────────────────────────────────────────────────────────────

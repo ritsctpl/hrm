@@ -193,10 +193,21 @@ export function useProjectData() {
     }
   }, [organizationId]);
 
-  const checkCapacity = useCallback(async (employeeId: string, startDate: string, endDate: string) => {
+  const checkCapacity = useCallback(async (
+    employeeId: string,
+    startDate: string,
+    endDate: string,
+    requestedHoursPerDay?: number,
+  ) => {
     store.setLoadingCapacity(true);
     try {
-      const data = await HrmProjectService.checkCapacity({ organizationId, employeeId, startDate, endDate });
+      const data = await HrmProjectService.checkCapacity({
+        organizationId,
+        employeeId,
+        startDate,
+        endDate,
+        requestedHoursPerDay,
+      });
       store.setCapacityCheck({
         employeeId: data.employeeId,
         employeeName: data.employeeName,

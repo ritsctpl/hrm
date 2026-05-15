@@ -1,10 +1,13 @@
 'use client';
-import { useEffect } from 'react';
-import { Button, Select, Space, Spin, Tooltip } from 'antd';
+import { useEffect, useState } from 'react';
+import { Button, Select, Space, Spin, Tooltip, message } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
+import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
+import type { BusinessUnit, Department } from '@/modules/hrmOrganization/types/domain.types';
 import CapacityColorDot from '../atoms/CapacityColorDot';
 import type { CapacityStatus } from '../../types/domain.types';
 import styles from '../../styles/ResourceCalendar.module.css';
@@ -12,6 +15,39 @@ import styles from '../../styles/ResourceCalendar.module.css';
 export default function ResourceCalendarView() {
   const { calendarWeekStart, setCalendarWeekStart, calendarBU, setCalendarBU, calendarDept, setCalendarDept, calendarData, loadingCalendar } = useHrmProjectStore();
   const { loadCalendar } = useProjectData();
+
+  const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
+  const [loadingBUs, setLoadingBUs] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
+
+  useEffect(() => {
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
+    setLoadingBUs(true);
+    HrmOrganizationService.fetchBusinessUnitsBySite(organizationId)
+      .then((data) => setBusinessUnits(data ?? []))
+      .catch(() => message.error('Failed to load business units'))
+      .finally(() => setLoadingBUs(false));
+  }, []);
+
+  useEffect(() => {
+    const organizationId = getOrganizationId();
+    if (!organizationId || !calendarBU) {
+      setDepartments([]);
+      return;
+    }
+    const bu = businessUnits.find((b) => b.buCode === calendarBU);
+    if (!bu?.handle) {
+      setDepartments([]);
+      return;
+    }
+    setLoadingDepts(true);
+    HrmOrganizationService.fetchDepartments(organizationId, bu.handle)
+      .then((data) => setDepartments(data ?? []))
+      .catch(() => message.error('Failed to load departments'))
+      .finally(() => setLoadingDepts(false));
+  }, [calendarBU, businessUnits]);
 
   useEffect(() => {
     loadCalendar();
@@ -32,8 +68,42 @@ export default function ResourceCalendarView() {
           {dayjs(calendarWeekStart).format('DD MMM')} — {dayjs(calendarWeekStart).add(6, 'day').format('DD MMM YYYY')}
         </span>
         <Button icon={<RightOutlined />} onClick={nextWeek} />
-        <Select placeholder="BU" value={calendarBU || undefined} onChange={setCalendarBU} allowClear style={{ width: 120 }} />
-        <Select placeholder="Department" value={calendarDept || undefined} onChange={setCalendarDept} allowClear style={{ width: 140 }} />
+        <Select
+          placeholder="BU"
+          value={calendarBU || undefined}
+          onChange={(v) => {
+            setCalendarBU(v ?? '');
+            setCalendarDept('');
+          }}
+          allowClear
+          showSearch
+          loading={loadingBUs}
+          style={{ width: 160 }}
+          filterOption={(input, option) =>
+            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={businessUnits.map((bu) => ({
+            value: bu.buCode,
+            label: `${bu.buCode} - ${bu.buName}`,
+          }))}
+        />
+        <Select
+          placeholder={calendarBU ? 'Department' : 'Select BU first'}
+          value={calendarDept || undefined}
+          onChange={(v) => setCalendarDept(v ?? '')}
+          allowClear
+          showSearch
+          disabled={!calendarBU}
+          loading={loadingDepts}
+          style={{ width: 180 }}
+          filterOption={(input, option) =>
+            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={departments.map((d) => ({
+            value: d.deptCode,
+            label: `${d.deptCode} - ${d.deptName}`,
+          }))}
+        />
       </Space>
 
       {loadingCalendar ? (

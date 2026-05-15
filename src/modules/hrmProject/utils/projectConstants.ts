@@ -58,18 +58,24 @@ export const PROJECT_TYPES = [
 ];
 
 export const RECURRENCE_PATTERNS = [
-  { value: 'DAILY', label: 'Daily' },
-  { value: 'WEEKDAYS', label: 'Weekdays (Mon–Fri)' },
-  { value: 'CUSTOM', label: 'Custom Days' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
 ];
 
+/** ISO day-of-week values per backend contract (1=Mon … 7=Sun). */
 export const WEEKDAYS = [
-  { value: 'MON', label: 'Mon' },
-  { value: 'TUE', label: 'Tue' },
-  { value: 'WED', label: 'Wed' },
-  { value: 'THU', label: 'Thu' },
-  { value: 'FRI', label: 'Fri' },
-  { value: 'SAT', label: 'Sat' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 7, label: 'Sun' },
+];
+
+export const BOOKING_TYPES = [
+  { value: 'FIRM', label: 'Firm' },
+  { value: 'TENTATIVE', label: 'Tentative' },
 ];
 
 export const MAX_HOURS_PER_DAY = 9.0;

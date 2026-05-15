@@ -9,6 +9,18 @@ import { HrmProjectService } from '../services/hrmProjectService';
 import { useProjectData } from './useProjectData';
 import type { ProjectFormValues, AllocationFormValues } from '../types/ui.types';
 
+function extractBackendMsg(error: any, fallback: string): string {
+  return (
+    error?.response?.data?.message_details?.msg ||
+    error?.response?.data?.message ||
+    error?.response?.data?.response ||
+    error?.response?.data?.error ||
+    error?.response?.data?.errorCode ||
+    error?.message ||
+    fallback
+  );
+}
+
 export function useProjectMutations() {
   const store = useHrmProjectStore();
   const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
@@ -38,8 +50,8 @@ export function useProjectMutations() {
       message.success('Project created successfully');
       store.closeProjectForm();
       await loadProjects();
-    } catch (error) {
-      message.error('Failed to create project');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to create project'));
       console.error(error);
     } finally {
       store.setSavingProject(false);
@@ -57,8 +69,8 @@ export function useProjectMutations() {
       if (store.selectedProject?.handle === handle) {
         await loadProjectDetail(handle);
       }
-    } catch (error) {
-      message.error('Failed to update project');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to update project'));
       console.error(error);
     } finally {
       store.setSavingProject(false);
@@ -72,8 +84,8 @@ export function useProjectMutations() {
       message.success('Project deleted');
       store.removeProjectFromList(handle);
       await loadProjects();
-    } catch (error) {
-      message.error('Cannot delete project (may have approved allocations)');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Cannot delete project (may have approved allocations)'));
       console.error(error);
     }
   }, [organizationId, loadProjects]);
@@ -88,8 +100,8 @@ export function useProjectMutations() {
       await HrmProjectService.updateProjectStatus({ organizationId, handle, status, reason, modifiedBy });
       message.success('Project status updated');
       await loadProjects();
-    } catch (error) {
-      message.error('Failed to update project status');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to update project status'));
       console.error(error);
     }
   }, [organizationId, loadProjects]);
@@ -101,22 +113,26 @@ export function useProjectMutations() {
   ) => {
     store.setSavingAllocation(true);
     try {
-      await HrmProjectService.createAllocation({ organizationId,
+      await HrmProjectService.createAllocation({
+        organizationId,
         projectHandle,
         employeeId: values.employeeId,
+        employeeName: values.employeeName,
+        role: values.role,
+        bookingType: values.bookingType,
         hoursPerDay: values.hoursPerDay,
         startDate: values.startDate,
         endDate: values.endDate,
         recurring: values.recurring,
-        recurrencePattern: values.recurrencePattern,
-        recurrenceDays: values.recurrenceDays,
+        recurrencePattern: values.recurring ? values.recurrencePattern : null,
+        recurrenceDays: values.recurring ? values.recurrenceDays : null,
         createdBy,
       });
       message.success('Allocation created');
       store.closeAllocationForm();
       await loadAllocations(projectHandle);
-    } catch (error) {
-      message.error('Failed to create allocation');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to create allocation'));
       console.error(error);
     } finally {
       store.setSavingAllocation(false);
@@ -129,8 +145,8 @@ export function useProjectMutations() {
       await HrmProjectService.submitAllocation(organizationId, handle, userId);
       message.success('Allocation submitted for approval');
       await loadAllocations(projectHandle);
-    } catch (error) {
-      message.error('Failed to submit allocation');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to submit allocation'));
       console.error(error);
     }
   }, [organizationId, loadAllocations]);
@@ -141,8 +157,8 @@ export function useProjectMutations() {
       await HrmProjectService.cancelAllocation(organizationId, handle, userId);
       message.success('Allocation cancelled');
       await loadAllocations(projectHandle);
-    } catch (error) {
-      message.error('Failed to cancel allocation');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to cancel allocation'));
       console.error(error);
     }
   }, [organizationId, loadAllocations]);
@@ -151,20 +167,21 @@ export function useProjectMutations() {
     allocationHandle: string,
     action: 'APPROVED' | 'REJECTED',
     remarks: string,
-    approverEmployeeId: string
+    approvedBy: string,
   ) => {
     store.setApprovingAllocation(true);
     try {
-      await HrmProjectService.approveOrRejectAllocation({ organizationId,
-        allocationHandle,
-        action,
+      await HrmProjectService.approveOrRejectAllocation({
+        organizationId,
+        handle: allocationHandle,
+        approved: action === 'APPROVED',
+        approvedBy,
         remarks,
-        approverEmployeeId,
       });
       message.success(`Allocation ${action.toLowerCase()}`);
       await loadPendingAllocations();
-    } catch (error) {
-      message.error('Failed to process approval');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to process approval'));
       console.error(error);
     } finally {
       store.setApprovingAllocation(false);
@@ -180,8 +197,8 @@ export function useProjectMutations() {
       await HrmProjectService.addMilestone(projectHandle, milestone, userId);
       message.success('Milestone added');
       await loadProjectDetail(projectHandle);
-    } catch (error) {
-      message.error('Failed to add milestone');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to add milestone'));
       console.error(error);
     }
   }, [loadProjectDetail]);
@@ -192,8 +209,8 @@ export function useProjectMutations() {
       await HrmProjectService.removeMilestone(projectHandle, milestoneId, userId);
       message.success('Milestone removed');
       await loadProjectDetail(projectHandle);
-    } catch (error) {
-      message.error('Failed to remove milestone');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to remove milestone'));
       console.error(error);
     }
   }, [loadProjectDetail]);
@@ -208,8 +225,8 @@ export function useProjectMutations() {
       await HrmProjectService.updateMilestoneStatus({ organizationId, projectHandle, milestoneId, status, modifiedBy });
       message.success('Milestone status updated');
       await loadProjectDetail(projectHandle);
-    } catch (error) {
-      message.error('Failed to update milestone status');
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to update milestone status'));
       console.error(error);
     }
   }, [organizationId, loadProjectDetail]);

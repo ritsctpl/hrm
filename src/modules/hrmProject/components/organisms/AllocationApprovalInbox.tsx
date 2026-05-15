@@ -1,10 +1,11 @@
 'use client';
 import { useEffect } from 'react';
-import { Spin, Tabs, Empty } from 'antd';
+import { Spin, Tabs, Empty, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import AllocationRow from '../molecules/AllocationRow';
 import AllocationApprovalActionBar from '../molecules/AllocationApprovalActionBar';
 import styles from '../../styles/ProjectDetail.module.css';
@@ -19,6 +20,7 @@ export default function AllocationApprovalInbox() {
   } = useHrmProjectStore();
   const { loadPendingAllocations } = useProjectData();
   const { approveAllocation } = useProjectMutations();
+  const { employeeCode, isReady } = useEmployeeIdentity();
 
   useEffect(() => {
     loadPendingAllocations();
@@ -26,18 +28,38 @@ export default function AllocationApprovalInbox() {
 
   const submitted = pendingAllocations.filter((a) => a.status === 'SUBMITTED');
 
-  const handleApprove = (remarks: string) => {
-    if (selectedAllocation) {
-      const userId = parseCookies().userId ?? parseCookies().user ?? '';
-      approveAllocation(selectedAllocation.handle, 'APPROVED', remarks, userId);
+  const resolveActor = () => {
+    const cookies = parseCookies();
+    const actor =
+      employeeCode ||
+      cookies.employeeCode ||
+      cookies.employeeId ||
+      cookies.userId ||
+      cookies.user ||
+      cookies.rl_user_id ||
+      '';
+    if (!actor) {
+      message.error('Could not identify the signed-in user — please sign in again');
+      return '';
     }
+    if (actor.includes('@')) {
+      console.warn('[AllocationApprovalInbox] sending email-shaped actor; backend may reject', { actor, isReady });
+    }
+    return actor;
+  };
+
+  const handleApprove = (remarks: string) => {
+    if (!selectedAllocation) return;
+    const actor = resolveActor();
+    if (!actor) return;
+    approveAllocation(selectedAllocation.handle, 'APPROVED', remarks, actor);
   };
 
   const handleReject = (remarks: string) => {
-    if (selectedAllocation) {
-      const userId = parseCookies().userId ?? parseCookies().user ?? '';
-      approveAllocation(selectedAllocation.handle, 'REJECTED', remarks, userId);
-    }
+    if (!selectedAllocation) return;
+    const actor = resolveActor();
+    if (!actor) return;
+    approveAllocation(selectedAllocation.handle, 'REJECTED', remarks, actor);
   };
 
   return (
