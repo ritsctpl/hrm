@@ -415,6 +415,14 @@ export interface LeaveRequestCreateDto {
   attachmentPath?: string;
   attachments?: LeaveRequestAttachmentUpload[];
   createdBy: string;
+  /**
+   * Optional reference to an existing DRAFT request. When present:
+   *   - on /save-draft: BE updates the draft in-place (returns INVALID_DRAFT_STATE
+   *     if the referenced request is no longer in DRAFT status).
+   *   - on /submit: BE reuses the same handle to transition DRAFT → PENDING_SUPERVISOR
+   *     instead of creating a duplicate request.
+   */
+  handle?: string;
 }
 
 export interface ValidationSummaryResponse {

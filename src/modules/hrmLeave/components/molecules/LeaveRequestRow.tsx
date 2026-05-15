@@ -16,8 +16,10 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
   isSelected,
   onClick,
   onAmend,
+  onEditDraft,
 }) => {
   const isPending = request.status.startsWith("PENDING");
+  const isDraft = request.status === "DRAFT";
   const fromDate = new Date(request.startDate).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -48,6 +50,21 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
           {new Date(request.createdDateTime).toLocaleDateString("en-GB")}
         </Text>
       </div>
+      {isDraft && onEditDraft && (
+        <div style={{ marginTop: 6, textAlign: "right" }}>
+          <Button
+            size="small"
+            type="link"
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditDraft(request);
+            }}
+          >
+            Continue Editing
+          </Button>
+        </div>
+      )}
       {isPending && onAmend && (
         <div style={{ marginTop: 6, textAlign: "right" }}>
           <Button

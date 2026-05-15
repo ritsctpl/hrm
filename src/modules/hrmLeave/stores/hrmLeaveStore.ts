@@ -96,6 +96,13 @@ interface HrmLeaveState {
   leaveFormStep: 1 | 2 | 3 | 4;
   leaveFormState: LeaveRequestFormState;
   formTargetEmployeeId: string | null;
+  /**
+   * When set, the drawer is being opened to continue editing an existing
+   * DRAFT row. Saves and Submits from the drawer will reuse this handle
+   * (per BE LeaveRequestServiceImpl saveDraft / submit contracts) so a
+   * stored draft transitions or updates in place instead of duplicating.
+   */
+  editingDraftHandle: string | null;
   showRejectModal: boolean;
   showReassignModal: boolean;
   pendingActionRequestId: string | null;
@@ -165,6 +172,7 @@ interface HrmLeaveState {
   setActiveTab: (tab: string) => void;
   setActiveHrTab: (tab: string) => void;
   openLeaveForm: () => void;
+  openLeaveFormForEdit: (draft: LeaveRequest) => void;
   closeLeaveForm: () => void;
   setFormTargetEmployeeId: (id: string | null) => void;
   setLeaveFormStep: (step: 1 | 2 | 3 | 4) => void;
@@ -234,6 +242,7 @@ const defaultState = {
   leaveFormStep: 1 as const,
   leaveFormState: defaultLeaveFormState,
   formTargetEmployeeId: null,
+  editingDraftHandle: null,
   showRejectModal: false,
   showReassignModal: false,
   pendingActionRequestId: null,
@@ -322,8 +331,28 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
       leaveFormState: defaultLeaveFormState,
       validationSummary: null,
       formTargetEmployeeId: null,
+      editingDraftHandle: null,
     }),
-  closeLeaveForm: () => set({ showLeaveForm: false, formTargetEmployeeId: null }),
+  openLeaveFormForEdit: (draft) =>
+    set({
+      showLeaveForm: true,
+      leaveFormStep: 1,
+      leaveFormState: {
+        leaveTypeCode: draft.leaveTypeCode ?? null,
+        startDate: draft.startDate ?? null,
+        endDate: draft.endDate ?? null,
+        startDayType: (draft.startDayType ?? "FULL") as LeaveRequestFormState["startDayType"],
+        endDayType: (draft.endDayType ?? "FULL") as LeaveRequestFormState["endDayType"],
+        totalDays: draft.totalDays ?? 0,
+        reason: draft.reason ?? "",
+        attachmentPath: draft.attachmentPath ?? null,
+      },
+      validationSummary: null,
+      formTargetEmployeeId: draft.employeeId ?? null,
+      editingDraftHandle: draft.handle,
+    }),
+  closeLeaveForm: () =>
+    set({ showLeaveForm: false, formTargetEmployeeId: null, editingDraftHandle: null }),
   setFormTargetEmployeeId: (formTargetEmployeeId) => set({ formTargetEmployeeId }),
   setLeaveFormStep: (leaveFormStep) => set({ leaveFormStep }),
   updateLeaveFormState: (changes) =>

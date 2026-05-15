@@ -9,6 +9,7 @@ import { LeaveRequestsTableProps } from "../../types/ui.types";
 import { LeaveRequest } from "../../types/domain.types";
 import { buildYearOptions } from "../../utils/transformations";
 import { LEAVE_STATUS_LABELS } from "../../utils/constants";
+import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Text } = Typography;
@@ -25,6 +26,7 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
   onRowClick,
 }) => {
   const organizationId = getOrganizationId();
+  const openLeaveFormForEdit = useHrmLeaveStore((s) => s.openLeaveFormForEdit);
 
   const [amendOpen, setAmendOpen] = useState(false);
   const [amendTarget, setAmendTarget] = useState<LeaveRequest | null>(null);
@@ -34,6 +36,10 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
   const handleAmend = (request: LeaveRequest) => {
     setAmendTarget(request);
     setAmendOpen(true);
+  };
+
+  const handleEditDraft = (request: LeaveRequest) => {
+    openLeaveFormForEdit(request);
   };
 
   const handleAmendClose = () => {
@@ -93,6 +99,7 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
             isSelected={req.handle === selectedHandle}
             onClick={onRowClick}
             onAmend={handleAmend}
+            onEditDraft={handleEditDraft}
           />
         ))
       )}

@@ -48,6 +48,7 @@ export interface LeaveRequestRowProps {
   isSelected: boolean;
   onClick: (request: LeaveRequest) => void;
   onAmend?: (request: LeaveRequest) => void;
+  onEditDraft?: (request: LeaveRequest) => void;
 }
 
 export interface ApproverRequestRowProps {

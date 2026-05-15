@@ -260,6 +260,16 @@ export class HrmLeaveService {
     return this.unwrap<LeaveRequest>(data);
   }
 
+  /**
+   * Persist the leave request in DRAFT status without triggering the
+   * approval workflow. Drafts are editable by the creator and convert to
+   * PENDING_SUPERVISOR only when /leave-request/submit is later called.
+   */
+  static async saveDraftLeaveRequest(payload: LeaveRequestCreateDto): Promise<LeaveRequest> {
+    const { data } = await api.post(`${this.BASE}/leave-request/save-draft`, payload);
+    return this.unwrap<LeaveRequest>(data);
+  }
+
   static async cancelLeaveRequest(payload: CancelLeaveRequest): Promise<LeaveRequest> {
     const { data } = await api.post(`${this.BASE}/leave-request/cancel`, payload);
     return this.unwrap<LeaveRequest>(data);

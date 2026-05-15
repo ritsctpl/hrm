@@ -99,6 +99,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     leaveFormState,
     leaveTypes,
     formTargetEmployeeId,
+    editingDraftHandle,
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
@@ -122,6 +123,21 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const isHrUser = allowEmployeeSelection;
 
   const [submitting, setSubmitting] = useState(false);
+  // After a successful Save Draft, the BE returns the draft handle. We keep
+  // it so subsequent Save Draft clicks update the same draft in-place (per
+  // LeaveRequestServiceImpl saveDraft contract) and the final Submit click
+  // transitions DRAFT → PENDING_SUPERVISOR by reusing the @Id instead of
+  // generating a duplicate row. When the drawer is opened to edit an
+  // existing draft (via openLeaveFormForEdit), the store seeds this with
+  // the row's handle so the first Save / Submit in this session also
+  // points to the existing row instead of creating a duplicate.
+  const [draftHandle, setDraftHandle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (showLeaveForm) {
+      setDraftHandle(editingDraftHandle);
+    }
+  }, [showLeaveForm, editingDraftHandle]);
   const [attachments, setAttachments] = useState<
     { name: string; base64: string; contentType: string }[]
   >([]);
@@ -563,6 +579,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const handleReset = () => {
     setAttachments([]);
     setHandoverPerson(undefined);
+    setDraftHandle(null);
     updateLeaveFormState({
       leaveTypeCode: "",
       startDate: null,
@@ -615,6 +632,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
           contentBase64: a.base64,
         })),
         handoverEmployeeId: handoverPerson,
+        // When the user saved as draft first, pass the handle so BE
+        // transitions DRAFT → PENDING_SUPERVISOR on the same row instead
+        // of creating a duplicate.
+        ...(draftHandle ? { handle: draftHandle } : {}),
       } as Parameters<typeof HrmLeaveService.submitLeaveRequest>[0];
       const result = await HrmLeaveService.submitLeaveRequest(payload);
       addMyRequest(result);
@@ -635,7 +656,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     }
   };
 
-  const handleSaveDraft = () => {
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const handleSaveDraft = async () => {
     if (!leaveFormState.leaveTypeCode) {
       message.warning("Pick a leave type before saving a draft");
       return;
@@ -648,7 +671,66 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       message.warning("Set the number of days before saving a draft");
       return;
     }
-    message.success("Draft saved");
+    if (!identity.isReady) {
+      message.error("Employee identity not resolved yet. Please retry.");
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      const submitterComposite = identity.employeeIdWithName;
+      const employeeIdForPayload = formTargetEmployeeId ?? submitterComposite;
+      const payload = {
+        organizationId,
+        employeeId: employeeIdForPayload,
+        leaveTypeCode: leaveFormState.leaveTypeCode,
+        startDate: leaveFormState.startDate!,
+        endDate: leaveFormState.endDate ?? leaveFormState.startDate!,
+        startDayType: leaveFormState.startDayType,
+        endDayType: leaveFormState.endDayType,
+        totalDays: leaveFormState.totalDays,
+        reason: leaveFormState.reason,
+        createdBy: submitterComposite,
+        // Per BE saveDraft contract: attachments are only replaced when a
+        // non-empty list is sent. So we omit the field on re-save when the
+        // user hasn't added new files — preserves whatever the BE already
+        // has on the draft row.
+        ...(attachments.length > 0
+          ? {
+              attachments: attachments.map((a) => ({
+                name: a.name,
+                contentType: a.contentType,
+                contentBase64: a.base64,
+              })),
+            }
+          : {}),
+        handoverEmployeeId: handoverPerson,
+        // When we already saved this draft once, pass the handle so BE
+        // updates in-place instead of creating a new DRAFT row.
+        ...(draftHandle ? { handle: draftHandle } : {}),
+      } as Parameters<typeof HrmLeaveService.saveDraftLeaveRequest>[0];
+      const result = await HrmLeaveService.saveDraftLeaveRequest(payload);
+      // Capture the handle so the next Save Draft / Submit click on this
+      // same drawer references the same row. The drawer stays open so the
+      // user can continue editing — closing happens only on full Submit
+      // or explicit Cancel.
+      if (result?.handle) {
+        setDraftHandle(result.handle);
+      }
+      addMyRequest(result);
+      message.success(draftHandle ? "Draft updated" : "Draft saved — keep editing or click Submit when ready");
+      onSubmitted();
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message_details?: { error?: string; msg?: string }; message?: string } }; message?: string };
+      const backendMsg =
+        apiError?.response?.data?.message_details?.msg ||
+        apiError?.response?.data?.message_details?.error ||
+        apiError?.response?.data?.message ||
+        (err instanceof Error ? err.message : null) ||
+        "Failed to save draft";
+      message.error(backendMsg);
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const reasonChipClick = (tag: string) => {
@@ -683,7 +765,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         <div className={styles.formActions}>
           <Button onClick={handleClose}>Cancel</Button>
           <div style={{ display: "flex", gap: 8 }}>
-            <Button onClick={handleSaveDraft}>Save as Draft</Button>
+            <Button onClick={handleSaveDraft} loading={savingDraft}>Save as Draft</Button>
             <Can I="add" object="leave_request" passIf={true}>
               <Button
                 type="primary"

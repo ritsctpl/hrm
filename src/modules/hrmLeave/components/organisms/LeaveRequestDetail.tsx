@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Descriptions, Divider, List, Space, Tag, Typography, message } from "antd";
+import { Button, Descriptions, Divider, Input, List, Modal, Space, Tag, Typography, message } from "antd";
 import {
+  CloseCircleOutlined,
   DownloadOutlined,
   EyeOutlined,
   FileImageOutlined,
@@ -10,6 +11,7 @@ import {
   FileTextOutlined,
   PaperClipOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 import LeaveTypeTag from "../atoms/LeaveTypeTag";
 import LeaveStatusChip from "../atoms/LeaveStatusChip";
 import HalfDayIndicator from "../atoms/HalfDayIndicator";
@@ -73,6 +75,58 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
   // Track per-attachment in-flight state so the user gets feedback
   // while the authenticated download is being fetched.
   const [busyAttachment, setBusyAttachment] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  // Cancellation eligibility — per business rule:
+  //   - request must be in APPROVED status
+  //   - leave start date must be strictly after today (cannot cancel
+  //     on or after the leave start date)
+  //   - only the requester can cancel their own leave
+  const startsInFuture = dayjs(request.startDate).isAfter(dayjs(), "day");
+  const isOwnRequest =
+    !!identity.employeeCode &&
+    (request.employeeId === identity.employeeCode ||
+      request.employeeId === identity.employeeIdWithName ||
+      (request.employeeId ?? "").startsWith(identity.employeeCode));
+  const canCancel =
+    request.status === "APPROVED" && startsInFuture && isOwnRequest;
+
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) {
+      message.warning("Please provide a reason for cancellation");
+      return;
+    }
+    if (!identity.isReady || !identity.employeeIdWithName) {
+      message.error("Employee identity not resolved yet. Please retry.");
+      return;
+    }
+    setCancelling(true);
+    try {
+      await HrmLeaveService.cancelLeaveRequest({
+        organizationId,
+        requestId: request.handle,
+        reason: cancelReason.trim(),
+        cancelledBy: identity.employeeIdWithName,
+      });
+      message.success("Leave request cancelled — balance will be restored");
+      setCancelOpen(false);
+      setCancelReason("");
+      onCancelled?.();
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message_details?: { error?: string; msg?: string }; message?: string } }; message?: string };
+      const backendMsg =
+        apiError?.response?.data?.message_details?.msg ||
+        apiError?.response?.data?.message_details?.error ||
+        apiError?.response?.data?.message ||
+        (err instanceof Error ? err.message : null) ||
+        "Failed to cancel leave request";
+      message.error(backendMsg);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   /**
    * Fetch the attachment via the authenticated axios instance, then
@@ -179,8 +233,25 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
         <Title level={5} style={{ margin: 0 }}>
           <LeaveTypeTag code={request.leaveTypeCode} name={request.leaveTypeName} />
         </Title>
-        <LeaveStatusChip status={request.status} />
+        <Space size={8}>
+          <LeaveStatusChip status={request.status} />
+          {canCancel && (
+            <Button
+              danger
+              size="small"
+              icon={<CloseCircleOutlined />}
+              onClick={() => setCancelOpen(true)}
+            >
+              Cancel Request
+            </Button>
+          )}
+        </Space>
       </div>
+      {request.status === "APPROVED" && !startsInFuture && isOwnRequest && (
+        <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
+          Cancellation window has closed — leave start date has been reached.
+        </Text>
+      )}
 
       <Text type="secondary" style={{ fontSize: 12 }}>
         Submitted: {submittedAt}
@@ -333,6 +404,33 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
       <Divider style={{ margin: "12px 0" }} />
       <Title level={5}>Action History</Title>
       <ActionHistoryTimeline actions={request.actionHistory} />
+
+      <Modal
+        title="Cancel Leave Request"
+        open={cancelOpen}
+        onCancel={() => {
+          setCancelOpen(false);
+          setCancelReason("");
+        }}
+        onOk={handleCancel}
+        okText="Confirm Cancellation"
+        okButtonProps={{ danger: true, loading: cancelling }}
+        destroyOnHidden
+      >
+        <Text>
+          Cancel this approved leave request? The leave balance will be restored
+          automatically upon cancellation.
+        </Text>
+        <Input.TextArea
+          rows={3}
+          placeholder="Reason for cancellation (required)"
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          maxLength={500}
+          showCount
+          style={{ marginTop: 12 }}
+        />
+      </Modal>
     </div>
   );
 };

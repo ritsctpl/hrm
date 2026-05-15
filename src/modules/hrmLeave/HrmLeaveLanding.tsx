@@ -755,7 +755,13 @@ const HrmLeaveLanding: React.FC = () => {
           </div>
           <div className={styles.ledgerCardBody}>
             <BalanceSummaryTable
-              balances={balanceSummary}
+              balances={
+                ledgerLeaveTypeFilter
+                  ? balanceSummary.filter(
+                      (b) => b.leaveTypeCode === ledgerLeaveTypeFilter,
+                    )
+                  : balanceSummary
+              }
               loading={balanceSummaryLoading}
               selectedEmployeeId={ledgerEmployeeId}
             />
