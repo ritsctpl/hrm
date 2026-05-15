@@ -159,7 +159,11 @@ export class HrmExpenseService {
     lineIndex: number;
     attachmentId: string;
   }): Promise<void> {
-    await api.post(`${this.BASE}/receipt/delete`, payload);
+    const body = {
+      ...payload,
+      attachmentId: this.normalizeAttachmentRef(payload.attachmentId),
+    };
+    await api.post(`${this.BASE}/receipt/delete`, body);
   }
 
   /**
@@ -169,7 +173,20 @@ export class HrmExpenseService {
    * BE resolves the file by (expenseId, lineIndex, attachmentRef) — same
    * tuple as /receipt/delete. Sending only attachmentRef caused 500s
    * because the receipt store is keyed under the parent expense + line.
+   *
+   * BE has returned attachmentRefs in two shapes historically:
+   *   - bare UUID:  "d8ce2878-ac57-4df5-bf7c-eef8b0106795"
+   *   - full path:  "/app/v1/hrm-service/expense/receipt/<UUID>/download"
+   * The full-path variant 500s server-side (HRM_INTERNAL) because the
+   * retrieval lookup expects a bare id. Normalize before sending so the
+   * preview/download paths work regardless of which shape BE stored.
    */
+  private static normalizeAttachmentRef(raw: string): string {
+    if (!raw) return raw;
+    const match = raw.match(/\/receipt\/([^/?#]+?)(?:\/download)?$/i);
+    return match?.[1] ?? raw;
+  }
+
   static async downloadReceipt(payload: {
     organizationId: string;
     expenseId?: string;
@@ -177,11 +194,14 @@ export class HrmExpenseService {
     attachmentRef: string;
     attachmentId?: string;
   }): Promise<Blob> {
+    const normalizedRef = this.normalizeAttachmentRef(payload.attachmentRef);
     // Mirror delete's field name as a safety net — different BE handlers
     // have used `attachmentRef` and `attachmentId` interchangeably.
     const body = {
       ...payload,
-      attachmentId: payload.attachmentId ?? payload.attachmentRef,
+      attachmentRef: normalizedRef,
+      attachmentId:
+        this.normalizeAttachmentRef(payload.attachmentId ?? '') || normalizedRef,
     };
     const response = await api.post(`${this.BASE}/receipt/download`, body, {
       responseType: "blob",

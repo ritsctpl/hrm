@@ -61,8 +61,13 @@ export function useExpenseData() {
     if (!isReady) return;
     setInboxLoading(true);
     try {
+      // BE expense workflow stores `currentApproverId` in the composite
+      // `"EMP-2 - Shanmathi M M"` shape (same as leave-request approver
+      // assignments). Sending bare employeeCode here returned an empty
+      // inbox even when a request was marked Pending Supervisor.
+      const approverId = identity.employeeIdWithName || employeeId;
       const data = await HrmExpenseService.getSupervisorInbox({ organizationId,
-        empId: employeeId,
+        empId: approverId,
       });
       setSupervisorInbox(data);
     } catch {
@@ -70,7 +75,7 @@ export function useExpenseData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [organizationId, employeeId, isReady]);
+  }, [organizationId, employeeId, identity.employeeIdWithName, isReady]);
 
   const loadFinanceInbox = useCallback(async () => {
     setInboxLoading(true);
