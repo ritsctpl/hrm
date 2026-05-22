@@ -21,6 +21,7 @@ import {
   LeavePolicyRequest,
   PayrollExportRequest,
   LedgerHistoryRequest,
+  LedgerReportRequest,
   RollbackRequest,
   YearQueryRequest,
   YearEndRequest,
@@ -206,6 +207,15 @@ export class HrmLeaveService {
 
   static async getLedgerHistory(payload: LedgerHistoryRequest): Promise<LedgerHistoryResponse[]> {
     const { data } = await api.post(`${this.BASE}/ledger/history`, payload);
+    return this.unwrap<LedgerHistoryResponse[]>(data) ?? [];
+  }
+
+  // The `/ledger/report` controller honours both `deptId` and
+  // `leaveTypeCode`, unlike `/ledger/history` which silently drops the
+  // department filter. Used by the HR Ledger toolbar so dept + type filters
+  // return accurate cross-employee entries.
+  static async getLedgerReport(payload: LedgerReportRequest): Promise<LedgerHistoryResponse[]> {
+    const { data } = await api.post(`${this.BASE}/ledger/report`, payload);
     return this.unwrap<LedgerHistoryResponse[]>(data) ?? [];
   }
 

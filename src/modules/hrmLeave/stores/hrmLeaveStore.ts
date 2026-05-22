@@ -72,6 +72,7 @@ interface HrmLeaveState {
   ledgerEmployeeId: string | null;
   ledgerYear: number;
   ledgerLeaveTypeFilter: string | null;
+  ledgerDeptFilter: string | null;
 
   balanceSummary: LeaveBalance[];
   balanceSummaryLoading: boolean;
@@ -145,6 +146,7 @@ interface HrmLeaveState {
   setLedgerEmployeeId: (empId: string | null) => void;
   setLedgerYear: (year: number) => void;
   setLedgerLeaveTypeFilter: (code: string | null) => void;
+  setLedgerDeptFilter: (deptId: string | null) => void;
 
   // Actions — Balance Summary
   setBalanceSummary: (summary: LeaveBalance[]) => void;
@@ -224,6 +226,7 @@ const defaultState = {
   ledgerEmployeeId: null,
   ledgerYear: new Date().getFullYear(),
   ledgerLeaveTypeFilter: null,
+  ledgerDeptFilter: null,
   balanceSummary: [],
   balanceSummaryLoading: false,
   accrualPreview: null,
@@ -299,6 +302,7 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
   setLedgerEmployeeId: (ledgerEmployeeId) => set({ ledgerEmployeeId }),
   setLedgerYear: (ledgerYear) => set({ ledgerYear }),
   setLedgerLeaveTypeFilter: (ledgerLeaveTypeFilter) => set({ ledgerLeaveTypeFilter }),
+  setLedgerDeptFilter: (ledgerDeptFilter) => set({ ledgerDeptFilter }),
 
   setBalanceSummary: (balanceSummary) => set({ balanceSummary }),
   setBalanceSummaryLoading: (balanceSummaryLoading) => set({ balanceSummaryLoading }),

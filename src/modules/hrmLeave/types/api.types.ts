@@ -235,6 +235,11 @@ export interface LedgerHistoryResponse {
   locked: boolean;
   createdDateTime: string;
   createdBy: string;
+  // Present when fetched via `/ledger/report` for a multi-employee scope
+  // (e.g. department filter). Absent on the single-employee `/ledger/history`
+  // response.
+  employeeId?: string;
+  employeeName?: string;
 }
 
 export interface LedgerHistoryRequest {
@@ -242,6 +247,18 @@ export interface LedgerHistoryRequest {
   employeeId: string;
   year: number;
   leaveTypeCode?: string;
+}
+
+// `/ledger/report` accepts the same shape but with optional employeeId so HR
+// can fetch ledger entries scoped by department / leave type. Department
+// filter is honoured here; the older `/ledger/history` controller silently
+// drops it.
+export interface LedgerReportRequest {
+  organizationId: string;
+  employeeId?: string;
+  year: number;
+  leaveTypeCode?: string;
+  deptId?: string;
 }
 
 // ── Manual Adjustment ─────────────────────────────────────────────────

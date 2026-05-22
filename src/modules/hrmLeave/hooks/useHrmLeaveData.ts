@@ -25,6 +25,7 @@ export function useHrmLeaveData(employeeId: string, role: string) {
     setLedgerLoading,
     ledgerYear,
     ledgerLeaveTypeFilter,
+    ledgerDeptFilter,
     setLeaveTypes,
     setBalanceSummary,
     setBalanceSummaryLoading,
@@ -96,13 +97,19 @@ export function useHrmLeaveData(employeeId: string, role: string) {
 
   const loadLedgerHistory = useCallback(async (empId?: string) => {
     const targetId = empId ?? ledgerEmployeeId ?? employeeId;
-    if (!targetId) return;
+    // Allow dept-scoped fetch when HR hasn't picked a specific employee.
+    if (!targetId && !ledgerDeptFilter) return;
     setLedgerLoading(true);
     try {
-      const res = await HrmLeaveService.getLedgerHistory({ organizationId,
-        employeeId: targetId,
+      // Switched from `/ledger/history` (which silently drops deptId) to
+      // `/ledger/report` so dept + leave-type filters actually narrow the
+      // results.
+      const res = await HrmLeaveService.getLedgerReport({
+        organizationId,
+        employeeId: targetId ?? undefined,
         year: ledgerYear,
         leaveTypeCode: ledgerLeaveTypeFilter ?? undefined,
+        deptId: ledgerDeptFilter ?? undefined,
       });
       setLedgerHistory(res as unknown as import("../types/domain.types").LedgerEntry[]);
     } catch {
@@ -110,7 +117,7 @@ export function useHrmLeaveData(employeeId: string, role: string) {
     } finally {
       setLedgerLoading(false);
     }
-  }, [organizationId, ledgerYear, ledgerLeaveTypeFilter, ledgerEmployeeId, employeeId, setLedgerHistory, setLedgerLoading]);
+  }, [organizationId, ledgerYear, ledgerLeaveTypeFilter, ledgerDeptFilter, ledgerEmployeeId, employeeId, setLedgerHistory, setLedgerLoading]);
 
   const loadLeaveTypes = useCallback(async () => {
     try {

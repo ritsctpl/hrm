@@ -214,6 +214,7 @@ const HrmLeaveLanding: React.FC = () => {
     ledgerEmployeeId,
     ledgerYear,
     ledgerLeaveTypeFilter,
+    ledgerDeptFilter,
     balanceSummary,
     balanceSummaryLoading,
     leaveTypes,
@@ -223,6 +224,7 @@ const HrmLeaveLanding: React.FC = () => {
     setLedgerEmployeeId,
     setLedgerYear,
     setLedgerLeaveTypeFilter,
+    setLedgerDeptFilter,
     openLeaveForm,
     activeTab,
     setActiveTab,
@@ -242,10 +244,9 @@ const HrmLeaveLanding: React.FC = () => {
 
   const { options: employeeOptions, employees: directoryEmployees, loading: employeeOptionsLoading } = useEmployeeOptions();
 
-  // Department filter for the HR Ledger / Balance Summary view. BE now
-  // accepts `deptId` on /leave-balance/retrieve so the dropdown actually
-  // narrows the response (per BE confirmation 2026-05-11).
-  const [ledgerDeptFilter, setLedgerDeptFilter] = useState<string | undefined>(undefined);
+  // Department filter for the HR Ledger / Balance Summary view. Stored
+  // globally so `loadLedgerHistory` (which hits `/ledger/report`) and the
+  // Balance Summary fetch read it directly.
   const ledgerDeptOptions = useMemo(() => {
     const depts = new Set<string>();
     for (const emp of directoryEmployees) {
@@ -287,13 +288,13 @@ const HrmLeaveLanding: React.FC = () => {
   useEffect(() => {
     if (permissions.canViewAll) {
       loadLeaveTypes();
-      loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter });
+      loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
     }
   }, [organizationId, balancesYear, ledgerDeptFilter, permissions.canViewAll, loadLeaveTypes, loadBalanceSummary]);
 
   useEffect(() => {
     loadLedgerHistory();
-  }, [organizationId, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, loadLedgerHistory]);
+  }, [organizationId, employeeId, ledgerEmployeeId, ledgerYear, ledgerLeaveTypeFilter, ledgerDeptFilter, loadLedgerHistory]);
 
   // ── Comp-Off Workflow Data ──────────────────────────────────────────
   const loadMyCompOffRequests = useCallback(async () => {
@@ -693,18 +694,18 @@ const HrmLeaveLanding: React.FC = () => {
           options={leaveTypeOptions}
           style={{ minWidth: 200 }}
         />
-        {/* Department filter narrows the Balance Summary report when no
-            specific employee is selected — backend /leave-balance/retrieve
-            applies it to the employee-master enrichment, matching BE
-            change confirmed 2026-05-11. Ledger History remains employee-
-            scoped (full dept-level ledger aggregation is a BE follow-up). */}
+        {/* Department filter narrows both the Balance Summary
+            (/leave-balance/retrieve) and the Ledger History
+            (/ledger/report) responses. The legacy /ledger/history endpoint
+            silently drops deptId — the new wiring lets HR see ledger
+            entries across all employees in a department. */}
         <span className={styles.ledgerToolbarLabel}>Department</span>
         <Select
           allowClear
           showSearch
           placeholder="All departments"
-          value={ledgerDeptFilter}
-          onChange={(value) => setLedgerDeptFilter(value || undefined)}
+          value={ledgerDeptFilter ?? undefined}
+          onChange={(value) => setLedgerDeptFilter(value || null)}
           options={ledgerDeptOptions}
           style={{ minWidth: 180 }}
           disabled={!!ledgerEmployeeId}
@@ -717,7 +718,7 @@ const HrmLeaveLanding: React.FC = () => {
           onClick={() => {
             loadLedgerHistory();
             if (permissions.canViewAll) {
-              loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter });
+              loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
             }
           }}
         >
@@ -774,12 +775,12 @@ const HrmLeaveLanding: React.FC = () => {
             </span>
           </div>
           <div className={styles.ledgerCardBody}>
-            {!ledgerEmployeeId ? (
+            {!ledgerEmployeeId && !ledgerDeptFilter ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <Text type="secondary">
-                    Select an employee from the toolbar to view ledger entries.
+                    Pick an employee or department from the toolbar to view ledger entries.
                   </Text>
                 }
                 style={{ padding: "32px 0" }}
