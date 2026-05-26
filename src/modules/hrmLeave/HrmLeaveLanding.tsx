@@ -35,6 +35,7 @@ import LeaveStatusChip from "./components/atoms/LeaveStatusChip";
 import LeaveMasterDetail from "./components/templates/LeaveMasterDetail";
 import HrLeaveLayout from "./components/templates/HrLeaveLayout";
 import HrmLeaveScreen from "./HrmLeaveScreen";
+import PermissionGate from "./components/atoms/PermissionGate";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import { useCan } from "../hrmAccess/hooks/useCan";
 import { useHrmLeaveStore } from "./stores/hrmLeaveStore";
@@ -375,51 +376,63 @@ const HrmLeaveLanding: React.FC = () => {
 
   if (role === "EMPLOYEE") {
     const requestsTab = (
-      <LeaveMasterDetail leftWidth="40%">
-        <LeaveRequestsTable
-          requests={myRequests}
-          loading={myRequestsLoading}
-          selectedHandle={selectedRequest?.handle}
-          onRowClick={setSelectedRequest}
-        />
-        {rightPanel}
-      </LeaveMasterDetail>
+      <PermissionGate object="leave_request" action="view">
+        <LeaveMasterDetail leftWidth="40%">
+          <LeaveRequestsTable
+            requests={myRequests}
+            loading={myRequestsLoading}
+            selectedHandle={selectedRequest?.handle}
+            onRowClick={setSelectedRequest}
+            onRequestDeleted={() => {
+              loadMyRequests();
+              loadBalances();
+            }}
+          />
+          {rightPanel}
+        </LeaveMasterDetail>
+      </PermissionGate>
     );
 
     const compOffTab = (
-      <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <Text strong>My Comp-Off Requests</Text>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
-            Request Comp-Off
-          </Button>
+      <PermissionGate object="leave_comp_off" action="view">
+        <div style={{ padding: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <Text strong>My Comp-Off Requests</Text>
+            <PermissionGate object="leave_comp_off" action="add">
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
+                Request Comp-Off
+              </Button>
+            </PermissionGate>
+          </div>
+          {compOffRequestsLoading ? (
+            <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
+          ) : compOffRequests.length === 0 ? (
+            <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
+          )}
         </div>
-        {compOffRequestsLoading ? (
-          <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
-        ) : compOffRequests.length === 0 ? (
-          <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : (
-          compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
-        )}
-      </div>
+      </PermissionGate>
     );
 
     const tabItems = [
-      { key: "requests", label: "My Requests", children: requestsTab },
-      { key: "compOff", label: "Comp-Off", children: compOffTab },
-    ];
+      permissions.canViewRequests && { key: "requests", label: "My Requests", children: requestsTab },
+      permissions.canViewCompOff && { key: "compOff", label: "Comp-Off", children: compOffTab },
+    ].filter(Boolean);
 
     return (
       <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management">
         <div className={`hrm-module-root ${styles.landing}`}>
           <CommonAppBar appTitle="Leave Management" />
-          <EmployeeDashboard
-            balances={balances}
-            year={balancesYear}
-            onYearChange={setBalancesYear}
-            onApplyLeave={() => openLeaveForm()}
-            loading={balancesLoading}
-          />
+          <PermissionGate object="leave_balance" action="view">
+            <EmployeeDashboard
+              balances={balances}
+              year={balancesYear}
+              onYearChange={setBalancesYear}
+              onApplyLeave={permissions.canApply ? () => openLeaveForm() : undefined}
+              loading={balancesLoading}
+            />
+          </PermissionGate>
           {/* Filters are inside each tab that needs them (My Requests has status+year) */}
           <Tabs
             activeKey={activeTab}
@@ -429,7 +442,7 @@ const HrmLeaveLanding: React.FC = () => {
             tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
             style={{ flex: 1, overflow: "hidden" }}
           />
-          {showLeaveForm && (
+          {showLeaveForm && permissions.canApply && (
             <LeaveRequestFormDrawer
               organizationId={organizationId}
               employeeId={employeeId}
@@ -440,7 +453,7 @@ const HrmLeaveLanding: React.FC = () => {
               }}
             />
           )}
-          {showCompOffForm && (
+          {showCompOffForm && permissions.canAddCompOff && (
             <CompOffRequestForm onSubmitted={loadMyCompOffRequests} />
           )}
         </div>
@@ -481,77 +494,95 @@ const HrmLeaveLanding: React.FC = () => {
         });
 
     const approvalTab = (
-      <LeaveMasterDetail leftWidth="45%">
-        <ApproverInboxTable
-          requests={approverFiltered}
-          loading={pendingRequestsLoading}
-          selectedHandle={selectedRequest?.handle}
-          onRowClick={setSelectedRequest}
-          organizationId={organizationId}
-          employeeId={employeeId}
-          role={role}
-          onActionComplete={handleActionComplete}
-        />
-        {rightPanel}
-      </LeaveMasterDetail>
+      <PermissionGate object="leave_approval" action="view">
+        <LeaveMasterDetail leftWidth="45%">
+          <ApproverInboxTable
+            requests={approverFiltered}
+            loading={pendingRequestsLoading}
+            selectedHandle={selectedRequest?.handle}
+            onRowClick={setSelectedRequest}
+            organizationId={organizationId}
+            employeeId={employeeId}
+            role={role}
+            onActionComplete={handleActionComplete}
+          />
+          {rightPanel}
+        </LeaveMasterDetail>
+      </PermissionGate>
     );
 
     const myRequestsTab = (
-      <LeaveMasterDetail leftWidth="40%">
-        <LeaveRequestsTable
-          requests={myRequests}
-          loading={myRequestsLoading}
-          selectedHandle={selectedRequest?.handle}
-          onRowClick={setSelectedRequest}
-        />
-        {rightPanel}
-      </LeaveMasterDetail>
+      <PermissionGate object="leave_request" action="view">
+        <LeaveMasterDetail leftWidth="40%">
+          <LeaveRequestsTable
+            requests={myRequests}
+            loading={myRequestsLoading}
+            selectedHandle={selectedRequest?.handle}
+            onRowClick={setSelectedRequest}
+            onRequestDeleted={() => {
+              loadMyRequests();
+              loadBalances();
+            }}
+          />
+          {rightPanel}
+        </LeaveMasterDetail>
+      </PermissionGate>
     );
 
     const teamHistoryTab = (
-      <SupervisorTeamHistory
-        requests={globalQueue}
-        loading={globalQueueLoading}
-        selectedHandle={selectedRequest?.handle}
-        onRowClick={setSelectedRequest}
-        rightPanel={rightPanel}
-        supervisorId={employeeId}
-      />
+      <PermissionGate object="leave_hr_queue" action="view">
+        <SupervisorTeamHistory
+          requests={globalQueue}
+          loading={globalQueueLoading}
+          selectedHandle={selectedRequest?.handle}
+          onRowClick={setSelectedRequest}
+          rightPanel={rightPanel}
+          supervisorId={employeeId}
+        />
+      </PermissionGate>
     );
 
     const teamCalendarTab = (
-      <TeamCalendarView requests={pendingRequests} />
+      <PermissionGate object="leave_team_calendar" action="view">
+        <TeamCalendarView requests={pendingRequests} />
+      </PermissionGate>
     );
 
     const compOffInboxTab = (
-      <CompOffInboxTable
-        requests={compOffPending}
-        loading={compOffPendingLoading}
-        organizationId={organizationId}
-        employeeId={employeeId}
-        onActionComplete={() => {
-          loadPendingCompOffs();
-          loadMyCompOffRequests();
-        }}
-      />
+      <PermissionGate object="leave_comp_off" action="edit">
+        <CompOffInboxTable
+          requests={compOffPending}
+          loading={compOffPendingLoading}
+          organizationId={organizationId}
+          employeeId={employeeId}
+          onActionComplete={() => {
+            loadPendingCompOffs();
+            loadMyCompOffRequests();
+          }}
+        />
+      </PermissionGate>
     );
 
     const compOffMyTab = (
-      <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <Text strong>My Comp-Off Requests</Text>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
-            Request Comp-Off
-          </Button>
+      <PermissionGate object="leave_comp_off" action="view">
+        <div style={{ padding: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <Text strong>My Comp-Off Requests</Text>
+            <PermissionGate object="leave_comp_off" action="add">
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCompOffForm}>
+                Request Comp-Off
+              </Button>
+            </PermissionGate>
+          </div>
+          {compOffRequestsLoading ? (
+            <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
+          ) : compOffRequests.length === 0 ? (
+            <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
+          )}
         </div>
-        {compOffRequestsLoading ? (
-          <div className={styles.panelLoading}><Spin tip="Loading comp-off requests..." /></div>
-        ) : compOffRequests.length === 0 ? (
-          <Empty description="No comp-off requests" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : (
-          compOffRequests.map((req) => <CompOffRequestRow key={req.handle} request={req} />)
-        )}
-      </div>
+      </PermissionGate>
     );
 
     const compOffLabel = compOffPending.length > 0
@@ -559,28 +590,30 @@ const HrmLeaveLanding: React.FC = () => {
       : "Comp-Off Approvals";
 
     const tabItems = [
-      { key: "approvals", label: `Approvals (${approverFiltered.length})`, children: approvalTab },
-      { key: "myRequests", label: "My Requests", children: myRequestsTab },
-      { key: "teamHistory", label: "Team History", children: teamHistoryTab },
-      { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
-      { key: "compOffMy", label: "My Comp-Off", children: compOffMyTab },
-      { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
-    ];
+      permissions.canViewApprovalQueue && { key: "approvals", label: `Approvals (${approverFiltered.length})`, children: approvalTab },
+      permissions.canViewRequests && { key: "myRequests", label: "My Requests", children: myRequestsTab },
+      permissions.canViewHrQueue && { key: "teamHistory", label: "Team History", children: teamHistoryTab },
+      permissions.canEditCompOff && { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
+      permissions.canViewCompOff && { key: "compOffMy", label: "My Comp-Off", children: compOffMyTab },
+      permissions.canViewTeamCalendar && { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
+    ].filter(Boolean);
 
     return (
       <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — Approvals">
         <div className={`hrm-module-root ${styles.landing}`}>
           <CommonAppBar appTitle="Leave Management — Approvals" />
-          <EmployeeDashboard
-            balances={balances}
-            year={balancesYear}
-            onYearChange={setBalancesYear}
-            onApplyLeave={() => openLeaveForm()}
-            loading={balancesLoading}
-          />
+          <PermissionGate object="leave_balance" action="view">
+            <EmployeeDashboard
+              balances={balances}
+              year={balancesYear}
+              onYearChange={setBalancesYear}
+              onApplyLeave={permissions.canApply ? () => openLeaveForm() : undefined}
+              loading={balancesLoading}
+            />
+          </PermissionGate>
           {/* Filters are inside each tab that needs them (inbox, team history) */}
           <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
-          {showLeaveForm && (
+          {showLeaveForm && permissions.canApply && (
             <LeaveRequestFormDrawer
               organizationId={organizationId}
               employeeId={employeeId}
@@ -591,7 +624,7 @@ const HrmLeaveLanding: React.FC = () => {
               }}
             />
           )}
-          {showCompOffForm && (
+          {showCompOffForm && permissions.canAddCompOff && (
             <CompOffRequestForm onSubmitted={loadMyCompOffRequests} />
           )}
         </div>
@@ -602,38 +635,42 @@ const HrmLeaveLanding: React.FC = () => {
   // ── HR / ADMIN / SUPERADMIN VIEW ───────────────────────────────────
 
   const queuePanel = (
-    <div className={styles.requestsPanel}>
-      <LeaveFilterBar
-        role={role}
-        permissions={permissions}
-        onFilterChange={handleFilterChange}
-      />
-      <div className={styles.requestsToolbar}>
-        <span className={styles.requestsToolbarTitle}>
-          Leave Requests · {globalQueue.length}
-        </span>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => openLeaveForm()}
-        >
-          Raise Leave Request
-        </Button>
-      </div>
-      <LeaveMasterDetail leftWidth="50%">
-        <HrGlobalQueueTable
-          requests={globalQueue}
-          loading={globalQueueLoading}
-          selectedHandle={selectedRequest?.handle}
-          onRowClick={setSelectedRequest}
-          organizationId={organizationId}
-          employeeId={employeeId}
+    <PermissionGate object="leave_hr_queue" action="view">
+      <div className={styles.requestsPanel}>
+        <LeaveFilterBar
           role={role}
-          onActionComplete={handleActionComplete}
+          permissions={permissions}
+          onFilterChange={handleFilterChange}
         />
-        {rightPanel}
-      </LeaveMasterDetail>
-    </div>
+        <div className={styles.requestsToolbar}>
+          <span className={styles.requestsToolbarTitle}>
+            Leave Requests · {globalQueue.length}
+          </span>
+          <PermissionGate object="leave_request" action="add">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => openLeaveForm()}
+            >
+              Raise Leave Request
+            </Button>
+          </PermissionGate>
+        </div>
+        <LeaveMasterDetail leftWidth="50%">
+          <HrGlobalQueueTable
+            requests={globalQueue}
+            loading={globalQueueLoading}
+            selectedHandle={selectedRequest?.handle}
+            onRowClick={setSelectedRequest}
+            organizationId={organizationId}
+            employeeId={employeeId}
+            role={role}
+            onActionComplete={handleActionComplete}
+          />
+          {rightPanel}
+        </LeaveMasterDetail>
+      </div>
+    </PermissionGate>
   );
 
   const leaveTypeOptions = leaveTypes.map((lt) => ({
@@ -653,233 +690,275 @@ const HrmLeaveLanding: React.FC = () => {
   })();
 
   const ledgerPanel = (
-    <div className={styles.ledgerPanel}>
-      {/* Filter toolbar + action buttons (forms moved into modals so they
-          are always accessible without scrolling past the tables). */}
-      <div className={styles.ledgerToolbar}>
-        <span className={styles.ledgerToolbarLabel}>Employee</span>
-        <Select
-          showSearch
-          allowClear
-          placeholder="Search by ID or name"
-          value={ledgerEmployeeId ?? undefined}
-          onChange={(value) => setLedgerEmployeeId(value ?? null)}
-          options={employeeOptions}
-          loading={employeeOptionsLoading}
-          style={{ minWidth: 280 }}
-          filterOption={(input, option) =>
-            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-          }
-        />
-        <span className={styles.ledgerToolbarLabel}>Year</span>
-        <InputNumber
-          min={2000}
-          max={2100}
-          value={ledgerYear}
-          onChange={(value) => {
-            if (!value) return;
-            setLedgerYear(value);
-            // Balance Summary uses its own `balancesYear` — keep it in sync
-            // so the Admin Ledger toolbar refreshes both panels together.
-            setBalancesYear(value);
-          }}
-          style={{ width: 100 }}
-        />
-        <span className={styles.ledgerToolbarLabel}>Type</span>
-        <Select
-          allowClear
-          placeholder="All leave types"
-          value={ledgerLeaveTypeFilter ?? undefined}
-          onChange={(value) => setLedgerLeaveTypeFilter(value ?? null)}
-          options={leaveTypeOptions}
-          style={{ minWidth: 200 }}
-        />
-        {/* Department filter narrows both the Balance Summary
-            (/leave-balance/retrieve) and the Ledger History
-            (/ledger/report) responses. The legacy /ledger/history endpoint
-            silently drops deptId — the new wiring lets HR see ledger
-            entries across all employees in a department. */}
-        <span className={styles.ledgerToolbarLabel}>Department</span>
-        <Select
-          allowClear
-          showSearch
-          placeholder="All departments"
-          value={ledgerDeptFilter ?? undefined}
-          onChange={(value) => setLedgerDeptFilter(value || null)}
-          options={ledgerDeptOptions}
-          style={{ minWidth: 180 }}
-          disabled={!!ledgerEmployeeId}
-          filterOption={(input, option) =>
-            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-          }
-        />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            loadLedgerHistory();
-            if (permissions.canViewAll) {
-              loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+    <PermissionGate object="leave_ledger" action="view">
+      <div className={styles.ledgerPanel}>
+        {/* Filter toolbar + action buttons (forms moved into modals so they
+            are always accessible without scrolling past the tables). */}
+        <div className={styles.ledgerToolbar}>
+          <span className={styles.ledgerToolbarLabel}>Employee</span>
+          <Select
+            showSearch
+            allowClear
+            placeholder="Search by ID or name"
+            value={ledgerEmployeeId ?? undefined}
+            onChange={(value) => setLedgerEmployeeId(value ?? null)}
+            options={employeeOptions}
+            loading={employeeOptionsLoading}
+            style={{ minWidth: 280 }}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
-          }}
-        >
-          Refresh
-        </Button>
-        <div style={{ flex: 1 }} />
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => setManualAdjModalOpen(true)}
-        >
-          Manual Adjust
-        </Button>
-        <Button
-          icon={<UploadOutlined />}
-          onClick={() => setBulkAdjModalOpen(true)}
-        >
-          Bulk Adjust
-        </Button>
-        <Button
-          icon={<GiftOutlined />}
-          onClick={() => setCompOffCreditModalOpen(true)}
-        >
-          Credit Comp-Off
-        </Button>
-      </div>
-
-      {/* Top: Balance Summary + Ledger History */}
-      <div className={styles.ledgerTopGrid}>
-        <div className={styles.ledgerCard}>
-          <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>
-              Balance Summary{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
-            </span>
-          </div>
-          <div className={styles.ledgerCardBody}>
-            <BalanceSummaryTable
-              balances={
-                ledgerLeaveTypeFilter
-                  ? balanceSummary.filter(
-                      (b) => b.leaveTypeCode === ledgerLeaveTypeFilter,
-                    )
-                  : balanceSummary
+          />
+          <span className={styles.ledgerToolbarLabel}>Year</span>
+          <InputNumber
+            min={2000}
+            max={2100}
+            value={ledgerYear}
+            onChange={(value) => {
+              if (!value) return;
+              setLedgerYear(value);
+              // Balance Summary uses its own `balancesYear` — keep it in sync
+              // so the Admin Ledger toolbar refreshes both panels together.
+              setBalancesYear(value);
+            }}
+            style={{ width: 100 }}
+          />
+          <span className={styles.ledgerToolbarLabel}>Type</span>
+          <Select
+            allowClear
+            placeholder="All leave types"
+            value={ledgerLeaveTypeFilter ?? undefined}
+            onChange={(value) => setLedgerLeaveTypeFilter(value ?? null)}
+            options={leaveTypeOptions}
+            style={{ minWidth: 200 }}
+          />
+          {/* Department filter narrows both the Balance Summary
+              (/leave-balance/retrieve) and the Ledger History
+              (/ledger/report) responses. The legacy /ledger/history endpoint
+              silently drops deptId — the new wiring lets HR see ledger
+              entries across all employees in a department. */}
+          <span className={styles.ledgerToolbarLabel}>Department</span>
+          <Select
+            allowClear
+            showSearch
+            placeholder="All departments"
+            value={ledgerDeptFilter ?? undefined}
+            onChange={(value) => setLedgerDeptFilter(value || null)}
+            options={ledgerDeptOptions}
+            style={{ minWidth: 180 }}
+            disabled={!!ledgerEmployeeId}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              loadLedgerHistory();
+              if (permissions.canViewBalance) {
+                loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
               }
-              loading={balanceSummaryLoading}
-              selectedEmployeeId={ledgerEmployeeId}
+            }}
+          >
+            Refresh
+          </Button>
+          <div style={{ flex: 1 }} />
+          <PermissionGate object="leave_adjustment" action="add">
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => setManualAdjModalOpen(true)}
+            >
+              Manual Adjust
+            </Button>
+          </PermissionGate>
+          <PermissionGate object="leave_adjustment" action="add">
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setBulkAdjModalOpen(true)}
+            >
+              Bulk Adjust
+            </Button>
+          </PermissionGate>
+          <PermissionGate object="leave_comp_off" action="add">
+            <Button
+              icon={<GiftOutlined />}
+              onClick={() => setCompOffCreditModalOpen(true)}
+            >
+              Credit Comp-Off
+            </Button>
+          </PermissionGate>
+        </div>
+
+        {/* Top: Balance Summary + Ledger History */}
+        <div className={styles.ledgerTopGrid}>
+          <div className={styles.ledgerCard}>
+            <div className={styles.ledgerCardHeader}>
+              <span className={styles.ledgerCardTitle}>
+                Balance Summary{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
+              </span>
+            </div>
+            <div className={styles.ledgerCardBody}>
+              <PermissionGate object="leave_balance" action="view">
+                <BalanceSummaryTable
+                  balances={
+                    ledgerLeaveTypeFilter
+                      ? balanceSummary.filter(
+                          (b) => b.leaveTypeCode === ledgerLeaveTypeFilter,
+                        )
+                      : balanceSummary
+                  }
+                  loading={balanceSummaryLoading}
+                  selectedEmployeeId={ledgerEmployeeId}
+                />
+              </PermissionGate>
+            </div>
+          </div>
+          <div className={styles.ledgerCard}>
+            <div className={styles.ledgerCardHeader}>
+              <span className={styles.ledgerCardTitle}>
+                Ledger History{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
+              </span>
+            </div>
+            <div className={styles.ledgerCardBody}>
+              {!ledgerEmployeeId && !ledgerDeptFilter ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <Text type="secondary">
+                      Pick an employee or department from the toolbar to view ledger entries.
+                    </Text>
+                  }
+                  style={{ padding: "32px 0" }}
+                />
+              ) : (
+                <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <PermissionGate object="leave_adjustment" action="add">
+          <Modal
+            title="Manual Adjustment"
+            open={manualAdjModalOpen}
+            onCancel={() => setManualAdjModalOpen(false)}
+            footer={null}
+            destroyOnClose
+            width={560}
+          >
+            <ManualAdjustmentForm
+              organizationId={organizationId}
+              onAdjusted={() => {
+                loadLedgerHistory();
+                setManualAdjModalOpen(false);
+              }}
             />
-          </div>
-        </div>
-        <div className={styles.ledgerCard}>
-          <div className={styles.ledgerCardHeader}>
-            <span className={styles.ledgerCardTitle}>
-              Ledger History{ledgerEmployeeLabel ? ` — ${ledgerEmployeeLabel}` : ""}
-            </span>
-          </div>
-          <div className={styles.ledgerCardBody}>
-            {!ledgerEmployeeId && !ledgerDeptFilter ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <Text type="secondary">
-                    Pick an employee or department from the toolbar to view ledger entries.
-                  </Text>
-                }
-                style={{ padding: "32px 0" }}
-              />
-            ) : (
-              <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
-            )}
-          </div>
-        </div>
+          </Modal>
+        </PermissionGate>
+
+        <PermissionGate object="leave_adjustment" action="add">
+          <Modal
+            title="Bulk Adjustment"
+            open={bulkAdjModalOpen}
+            onCancel={() => setBulkAdjModalOpen(false)}
+            footer={null}
+            destroyOnClose
+            width={720}
+          >
+            <BulkAdjustmentForm
+              organizationId={organizationId}
+              onAdjusted={() => {
+                loadLedgerHistory();
+                setBulkAdjModalOpen(false);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
+
+        <PermissionGate object="leave_comp_off" action="add">
+          <Modal
+            title="Credit Comp-Off (Direct)"
+            open={compOffCreditModalOpen}
+            onCancel={() => setCompOffCreditModalOpen(false)}
+            footer={null}
+            destroyOnClose
+            width={560}
+          >
+            <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
+              For workflow-based comp-off, employees submit claims from their dashboard.
+            </Text>
+            <CompOffCreditForm
+              organizationId={organizationId}
+              onCredited={() => {
+                loadLedgerHistory();
+                setCompOffCreditModalOpen(false);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
       </div>
-
-      <Modal
-        title="Manual Adjustment"
-        open={manualAdjModalOpen}
-        onCancel={() => setManualAdjModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        width={560}
-      >
-        <ManualAdjustmentForm
-          organizationId={organizationId}
-          onAdjusted={() => {
-            loadLedgerHistory();
-            setManualAdjModalOpen(false);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        title="Bulk Adjustment"
-        open={bulkAdjModalOpen}
-        onCancel={() => setBulkAdjModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        width={720}
-      >
-        <BulkAdjustmentForm
-          organizationId={organizationId}
-          onAdjusted={() => {
-            loadLedgerHistory();
-            setBulkAdjModalOpen(false);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        title="Credit Comp-Off (Direct)"
-        open={compOffCreditModalOpen}
-        onCancel={() => setCompOffCreditModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        width={560}
-      >
-        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
-          For workflow-based comp-off, employees submit claims from their dashboard.
-        </Text>
-        <CompOffCreditForm
-          organizationId={organizationId}
-          onCredited={() => {
-            loadLedgerHistory();
-            setCompOffCreditModalOpen(false);
-          }}
-        />
-      </Modal>
-    </div>
+    </PermissionGate>
   );
 
   const accrualPanel = (
-    <AccrualRunPanel organizationId={organizationId} onPosted={() => loadBalanceSummary(balancesYear)} />
+    <PermissionGate object="leave_accrual" action="view">
+      <AccrualRunPanel organizationId={organizationId} onPosted={() => loadBalanceSummary(balancesYear)} />
+    </PermissionGate>
   );
 
   const policyPanel = (
-    <>
-      <PolicySettingsTable
-        leaveTypes={leaveTypes}
-        loading={leaveTypesLoading}
-        organizationId={organizationId}
-        onRefresh={loadLeaveTypes}
-      />
-      <BlackoutPeriodPanel />
-    </>
+    <PermissionGate object="leave_policy" action="view">
+      <>
+        <PolicySettingsTable
+          leaveTypes={leaveTypes}
+          loading={leaveTypesLoading}
+          organizationId={organizationId}
+          onRefresh={loadLeaveTypes}
+        />
+        <BlackoutPeriodPanel />
+      </>
+    </PermissionGate>
   );
 
   const yearEndPanel = (
-    <YearEndOperationsPanel
-      organizationId={organizationId}
-      onProcessed={() => loadBalanceSummary(balancesYear)}
-    />
+    <PermissionGate object="leave_year_end" action="view">
+      <YearEndOperationsPanel
+        organizationId={organizationId}
+        onProcessed={() => loadBalanceSummary(balancesYear)}
+      />
+    </PermissionGate>
   );
 
-  const payrollPanel = <PayrollExportPanel organizationId={organizationId} />;
+  const payrollPanel = (
+    <PermissionGate object="leave_payroll_export" action="view">
+      <PayrollExportPanel organizationId={organizationId} />
+    </PermissionGate>
+  );
 
-  const reportsPanel = <LeaveAvailedReportPanel organizationId={organizationId} />;
+  const reportsPanel = (
+    <PermissionGate object="leave_report" action="view">
+      <LeaveAvailedReportPanel organizationId={organizationId} />
+    </PermissionGate>
+  );
 
-  const registerPanel = <LeaveRegisterPanel organizationId={organizationId} />;
+  const registerPanel = (
+    <PermissionGate object="leave_report" action="view">
+      <LeaveRegisterPanel organizationId={organizationId} />
+    </PermissionGate>
+  );
 
-  const approvalConfigPanel = <ApprovalConfigPanel organizationId={organizationId} />;
+  const approvalConfigPanel = (
+    <PermissionGate object="leave_approval_config" action="view">
+      <ApprovalConfigPanel organizationId={organizationId} />
+    </PermissionGate>
+  );
 
-  const analyticsPanel = <LeaveAnalyticsPanel organizationId={organizationId} />;
+  const analyticsPanel = (
+    <PermissionGate object="leave_report" action="view">
+      <LeaveAnalyticsPanel organizationId={organizationId} />
+    </PermissionGate>
+  );
 
   return (
     <ModuleAccessGate moduleCode="HRM_LEAVE" appTitle="Leave Management — HR Console">
@@ -887,18 +966,18 @@ const HrmLeaveLanding: React.FC = () => {
         <CommonAppBar appTitle="Leave Management — HR Console" />
         {/* Filter bar moved inside Global Queue tab — not needed for other tabs */}
         <HrLeaveLayout
-          queuePanel={queuePanel}
-          ledgerPanel={ledgerPanel}
-          accrualPanel={accrualPanel}
-          policyPanel={policyPanel}
-          yearEndPanel={yearEndPanel}
-          payrollPanel={payrollPanel}
-          reportsPanel={reportsPanel}
-          registerPanel={registerPanel}
-          approvalConfigPanel={approvalConfigPanel}
-          analyticsPanel={analyticsPanel}
+          queuePanel={permissions.canViewHrQueue ? queuePanel : null}
+          ledgerPanel={permissions.canViewLedger ? ledgerPanel : null}
+          accrualPanel={permissions.canViewAccrual ? accrualPanel : null}
+          policyPanel={permissions.canViewPolicy ? policyPanel : null}
+          yearEndPanel={permissions.canViewYearEnd ? yearEndPanel : null}
+          payrollPanel={permissions.canViewPayrollExport ? payrollPanel : null}
+          reportsPanel={permissions.canViewReports ? reportsPanel : null}
+          registerPanel={permissions.canViewReports ? registerPanel : null}
+          approvalConfigPanel={permissions.canViewApprovalConfig ? approvalConfigPanel : null}
+          analyticsPanel={permissions.canViewReports ? analyticsPanel : null}
         />
-        {showLeaveForm && (
+        {showLeaveForm && permissions.canApply && (
           <LeaveRequestFormDrawer
             organizationId={organizationId}
             employeeId={employeeId}

@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { base64ToBlob } from "../utils/base64Utils";
 import type {
   ExpenseListRequest,
   ExpenseApproverInboxRequest,
@@ -203,10 +204,55 @@ export class HrmExpenseService {
       attachmentId:
         this.normalizeAttachmentRef(payload.attachmentId ?? '') || normalizedRef,
     };
-    const response = await api.post(`${this.BASE}/receipt/download`, body, {
-      responseType: "blob",
-    });
-    return response.data;
+    
+    try {
+      // Try to get JSON response first (new API format)
+      const response = await api.post(`${this.BASE}/receipt/download`, body);
+      const data = response.data;
+      
+      // Check if it's a JSON response with base64 data
+      if (data && typeof data === 'object' && data.response && data.response.base64Data) {
+        const { base64Data, contentType = 'application/octet-stream' } = data.response;
+        
+        try {
+          return base64ToBlob(base64Data, contentType);
+        } catch (base64Error) {
+          console.error('Base64 conversion error:', base64Error);
+          throw new Error('Failed to convert base64 data to blob');
+        }
+      }
+      
+      // If it's already a blob, return as is
+      if (data instanceof Blob) {
+        return data;
+      }
+      
+      // If it's binary data as ArrayBuffer
+      if (data instanceof ArrayBuffer || data.constructor === ArrayBuffer) {
+        return new Blob([data]);
+      }
+      
+      // Fallback: try to get as blob (old API format)
+      const blobResponse = await api.post(`${this.BASE}/receipt/download`, body, {
+        responseType: "blob",
+      });
+      return blobResponse.data;
+      
+    } catch (error) {
+      console.error('Download receipt error:', error);
+      console.error('Request payload:', body);
+      
+      // Last resort: try the old blob method
+      try {
+        const blobResponse = await api.post(`${this.BASE}/receipt/download`, body, {
+          responseType: "blob",
+        });
+        return blobResponse.data;
+      } catch (blobError) {
+        console.error('Blob download also failed:', blobError);
+        throw error; // throw the original error
+      }
+    }
   }
 
   // ── Config ────────────────────────────────────────────────────────────

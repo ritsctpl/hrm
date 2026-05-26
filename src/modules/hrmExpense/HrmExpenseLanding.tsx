@@ -134,9 +134,57 @@ const HrmExpenseLanding: React.FC = () => {
   };
 
   const handleRowClick = useCallback((expense: typeof myExpenses[0]) => {
+    // Clear previous form state and draft items first
+    resetFormState();
+    resetDraftItems();
+    
     setSelectedExpense(expense);
-    setScreenMode("view");
-  }, []);
+    
+    // Allow editing for DRAFT and RECALLED expenses, view-only for others
+    const editableStatuses = ["DRAFT", "RECALLED"];
+    const isEditable = editableStatuses.includes(expense.status);
+    
+    if (isEditable) {
+      setScreenMode("create");
+      
+      // Calculate date range from expense items (same logic as formatExpenseDateRange)
+      let fromDate: string | null = null;
+      let toDate: string | null = null;
+      
+      if (expense.items && expense.items.length > 0) {
+        const dates = expense.items
+          .map((item) => item.expenseDate)
+          .filter((date): date is string => !!date)
+          .sort();
+        
+        if (dates.length > 0) {
+          fromDate = dates[0];
+          toDate = dates[dates.length - 1];
+        }
+      }
+      
+      // Populate form with existing expense data for editing
+      // Note: ExpenseReport uses travelRequestId but form expects travelRequestHandle
+      // linkedAdvanceHandle might not exist in ExpenseReport, so we'll set it to null
+      useHrmExpenseStore.getState().updateFormState({
+        expenseType: expense.expenseType,
+        purpose: expense.purpose || "",
+        travelRequestHandle: expense.travelRequestId || null,
+        linkedAdvanceHandle: null, // This property doesn't exist in ExpenseReport
+        costCenter: expense.costCenter || "",
+        projectCode: expense.projectCode || "",
+        wbsCode: expense.wbsCode || "",
+        currency: expense.currency || "INR",
+        fromDate,
+        toDate,
+        outOfPolicyJustification: expense.outOfPolicyJustification || "",
+      });
+      // Set draft items to existing line items for editing
+      useHrmExpenseStore.getState().setDraftItems(expense.items || []);
+    } else {
+      setScreenMode("view");
+    }
+  }, [resetFormState, resetDraftItems]);
 
   const handleBack = () => {
     setScreenMode("list");

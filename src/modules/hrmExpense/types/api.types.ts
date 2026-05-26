@@ -16,7 +16,7 @@ export interface ExpenseListRequest {
 
 export interface ExpenseApproverInboxRequest {
   organizationId: string;
-  empId: string;
+  employeeId?: string;
 }
 
 export interface GetExpenseByHandleRequest {
@@ -217,4 +217,23 @@ export interface ReceiptUploadResponse {
   receiptUrl: string;
   fileName: string;
   fileSize: number;
+}
+
+// ── Receipt Download ──────────────────────────────────────────────────
+
+export interface ReceiptDownloadResponse {
+  site: string | null;
+  handle: string;
+  message_details: {
+    msg_details: string;
+  };
+  errorCode: string | null;
+  response: {
+    attachmentId: string;
+    fileName: string;
+    contentType: string;
+    base64Data: string;
+    receiptUrl: string;
+    fileSize: number;
+  };
 }

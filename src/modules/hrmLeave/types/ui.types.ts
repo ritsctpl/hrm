@@ -20,21 +20,83 @@ export interface LeaveRequestFormState {
 }
 
 export interface LeavePermissions {
+  // Module access
+  canViewModule: boolean;
+  
+  // Leave Request permissions
+  canViewRequests: boolean;
   canApply: boolean;
+  canEditRequests: boolean;
+  canDeleteRequests: boolean;
   canCancel: boolean;
+  
+  // Balance permissions
+  canViewBalance: boolean;
+  canEditBalance: boolean;
+  
+  // Policy permissions
+  canViewPolicy: boolean;
+  canEditPolicy: boolean;
+  canAddPolicy: boolean;
+  canDeletePolicy: boolean;
+  canManagePolicy: boolean;
+  
+  // Approval Queue permissions
+  canViewApprovalQueue: boolean;
   canApprove: boolean;
   canReject: boolean;
   canEscalate: boolean;
   canReassign: boolean;
   canOverride: boolean;
+  
+  // HR Queue permissions
+  canViewHrQueue: boolean;
   canViewAll: boolean;
+  
+  // Calendar permissions
+  canViewCalendar: boolean;
+  canViewTeamCalendar: boolean;
+  
+  // Accrual permissions
+  canViewAccrual: boolean;
   canPostAccrual: boolean;
-  canAdjust: boolean;
+  canEditAccrual: boolean;
+  
+  // Comp Off permissions
+  canViewCompOff: boolean;
+  canAddCompOff: boolean;
+  canEditCompOff: boolean;
   canCreditCompOff: boolean;
-  canManagePolicy: boolean;
-  canExportPayroll: boolean;
-  canLockPayrollMonth: boolean;
+  
+  // Ledger Adjustment permissions
+  canViewAdjustment: boolean;
+  canAdjust: boolean;
+  canAddAdjustment: boolean;
+  canEditAdjustment: boolean;
+  
+  // Ledger permissions
+  canViewLedger: boolean;
+  canEditLedger: boolean;
+  
+  // Reports permissions
+  canViewReports: boolean;
+  canExportReports: boolean;
+  
+  // Year-End Operations permissions
+  canViewYearEnd: boolean;
   canRunYearEnd: boolean;
+  
+  // Payroll Export permissions
+  canViewPayrollExport: boolean;
+  canExportPayroll: boolean;
+  
+  // Payroll Lock permissions
+  canViewPayrollLock: boolean;
+  canLockPayrollMonth: boolean;
+  
+  // Approval Config permissions
+  canViewApprovalConfig: boolean;
+  canEditApprovalConfig: boolean;
 }
 
 export interface LeaveBalanceCardProps {
@@ -49,6 +111,7 @@ export interface LeaveRequestRowProps {
   onClick: (request: LeaveRequest) => void;
   onAmend?: (request: LeaveRequest) => void;
   onEditDraft?: (request: LeaveRequest) => void;
+  onDelete?: (request: LeaveRequest) => void;
 }
 
 export interface ApproverRequestRowProps {
@@ -185,6 +248,7 @@ export interface LeaveRequestsTableProps {
   loading: boolean;
   selectedHandle?: string;
   onRowClick: (request: LeaveRequest) => void;
+  onRequestDeleted?: () => void;
 }
 
 export interface ApproverInboxTableProps {

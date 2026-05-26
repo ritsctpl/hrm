@@ -886,3 +886,12 @@ export interface DeleteBlackoutRequest {
   organizationId: string;
   handle: string;
 }
+
+// ── Delete Leave Request ─────────────────────────────────────────────
+
+export interface DeleteLeaveRequestPayload {
+  organizationId: string;
+  requestId: string;
+  employeeId: string;
+  reason?: string;
+}

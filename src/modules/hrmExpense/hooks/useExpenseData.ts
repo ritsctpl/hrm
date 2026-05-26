@@ -67,7 +67,7 @@ export function useExpenseData() {
       // inbox even when a request was marked Pending Supervisor.
       const approverId = identity.employeeIdWithName || employeeId;
       const data = await HrmExpenseService.getSupervisorInbox({ organizationId,
-        empId: approverId,
+        employeeId: approverId,
       });
       setSupervisorInbox(data);
     } catch {

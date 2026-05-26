@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button, Typography } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import { Button, Typography, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import LeaveTypeTag from "../atoms/LeaveTypeTag";
 import LeaveStatusChip from "../atoms/LeaveStatusChip";
 import HalfDayIndicator from "../atoms/HalfDayIndicator";
@@ -17,9 +17,11 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
   onClick,
   onAmend,
   onEditDraft,
+  onDelete,
 }) => {
   const isPending = request.status.startsWith("PENDING");
   const isDraft = request.status === "DRAFT";
+  const canDelete = isDraft || isPending;
   const fromDate = new Date(request.startDate).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -52,32 +54,82 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
       </div>
       {isDraft && onEditDraft && (
         <div style={{ marginTop: 6, textAlign: "right" }}>
-          <Button
-            size="small"
-            type="link"
-            icon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditDraft(request);
-            }}
-          >
-            Continue Editing
-          </Button>
+          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+            <Button
+              size="small"
+              type="link"
+              icon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditDraft(request);
+              }}
+            >
+              Continue Editing
+            </Button>
+            {canDelete && onDelete && (
+              <Popconfirm
+                title="Delete Draft"
+                description="Are you sure you want to delete this draft leave request?"
+                onConfirm={(e) => {
+                  e?.stopPropagation();
+                  onDelete(request);
+                }}
+                okText="Yes"
+                cancelText="No"
+                placement="topRight"
+              >
+                <Button
+                  size="small"
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Delete
+                </Button>
+              </Popconfirm>
+            )}
+          </div>
         </div>
       )}
       {isPending && onAmend && (
         <div style={{ marginTop: 6, textAlign: "right" }}>
-          <Button
-            size="small"
-            type="link"
-            icon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              onAmend(request);
-            }}
-          >
-            Amend
-          </Button>
+          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+            <Button
+              size="small"
+              type="link"
+              icon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAmend(request);
+              }}
+            >
+              Amend
+            </Button>
+            {canDelete && onDelete && (
+              <Popconfirm
+                title="Delete Leave Request"
+                description="Are you sure you want to delete this pending leave request?"
+                onConfirm={(e) => {
+                  e?.stopPropagation();
+                  onDelete(request);
+                }}
+                okText="Yes"
+                cancelText="No"
+                placement="topRight"
+              >
+                <Button
+                  size="small"
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Delete
+                </Button>
+              </Popconfirm>
+            )}
+          </div>
         </div>
       )}
     </div>

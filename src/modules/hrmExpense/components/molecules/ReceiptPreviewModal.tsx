@@ -40,9 +40,12 @@ const ReceiptPreviewModal: React.FC<Props> = ({
       setBlobUrl(null);
       return;
     }
+    
     let revoked = false;
     let url: string | null = null;
+    
     setLoading(true);
+    
     HrmExpenseService.downloadReceipt({
       organizationId: getOrganizationId(),
       expenseId,
@@ -55,16 +58,20 @@ const ReceiptPreviewModal: React.FC<Props> = ({
         setBlobUrl(url);
       })
       .catch((error) => {
-        message.error(extractExpenseError(error, "Failed to load receipt."));
+        if (!revoked) {
+          console.error("Receipt download error:", error);
+          message.error(extractExpenseError(error, "Failed to load receipt."));
+        }
       })
       .finally(() => {
         if (!revoked) setLoading(false);
       });
+    
     return () => {
       revoked = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [open, attachmentIds, index]);
+  }, [open, attachmentIds, index, expenseId, lineIndex]);
 
   const total = attachmentIds.length;
   const canPrev = total > 1 && index > 0;
@@ -72,10 +79,18 @@ const ReceiptPreviewModal: React.FC<Props> = ({
 
   const handleDownload = () => {
     if (!blobUrl) return;
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = `receipt-${index + 1}`;
-    a.click();
+    
+    try {
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `receipt-${index + 1}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Download failed:", error);
+      message.error("Failed to download receipt");
+    }
   };
 
   return (
@@ -129,6 +144,7 @@ const ReceiptPreviewModal: React.FC<Props> = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              zIndex: 1,
             }}
           >
             <Spin size="large" />
@@ -140,7 +156,24 @@ const ReceiptPreviewModal: React.FC<Props> = ({
             src={blobUrl}
             title="Receipt preview"
             style={{ width: "100%", height: "100%", border: "none" }}
+            onError={(e) => {
+              console.error("Iframe error:", e);
+              message.error("Failed to display receipt");
+            }}
           />
+        )}
+        {!blobUrl && !loading && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#999",
+            }}
+          >
+            <Text>No receipt to display</Text>
+          </div>
         )}
       </div>
     </Modal>

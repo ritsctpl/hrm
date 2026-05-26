@@ -16,6 +16,7 @@ import dayjs from "dayjs";
 import { parseCookies } from "nookies";
 import DateRangePicker from "../molecules/DateRangePicker";
 import Can from "../../../hrmAccess/components/Can";
+import { useCan } from "../../../hrmAccess/hooks/useCan";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
@@ -24,7 +25,7 @@ import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayServic
 import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
 import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
-import { LeaveBalance } from "../../types/domain.types";
+import { LeaveBalance, LeaveRequest } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
@@ -94,6 +95,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const userId = cookies.userId ?? employeeId;
   const buHandle = cookies.buHandle ?? "";
 
+  // Check permissions for leave request creation
+  const requestPerms = useCan("HRM_LEAVE", "leave_request");
+
   const {
     showLeaveForm,
     leaveFormState,
@@ -148,6 +152,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
   const [currentProfile, setCurrentProfile] = useState<EmployeeProfile | null>(null);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    loading: boolean;
+    hasDuplicate: boolean;
+    duplicateRequests: LeaveRequest[];
+  }>({ loading: false, hasDuplicate: false, duplicateRequests: [] });
 
   const {
     options: employeeOptions,
@@ -435,6 +444,43 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     };
   }, [showLeaveForm, organizationId, leaveFormState.startDate, cookies.supervisorId, effectiveEmployeeId]);
 
+  // Check for duplicate leave requests when dates change
+  useEffect(() => {
+    if (!showLeaveForm || !organizationId || !leaveFormState.startDate || !leaveFormState.endDate || !effectiveEmployeeId) {
+      setDuplicateCheck({ loading: false, hasDuplicate: false, duplicateRequests: [] });
+      return;
+    }
+
+    let cancelled = false;
+    setDuplicateCheck(prev => ({ ...prev, loading: true }));
+
+    HrmLeaveService.checkDuplicateLeaveRequest({
+      organizationId,
+      employeeId: effectiveEmployeeId,
+      startDate: leaveFormState.startDate,
+      endDate: leaveFormState.endDate,
+      excludeRequestId: draftHandle || undefined,
+    })
+      .then((result) => {
+        if (!cancelled) {
+          setDuplicateCheck({
+            loading: false,
+            hasDuplicate: result.hasDuplicate,
+            duplicateRequests: result.duplicateRequests,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDuplicateCheck({ loading: false, hasDuplicate: false, duplicateRequests: [] });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showLeaveForm, organizationId, leaveFormState.startDate, leaveFormState.endDate, effectiveEmployeeId, draftHandle]);
+
   // Load blackout periods when the drawer opens.
   useEffect(() => {
     if (!showLeaveForm || !organizationId) return;
@@ -571,6 +617,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     leaveFormState.totalDays > 0 &&
     leaveFormState.reason.trim().length > 0 &&
     !exceedsBalance &&
+    !duplicateCheck.hasDuplicate &&
+    requestPerms.canAdd &&
     // Block non-HR users from submitting beyond-limit backdated requests
     !(isBackdatedBeyondLimit && !isHrUser) &&
     // Block non-HR users from submitting during a blackout period
@@ -603,6 +651,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       message.error("Employee identity not resolved yet. Please retry.");
       return;
     }
+    
+    // Check if user has permission to create leave requests
+    if (!requestPerms.canAdd) {
+      message.error("You don't have permission to create leave requests.");
+      return;
+    }
+    
     setSubmitting(true);
     try {
       // When HR is submitting on behalf of another employee (formTarget is
@@ -778,11 +833,13 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               >
                 {exceedsBalance
                   ? "Insufficient Balance"
-                  : isBackdatedBeyondLimit && !isHrUser
-                    ? "Backdated Not Allowed"
-                    : overlappingBlackout && !isHrUser
-                      ? "Blackout Period"
-                      : "Submit Request"}
+                  : duplicateCheck.hasDuplicate
+                    ? "Duplicate Request Exists"
+                    : isBackdatedBeyondLimit && !isHrUser
+                      ? "Backdated Not Allowed"
+                      : overlappingBlackout && !isHrUser
+                        ? "Blackout Period"
+                        : "Submit Request"}
               </Button>
             </Can>
           </div>
@@ -939,6 +996,31 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 showIcon
                 message={`Leave Blackout: ${overlappingBlackout.name} (HR Override)`}
                 description={`Leave is restricted from ${overlappingBlackout.startDate} to ${overlappingBlackout.endDate}. Reason: ${overlappingBlackout.reason}. Submitting as HR — blackout check bypassed.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {/* Duplicate leave request validation */}
+            {duplicateCheck.hasDuplicate && (
+              <Alert
+                type="error"
+                showIcon
+                message="Duplicate Leave Request Detected"
+                description={
+                  <div>
+                    <p>You already have a leave request for overlapping dates:</p>
+                    <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
+                      {duplicateCheck.duplicateRequests.map((req) => (
+                        <li key={req.handle}>
+                          <strong>{req.leaveTypeName || req.leaveTypeCode}</strong> from{" "}
+                          {new Date(req.startDate).toLocaleDateString("en-GB")} to{" "}
+                          {new Date(req.endDate).toLocaleDateString("en-GB")} - Status: {req.status}
+                        </li>
+                      ))}
+                    </ul>
+                    <p>Please cancel or modify the existing request before creating a new one.</p>
+                  </div>
+                }
                 style={{ marginTop: 8 }}
               />
             )}

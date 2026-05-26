@@ -71,6 +71,7 @@ import {
   LeaveBlackoutPeriod,
   BlackoutPeriodRequest,
   DeleteBlackoutRequest,
+  DeleteLeaveRequestPayload,
 } from "../types/api.types";
 
 export class HrmLeaveService {
@@ -579,5 +580,24 @@ export class HrmLeaveService {
 
   static async deleteBlackout(payload: DeleteBlackoutRequest): Promise<void> {
     await api.post(`${this.BASE}/blackout/delete`, payload);
+  }
+
+  // ── Delete Leave Request ─────────────────────────────────────────────
+
+  static async deleteLeaveRequest(payload: DeleteLeaveRequestPayload): Promise<void> {
+    await api.post(`${this.BASE}/leave-request/delete`, payload);
+  }
+
+  // ── Check for Duplicate Leave Requests ──────────────────────────────
+
+  static async checkDuplicateLeaveRequest(payload: {
+    organizationId: string;
+    employeeId: string;
+    startDate: string;
+    endDate: string;
+    excludeRequestId?: string;
+  }): Promise<{ hasDuplicate: boolean; duplicateRequests: LeaveRequest[] }> {
+    const { data } = await api.post(`${this.BASE}/leave-request/check-duplicate`, payload);
+    return this.unwrap<{ hasDuplicate: boolean; duplicateRequests: LeaveRequest[] }>(data);
   }
 }
