@@ -65,6 +65,11 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
       });
       
       message.success("Leave request deleted successfully");
+      // Clear the right panel immediately if it was showing the deleted
+      // request, so it doesn't linger as stale data (item 9).
+      if (selectedHandle === request.handle) {
+        setSelectedRequest(null);
+      }
       onRequestDeleted?.();
     } catch (err: unknown) {
       const apiError = err as { 

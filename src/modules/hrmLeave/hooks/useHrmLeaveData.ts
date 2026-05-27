@@ -6,6 +6,7 @@ import { parseCookies } from "nookies";
 import { message } from "antd";
 import { useHrmLeaveStore } from "../stores/hrmLeaveStore";
 import { HrmLeaveService } from "../services/hrmLeaveService";
+import { mapBalanceResponseToDomain } from "../utils/transformations";
 
 export function useHrmLeaveData(employeeId: string, role: string) {
   const cookies = parseCookies();
@@ -41,7 +42,7 @@ export function useHrmLeaveData(employeeId: string, role: string) {
         employeeId: targetId,
         year: balancesYear,
       });
-      setBalances(res as unknown as import("../types/domain.types").LeaveBalance[]);
+      setBalances((res ?? []).map(mapBalanceResponseToDomain));
     } catch {
       message.error("Failed to load leave balances");
     } finally {
@@ -140,8 +141,7 @@ export function useHrmLeaveData(employeeId: string, role: string) {
         deptId: filters?.deptId || undefined,
         buId: filters?.buId || undefined,
       });
-      // LeaveBalanceResponse is structurally identical to LeaveBalance domain type
-      setBalanceSummary(res as unknown as import("../types/domain.types").LeaveBalance[]);
+      setBalanceSummary((res ?? []).map(mapBalanceResponseToDomain));
     } catch {
       message.error("Failed to load balance summary");
     } finally {

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { parseCookies } from "nookies";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, Modal, message, DatePicker } from "antd";
+import { Tabs, Typography, Select, InputNumber, Button, Badge, Empty, Spin, Modal, message, DatePicker, Tooltip } from "antd";
 import { ReloadOutlined, PlusOutlined, EditOutlined, UploadOutlined, GiftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { HrmLeaveService } from "./services/hrmLeaveService";
@@ -407,6 +407,67 @@ const HrmLeaveLanding: React.FC = () => {
     if (permissions.canViewHrQueue) loadGlobalQueue();
     loadMyRequests();
     loadBalances();
+  };
+
+  // ── Per-tab data refresh (item 12) ─────────────────────────────────
+  // Re-fetch the data backing a given tab. Called on every tab change and
+  // by the global Refresh button so each tab always shows fresh data.
+  // Self-contained panels (accrual, reports, register, analytics, year-end,
+  // payroll, approval-config) fetch on their own mount.
+  const refreshActiveTab = useCallback(
+    (tabKey: string) => {
+      switch (tabKey) {
+        case "requests":
+          loadMyRequests();
+          loadBalances();
+          break;
+        case "approvals":
+          if (permissions.canViewApprovalQueue) loadPendingForApprover();
+          break;
+        case "teamHistory":
+          if (permissions.canViewHrQueue) loadGlobalQueue();
+          break;
+        case "compOffInbox":
+          if (permissions.canEditCompOff) loadPendingCompOffs();
+          break;
+        case "compOff":
+          loadMyCompOffRequests();
+          break;
+        case "teamCalendar":
+          if (permissions.canViewApprovalQueue) loadPendingForApprover();
+          break;
+        case "ledger":
+          loadLedgerHistory();
+          if (permissions.canViewBalance) {
+            loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+          }
+          break;
+        case "policy":
+          loadLeaveTypes();
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      permissions,
+      loadMyRequests,
+      loadBalances,
+      loadPendingForApprover,
+      loadGlobalQueue,
+      loadPendingCompOffs,
+      loadMyCompOffRequests,
+      loadLedgerHistory,
+      loadBalanceSummary,
+      loadLeaveTypes,
+      balancesYear,
+      ledgerDeptFilter,
+    ],
+  );
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    refreshActiveTab(key);
   };
 
   const rightPanel = selectedRequest ? (
@@ -915,10 +976,24 @@ const HrmLeaveLanding: React.FC = () => {
         </PermissionGate>
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           items={tabItems}
           size="small"
           tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+          tabBarExtraContent={
+            <Tooltip title="Refresh this tab and balances">
+              <Button
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  loadBalances();
+                  refreshActiveTab(activeTab);
+                }}
+              >
+                Refresh
+              </Button>
+            </Tooltip>
+          }
           style={{ flex: 1, overflow: "hidden" }}
         />
         {showLeaveForm && permissions.canApply && (

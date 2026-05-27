@@ -1,24 +1,52 @@
 import { LeaveBalanceResponse } from "../types/api.types";
 import { LeaveBalance } from "../types/domain.types";
 
+/** Coerce possibly-string/null numeric fields to a finite number (else 0). */
+const toNum = (v: unknown): number => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
 export function mapBalanceResponseToDomain(res: LeaveBalanceResponse): LeaveBalance {
+  const openingCarryForward = toNum(res.openingCarryForward);
+  const ytdCredits = toNum(res.ytdCredits);
+  const ytdDebits = toNum(res.ytdDebits);
+  const ytdEncashed = toNum(res.ytdEncashed);
+  const ytdLapsed = toNum(res.ytdLapsed);
+  const pendingApproval = toNum(res.pendingApproval);
+  const currentBalance = toNum(res.currentBalance);
+  // Derived figure used as a fallback. The /leave-balance/retrieve endpoint
+  // sometimes omits or nulls `availableBalance` even when the component
+  // figures are populated, which made the dashboard render 0 for a real
+  // balance. Prefer the explicit value, then currentBalance, then derive it.
+  const derived =
+    openingCarryForward + ytdCredits - ytdDebits - ytdEncashed - ytdLapsed;
+  const hasExplicitAvailable =
+    res.availableBalance != null && Number.isFinite(Number(res.availableBalance));
+  const availableBalance = hasExplicitAvailable
+    ? toNum(res.availableBalance)
+    : currentBalance || derived;
   return {
+    employeeId: res.employeeId,
+    employeeNumber: res.employeeNumber,
+    employeeName: res.employeeName,
+    department: res.department,
     leaveTypeCode: res.leaveTypeCode,
     leaveTypeName: res.leaveTypeName,
     leaveTypeAlias: res.leaveTypeAlias,
     year: res.year,
-    openingCarryForward: res.openingCarryForward,
-    ytdCredits: res.ytdCredits,
-    ytdDebits: res.ytdDebits,
-    ytdEncashed: res.ytdEncashed,
-    ytdLapsed: res.ytdLapsed,
-    pendingApproval: res.pendingApproval,
-    currentBalance: res.currentBalance,
-    availableBalance: res.availableBalance,
-    carryForwardAllowed: res.carryForwardAllowed,
-    carryForwardCap: res.carryForwardCap,
-    encashmentAllowed: res.encashmentAllowed,
-    halfDayAllowed: res.halfDayAllowed,
+    openingCarryForward,
+    ytdCredits,
+    ytdDebits,
+    ytdEncashed,
+    ytdLapsed,
+    pendingApproval,
+    currentBalance: currentBalance || derived,
+    availableBalance,
+    carryForwardAllowed: !!res.carryForwardAllowed,
+    carryForwardCap: toNum(res.carryForwardCap),
+    encashmentAllowed: !!res.encashmentAllowed,
+    halfDayAllowed: !!res.halfDayAllowed,
     lastCalculatedAt: res.lastCalculatedAt,
   };
 }

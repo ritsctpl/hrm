@@ -25,6 +25,7 @@ import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayService";
 import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
 import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/transformations";
+import { mapBalanceResponseToDomain } from "../../utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance, LeaveRequest, LeavePolicy, LeaveAttachment } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
@@ -330,7 +331,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       })
         .then((res) => {
           if (cancelled) return;
-          setFetchedBalances((res as unknown as LeaveBalance[]) ?? []);
+          setFetchedBalances((res ?? []).map(mapBalanceResponseToDomain));
         })
         .catch(() => {
           if (!cancelled) setFetchedBalances([]);
