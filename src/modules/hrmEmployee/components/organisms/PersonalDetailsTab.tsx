@@ -307,8 +307,14 @@ const PersonalDetailsTab = forwardRef<PersonalDetailsTabHandle, ProfileTabProps>
     <div className={styles.tabContent}>
       <div className={styles.detailGrid}>
         <EmpFieldLabel label="Date of Birth" value={formatDate(personalDetails.dateOfBirth)} />
-        <EmpFieldLabel label="Gender" value={personalDetails.gender || '--'} />
-        <EmpFieldLabel label="Marital Status" value={personalDetails.maritalStatus || '--'} />
+        <EmpFieldLabel
+          label="Gender"
+          value={GENDER_OPTIONS.find((g) => g.value === personalDetails.gender)?.label || '--'}
+        />
+        <EmpFieldLabel
+          label="Marital Status"
+          value={MARITAL_STATUS_OPTIONS.find((m) => m.value === personalDetails.maritalStatus)?.label || '--'}
+        />
         <EmpFieldLabel label="Blood Group" value={personalDetails.bloodGroup || '--'} />
         <EmpFieldLabel label="Nationality" value={personalDetails.nationality || '--'} />
       </div>

@@ -10,7 +10,7 @@ import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
 import Can from '../../../hrmAccess/components/Can';
-import { ONBOARDING_STEPS, DESIGNATION_OPTIONS } from '../../utils/constants';
+import { ONBOARDING_STEPS, DESIGNATION_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '../../utils/constants';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
@@ -134,6 +134,35 @@ const BasicStep: React.FC<{
         {errors.phone && (
           <div className={formStyles.formFieldError}>{errors.phone}</div>
         )}
+      </div>
+    </div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
+          Gender
+        </label>
+        <Select
+          value={draft.gender || undefined}
+          onChange={(value) => onChange({ gender: value as CreateEmployeeRequest['gender'] })}
+          status={errors.gender ? 'error' : undefined}
+          placeholder="Select gender"
+          style={{ width: '100%' }}
+          options={GENDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        />
+        {errors.gender && (
+          <div className={formStyles.formFieldError}>{errors.gender}</div>
+        )}
+      </div>
+      <div className={formStyles.formField}>
+        <label className={formStyles.formFieldLabel}>Marital Status</label>
+        <Select
+          allowClear
+          value={draft.maritalStatus || undefined}
+          onChange={(value) => onChange({ maritalStatus: value as CreateEmployeeRequest['maritalStatus'] })}
+          placeholder="Select marital status"
+          style={{ width: '100%' }}
+          options={MARITAL_STATUS_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+        />
       </div>
     </div>
   </div>
@@ -686,6 +715,18 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
         <span className={formStyles.reviewLabel}>Phone</span>
         <span className={formStyles.reviewValue}>{draft.phone}</span>
       </div>
+      <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Gender</span>
+        <span className={formStyles.reviewValue}>
+          {GENDER_OPTIONS.find((o) => o.value === draft.gender)?.label || '--'}
+        </span>
+      </div>
+      <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Marital Status</span>
+        <span className={formStyles.reviewValue}>
+          {MARITAL_STATUS_OPTIONS.find((o) => o.value === draft.maritalStatus)?.label || '--'}
+        </span>
+      </div>
     </div>
 
     <div className={formStyles.reviewSection}>
@@ -1116,6 +1157,28 @@ const OnboardingWizard: React.FC = () => {
         }
       }
 
+      // Step 2a-ii: Persist Gender / Marital Status captured at onboarding.
+      // These are personal details — the /employee/create payload may not
+      // store them, so re-apply via /update-personal (mirrors the
+      // joiningDate workaround above). Degrades gracefully: if the call
+      // fails the employee is still created and HR can set them from the
+      // Personal Details tab.
+      if (newEmployeeHandle && (draft.gender || draft.maritalStatus)) {
+        try {
+          const organizationId = getOrganizationId();
+          const cookies = parseCookies();
+          await HrmEmployeeService.updatePersonalDetails({
+            organizationId,
+            handle: newEmployeeHandle,
+            gender: draft.gender,
+            maritalStatus: draft.maritalStatus,
+            modifiedBy: cookies.username || 'system',
+          });
+        } catch (err) {
+          console.warn('Failed to persist gender/maritalStatus via update-personal:', err);
+        }
+      }
+
       // Step 2b: Initialize leave balances for the new employee.
       // /leave-balance/initialize indexes by employeeCode (the
       // human-readable id like "EMP0012"), and the leave management UI
@@ -1129,6 +1192,11 @@ const OnboardingWizard: React.FC = () => {
           created?.employeeCode && created?.fullName
             ? `${created.employeeCode} - ${created.fullName}`
             : created?.employeeCode || newEmployeeHandle;
+        // Leave balances are still initialized so the new employee starts
+        // with the correct accrual rows — but per product requirement the
+        // accrual/balance-init outcome is NOT surfaced as a popup/toast
+        // during onboarding. Any non-fatal outcome is logged for
+        // diagnostics only; it never interrupts the create flow.
         try {
           const organizationId = getOrganizationId();
           const { msg } = await HrmLeaveService.initializeBalances({
@@ -1136,32 +1204,11 @@ const OnboardingWizard: React.FC = () => {
             employeeId: leaveEmployeeId,
             joiningDate: draft.joiningDate || dayjs().format('YYYY-MM-DD'),
           });
-          // BE emits "0 leave types processed" when the org has no
-          // active leave types/policies — surface as a warning so HR
-          // knows nothing was actually created.
           if (/0 leave types processed/i.test(msg)) {
-            message.warning(
-              'Employee created, but no leave balances were initialized — no leave types are configured for this organization yet. Ask your admin to set them up.'
-            );
-          } else {
-            message.success(`Leave balances initialized for ${dayjs(draft.joiningDate || undefined).year()}`);
+            console.info('Leave balance init: no leave types configured for organization.');
           }
         } catch (err) {
-          const initErr = err as { errorCode?: string; message?: string };
-          const errorCode = initErr?.errorCode;
-          const errMsg = initErr?.message || 'Unknown error';
-          if (
-            errorCode === 'NO_LEAVE_TYPES_CONFIGURED' ||
-            errorCode === 'NO_LEAVE_POLICY_CONFIGURED'
-          ) {
-            message.warning(
-              `Employee created, but leave balances could not be initialized: ${errMsg}. Ask your admin to configure leave types and policies.`
-            );
-          } else {
-            message.warning(
-              `Employee created. Leave balances could not be initialized: ${errMsg}`
-            );
-          }
+          console.warn('Leave balance initialization skipped/failed during onboarding:', err);
         }
       }
 

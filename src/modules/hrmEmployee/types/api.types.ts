@@ -77,6 +77,11 @@ export interface CreateEmployeeRequest {
    *  the human-readable label instead of the UUID. */
   reportingManagerName?: string;
   nickName?: string;
+  /** Personal detail captured at onboarding. Persisted via /update-personal
+   *  after create when the /create endpoint does not accept it. */
+  gender?: Gender;
+  /** Personal detail captured at onboarding — see `gender`. */
+  maritalStatus?: MaritalStatus;
   createdBy: string;
   organizationHandle?: string;
   organizationName?: string;

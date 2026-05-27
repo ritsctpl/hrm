@@ -139,6 +139,8 @@ export function buildCreateRequest(
     reportingManager: draft.reportingManager,
     reportingManagerName: draft.reportingManagerName,
     designation: draft.designation,
+    gender: draft.gender || undefined,
+    maritalStatus: draft.maritalStatus || undefined,
     joiningDate: draft.joiningDate || undefined,
     organizationHandle,
     organizationName,
@@ -174,6 +176,7 @@ export function validateOnboardingStep(
     } else if (!isValidPhone(draft.phone)) {
       errors.phone = 'Invalid phone format';
     }
+    if (!draft.gender) errors.gender = 'Gender is required';
   }
 
   if (step === 1) {
