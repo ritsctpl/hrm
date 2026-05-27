@@ -135,20 +135,20 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
     }
   };
 
-  /** Render the actor that created this ledger row.
+  /** Render the Employee ID for a ledger row.
    *
-   *  WARNING: this is `createdBy` — the actor, not the leave-owner.
-   *  Backend's /reports/leave-availed currently doesn't return
-   *  employeeId on each row, so we can't show whose leave was
-   *  availed without a server-side response change. Until then,
-   *  "SYSTEM" entries are flagged with a robot icon so HR knows
-   *  the row is missing user attribution.
+   *  Prefers the row's `employeeId` (the leave owner). When the backend
+   *  response omits it, falls back to `createdBy` (the actor) so the column
+   *  still shows something useful; automated "SYSTEM" rows are flagged with
+   *  a robot icon.
    */
-  const resolveEmployee = (createdBy: string) => {
+  const resolveEmployee = (row: LedgerHistoryResponse) => {
+    const employeeId = (row.employeeId ?? "").trim();
+    if (employeeId) return employeeId;
+    const createdBy = (row.createdBy ?? "").trim();
     if (!createdBy) return <Text type="secondary">—</Text>;
-    const trimmed = createdBy.trim();
-    if (trimmed.includes(" - ")) return trimmed;
-    if (trimmed.toLowerCase() === "system") {
+    if (createdBy.includes(" - ")) return createdBy;
+    if (createdBy.toLowerCase() === "system") {
       return (
         <Tooltip title="Created by automated process — backend response is missing the leave-owner's employeeId.">
           <Tag icon={<RobotOutlined />} color="default">
@@ -157,15 +157,15 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
         </Tooltip>
       );
     }
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    return createdBy.charAt(0).toUpperCase() + createdBy.slice(1);
   };
 
   const columns: ColumnsType<LedgerHistoryResponse> = [
     {
-      title: "Actor",
-      dataIndex: "createdBy",
-      key: "createdBy",
-      render: (v: string) => resolveEmployee(v),
+      title: "Employee ID",
+      dataIndex: "employeeId",
+      key: "employeeId",
+      render: (_v: string, row) => resolveEmployee(row),
     },
     { title: "Leave Type", dataIndex: "leaveTypeName", key: "leaveTypeName" },
     { title: "Txn Date", dataIndex: "transactionDate", key: "transactionDate", width: 120 },

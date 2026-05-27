@@ -89,6 +89,29 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
     );
   })();
 
+  // ── Item 19: forwarded-onward override ─────────────────────────────
+  // When the signed-in user is the request's reporting manager but has
+  // forwarded it to the next approver, they are no longer the current
+  // approver. They should still be able to act on the request via Override
+  // Approve / Reject while it remains pending.
+  const isRequestSupervisor = (() => {
+    const raw = request.supervisorId;
+    if (!raw) return false;
+    const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
+    const code = stripped.includes(" - ")
+      ? stripped.split(" - ")[0]?.trim() ?? stripped
+      : stripped;
+    return Boolean(
+      (myComposite && stripped === myComposite) ||
+      (myCode && code === myCode),
+    );
+  })();
+  const isPendingRequest =
+    request.status === "PENDING_SUPERVISOR" ||
+    request.status === "PENDING_NEXT_SUPERIOR" ||
+    request.status === "PENDING_HR";
+  const forwardedOnward = isRequestSupervisor && isPendingRequest && !isCurrentApprover;
+
   const [loading, setLoading] = React.useState(false);
   const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
   const { removeFromPending, updateGlobalQueueRequest, updateMyRequest } = useHrmLeaveStore();
@@ -276,7 +299,7 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         onReject={isCurrentApprover && !isSelfRequest ? handleReject : undefined}
         onEscalate={isCurrentApprover && permissions.canEscalate ? handleEscalate : undefined}
         onReassign={isCurrentApprover ? handleReassign : undefined}
-        onOverride={permissions.canOverride && !isSelfRequest ? handleOverride : undefined}
+        onOverride={(permissions.canOverride || forwardedOnward) && !isSelfRequest ? handleOverride : undefined}
         loading={loading}
       />
 

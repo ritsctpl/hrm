@@ -30,6 +30,7 @@ import ApprovalConfigPanel from "./components/organisms/ApprovalConfigPanel";
 import BlackoutPeriodPanel from "./components/organisms/BlackoutPeriodPanel";
 import LeaveAnalyticsPanel from "./components/organisms/LeaveAnalyticsPanel";
 import TeamCalendarView from "./components/organisms/TeamCalendarView";
+import TeamHistoryPanel from "./components/organisms/TeamHistoryPanel";
 import LeaveRequestFormDrawer from "./components/organisms/LeaveRequestFormDrawer";
 import LeaveFilterBar from "./components/molecules/LeaveFilterBar";
 import LeaveStatusChip from "./components/atoms/LeaveStatusChip";
@@ -44,7 +45,7 @@ import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
 import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
 import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
 import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
-import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS } from "./utils/constants";
+import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS, LEDGER_REF_TYPE_LABELS } from "./utils/constants";
 import { LeaveRequest } from "./types/domain.types";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -318,6 +319,31 @@ const HrmLeaveLanding: React.FC = () => {
   const [bulkAdjModalOpen, setBulkAdjModalOpen] = useState(false);
   const [compOffCreditModalOpen, setCompOffCreditModalOpen] = useState(false);
 
+  // Ledger client-side filters (item 7): the /ledger/report call already
+  // narrows by employee/leave-type/dept/year; date-range and transaction-type
+  // are applied client-side over the returned entries.
+  const [ledgerDateRange, setLedgerDateRange] = useState<[string, string] | null>(null);
+  const [ledgerRefType, setLedgerRefType] = useState<string | undefined>(undefined);
+  const ledgerRefTypeOptions = useMemo(
+    () => Object.entries(LEDGER_REF_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+    [],
+  );
+  const filteredLedgerHistory = useMemo(() => {
+    return ledgerHistory.filter((e) => {
+      if (ledgerRefType && e.refType !== ledgerRefType) return false;
+      if (ledgerDateRange) {
+        const d = dayjs(e.transactionDate);
+        if (
+          d.isBefore(dayjs(ledgerDateRange[0]), "day") ||
+          d.isAfter(dayjs(ledgerDateRange[1]), "day")
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [ledgerHistory, ledgerRefType, ledgerDateRange]);
+
   // Load data based on role on mount
   useEffect(() => {
     loadBalances();
@@ -334,10 +360,12 @@ const HrmLeaveLanding: React.FC = () => {
   }, [organizationId, employeeId, permissions.canViewApprovalQueue, loadPendingForApprover]);
 
   useEffect(() => {
-    if (permissions.canViewHrQueue) {
+    // The global queue also backs the hierarchy-scoped Team History tab, so
+    // load it for team-calendar (manager) permission too — not just HR.
+    if (permissions.canViewHrQueue || permissions.canViewTeamCalendar) {
       loadGlobalQueue();
     }
-  }, [organizationId, permissions.canViewHrQueue, loadGlobalQueue]);
+  }, [organizationId, permissions.canViewHrQueue, permissions.canViewTeamCalendar, loadGlobalQueue]);
 
   useEffect(() => {
     if (permissions.canViewPolicy || permissions.canViewLedger || permissions.canViewBalance) {
@@ -426,6 +454,9 @@ const HrmLeaveLanding: React.FC = () => {
           break;
         case "teamHistory":
           if (permissions.canViewHrQueue) loadGlobalQueue();
+          break;
+        case "teamHistoryHierarchy":
+          if (permissions.canViewHrQueue || permissions.canViewTeamCalendar) loadGlobalQueue();
           break;
         case "compOffInbox":
           if (permissions.canEditCompOff) loadPendingCompOffs();
@@ -730,6 +761,25 @@ const HrmLeaveLanding: React.FC = () => {
               (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
           />
+          <span className={styles.ledgerToolbarLabel}>Txn Type</span>
+          <Select
+            allowClear
+            placeholder="All transactions"
+            value={ledgerRefType}
+            onChange={(value) => setLedgerRefType(value || undefined)}
+            options={ledgerRefTypeOptions}
+            style={{ minWidth: 160 }}
+          />
+          <span className={styles.ledgerToolbarLabel}>Date Range</span>
+          <DatePicker.RangePicker
+            value={ledgerDateRange ? [dayjs(ledgerDateRange[0]), dayjs(ledgerDateRange[1])] : null}
+            onChange={(_, strs) => {
+              if (strs[0] && strs[1]) setLedgerDateRange([strs[0], strs[1]]);
+              else setLedgerDateRange(null);
+            }}
+            format="DD/MM/YYYY"
+            style={{ minWidth: 230 }}
+          />
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
@@ -812,7 +862,7 @@ const HrmLeaveLanding: React.FC = () => {
                   style={{ padding: "32px 0" }}
                 />
               ) : (
-                <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
+                <LedgerHistoryTable entries={filteredLedgerHistory} loading={ledgerLoading} />
               )}
             </div>
           </div>
@@ -881,6 +931,26 @@ const HrmLeaveLanding: React.FC = () => {
     </PermissionGate>
   );
 
+  // ── Tab: Team History (hierarchy-scoped, item 13/14) ──────────────
+  // A manager's direct + indirect reports, across all statuses. Distinct
+  // from the HR "All Requests" tab; RBAC-gated on the team-calendar object.
+  const teamHistoryHierarchyPanel = (
+    <PermissionGate object="leave_team_calendar" action="view">
+      <TeamHistoryPanel
+        organizationId={organizationId}
+        managerCode={identity.employeeCode || ""}
+        managerHandle={identity.handle || ""}
+        requests={globalQueue}
+        loading={globalQueueLoading}
+        selectedHandle={selectedRequest?.handle}
+        onRowClick={setSelectedRequest}
+        rightPanel={rightPanel}
+        leaveTypeOptions={leaveTypes.map((lt) => ({ value: lt.code, label: `${lt.code} – ${lt.name}` }))}
+        employeeOptions={employeeOptions}
+      />
+    </PermissionGate>
+  );
+
   const accrualPanel = (
     <PermissionGate object="leave_accrual" action="view">
       <AccrualRunPanel organizationId={organizationId} onPosted={() => loadBalanceSummary(balancesYear)} />
@@ -944,11 +1014,12 @@ const HrmLeaveLanding: React.FC = () => {
   const tabItems = [
     permissions.canViewRequests && { key: "requests", label: "My Requests", children: requestsTab },
     permissions.canViewApprovalQueue && { key: "approvals", label: `Approvals (${approverFiltered.length})`, children: approvalTab },
-    permissions.canViewHrQueue && { key: "teamHistory", label: isHrAdmin ? "All Requests" : "Team History", children: teamHistoryTab },
+    permissions.canViewHrQueue && { key: "teamHistory", label: isHrAdmin ? "All Requests" : "Team Requests", children: teamHistoryTab },
     permissions.canEditCompOff && { key: "compOffInbox", label: compOffLabel, children: compOffInboxTab },
     permissions.canViewCompOff && { key: "compOff", label: "My Comp-Off", children: compOffTab },
     permissions.canViewTeamCalendar && { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
     permissions.canViewLedger && { key: "ledger", label: "Ledger & Balances", children: ledgerPanel },
+    permissions.canViewTeamCalendar && { key: "teamHistoryHierarchy", label: "Team History", children: teamHistoryHierarchyPanel },
     permissions.canViewPolicy && { key: "policy", label: "Policy", children: policyPanel },
     permissions.canViewAccrual && { key: "accrual", label: "Accruals", children: accrualPanel },
     permissions.canViewReports && { key: "reports", label: "Reports", children: reportsPanel },

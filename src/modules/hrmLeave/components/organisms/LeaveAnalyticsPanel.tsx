@@ -126,6 +126,8 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       const res = await HrmLeaveService.getLeaveTrend({
         organizationId,
         year: selectedYear,
+        // Department filter must narrow the trend too, not just absenteeism.
+        deptId: selectedDept,
       });
       setTrendData(res);
     } catch {
@@ -133,7 +135,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     } finally {
       setTrendLoading(false);
     }
-  }, [organizationId, selectedYear]);
+  }, [organizationId, selectedYear, selectedDept]);
 
   const fetchTopAbsentees = useCallback(async () => {
     setTopAbsenteesLoading(true);
@@ -142,6 +144,9 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
         organizationId,
         year: selectedYear,
         limit: 10,
+        // Department filter also scopes top-absentees (and the WFH summary
+        // derived from it).
+        deptId: selectedDept,
       });
       // Normalize: backend may return totalDays/leaveDays instead of totalLeaveDays
       const normalized = (res || []).map((item: unknown) => {
@@ -161,7 +166,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     } finally {
       setTopAbsenteesLoading(false);
     }
-  }, [organizationId, selectedYear]);
+  }, [organizationId, selectedYear, selectedDept]);
 
   useEffect(() => {
     fetchAbsenteeism();

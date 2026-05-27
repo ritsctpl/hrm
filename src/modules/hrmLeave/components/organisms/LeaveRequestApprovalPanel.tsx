@@ -123,19 +123,22 @@ const LeaveRequestApprovalPanel: React.FC<LeaveRequestApprovalPanelProps> = ({
           </Can>
         )}
 
-        {permissions.canOverride && onOverride && (
+        {/* Override visibility is decided by the parent (passes onOverride
+            for HR, and for a reporting manager whose request has been
+            forwarded onward — item 19). */}
+        {onOverride && (
           <Can I="edit" object="leave_approval" passIf={true}>
             <>
               <Button
                 type="dashed"
-                onClick={() => onOverride(true, "HR Override Approve")}
+                onClick={() => onOverride(true, "Override Approve")}
               >
                 Override Approve
               </Button>
               <Button
                 type="dashed"
                 danger
-                onClick={() => onOverride(false, "HR Override Reject")}
+                onClick={() => onOverride(false, "Override Reject")}
               >
                 Override Reject
               </Button>
