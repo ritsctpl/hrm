@@ -185,6 +185,13 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       }
       loading={loading}
       size="small"
+      onRow={(record) => ({
+        onClick: () => onRowClick?.(record.employeeId),
+        style: {
+          cursor: onRowClick ? "pointer" : undefined,
+          background: record.employeeId && record.employeeId === selectedEmployeeId ? "#e6f4ff" : undefined,
+        },
+      })}
       pagination={{
         current,
         pageSize,

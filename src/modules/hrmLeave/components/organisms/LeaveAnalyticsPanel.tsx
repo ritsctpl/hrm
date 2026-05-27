@@ -14,13 +14,30 @@ import {
   Space,
   Typography,
   message,
+  Tag,
+  Switch,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
   BarChartOutlined,
   TeamOutlined,
   CalendarOutlined,
+  LaptopOutlined,
+  TableOutlined,
 } from "@ant-design/icons";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartTooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import {
   AbsenteeismData,
@@ -45,6 +62,18 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const SHORT_MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// Pie chart colour palette — enough for most department lists
+const PIE_COLORS = [
+  "#4F81BD", "#C0504D", "#9BBB59", "#8064A2",
+  "#4BACC6", "#F79646", "#2E75B6", "#843C0C",
+  "#375623", "#17375E", "#7030A0", "#00B0F0",
+];
+
 interface LeaveAnalyticsPanelProps {
   organizationId: string;
 }
@@ -58,6 +87,8 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedDept, setSelectedDept] = useState<string | undefined>(undefined);
 
+  // Toggle: show BarChart vs pivot table for monthly trend
+  const [showTrendTable, setShowTrendTable] = useState(false);
 
   // Absenteeism state
   const [absenteeismData, setAbsenteeismData] = useState<AbsenteeismData[]>([]);
@@ -116,13 +147,13 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       const normalized = (res || []).map((item: unknown) => {
         const r = item as Record<string, unknown>;
         return {
-        employeeId: (r.employeeId ?? r.employeeHandle ?? "") as string,
-        employeeName: (r.employeeName ?? r.fullName ?? "") as string,
-        employeeNumber: (r.employeeNumber ?? r.employeeCode ?? "") as string,
-        department: (r.department ?? "") as string,
-        totalLeaveDays: Number(r.totalLeaveDays ?? r.totalDays ?? r.leaveDays ?? 0),
-        leaveBreakdown: (r.leaveBreakdown ?? []) as { leaveTypeCode: string; days: number }[],
-      };
+          employeeId: (r.employeeId ?? r.employeeHandle ?? "") as string,
+          employeeName: (r.employeeName ?? r.fullName ?? "") as string,
+          employeeNumber: (r.employeeNumber ?? r.employeeCode ?? "") as string,
+          department: (r.department ?? "") as string,
+          totalLeaveDays: Number(r.totalLeaveDays ?? r.totalDays ?? r.leaveDays ?? 0),
+          leaveBreakdown: (r.leaveBreakdown ?? []) as { leaveTypeCode: string; days: number }[],
+        };
       });
       setTopAbsentees(normalized);
     } catch {
@@ -139,12 +170,6 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   }, [fetchAbsenteeism, fetchTrend, fetchTopAbsentees]);
 
   // ── Department options ───────────────────────────────────────────────
-  // Sourcing departments from absenteeism response alone made the filter
-  // unusable: the dropdown stayed empty until after the first /absenteeism
-  // call resolved, and even then it only listed depts that had non-zero
-  // absenteeism for the selected year. Combine the absenteeism rows with
-  // the employee directory so every real department shows up in the
-  // selector regardless of load order or current-period activity.
   const { employees: directoryEmployees } = useEmployeeOptions();
   const departmentOptions = useMemo(() => {
     const depts = new Set<string>();
@@ -164,7 +189,9 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
   const summaryStats = useMemo(() => {
     const totalEmployees = absenteeismData.reduce((sum, d) => sum + (d.totalEmployees || 0), 0);
     const totalLeaveDays = absenteeismData.reduce((sum, d) => sum + (d.totalLeaveDays || 0), 0);
-    const validRates = absenteeismData.filter(d => typeof d.absenteeismRate === 'number' && !isNaN(d.absenteeismRate));
+    const validRates = absenteeismData.filter(
+      (d) => typeof d.absenteeismRate === "number" && !isNaN(d.absenteeismRate)
+    );
     const avgRate =
       validRates.length > 0
         ? validRates.reduce((sum, d) => sum + d.absenteeismRate, 0) / validRates.length
@@ -176,51 +203,42 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     };
   }, [absenteeismData]);
 
-  // ── Absenteeism Table Columns ───────────────────────────────────────
+  // ── WFH Summary ─────────────────────────────────────────────────────
+  // Count WFH days from top-absentees breakdown entries.
+  const wfhStats = useMemo(() => {
+    let totalWfhDays = 0;
+    let wfhEmployeeCount = 0;
+    for (const emp of topAbsentees) {
+      const breakdown = emp.leaveBreakdown ?? [];
+      const wfhEntry = breakdown.find(
+        (b) => (b.leaveTypeCode ?? "").toUpperCase() === "WFH"
+      );
+      if (wfhEntry && (wfhEntry.days ?? 0) > 0) {
+        totalWfhDays += wfhEntry.days;
+        wfhEmployeeCount += 1;
+      }
+    }
+    return { totalWfhDays, wfhEmployeeCount };
+  }, [topAbsentees]);
 
-  const absenteeismColumns: ColumnsType<AbsenteeismData> = [
-    {
-      title: "Department",
-      dataIndex: "department",
-      key: "department",
-      render: (val: string) => formatDept(val),
-      sorter: (a, b) => formatDept(a.department).localeCompare(formatDept(b.department)),
-    },
-    {
-      title: "Total Employees",
-      dataIndex: "totalEmployees",
-      key: "totalEmployees",
-      align: "right",
-      render: (val: number) => val ?? 0,
-      sorter: (a, b) => (a.totalEmployees || 0) - (b.totalEmployees || 0),
-    },
-    {
-      title: "Leave Days",
-      dataIndex: "totalLeaveDays",
-      key: "totalLeaveDays",
-      align: "right",
-      sorter: (a, b) => a.totalLeaveDays - b.totalLeaveDays,
-    },
-    {
-      title: "Absenteeism Rate",
-      dataIndex: "absenteeismRate",
-      key: "absenteeismRate",
-      sorter: (a, b) => a.absenteeismRate - b.absenteeismRate,
-      render: (rate: number) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Progress
-            percent={Math.min(rate, 100)}
-            size="small"
-            format={() => `${rate.toFixed(1)}%`}
-            strokeColor={rate > 5 ? "#ff4d4f" : rate > 3 ? "#faad14" : "#52c41a"}
-            style={{ minWidth: 120 }}
-          />
-        </div>
-      ),
-    },
-  ];
+  // ── Monthly Trend BarChart data ──────────────────────────────────────
+  // Aggregate all leave-type entries per month into a single "total days" value.
+  // Only include months where total > 0 so the chart isn't padded with empty bars.
+  const monthlyBarData = useMemo(() => {
+    const totals: Record<number, number> = {};
+    for (const entry of trendData) {
+      const month = entry?.month;
+      const days = Number(entry?.totalDays ?? 0);
+      if (month >= 1 && month <= 12 && !isNaN(days)) {
+        totals[month] = (totals[month] ?? 0) + days;
+      }
+    }
+    return SHORT_MONTH_NAMES
+      .map((name, idx) => ({ month: name, days: totals[idx + 1] ?? 0 }))
+      .filter((row) => row.days > 0);
+  }, [trendData]);
 
-  // ── Trend Table: pivot month rows x leave type columns ──────────────
+  // ── Trend pivot-table data (kept as secondary/expandable view) ───────
 
   const leaveTypeCodes = useMemo(() => {
     const codes = Array.from(new Set(trendData.map((d) => d.leaveTypeCode))).sort();
@@ -294,9 +312,73 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     return cols;
   }, [leaveTypeCodes, leaveTypeNameMap]);
 
+  // ── Department Pie Chart data ─────────────────────────────────────────
+  // Use absenteeism data (totalLeaveDays per department) as the slice value.
+  const deptPieData = useMemo(() => {
+    return absenteeismData
+      .filter((d) => (d.totalLeaveDays ?? 0) > 0)
+      .map((d) => ({
+        name: formatDept(d.department),
+        value: d.totalLeaveDays ?? 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [absenteeismData]);
+
+  // ── Absenteeism Table Columns ───────────────────────────────────────
+
+  const absenteeismColumns: ColumnsType<AbsenteeismData> = [
+    {
+      title: "Department",
+      dataIndex: "department",
+      key: "department",
+      render: (val: string) => formatDept(val),
+      sorter: (a, b) => formatDept(a.department).localeCompare(formatDept(b.department)),
+    },
+    {
+      title: "Total Employees",
+      dataIndex: "totalEmployees",
+      key: "totalEmployees",
+      align: "right",
+      render: (val: number) => val ?? 0,
+      sorter: (a, b) => (a.totalEmployees || 0) - (b.totalEmployees || 0),
+    },
+    {
+      title: "Leave Days",
+      dataIndex: "totalLeaveDays",
+      key: "totalLeaveDays",
+      align: "right",
+      sorter: (a, b) => a.totalLeaveDays - b.totalLeaveDays,
+    },
+    {
+      title: "Absenteeism Rate",
+      dataIndex: "absenteeismRate",
+      key: "absenteeismRate",
+      sorter: (a, b) => a.absenteeismRate - b.absenteeismRate,
+      render: (rate: number) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Progress
+            percent={Math.min(rate, 100)}
+            size="small"
+            format={() => `${rate.toFixed(1)}%`}
+            strokeColor={rate > 5 ? "#ff4d4f" : rate > 3 ? "#faad14" : "#52c41a"}
+            style={{ minWidth: 120 }}
+          />
+        </div>
+      ),
+    },
+  ];
+
   // ── Top Absentees Columns ───────────────────────────────────────────
 
   const topAbsenteesColumns: ColumnsType<TopAbsenteeData> = [
+    {
+      title: "#",
+      key: "rank",
+      width: 48,
+      render: (_: unknown, __: TopAbsenteeData, index: number) => (
+        <Text type="secondary">{index + 1}</Text>
+      ),
+    },
     {
       title: "Employee",
       key: "employee",
@@ -334,8 +416,29 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       sorter: (a, b) => (a.totalLeaveDays || 0) - (b.totalLeaveDays || 0),
       defaultSortOrder: "descend",
       render: (days: number | null | undefined) => (
-        <Text strong>{typeof days === "number" && !isNaN(days) ? days.toFixed(1) : "0.0"}</Text>
+        <Text strong>
+          {typeof days === "number" && !isNaN(days) ? days.toFixed(1) : "0.0"}
+        </Text>
       ),
+    },
+    {
+      title: "WFH",
+      key: "wfh",
+      align: "right",
+      width: 80,
+      render: (_: unknown, record: TopAbsenteeData) => {
+        const wfhEntry = (record.leaveBreakdown ?? []).find(
+          (b) => (b.leaveTypeCode ?? "").toUpperCase() === "WFH"
+        );
+        const days = wfhEntry?.days ?? 0;
+        return days > 0 ? (
+          <Tag color="blue" style={{ margin: 0 }}>
+            {days}d
+          </Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        );
+      },
     },
   ];
 
@@ -362,6 +465,27 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
         size="small"
         style={{ margin: 0 }}
       />
+    );
+  };
+
+  // ── Custom Pie tooltip ───────────────────────────────────────────────
+  const PieCustomTooltip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const entry = payload[0];
+    return (
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #d9d9d9",
+          borderRadius: 6,
+          padding: "6px 12px",
+          fontSize: 13,
+        }}
+      >
+        <Text strong>{entry.name}</Text>
+        <br />
+        <Text>{entry.value} day{entry.value !== 1 ? "s" : ""}</Text>
+      </div>
     );
   };
 
@@ -403,7 +527,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
 
       {/* Summary Statistics */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={8}>
+        <Col span={6}>
           <Card size="small">
             <Statistic
               title="Total Employees"
@@ -412,7 +536,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Card size="small">
             <Statistic
               title="Total Leave Days"
@@ -421,7 +545,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Card size="small">
             <Statistic
               title="Avg Absenteeism Rate"
@@ -432,43 +556,48 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
             />
           </Card>
         </Col>
-      </Row>
-
-      {/* Top Row: Absenteeism + Trend */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={12}>
-          <Card
-            title="Absenteeism by Department"
-            size="small"
-            styles={{ body: { padding: 0 } }}
-          >
-            {absenteeismLoading ? (
-              <div style={{ padding: 40, textAlign: "center" }}>
-                <Spin tip="Loading absenteeism data..." />
-              </div>
-            ) : absenteeismData.length === 0 ? (
-              <Empty
-                description="No absenteeism data"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                style={{ padding: 40 }}
-              />
-            ) : (
-              <Table<AbsenteeismData>
-                columns={absenteeismColumns}
-                dataSource={absenteeismData}
-                rowKey="department"
-                pagination={false}
-                size="small"
-                scroll={{ y: 300 }}
-              />
-            )}
+        <Col span={6}>
+          {/* WFH Analytics card */}
+          <Card size="small" style={{ borderColor: "#91caff", background: "#f0f7ff" }}>
+            <Statistic
+              title={
+                <Space size={4}>
+                  <LaptopOutlined style={{ color: "#1677ff" }} />
+                  <span>WFH Days (Top 10)</span>
+                </Space>
+              }
+              value={wfhStats.totalWfhDays}
+              suffix={
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+                  &nbsp;across {wfhStats.wfhEmployeeCount} emp
+                </Text>
+              }
+              valueStyle={{ color: "#1677ff" }}
+            />
           </Card>
         </Col>
+      </Row>
+
+      {/* Row 1: Monthly Trend BarChart (left) | Department Pie Chart (right) */}
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        {/* Monthly Leave Trend */}
         <Col span={12}>
           <Card
-            title="Leave Trend (Monthly)"
+            title="Monthly Leave Trend"
             size="small"
-            styles={{ body: { padding: 0 } }}
+            extra={
+              <Space size={6}>
+                <TableOutlined style={{ color: showTrendTable ? "#1677ff" : "#bfbfbf" }} />
+                <Switch
+                  size="small"
+                  checked={showTrendTable}
+                  onChange={setShowTrendTable}
+                  title="Toggle pivot table"
+                />
+                <Text style={{ fontSize: 12, color: "#8c8c8c" }}>Table</Text>
+              </Space>
+            }
+            styles={{ body: { padding: showTrendTable ? 0 : "12px 12px 4px" } }}
           >
             {trendLoading ? (
               <div style={{ padding: 40, textAlign: "center" }}>
@@ -480,25 +609,121 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 style={{ padding: 40 }}
               />
-            ) : (
+            ) : showTrendTable ? (
+              /* Secondary: pivot table */
               <Table<TrendRow>
                 columns={trendColumns}
                 dataSource={trendRows}
                 rowKey="key"
                 pagination={false}
                 size="small"
-                scroll={{ x: "max-content", y: 300 }}
+                scroll={{ x: "max-content", y: 280 }}
               />
+            ) : (
+              /* Primary: BarChart */
+              monthlyBarData.length === 0 ? (
+                <Empty
+                  description="No monthly data with leave days > 0"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ padding: 40 }}
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={monthlyBarData}
+                    margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: "#595959" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#595959" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                      width={36}
+                    />
+                    <RechartTooltip
+                      cursor={{ fill: "#f5f5f5" }}
+                      formatter={(value: number) => [`${value} days`, "Leave Days"]}
+                    />
+                    <Bar
+                      dataKey="days"
+                      fill="#4F81BD"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={48}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )
+            )}
+          </Card>
+        </Col>
+
+        {/* Department Pie Chart */}
+        <Col span={12}>
+          <Card
+            title="Leave Days by Department"
+            size="small"
+            styles={{ body: { padding: "12px 12px 4px" } }}
+          >
+            {absenteeismLoading ? (
+              <div style={{ padding: 40, textAlign: "center" }}>
+                <Spin tip="Loading department data..." />
+              </div>
+            ) : deptPieData.length === 0 ? (
+              <Empty
+                description="No department leave data"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ padding: 40 }}
+              />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={deptPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="46%"
+                    outerRadius={100}
+                    innerRadius={48}
+                    paddingAngle={2}
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                    labelLine={false}
+                  >
+                    {deptPieData.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <RechartTooltip content={<PieCustomTooltip />} />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </Card>
         </Col>
       </Row>
 
-      {/* Bottom: Top 10 Absentees */}
+      {/* Row 2: Top 10 Absentees (full width) */}
       <Card
         title="Top 10 Absentees"
         size="small"
         styles={{ body: { padding: 0 } }}
+        style={{ marginBottom: 16 }}
       >
         {topAbsenteesLoading ? (
           <div style={{ padding: 40, textAlign: "center" }}>
@@ -522,6 +747,34 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
               rowExpandable: (record) =>
                 record.leaveBreakdown && record.leaveBreakdown.length > 0,
             }}
+          />
+        )}
+      </Card>
+
+      {/* Row 3: Absenteeism Progress Table (full width) */}
+      <Card
+        title="Absenteeism Rate by Department"
+        size="small"
+        styles={{ body: { padding: 0 } }}
+      >
+        {absenteeismLoading ? (
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <Spin tip="Loading absenteeism data..." />
+          </div>
+        ) : absenteeismData.length === 0 ? (
+          <Empty
+            description="No absenteeism data"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ padding: 40 }}
+          />
+        ) : (
+          <Table<AbsenteeismData>
+            columns={absenteeismColumns}
+            dataSource={absenteeismData}
+            rowKey="department"
+            pagination={false}
+            size="small"
+            scroll={{ y: 300 }}
           />
         )}
       </Card>

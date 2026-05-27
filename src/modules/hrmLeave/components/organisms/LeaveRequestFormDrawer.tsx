@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Button,
+  DatePicker,
   Drawer,
   Input,
   Select,
@@ -149,6 +150,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [blackouts, setBlackouts] = useState<LeaveBlackoutPeriod[]>([]);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
+  const [wfhDetails, setWfhDetails] = useState({ workPlan: "", taskDetails: "", reportingNotes: "" });
+  const [maternityDetails, setMaternityDetails] = useState({ childCount: "", childDate: null as string | null });
+  const [paternityDetails, setPaternityDetails] = useState({ childBirthDate: null as string | null, childCount: "" });
   const [fetchedBalances, setFetchedBalances] = useState<LeaveBalance[]>([]);
   const [currentProfile, setCurrentProfile] = useState<EmployeeProfile | null>(null);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
@@ -397,6 +401,15 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     (o) => o.code === leaveFormState.leaveTypeCode,
   );
 
+  const leaveTypeCategory = useMemo(() => {
+    const code = (leaveFormState.leaveTypeCode ?? "").toUpperCase();
+    if (!code) return "STANDARD";
+    if (code.includes("WFH")) return "WFH";
+    if (code === "ML" || code.includes("MATERNITY")) return "MATERNITY";
+    if (code === "PAT" || code.includes("PATERNITY")) return "PATERNITY";
+    return "STANDARD";
+  }, [leaveFormState.leaveTypeCode]);
+
   // Load published holidays for the user's BU once the drawer opens.
   useEffect(() => {
     if (!showLeaveForm || !organizationId) return;
@@ -628,6 +641,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     setAttachments([]);
     setHandoverPerson(undefined);
     setDraftHandle(null);
+    setWfhDetails({ workPlan: "", taskDetails: "", reportingNotes: "" });
+    setMaternityDetails({ childCount: "", childDate: null });
+    setPaternityDetails({ childBirthDate: null, childCount: "" });
     updateLeaveFormState({
       leaveTypeCode: "",
       startDate: null,
@@ -638,6 +654,22 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       reason: "",
       attachmentPath: null,
     });
+  };
+
+  const buildExtendedReason = () => {
+    let r = leaveFormState.reason.trim();
+    if (leaveTypeCategory === "WFH") {
+      if (wfhDetails.workPlan) r += `\n[Work Plan: ${wfhDetails.workPlan}]`;
+      if (wfhDetails.taskDetails) r += `\n[Tasks: ${wfhDetails.taskDetails}]`;
+      if (wfhDetails.reportingNotes) r += `\n[Reporting Notes: ${wfhDetails.reportingNotes}]`;
+    } else if (leaveTypeCategory === "MATERNITY") {
+      if (maternityDetails.childCount) r += `\n[Child: ${maternityDetails.childCount} child]`;
+      if (maternityDetails.childDate) r += `\n[Expected/Birth Date: ${maternityDetails.childDate}]`;
+    } else if (leaveTypeCategory === "PATERNITY") {
+      if (paternityDetails.childBirthDate) r += `\n[Child Birth Date: ${paternityDetails.childBirthDate}]`;
+      if (paternityDetails.childCount) r += `\n[Child: ${paternityDetails.childCount} child]`;
+    }
+    return r;
   };
 
   const handleClose = () => {
@@ -679,7 +711,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         startDayType: leaveFormState.startDayType,
         endDayType: leaveFormState.endDayType,
         totalDays: leaveFormState.totalDays,
-        reason: leaveFormState.reason,
+        reason: buildExtendedReason(),
         createdBy: submitterComposite,
         attachments: attachments.map((a) => ({
           name: a.name,
@@ -743,7 +775,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         startDayType: leaveFormState.startDayType,
         endDayType: leaveFormState.endDayType,
         totalDays: leaveFormState.totalDays,
-        reason: leaveFormState.reason,
+        reason: buildExtendedReason(),
         createdBy: submitterComposite,
         // Per BE saveDraft contract: attachments are only replaced when a
         // non-empty list is sent. So we omit the field on re-save when the
@@ -1025,6 +1057,117 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               />
             )}
           </div>
+
+          {/* ── Dynamic fields based on leave type ─────────────────── */}
+          {leaveTypeCategory === "WFH" && (
+            <>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Work Plan <Text type="secondary" style={{ fontSize: 11 }}>(required for WFH)</Text></span>
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Describe what you plan to work on (tasks, meetings, deliverables)"
+                  value={wfhDetails.workPlan}
+                  onChange={(e) => setWfhDetails((d) => ({ ...d, workPlan: e.target.value }))}
+                  maxLength={500}
+                  showCount
+                />
+              </div>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Task Details</span>
+                <Input.TextArea
+                  rows={2}
+                  placeholder="List specific tasks or project deliverables"
+                  value={wfhDetails.taskDetails}
+                  onChange={(e) => setWfhDetails((d) => ({ ...d, taskDetails: e.target.value }))}
+                  maxLength={300}
+                  showCount
+                />
+              </div>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Reporting Notes</span>
+                <Input.TextArea
+                  rows={2}
+                  placeholder="How will you stay reachable? (e.g. Slack, MS Teams, scheduled calls)"
+                  value={wfhDetails.reportingNotes}
+                  onChange={(e) => setWfhDetails((d) => ({ ...d, reportingNotes: e.target.value }))}
+                  maxLength={300}
+                  showCount
+                />
+              </div>
+            </>
+          )}
+
+          {leaveTypeCategory === "MATERNITY" && (
+            <>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Child Number</span>
+                <Select
+                  placeholder="Is this for the 1st or 2nd child?"
+                  value={maternityDetails.childCount || undefined}
+                  onChange={(val) => setMaternityDetails((d) => ({ ...d, childCount: val }))}
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "1st", label: "1st Child" },
+                    { value: "2nd", label: "2nd Child" },
+                    { value: "3rd+", label: "3rd Child or more" },
+                  ]}
+                />
+              </div>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Expected / Actual Birth Date</span>
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  placeholder="Select expected or actual birth date"
+                  value={maternityDetails.childDate ? dayjs(maternityDetails.childDate) : null}
+                  onChange={(_, str) => setMaternityDetails((d) => ({ ...d, childDate: str as string || null }))}
+                />
+              </div>
+              <Alert
+                type="info"
+                showIcon
+                message="Medical Document Required"
+                description="Please attach a medical certificate or hospital letter in the Supporting Documents section below."
+                style={{ marginBottom: 8 }}
+              />
+            </>
+          )}
+
+          {leaveTypeCategory === "PATERNITY" && (
+            <>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Child Birth Date</span>
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  placeholder="Select child's birth date"
+                  value={paternityDetails.childBirthDate ? dayjs(paternityDetails.childBirthDate) : null}
+                  onChange={(_, str) => setPaternityDetails((d) => ({ ...d, childBirthDate: str as string || null }))}
+                />
+              </div>
+              <div className={styles.fieldBlock}>
+                <span className={styles.fieldLabel}>Child Number</span>
+                <Select
+                  placeholder="Is this for the 1st or 2nd child?"
+                  value={paternityDetails.childCount || undefined}
+                  onChange={(val) => setPaternityDetails((d) => ({ ...d, childCount: val }))}
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "1st", label: "1st Child" },
+                    { value: "2nd", label: "2nd Child" },
+                    { value: "3rd+", label: "3rd Child or more" },
+                  ]}
+                />
+              </div>
+              <Alert
+                type="info"
+                showIcon
+                message="Supporting Document Required"
+                description="Please attach a birth certificate or hospital discharge document in the Supporting Documents section below."
+                style={{ marginBottom: 8 }}
+              />
+            </>
+          )}
 
           {/* Reason */}
           <div className={styles.fieldBlock}>

@@ -98,8 +98,10 @@ export function useLeavePermissions(role: string): LeavePermissions {
       canEditAccrual: accrualPerms.canEdit,
       
       // Comp Off permissions
+      // VIEW on leave_comp_off means the employee can see (and therefore request) their own comp-off.
+      // canAdd stays the stricter gate for HR-only "Credit Comp-Off" (direct credit without workflow).
       canViewCompOff: compOffPerms.canView,
-      canAddCompOff: compOffPerms.canAdd,
+      canAddCompOff: compOffPerms.canAdd || compOffPerms.canView,
       canEditCompOff: compOffPerms.canEdit,
       canCreditCompOff: compOffPerms.canAdd,
       
