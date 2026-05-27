@@ -185,6 +185,7 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       }
       loading={loading}
       size="small"
+      scroll={{ x: "max-content" }}
       onRow={(record) => ({
         onClick: () => onRowClick?.(record.employeeId),
         style: {

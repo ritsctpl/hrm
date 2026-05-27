@@ -77,6 +77,7 @@ const LedgerHistoryTable: React.FC<LedgerHistoryTableProps> = ({ entries, loadin
       rowKey="handle"
       loading={loading}
       size="small"
+      scroll={{ x: "max-content" }}
       pagination={{
         current,
         pageSize,

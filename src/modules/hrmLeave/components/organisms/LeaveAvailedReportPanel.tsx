@@ -269,6 +269,7 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
         columns={columns}
         rowKey="handle"
         size="small"
+        scroll={{ x: "max-content" }}
         loading={loading}
         pagination={{
           current,

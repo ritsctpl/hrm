@@ -25,7 +25,10 @@
 
 .landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) > :global(.ant-tabs-content) > :global(.ant-tabs-tabpane) {
   height: 100%;
-  overflow: hidden;
+  /* Was `hidden`, which clipped tall panels (Policy / Reports / Analytics)
+     that aren't the fixed-height master-detail layout. `auto` lets those
+     tabs scroll vertically while master-detail panes keep their own scroll. */
+  overflow: auto;
 }
 
 .filterBar {
@@ -579,4 +582,113 @@
 /* Leave Register Panel */
 .leaveRegisterPanel {
   padding: 16px;
+}
+
+/* Accrual preview table — allow horizontal scroll on narrow viewports. */
+.accrualPreviewTable :global(.ant-table-content),
+.accrualPreviewTable :global(.ant-table-body) {
+  overflow-x: auto;
+}
+
+/* Tables inside ledger cards / report panels must scroll horizontally rather
+   than overflow their container on narrow screens (item 2 — X-axis scroll). */
+.ledgerCardBody {
+  overflow-x: auto;
+}
+
+/* ========================================================================
+   Responsive — tablet / mobile (item 2)
+   X/Y scroll + stacking for tables, master-detail, dashboard, ledger, team
+   history. AntD tables get horizontal scroll; layout panes stack and the
+   page scrolls instead of trapping content in hidden overflow.
+   ======================================================================== */
+
+/* Any AntD table within the leave module scrolls horizontally instead of
+   forcing the page wider on small screens. */
+@media (max-width: 1024px) {
+  .ledgerTopGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Stack the master-detail (list + right panel) vertically. `!important`
+     overrides the inline width set by LeaveMasterDetail. */
+  .masterDetail {
+    flex-direction: column;
+    overflow: visible;
+    height: auto;
+  }
+  .masterDetailLeft {
+    width: 100% !important;
+    max-height: 55vh;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .masterDetailRight {
+    width: 100% !important;
+    padding: 12px;
+  }
+  .masterDetailDivider {
+    display: none;
+  }
+
+  /* Let the whole page scroll on small screens rather than clipping inside
+     the fixed-height module root. The landing div also carries the global
+     `.hrm-module-root` class (height: calc(100vh - 32px); overflow: hidden),
+     so these need !important + a height reset to win. */
+  .landing {
+    height: auto !important;
+    min-height: calc(100vh - 32px);
+    overflow: visible !important;
+  }
+  .landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) {
+    overflow: visible;
+  }
+  .landing
+    > :global(.ant-tabs)
+    > :global(.ant-tabs-content-holder)
+    > :global(.ant-tabs-content)
+    > :global(.ant-tabs-tabpane) {
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Employee layout (master/detail variant) stacks too. */
+  .employeeLayout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+  .employeeLayoutLeft {
+    width: 100%;
+    max-height: 50vh;
+  }
+
+  .dashboardSection {
+    padding: 12px;
+  }
+  .dashboardHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .balanceGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .ledgerToolbar {
+    padding: 10px;
+    gap: 8px;
+  }
+  .requestsToolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .masterDetailLeft {
+    max-height: 45vh;
+  }
 }

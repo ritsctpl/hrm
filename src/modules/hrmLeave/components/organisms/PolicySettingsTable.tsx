@@ -454,6 +454,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         rowKey="handle"
         loading={loading}
         size="small"
+        scroll={{ x: "max-content" }}
         pagination={false}
         locale={{
           emptyText: <Empty description="No leave types configured" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
@@ -532,6 +533,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           columns={policyColumns}
           rowKey="handle"
           size="small"
+          scroll={{ x: "max-content" }}
           loading={policiesLoading}
           pagination={false}
           locale={{
