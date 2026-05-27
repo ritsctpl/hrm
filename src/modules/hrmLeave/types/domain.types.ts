@@ -145,6 +145,14 @@ export interface LeaveType {
   active: number;
   category: string;
   sortOrder: number;
+  /**
+   * When true, this leave type participates in accrual runs and is shown
+   * in the Accruals Preview. Gender applicability has moved to the Leave
+   * Policy (see LeavePolicy.applicableGender); `applicableGender` here is
+   * retained only for backward-compat with existing records.
+   */
+  accrualEnabled?: boolean;
+  /** @deprecated Gender applicability moved to LeavePolicy. */
   applicableGender?: 'ALL' | 'MALE' | 'FEMALE';
   createdDateTime?: string;
   modifiedDateTime?: string;
@@ -165,6 +173,15 @@ export interface LeavePolicy {
   leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
+  /** Policy applicability — restricts this policy to a gender. 'ALL' (or
+   *  unset) applies to everyone. */
+  applicableGender?: string;
+  /** Policy applicability — restricts to an employment type (PERMANENT,
+   *  CONTRACT, INTERN, …). Unset applies to all employee types. */
+  employeeType?: string;
+  /** Policy applicability — restricts to a designation. Unset applies to
+   *  all designations. */
+  designation?: string;
   effectiveFrom: string;
   effectiveTo?: string;
   accrualFrequency?: string;

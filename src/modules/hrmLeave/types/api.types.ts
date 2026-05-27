@@ -28,9 +28,11 @@ export interface LeaveTypeRequest {
   activeStatus?: boolean;
   category?: string;
   sortOrder?: number;
-  /** Restricts this leave type to a gender. Default 'ALL' — every
-   *  employee sees it on the apply-leave drawer. Backend filters the
-   *  drawer's leave-type list by the requesting employee's gender. */
+  /** When true, the leave type is included in accrual runs and shown in
+   *  the Accruals Preview. */
+  accrualEnabled?: boolean;
+  /** @deprecated Gender applicability moved to the Leave Policy. Retained
+   *  so existing records still round-trip. */
   applicableGender?: 'ALL' | 'MALE' | 'FEMALE';
   createdBy?: string;
 }
@@ -90,6 +92,12 @@ export interface LeavePolicyRequest {
   leaveTypeCode: string;
   buId?: string;
   deptId?: string;
+  /** Policy applicability — gender ('ALL' | 'MALE' | 'FEMALE' | 'OTHER'). */
+  applicableGender?: string;
+  /** Policy applicability — employment type (PERMANENT, CONTRACT, …). */
+  employeeType?: string;
+  /** Policy applicability — designation. */
+  designation?: string;
   effectiveFrom: string;
   effectiveTo?: string;
   accrualFrequency: string;

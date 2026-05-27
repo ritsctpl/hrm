@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Empty,
   Form,
   Input,
   InputNumber,
@@ -16,6 +17,7 @@ import {
   Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
   Alert,
@@ -28,7 +30,7 @@ import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useHrmLeaveStore } from "../../stores/hrmLeaveStore";
 import { AccrualRunPanelProps } from "../../types/ui.types";
 import { AccrualBatch } from "../../types/api.types";
-import AccrualPreviewLine from "../molecules/AccrualPreviewLine";
+import { LeaveType } from "../../types/domain.types";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import Can from "../../../hrmAccess/components/Can";
@@ -178,6 +180,45 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
     }
     return map;
   }, [directoryRows]);
+
+  // Accruals Preview should list only accrual-enabled leave types. Load the
+  // org's leave types so we can match the preview lines' leaveTypeCode
+  // against the accrualEnabled flag.
+  const [leaveTypeList, setLeaveTypeList] = useState<LeaveType[]>([]);
+  useEffect(() => {
+    if (!organizationId) return;
+    HrmLeaveService.getAllLeaveTypes({ organizationId })
+      .then((types) => setLeaveTypeList(Array.isArray(types) ? types : []))
+      .catch(() => setLeaveTypeList([]));
+  }, [organizationId]);
+
+  const accrualEnabledCodes = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const lt of leaveTypeList) {
+      if (lt.accrualEnabled) set.add(lt.code);
+    }
+    return set;
+  }, [leaveTypeList]);
+
+  // Resolved + filtered preview rows. Degrades gracefully: if no leave type
+  // carries the accrualEnabled flag yet (older backend), we show every line
+  // rather than hiding the entire preview.
+  const previewRows = React.useMemo(() => {
+    const lines = accrualPreview?.lines ?? [];
+    const filtered =
+      accrualEnabledCodes.size === 0
+        ? lines
+        : lines.filter((l) => accrualEnabledCodes.has(l.leaveTypeCode));
+    return filtered.map((line, i) => ({
+      ...line,
+      key: `${line.employeeId}-${line.leaveTypeCode}-${i}`,
+      employeeName:
+        line.employeeName?.trim() ||
+        directoryNameLookup.get(line.employeeId) ||
+        line.employeeId ||
+        "—",
+    }));
+  }, [accrualPreview, accrualEnabledCodes, directoryNameLookup]);
 
   // Auto-fill periodStart/periodEnd whenever the period selector or year
   // changes.  Keeps the run window consistent with the selected period so
@@ -478,25 +519,69 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
             />
           )}
 
-          <div className={styles.accrualLines}>
-            {(accrualPreview.lines ?? []).map((line, i) => {
-              // Fall back to the directory lookup if the preview line came
-              // back with an empty employeeName — fixes the bug where the
-              // accrual preview rendered just leave-type + days with no
-              // identifying employee.
-              const resolvedName =
-                line.employeeName?.trim()
-                || directoryNameLookup.get(line.employeeId)
-                || line.employeeId
-                || "—";
-              return (
-                <AccrualPreviewLine
-                  key={`${line.employeeId}-${i}`}
-                  line={{ ...line, employeeName: resolvedName }}
+          <Table
+            className={styles.accrualPreviewTable}
+            size="small"
+            rowKey="key"
+            dataSource={previewRows}
+            pagination={false}
+            scroll={{ y: 320 }}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="No accrual-enabled leave types in this run"
                 />
-              );
-            })}
-          </div>
+              ),
+            }}
+            columns={[
+              {
+                title: "Employee",
+                dataIndex: "employeeName",
+                key: "employeeName",
+                ellipsis: true,
+                render: (v: string, row) => (
+                  <Text strong={!row.excluded} type={row.excluded ? "secondary" : undefined}>
+                    {v}
+                  </Text>
+                ),
+              },
+              {
+                title: "Leave Type",
+                dataIndex: "leaveTypeCode",
+                key: "leaveTypeCode",
+                width: 120,
+                render: (v: string) => <Tag>{v}</Tag>,
+              },
+              {
+                title: "Status",
+                key: "status",
+                width: 130,
+                render: (_v, row) =>
+                  row.excluded ? (
+                    <Tag color="default">Excluded</Tag>
+                  ) : row.prorated ? (
+                    <Tooltip title={row.prorateReason ?? "Prorated"}>
+                      <Tag color="orange">Prorated</Tag>
+                    </Tooltip>
+                  ) : (
+                    <Tag color="green">Eligible</Tag>
+                  ),
+              },
+              {
+                title: "Days to Credit",
+                dataIndex: "daysToCredit",
+                key: "daysToCredit",
+                width: 130,
+                align: "right",
+                render: (v: number, row) => (
+                  <Text style={{ fontWeight: 600 }}>
+                    {row.excluded ? "–" : `+${v.toFixed(1)}d`}
+                  </Text>
+                ),
+              },
+            ] as ColumnsType<(typeof previewRows)[number]>}
+          />
 
           {accrualPreview.canPost && (
             <Can I="add" object="leave_accrual" passIf={true}>

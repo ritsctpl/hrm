@@ -74,6 +74,25 @@ export const LEAVE_CATEGORIES = [
   { value: "SPECIAL", label: "Special" },
 ];
 
+// Leave Policy applicability options. A policy applies to an employee when
+// the gender / employee-type / designation either match or are left as
+// "ALL"/unset on the policy.
+export const GENDER_APPLICABILITY = [
+  { value: "ALL", label: "All" },
+  { value: "MALE", label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "OTHER", label: "Other" },
+];
+
+export const EMPLOYEE_TYPE_OPTIONS = [
+  { value: "PERMANENT", label: "Permanent" },
+  { value: "CONTRACT", label: "Contract" },
+  { value: "PROBATION", label: "Probation" },
+  { value: "INTERN", label: "Intern" },
+  { value: "CONSULTANT", label: "Consultant" },
+  { value: "PART_TIME", label: "Part Time" },
+];
+
 export const DIRECTION_COLORS: Record<string, string> = {
   CR: "green",
   DR: "red",

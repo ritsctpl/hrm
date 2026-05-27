@@ -33,6 +33,8 @@ import {
   LAPSE_RULES,
   ENCASH_WHEN_OPTIONS,
   ENCASH_RATE_FORMULAS,
+  GENDER_APPLICABILITY,
+  EMPLOYEE_TYPE_OPTIONS,
 } from "../../utils/constants";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
@@ -206,6 +208,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     setEditingPolicy(null);
     policyForm.resetFields();
     policyForm.setFieldsValue({
+      applicableGender: "ALL",
       accrualFrequency: "QUARTERLY",
       accrualQuantity: 0,
       prorateEnabled: true,
@@ -243,6 +246,9 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         leaveTypeCode: policyDrawerType.code,
         buId: values.buId,
         deptId: values.deptId,
+        applicableGender: values.applicableGender,
+        employeeType: values.employeeType,
+        designation: values.designation,
         effectiveFrom: values.effectiveFrom.format("YYYY-MM-DD"),
         effectiveTo: values.effectiveTo ? values.effectiveTo.format("YYYY-MM-DD") : undefined,
         accrualFrequency: values.accrualFrequency,
@@ -309,15 +315,11 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       render: (v: string) => <Tag>{v}</Tag>,
     },
     {
-      title: "Gender",
-      dataIndex: "applicableGender",
-      key: "applicableGender",
-      width: 80,
-      render: (v?: string) => {
-        if (!v || v === "ALL") return <Tag>ALL</Tag>;
-        const color = v === "FEMALE" ? "magenta" : "blue";
-        return <Tag color={color}>{v}</Tag>;
-      },
+      title: "Accruals",
+      dataIndex: "accrualEnabled",
+      key: "accrualEnabled",
+      width: 90,
+      render: (v?: boolean) => <Tag color={v ? "green" : "default"}>{v ? "Yes" : "No"}</Tag>,
     },
     {
       title: "Active",
@@ -490,19 +492,12 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
             <Switch />
           </Form.Item>
           <Form.Item
-            name="applicableGender"
-            label="Applicable Gender"
-            tooltip="Restrict this leave type to a gender. Default ALL — visible to every employee."
+            name="accrualEnabled"
+            label="Accruals"
+            valuePropName="checked"
+            tooltip="When enabled, this leave type is included in accrual runs and appears in the Accruals Preview."
           >
-            <Select
-              allowClear
-              placeholder="ALL"
-              options={[
-                { label: "All", value: "ALL" },
-                { label: "Male", value: "MALE" },
-                { label: "Female", value: "FEMALE" },
-              ]}
-            />
+            <Switch />
           </Form.Item>
           <Form.Item name="sortOrder" label="Sort Order">
             <Input type="number" />
@@ -598,6 +593,37 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
                   (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
                 }
               />
+            </Form.Item>
+          </Space>
+          {/* Policy applicability: a policy applies when the employee's
+              gender / employee-type / designation match, or the field is
+              left as ALL / blank. */}
+          <Space style={{ width: "100%" }} size="middle">
+            <Form.Item
+              name="applicableGender"
+              label="Gender"
+              tooltip="Restrict this policy to a gender. ALL applies to everyone."
+            >
+              <Select options={GENDER_APPLICABILITY} style={{ width: 160 }} placeholder="All" />
+            </Form.Item>
+            <Form.Item
+              name="employeeType"
+              label="Employee Type"
+              tooltip="Restrict this policy to an employment type. Blank applies to all."
+            >
+              <Select
+                allowClear
+                options={EMPLOYEE_TYPE_OPTIONS}
+                style={{ width: 180 }}
+                placeholder="All employee types"
+              />
+            </Form.Item>
+            <Form.Item
+              name="designation"
+              label="Designation"
+              tooltip="Restrict this policy to a designation. Blank applies to all."
+            >
+              <Input placeholder="All designations" style={{ width: 200 }} allowClear />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">
