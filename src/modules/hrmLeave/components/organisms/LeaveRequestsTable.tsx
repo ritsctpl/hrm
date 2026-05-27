@@ -31,6 +31,8 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
   const organizationId = getOrganizationId();
   const identity = useEmployeeIdentity();
   const openLeaveFormForEdit = useHrmLeaveStore((s) => s.openLeaveFormForEdit);
+  const updateMyRequest = useHrmLeaveStore((s) => s.updateMyRequest);
+  const setSelectedRequest = useHrmLeaveStore((s) => s.setSelectedRequest);
 
   const [amendOpen, setAmendOpen] = useState(false);
   const [amendTarget, setAmendTarget] = useState<LeaveRequest | null>(null);
@@ -153,7 +155,15 @@ const LeaveRequestsTable: React.FC<LeaveRequestsTableProps> = ({
         organizationId={organizationId}
         request={amendTarget}
         onClose={handleAmendClose}
-        onAmended={handleAmendClose}
+        onAmended={(updated) => {
+          // Reflect the amended values immediately in the list + right panel,
+          // then ask the parent to re-fetch authoritative data so nothing
+          // goes stale.
+          updateMyRequest(updated.handle, updated);
+          setSelectedRequest(updated);
+          onRequestDeleted?.();
+          handleAmendClose();
+        }}
       />
     </div>
   );

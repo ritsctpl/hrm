@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   LeaveBalance,
   LeaveRequest,
+  LeaveAttachment,
   LedgerEntry,
   AccrualBatch,
   LeaveType,
@@ -104,6 +105,9 @@ interface HrmLeaveState {
    * stored draft transitions or updates in place instead of duplicating.
    */
   editingDraftHandle: string | null;
+  /** Attachments already on the DRAFT being edited, so the form can display
+   *  them (and allow remove/replace) when re-opening a draft. */
+  editingDraftAttachments: LeaveAttachment[];
   showRejectModal: boolean;
   showReassignModal: boolean;
   pendingActionRequestId: string | null;
@@ -246,6 +250,7 @@ const defaultState = {
   leaveFormState: defaultLeaveFormState,
   formTargetEmployeeId: null,
   editingDraftHandle: null,
+  editingDraftAttachments: [],
   showRejectModal: false,
   showReassignModal: false,
   pendingActionRequestId: null,
@@ -336,6 +341,7 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
       validationSummary: null,
       formTargetEmployeeId: null,
       editingDraftHandle: null,
+      editingDraftAttachments: [],
     }),
   openLeaveFormForEdit: (draft) =>
     set({
@@ -354,9 +360,15 @@ export const useHrmLeaveStore = create<HrmLeaveState>((set) => ({
       validationSummary: null,
       formTargetEmployeeId: draft.employeeId ?? null,
       editingDraftHandle: draft.handle,
+      editingDraftAttachments: draft.attachments ?? [],
     }),
   closeLeaveForm: () =>
-    set({ showLeaveForm: false, formTargetEmployeeId: null, editingDraftHandle: null }),
+    set({
+      showLeaveForm: false,
+      formTargetEmployeeId: null,
+      editingDraftHandle: null,
+      editingDraftAttachments: [],
+    }),
   setFormTargetEmployeeId: (formTargetEmployeeId) => set({ formTargetEmployeeId }),
   setLeaveFormStep: (leaveFormStep) => set({ leaveFormStep }),
   updateLeaveFormState: (changes) =>

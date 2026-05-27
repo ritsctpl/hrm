@@ -170,6 +170,15 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const fallbackDays = calcDaysFallback(startDate, endDate, startDayType, endDayType);
 
+  // ── Inline validation (item 17 + item 11) ──────────────────────────
+  // To Date earlier than From Date.
+  const invalidRange =
+    !!startDate && !!endDate && dayjs(endDate).isBefore(dayjs(startDate), "day");
+  // Whole range falls on weekends/holidays → zero working days.
+  const effectiveDays = breakdown ? breakdown.workingDays : fallbackDays;
+  const noWorkingDays =
+    !!startDate && !!endDate && !invalidRange && !calculating && effectiveDays === 0;
+
   return (
     <Space direction="vertical" style={{ width: "100%" }}>
       <div>
@@ -230,6 +239,18 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </Radio.Group>
           )}
       </div>
+
+      {invalidRange && (
+        <Text type="danger" style={{ fontSize: 12 }}>
+          To Date cannot be earlier than From Date.
+        </Text>
+      )}
+
+      {noWorkingDays && (
+        <Text type="warning" style={{ fontSize: 12 }}>
+          The selected dates have no working days (all weekends/holidays). Please choose different dates.
+        </Text>
+      )}
 
       {/* Days calculation display */}
       {(fallbackDays > 0 || calculating) && (

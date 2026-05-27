@@ -45,7 +45,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [attachments, setAttachments] = useState<
-    { name: string; base64: string }[]
+    { name: string; base64: string; contentType: string }[]
   >([]);
 
   useEffect(() => {
@@ -84,7 +84,10 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     }
     try {
       const base64 = await fileToBase64(file);
-      setAttachments((prev) => [...prev, { name: file.name, base64 }]);
+      setAttachments((prev) => [
+        ...prev,
+        { name: file.name, base64, contentType: file.type || "application/octet-stream" },
+      ]);
       message.success(`${file.name} attached`);
     } catch {
       message.error("Failed to read file");
@@ -119,7 +122,19 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
         totalDays,
         reason: values.reason,
         amendedBy: userId,
-        attachments: attachments.map((a) => a.base64),
+        // Only send attachments when the user actually added files. Sending an
+        // empty array used to ride along under a field the BE didn't model,
+        // which could fail the update — omitting it leaves existing files
+        // untouched and lets the amend succeed.
+        ...(attachments.length > 0
+          ? {
+              attachments: attachments.map((a) => ({
+                name: a.name,
+                contentType: a.contentType,
+                contentBase64: a.base64,
+              })),
+            }
+          : {}),
       } as Parameters<typeof HrmLeaveService.amendLeaveRequest>[0];
       const updated = await HrmLeaveService.amendLeaveRequest(payload);
       message.success("Leave request amended");

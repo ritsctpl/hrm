@@ -26,7 +26,7 @@ import { HrmHolidayService } from "../../../hrmHoliday/services/hrmHolidayServic
 import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
 import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
-import { LeaveBalance, LeaveRequest } from "../../types/domain.types";
+import { LeaveBalance, LeaveRequest, LeavePolicy, LeaveAttachment } from "../../types/domain.types";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
@@ -82,6 +82,19 @@ const getLeaveIcon = (code: string): string => {
 const formatDateLabel = (iso: string | null): string =>
   iso ? dayjs(iso).format("MMMM D") : "—";
 
+/** Attachment as held in the drawer. Covers both freshly uploaded files
+ *  (which carry `base64`) and attachments already on a draft being edited
+ *  (which carry `url`/`id`, plus `base64` only when the BE inlined it). */
+type FormAttachment = {
+  uid: string;
+  name: string;
+  contentType: string;
+  base64?: string;
+  url?: string;
+  existing: boolean;
+  id?: string;
+};
+
 const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organizationId,
   employeeId,
   balances,
@@ -105,6 +118,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     leaveTypes,
     formTargetEmployeeId,
     editingDraftHandle,
+    editingDraftAttachments,
     closeLeaveForm,
     updateLeaveFormState,
     addMyRequest,
@@ -138,17 +152,32 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // points to the existing row instead of creating a duplicate.
   const [draftHandle, setDraftHandle] = useState<string | null>(null);
 
+  const [attachments, setAttachments] = useState<FormAttachment[]>([]);
   useEffect(() => {
     if (showLeaveForm) {
       setDraftHandle(editingDraftHandle);
+      // Seed the attachment list from the draft being edited so existing
+      // files are visible and can be removed / replaced (item 8). For a
+      // fresh form editingDraftAttachments is empty, clearing the list.
+      setAttachments(
+        (editingDraftAttachments ?? []).map((a: LeaveAttachment, i) => ({
+          uid: a.id || `existing-${i}`,
+          name: a.name,
+          contentType: a.contentType || "application/octet-stream",
+          base64: a.contentBase64,
+          url: a.downloadUrl,
+          existing: true,
+          id: a.id,
+        })),
+      );
     }
-  }, [showLeaveForm, editingDraftHandle]);
-  const [attachments, setAttachments] = useState<
-    { name: string; base64: string; contentType: string }[]
-  >([]);
+  }, [showLeaveForm, editingDraftHandle, editingDraftAttachments]);
   const [holidays, setHolidays] = useState<HolidayResponse[]>([]);
   const [teamEntries, setTeamEntries] = useState<TeamCalendarEntry[]>([]);
   const [blackouts, setBlackouts] = useState<LeaveBlackoutPeriod[]>([]);
+  // Effective policy for the selected leave type — drives negative-balance
+  // handling (item 15). Null until a leave type is chosen / policy loads.
+  const [effectivePolicy, setEffectivePolicy] = useState<LeavePolicy | null>(null);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [wfhDetails, setWfhDetails] = useState({ workPlan: "", taskDetails: "", reportingNotes: "" });
   const [maternityDetails, setMaternityDetails] = useState({ childCount: "", childDate: null as string | null });
@@ -510,6 +539,35 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     };
   }, [showLeaveForm, organizationId]);
 
+  // Load the effective policy for the chosen leave type so we know whether
+  // a negative balance is permitted and down to what floor (item 15).
+  useEffect(() => {
+    if (!showLeaveForm || !organizationId || !leaveFormState.leaveTypeCode) {
+      setEffectivePolicy(null);
+      return;
+    }
+    const lt = leaveTypes.find((t) => t.code === leaveFormState.leaveTypeCode);
+    if (!lt) {
+      setEffectivePolicy(null);
+      return;
+    }
+    let cancelled = false;
+    HrmLeaveService.getEffectivePolicy({
+      organizationId,
+      leaveTypeId: lt.handle,
+      buId: buHandle || undefined,
+    })
+      .then((p) => {
+        if (!cancelled) setEffectivePolicy(p);
+      })
+      .catch(() => {
+        if (!cancelled) setEffectivePolicy(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLeaveForm, organizationId, leaveFormState.leaveTypeCode, leaveTypes, buHandle]);
+
   // Determine if the selected date range overlaps an active blackout period.
   const overlappingBlackout = useMemo(() => {
     if (!leaveFormState.startDate || !leaveFormState.endDate) return null;
@@ -551,9 +609,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       setAttachments((prev) => [
         ...prev,
         {
+          uid: `new-${Date.now()}-${file.name}`,
           name: file.name,
           base64,
           contentType: file.type || "application/octet-stream",
+          existing: false,
         },
       ]);
       message.success(`${file.name} attached`);
@@ -563,9 +623,21 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     return false;
   };
 
-  const removeAttachment = (name: string) => {
-    setAttachments((prev) => prev.filter((a) => a.name !== name));
+  const removeAttachment = (uid: string) => {
+    setAttachments((prev) => prev.filter((a) => a.uid !== uid));
   };
+
+  // Build the upload payload: only attachments we have content (base64) for
+  // can be (re)sent. Newly uploaded files always qualify; existing draft
+  // attachments qualify only when the BE inlined their base64.
+  const buildAttachmentUploads = () =>
+    attachments
+      .filter((a) => !!a.base64)
+      .map((a) => ({
+        name: a.name,
+        contentType: a.contentType,
+        contentBase64: a.base64 as string,
+      }));
 
   // Holidays that fall inside the requested range.
   const overlappingHolidays = useMemo(() => {
@@ -607,21 +679,46 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const availableBalance = selectedBalance?.available ?? 0;
   const balanceKnown = selectedBalance?.hasBalance ?? false;
   const balanceAfter = availableBalance - leaveFormState.totalDays;
-  // Only enforce the exceeds-balance check when we actually know the user's
-  // balance — otherwise let the backend validate at submit time.
-  const exceedsBalance =
-    balanceKnown && leaveFormState.totalDays > 0 && balanceAfter < 0;
 
-  // Backdated leave detection
+  // ── Negative-balance handling (item 15) ────────────────────────────
+  // Whether the effective policy permits a negative balance, and the floor
+  // it may not drop below (e.g. -5). When the policy is unknown we keep the
+  // strict behaviour (no negative balance allowed).
+  const negativeAllowed = effectivePolicy?.negativeBalanceAllowed ?? false;
+  const negativeFloor = effectivePolicy?.negativeFloor ?? null;
+  const goesNegative =
+    balanceKnown && leaveFormState.totalDays > 0 && balanceAfter < 0;
+  // Blocking condition: negatives disallowed → any negative blocks; allowed
+  // → only dropping below the configured floor blocks. Only enforced when we
+  // actually know the balance, otherwise the backend validates on submit.
+  const exceedsBalance = negativeAllowed
+    ? goesNegative && negativeFloor != null && balanceAfter < negativeFloor
+    : goesNegative;
+  // Non-blocking warning: balance goes negative but the policy allows it.
+  const negativeWarning = goesNegative && !exceedsBalance;
+
+  // ── Backdated / current-month handling (item 16) ───────────────────
+  // Past-dated leave is allowed, but non-HR users may only backdate within
+  // the current month; earlier dates must be routed through HR.
   const isBackdated =
     !!leaveFormState.startDate &&
     dayjs(leaveFormState.startDate).isBefore(dayjs(), "day");
   const daysBackdated = isBackdated
     ? dayjs().diff(dayjs(leaveFormState.startDate), "day")
     : 0;
-  // Default max backdated days — backend will also validate
-  const maxBackdatedDays = 7;
-  const isBackdatedBeyondLimit = daysBackdated > maxBackdatedDays;
+  const beforeCurrentMonth =
+    !!leaveFormState.startDate &&
+    dayjs(leaveFormState.startDate).isBefore(dayjs().startOf("month"), "day");
+  const backdatedBlocked = beforeCurrentMonth && !isHrUser;
+
+  // ── Duplicate handling (item 22) ───────────────────────────────────
+  // Cancelled / rejected (and deleted) requests must not block re-applying
+  // for the same dates — only still-active overlaps are blocking.
+  const blockingDuplicates = duplicateCheck.duplicateRequests.filter(
+    (r) => !["CANCELLED", "REJECTED"].includes(r.status),
+  );
+  const hasBlockingDuplicate =
+    duplicateCheck.hasDuplicate && blockingDuplicates.length > 0;
 
   const canSubmit =
     !!leaveFormState.leaveTypeCode &&
@@ -630,10 +727,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     leaveFormState.totalDays > 0 &&
     leaveFormState.reason.trim().length > 0 &&
     !exceedsBalance &&
-    !duplicateCheck.hasDuplicate &&
+    !hasBlockingDuplicate &&
     requestPerms.canAdd &&
-    // Block non-HR users from submitting beyond-limit backdated requests
-    !(isBackdatedBeyondLimit && !isHrUser) &&
+    // Block non-HR users from backdating before the current month
+    !backdatedBlocked &&
     // Block non-HR users from submitting during a blackout period
     !(overlappingBlackout && !isHrUser);
 
@@ -713,11 +810,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         totalDays: leaveFormState.totalDays,
         reason: buildExtendedReason(),
         createdBy: submitterComposite,
-        attachments: attachments.map((a) => ({
-          name: a.name,
-          contentType: a.contentType,
-          contentBase64: a.base64,
-        })),
+        // Send attachments only when we have file content to send. Omitting
+        // the field preserves whatever the BE already holds on the draft.
+        ...(buildAttachmentUploads().length > 0
+          ? { attachments: buildAttachmentUploads() }
+          : {}),
         handoverEmployeeId: handoverPerson,
         // When the user saved as draft first, pass the handle so BE
         // transitions DRAFT → PENDING_SUPERVISOR on the same row instead
@@ -778,17 +875,11 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         reason: buildExtendedReason(),
         createdBy: submitterComposite,
         // Per BE saveDraft contract: attachments are only replaced when a
-        // non-empty list is sent. So we omit the field on re-save when the
-        // user hasn't added new files — preserves whatever the BE already
-        // has on the draft row.
-        ...(attachments.length > 0
-          ? {
-              attachments: attachments.map((a) => ({
-                name: a.name,
-                contentType: a.contentType,
-                contentBase64: a.base64,
-              })),
-            }
+        // non-empty list is sent. So we omit the field on re-save when there
+        // is no new file content — preserves whatever the BE already has on
+        // the draft row.
+        ...(buildAttachmentUploads().length > 0
+          ? { attachments: buildAttachmentUploads() }
           : {}),
         handoverEmployeeId: handoverPerson,
         // When we already saved this draft once, pass the handle so BE
@@ -865,9 +956,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               >
                 {exceedsBalance
                   ? "Insufficient Balance"
-                  : duplicateCheck.hasDuplicate
+                  : hasBlockingDuplicate
                     ? "Duplicate Request Exists"
-                    : isBackdatedBeyondLimit && !isHrUser
+                    : backdatedBlocked
                       ? "Backdated Not Allowed"
                       : overlappingBlackout && !isHrUser
                         ? "Blackout Period"
@@ -981,33 +1072,49 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               onTotalDaysChange={(days) => updateLeaveFormState({ totalDays: days })}
             />
 
-            {/* Backdated leave warnings */}
-            {isBackdated && !isBackdatedBeyondLimit && (
+            {/* Backdated leave warnings (item 16) */}
+            {isBackdated && !beforeCurrentMonth && (
               <Alert
                 type="warning"
                 showIcon
                 message="Backdated Leave Request"
-                description={`This request is for ${daysBackdated} day(s) in the past. It will be routed to HR for approval.`}
+                description={`This request is for ${daysBackdated} day(s) in the past (within the current month). It will be routed to HR for approval.`}
                 style={{ marginTop: 8 }}
               />
             )}
 
-            {isBackdatedBeyondLimit && !isHrUser && (
+            {beforeCurrentMonth && !isHrUser && (
               <Alert
                 type="error"
                 showIcon
                 message="Backdated Request Not Allowed"
-                description={`Backdated requests beyond ${maxBackdatedDays} days are not permitted. Please contact HR.`}
+                description="Backdated leave is only allowed within the current month. Please contact HR for earlier dates."
                 style={{ marginTop: 8 }}
               />
             )}
 
-            {isBackdatedBeyondLimit && isHrUser && (
+            {beforeCurrentMonth && isHrUser && (
               <Alert
                 type="warning"
                 showIcon
                 message="Backdated Leave Request (HR Override)"
-                description={`This request is ${daysBackdated} day(s) in the past, exceeding the ${maxBackdatedDays}-day limit. Submitting as HR.`}
+                description={`This request is ${daysBackdated} day(s) in the past, before the current month. Submitting as HR.`}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {/* Negative-balance warning (item 15) — shown when the policy
+                permits a negative balance and this request crosses zero. */}
+            {negativeWarning && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Negative Balance"
+                description={`This request will take your ${
+                  selectedBalance?.name ?? "leave"
+                } balance to ${balanceAfter.toFixed(1)} day(s). Your leave policy permits a negative balance${
+                  negativeFloor != null ? ` down to ${negativeFloor}` : ""
+                }.`}
                 style={{ marginTop: 8 }}
               />
             )}
@@ -1032,8 +1139,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               />
             )}
 
-            {/* Duplicate leave request validation */}
-            {duplicateCheck.hasDuplicate && (
+            {/* Duplicate leave request validation (item 22 — cancelled /
+                rejected / deleted requests don't block re-applying) */}
+            {hasBlockingDuplicate && (
               <Alert
                 type="error"
                 showIcon
@@ -1042,7 +1150,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                   <div>
                     <p>You already have a leave request for overlapping dates:</p>
                     <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
-                      {duplicateCheck.duplicateRequests.map((req) => (
+                      {blockingDuplicates.map((req) => (
                         <li key={req.handle}>
                           <strong>{req.leaveTypeName || req.leaveTypeCode}</strong> from{" "}
                           {new Date(req.startDate).toLocaleDateString("en-GB")} to{" "}
@@ -1236,13 +1344,24 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               {attachments.length > 0 && (
                 <ul className={styles.attachmentList}>
                   {attachments.map((a) => (
-                    <li key={a.name} className={styles.attachmentItem}>
-                      <span>{a.name}</span>
+                    <li key={a.uid} className={styles.attachmentItem}>
+                      {a.url ? (
+                        <a href={a.url} target="_blank" rel="noopener noreferrer">
+                          {a.name}
+                        </a>
+                      ) : (
+                        <span>{a.name}</span>
+                      )}
+                      {a.existing && (
+                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 6 }}>
+                          saved
+                        </Text>
+                      )}
                       <Button
                         type="text"
                         size="small"
                         icon={<DeleteOutlined />}
-                        onClick={() => removeAttachment(a.name)}
+                        onClick={() => removeAttachment(a.uid)}
                       />
                     </li>
                   ))}

@@ -673,6 +673,9 @@ export interface AmendLeaveRequestPayload {
   totalDays?: number;
   reason?: string;
   amendedBy: string;
+  /** Replacement attachments. Only sent when the user adds files during the
+   *  amend — an empty/omitted list leaves existing attachments untouched. */
+  attachments?: LeaveRequestAttachmentUpload[];
 }
 
 // ── Approval Config ──────────────────────────────────────────────────
