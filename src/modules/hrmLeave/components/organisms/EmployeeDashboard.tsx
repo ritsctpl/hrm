@@ -20,6 +20,19 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
 }) => {
   const yearOptions = buildYearOptions(new Date().getFullYear());
 
+  // Hide tiles where both the available balance and the pending count are
+  // zero — empty cards just waste space on the dashboard. Coerce defensively
+  // in case the backend returns the numbers as strings.
+  const visibleBalances = React.useMemo(
+    () =>
+      balances.filter((b) => {
+        const available = Number(b.availableBalance) || 0;
+        const pending = Number(b.pendingApproval) || 0;
+        return available > 0 || pending > 0;
+      }),
+    [balances],
+  );
+
   return (
     <div className={styles.dashboardSection}>
       <div className={styles.dashboardHeader}>
@@ -51,12 +64,14 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
         </div>
       ) : (
         <div className={styles.balanceGrid}>
-          {balances.map((b) => (
+          {visibleBalances.map((b) => (
             <LeaveBalanceCard key={b.leaveTypeCode} balance={b} />
           ))}
-          {balances.length === 0 && (
+          {visibleBalances.length === 0 && (
             <Typography.Text type="secondary">
-              No leave balances found for {year}.
+              {balances.length === 0
+                ? `No leave balances found for ${year}.`
+                : `All leave types are exhausted with no pending requests for ${year}.`}
             </Typography.Text>
           )}
         </div>

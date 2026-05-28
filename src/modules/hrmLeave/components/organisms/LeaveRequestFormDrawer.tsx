@@ -12,7 +12,7 @@ import {
   Upload,
   message,
 } from "antd";
-import { InboxOutlined, DeleteOutlined, CalendarOutlined } from "@ant-design/icons";
+import { InboxOutlined, DeleteOutlined, CalendarOutlined, EyeOutlined, DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { parseCookies } from "nookies";
 import DateRangePicker from "../molecules/DateRangePicker";
@@ -641,6 +641,28 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         contentBase64: a.base64 as string,
       }));
 
+  // View / Download work immediately after upload (before save) using the
+  // in-memory base64 data URI, and after save using the BE-supplied URL.
+  // Removes the "save first, then refresh to view" round-trip.
+  const attachmentHref = (a: FormAttachment): string => a.url || a.base64 || "";
+
+  const viewAttachment = (a: FormAttachment) => {
+    const href = attachmentHref(a);
+    if (!href) return;
+    window.open(href, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadAttachment = (a: FormAttachment) => {
+    const href = attachmentHref(a);
+    if (!href) return;
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = a.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Holidays that fall inside the requested range.
   const overlappingHolidays = useMemo(() => {
     if (!leaveFormState.startDate || !leaveFormState.endDate) return [];
@@ -1090,17 +1112,12 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               onTotalDaysChange={(days) => updateLeaveFormState({ totalDays: days })}
             />
 
-            {/* Backdated leave warnings (item 16) */}
-            {isBackdated && !beforeCurrentMonth && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Backdated Leave Request"
-                description={`This request is for ${daysBackdated} day(s) in the past (within the current month). It will be routed to HR for approval.`}
-                style={{ marginTop: 8 }}
-              />
-            )}
-
+            {/* Backdated leave warnings (item 16).
+                Per the May-2026 requirements doc the "within-current-month →
+                routed to HR" notice was confusing users; the request still
+                submits normally and the HR-approval routing happens in the
+                backend silently. Only the hard error (before current month,
+                non-HR) and the HR-override notice remain. */}
             {beforeCurrentMonth && !isHrUser && (
               <Alert
                 type="error"
@@ -1367,18 +1384,32 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 <ul className={styles.attachmentList}>
                   {attachments.map((a) => (
                     <li key={a.uid} className={styles.attachmentItem}>
-                      {a.url ? (
-                        <a href={a.url} target="_blank" rel="noopener noreferrer">
-                          {a.name}
-                        </a>
-                      ) : (
-                        <span>{a.name}</span>
-                      )}
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {a.name}
+                      </span>
                       {a.existing && (
-                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 6 }}>
+                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 6, marginRight: 6 }}>
                           saved
                         </Text>
                       )}
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => viewAttachment(a)}
+                        disabled={!attachmentHref(a)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<DownloadOutlined />}
+                        onClick={() => downloadAttachment(a)}
+                        disabled={!attachmentHref(a)}
+                      >
+                        Download
+                      </Button>
                       <Button
                         type="text"
                         size="small"

@@ -11,7 +11,7 @@ import {
   Upload,
   message,
 } from "antd";
-import { DeleteOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownloadOutlined, EyeOutlined, UploadOutlined } from "@ant-design/icons";
 import type { UploadFile } from "antd";
 import dayjs from "dayjs";
 import { parseCookies } from "nookies";
@@ -97,6 +97,22 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
 
   const removeAttachment = (name: string) => {
     setAttachments((prev) => prev.filter((a) => a.name !== name));
+  };
+
+  // View / Download work straight from the in-memory base64 data URI so the
+  // attachment is usable the instant it is uploaded — no save+reload needed.
+  const viewAttachment = (a: { name: string; base64: string }) => {
+    if (!a.base64) return;
+    window.open(a.base64, "_blank", "noopener,noreferrer");
+  };
+  const downloadAttachment = (a: { name: string; base64: string }) => {
+    if (!a.base64) return;
+    const link = document.createElement("a");
+    link.href = a.base64;
+    link.download = a.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const attachmentFileList: UploadFile[] = attachments.map((a, idx) => ({
@@ -217,6 +233,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        gap: 4,
                         padding: "4px 8px",
                         background: "#fafafa",
                         borderRadius: 4,
@@ -224,7 +241,25 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                         fontSize: 12,
                       }}
                     >
-                      <span>{a.name}</span>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {a.name}
+                      </span>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => viewAttachment(a)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<DownloadOutlined />}
+                        onClick={() => downloadAttachment(a)}
+                      >
+                        Download
+                      </Button>
                       <Button
                         type="text"
                         size="small"

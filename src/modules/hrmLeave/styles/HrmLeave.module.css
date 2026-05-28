@@ -39,6 +39,14 @@
 
 .landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap) > :global(.ant-tabs-nav-list) {
   transform: none !important;
+  /* Belt + braces: nowrap on the list AND no shrinking on each tab so the
+     row never wraps to a second line and tabs can't be compressed. */
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) :global(.ant-tabs-tab) {
+  flex-shrink: 0;
 }
 
 .landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-operations) {
