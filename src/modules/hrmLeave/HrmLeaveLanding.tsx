@@ -899,8 +899,6 @@ const HrmLeaveLanding: React.FC = () => {
         organizationId={organizationId}
         managerCode={identity.employeeCode || ""}
         managerHandle={identity.handle || ""}
-        requests={globalQueue}
-        loading={globalQueueLoading}
         selectedHandle={selectedRequest?.handle}
         onRowClick={setSelectedRequest}
         rightPanel={rightPanel}

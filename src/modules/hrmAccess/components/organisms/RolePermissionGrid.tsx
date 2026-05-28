@@ -33,6 +33,9 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
     [modules]
   );
 
+  console.log(moduleOptions, 'moduleOptions');
+  
+
   // Group permissions by moduleCode then objectName. The root object
   // (e.g., employee_module) acts as the module-level row — no synthetic
   // entries needed since root objects are real permission records.

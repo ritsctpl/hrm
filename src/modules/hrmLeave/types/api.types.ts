@@ -906,3 +906,28 @@ export interface DeleteLeaveRequestPayload {
   employeeId: string;
   reason?: string;
 }
+
+// ── Team History ──────────────────────────────────────────────────────
+
+export interface TeamHistoryRequest {
+  organizationId: string;
+  managerId: string;
+  employeeFilter?: string;
+  leaveTypeCode?: string;
+  status?: string;
+  fromDate?: string;
+  toDate?: string;
+  deptId?: string;
+  buId?: string;
+  designation?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface TeamHistoryResponse {
+  items: LeaveRequest[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}

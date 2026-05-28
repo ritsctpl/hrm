@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Button, DatePicker, Empty, Select, Spin, Typography } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { Button, DatePicker, Empty, Select, Spin, Typography, message } from "antd";
 import dayjs from "dayjs";
-import { parseCookies } from "nookies";
-import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
-import type { EmployeeHierarchyNode } from "../../../hrmEmployee/types/api.types";
+import { HrmLeaveService } from "../../services/hrmLeaveService";
 import LeaveMasterDetail from "../templates/LeaveMasterDetail";
 import LeaveStatusChip from "../atoms/LeaveStatusChip";
 import { LeaveRequest } from "../../types/domain.types";
@@ -24,10 +22,10 @@ interface TeamHistoryPanelProps {
   /** Logged-in manager — used to locate their node in the hierarchy. */
   managerCode: string;
   managerHandle: string;
-  /** Requests to scope to the team (typically the global queue). All
-   *  statuses are shown — Approved / Rejected / Pending / Draft / Cancelled. */
-  requests: LeaveRequest[];
-  loading: boolean;
+  /** @deprecated - Now fetched via API instead of passed as prop */
+  requests?: LeaveRequest[];
+  /** @deprecated - Now managed internally */
+  loading?: boolean;
   selectedHandle?: string;
   onRowClick: (request: LeaveRequest) => void;
   rightPanel: React.ReactNode;
@@ -35,142 +33,71 @@ interface TeamHistoryPanelProps {
   employeeOptions?: { value: string; label: string }[];
 }
 
-/** Extract the bare employee code from a composite "EMP-1 - Name" or a plain
- *  code/handle. */
-const codeOf = (raw?: string): string => {
-  if (!raw) return "";
-  const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
-  return stripped.includes(" - ") ? stripped.split(" - ")[0]?.trim() ?? stripped : stripped;
-};
-
-/** Walk the hierarchy tree, find the manager's node, and collect every
- *  descendant's employeeCode + handle (direct AND indirect reports). */
-function collectReports(
-  roots: EmployeeHierarchyNode[],
-  managerCode: string,
-  managerHandle: string,
-): Set<string> {
-  const ids = new Set<string>();
-
-  const collectDescendants = (node: EmployeeHierarchyNode) => {
-    for (const child of node.directReports ?? []) {
-      if (child.employeeCode) ids.add(child.employeeCode);
-      if (child.handle) ids.add(child.handle);
-      collectDescendants(child);
-    }
-  };
-
-  const findManager = (node: EmployeeHierarchyNode): boolean => {
-    const isManager =
-      (managerCode && node.employeeCode === managerCode) ||
-      (managerHandle && node.handle === managerHandle);
-    if (isManager) {
-      collectDescendants(node);
-      return true;
-    }
-    return (node.directReports ?? []).some(findManager);
-  };
-
-  roots.forEach(findManager);
-  return ids;
-}
-
 const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
   organizationId,
   managerCode,
-  managerHandle,
-  requests,
-  loading,
   selectedHandle,
   onRowClick,
   rightPanel,
   leaveTypeOptions = [],
   employeeOptions = [],
 }) => {
-  const cookies = parseCookies();
-  const [reportIds, setReportIds] = useState<Set<string>>(new Set());
-  const [hierarchyLoading, setHierarchyLoading] = useState(false);
+  const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
 
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [employeeFilter, setEmployeeFilter] = useState<string | undefined>(undefined);
   const [leaveTypeFilter, setLeaveTypeFilter] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
-  // Resolve the manager's direct + indirect reports dynamically. Prefer the
-  // pre-built hierarchy tree; fall back to direct reports only if it fails.
-  useEffect(() => {
-    if (!organizationId || (!managerCode && !managerHandle)) return;
-    let cancelled = false;
-    setHierarchyLoading(true);
-    const organizationName =
-      cookies.organizationName || cookies.companyName || cookies.orgName || "";
-    HrmEmployeeService.fetchEmployeeHierarchy(organizationId, organizationName)
-      .then((roots) => {
-        if (cancelled) return;
-        const ids = collectReports(Array.isArray(roots) ? roots : [], managerCode, managerHandle);
-        if (ids.size > 0) {
-          setReportIds(ids);
-        } else {
-          // Hierarchy didn't resolve a sub-tree — fall back to direct reports.
-          return HrmEmployeeService.getDirectReports(organizationId, managerCode).then((reports) => {
-            if (cancelled) return;
-            const fallback = new Set<string>();
-            (reports ?? []).forEach((r) => {
-              if (r.employeeCode) fallback.add(r.employeeCode);
-              if (r.handle) fallback.add(r.handle);
-            });
-            setReportIds(fallback);
-          });
-        }
-      })
-      .catch(async () => {
-        if (cancelled) return;
-        try {
-          const reports = await HrmEmployeeService.getDirectReports(organizationId, managerCode);
-          if (cancelled) return;
-          const fallback = new Set<string>();
-          (reports ?? []).forEach((r) => {
-            if (r.employeeCode) fallback.add(r.employeeCode);
-            if (r.handle) fallback.add(r.handle);
-          });
-          setReportIds(fallback);
-        } catch {
-          if (!cancelled) setReportIds(new Set());
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setHierarchyLoading(false);
+  // Fetch team history from the backend API with proper filters
+  const fetchTeamHistory = useCallback(async () => {
+    if (!organizationId || !managerCode) return;
+    
+    setLoading(true);
+    try {
+      const response = await HrmLeaveService.getTeamHistory({
+        organizationId,
+        managerId: managerCode,
+        employeeFilter,
+        leaveTypeCode: leaveTypeFilter,
+        status: statusFilter,
+        fromDate: dateRange?.[0],
+        toDate: dateRange?.[1],
+        page: currentPage,
+        size: pageSize,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, managerCode, managerHandle, cookies.organizationName, cookies.companyName, cookies.orgName]);
+      
+      setRequests(response.items || []);
+      setTotalRecords(response.total || 0);
+    } catch (error) {
+      console.error("Failed to fetch team history:", error);
+      message.error("Failed to load team history");
+      setRequests([]);
+      setTotalRecords(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    organizationId,
+    managerCode,
+    employeeFilter,
+    leaveTypeFilter,
+    statusFilter,
+    dateRange,
+    currentPage,
+    pageSize,
+  ]);
 
-  const filteredRequests = useMemo(() => {
-    return requests.filter((req) => {
-      // Scope to the manager's reporting hierarchy (direct + indirect).
-      const reqCode = codeOf(req.employeeId);
-      const inTeam = reportIds.has(reqCode) || reportIds.has(req.employeeId);
-      if (!inTeam) return false;
-      if (statusFilter && req.status !== statusFilter) return false;
-      if (employeeFilter) {
-        const empMatch =
-          req.employeeId === employeeFilter ||
-          req.employeeName?.includes(employeeFilter) ||
-          req.employeeId?.includes(employeeFilter);
-        if (!empMatch) return false;
-      }
-      if (leaveTypeFilter && req.leaveTypeCode !== leaveTypeFilter) return false;
-      if (dateRange) {
-        const start = dayjs(req.startDate);
-        const end = dayjs(req.endDate);
-        if (end.isBefore(dayjs(dateRange[0])) || start.isAfter(dayjs(dateRange[1]))) return false;
-      }
-      return true;
-    });
-  }, [requests, reportIds, statusFilter, employeeFilter, leaveTypeFilter, dateRange]);
+  // Fetch data when filters change
+  useEffect(() => {
+    fetchTeamHistory();
+  }, [fetchTeamHistory]);
 
-  if (loading || hierarchyLoading) {
+  if (loading) {
     return (
       <div className={styles.panelLoading}>
         <Spin tip="Loading team history..." />
@@ -182,7 +109,7 @@ const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
     <LeaveMasterDetail leftWidth="45%">
       <div className={styles.requestsList}>
         <div className={styles.requestsListHeader}>
-          <Text strong>Team Leave History ({filteredRequests.length})</Text>
+          <Text strong>Team Leave History ({totalRecords})</Text>
           {(statusFilter || employeeFilter || leaveTypeFilter || dateRange) && (
             <Button
               type="link"
@@ -192,6 +119,7 @@ const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
                 setEmployeeFilter(undefined);
                 setLeaveTypeFilter(undefined);
                 setDateRange(null);
+                setCurrentPage(1);
               }}
             >
               Clear filters
@@ -249,19 +177,15 @@ const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
             format="DD/MM/YYYY"
           />
         </div>
-        {filteredRequests.length === 0 ? (
+        {requests.length === 0 ? (
           <div className={styles.panelEmpty}>
             <Empty
-              description={
-                reportIds.size === 0
-                  ? "No reporting employees found for your account."
-                  : "No team leave requests found"
-              }
+              description="No team leave requests found"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           </div>
         ) : (
-          filteredRequests.map((req) => (
+          requests.map((req) => (
             <div
               key={req.handle}
               className={`${styles.requestRow} ${

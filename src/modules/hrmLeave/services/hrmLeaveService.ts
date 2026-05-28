@@ -600,4 +600,11 @@ export class HrmLeaveService {
     const { data } = await api.post(`${this.BASE}/leave-request/check-duplicate`, payload);
     return this.unwrap<{ hasDuplicate: boolean; duplicateRequests: LeaveRequest[] }>(data);
   }
+
+  // ── Team History ──────────────────────────────────────────────────────
+
+  static async getTeamHistory(payload: import("../types/api.types").TeamHistoryRequest): Promise<import("../types/api.types").TeamHistoryResponse> {
+    const { data } = await api.post(`${this.BASE}/leave-request/team-history`, payload);
+    return this.unwrap<import("../types/api.types").TeamHistoryResponse>(data);
+  }
 }
