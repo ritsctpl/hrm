@@ -147,7 +147,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProviderComponent>
               <AntdApp>
                 <LoadingWrapper>
-                  <div style={{ display: 'flex', minHeight: '100vh' }}>
+                  <div style={{ minHeight: '100vh' }}>
                     <AppSidebar />
                     <div style={{ flex: 1, marginLeft: 56, paddingBottom: 32, minHeight: 0, display: 'flex', flexDirection: 'column' as const }}>
                       {children}
