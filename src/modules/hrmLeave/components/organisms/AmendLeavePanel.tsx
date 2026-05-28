@@ -44,6 +44,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   const userId = identity.employeeIdWithName || cookies.userId || "";
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   // Attachment item — covers both files already on the request being amended
   // (`existing: true`, carries `url` / `id`) and freshly uploaded ones
   // (`existing: false`, carries `base64`). View / Download work for both.
@@ -58,32 +59,68 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   };
   const [attachments, setAttachments] = useState<AmendAttachment[]>([]);
 
+  // Seed attachments from a LeaveRequest's `attachments` array. Defined here
+  // so both the prop fallback and the retrieved-detail effect share the
+  // same mapping.
+  const seedAttachmentsFrom = React.useCallback((rq: LeaveRequest | null | undefined) => {
+    setAttachments(
+      (rq?.attachments ?? []).map((a, i) => ({
+        uid: a.id || `existing-${i}`,
+        name: a.name,
+        contentType: a.contentType || "application/octet-stream",
+        base64: a.contentBase64,
+        url: a.downloadUrl,
+        existing: true,
+        id: a.id,
+      })),
+    );
+  }, []);
+
   useEffect(() => {
     if (open && request) {
       form.setFieldsValue({
         range: [dayjs(request.startDate), dayjs(request.endDate)],
         reason: request.reason,
       });
-      // Seed from the request's existing attachments so the admin can see
-      // what's already on the row, view/download them, and optionally
-      // remove + replace.
-      setAttachments(
-        (request.attachments ?? []).map((a, i) => ({
-          uid: a.id || `existing-${i}`,
-          name: a.name,
-          contentType: a.contentType || "application/octet-stream",
-          base64: a.contentBase64,
-          url: a.downloadUrl,
-          existing: true,
-          id: a.id,
-        })),
-      );
+      // First-pass seed from the prop so the list isn't blank while the
+      // detail call is in flight. The retrieve effect below overrides
+      // this with the authoritative attachments from /leave-request/retrieve.
+      seedAttachmentsFrom(request);
     }
     if (!open) {
       form.resetFields();
       setAttachments([]);
     }
-  }, [open, request, form]);
+  }, [open, request, form, seedAttachmentsFrom]);
+
+  // /my-requests often returns a truncated row without the `attachments`
+  // array populated — the previously-uploaded files would then never render
+  // in the Amend drawer. Always re-fetch the full request on open so the
+  // existing attachments load automatically, complete with their downloadUrl.
+  useEffect(() => {
+    if (!open || !request?.handle || !organizationId) return;
+    let cancelled = false;
+    setLoadingDetail(true);
+    HrmLeaveService.getLeaveRequestById({
+      organizationId,
+      id: request.handle,
+    })
+      .then((detail) => {
+        if (!cancelled && detail) {
+          seedAttachmentsFrom(detail);
+        }
+      })
+      .catch(() => {
+        // Silent — the prop-based seed (above) is still in place so the user
+        // can at least see whatever the list row carried.
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDetail(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, request?.handle, organizationId, seedAttachmentsFrom]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -107,8 +144,12 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     }
     try {
       const base64 = await fileToBase64(file);
-      setAttachments((prev) => [
-        ...prev,
+      // Amend is a "replace the supporting document" flow — a fresh upload
+      // takes over the slot so the user sees the new file (with View /
+      // Download) instead of an ever-growing list. Existing attachments are
+      // discarded on a new upload, mirroring "Allow replacing old attachment
+      // with new uploaded file" in the requirements.
+      setAttachments([
         {
           uid: `new-${Date.now()}-${file.name}`,
           name: file.name,

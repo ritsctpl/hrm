@@ -89,13 +89,16 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
     );
   })();
 
-  // ── Item 19: forwarded-onward override ─────────────────────────────
-  // When the signed-in user is the request's reporting manager but has
-  // forwarded it to the next approver, they are no longer the current
-  // approver. They should still be able to act on the request via Override
-  // Approve / Reject while it remains pending.
-  const isRequestSupervisor = (() => {
-    const raw = request.supervisorId;
+  // ── Forwarded-onward override (items 5 + 19) ───────────────────────
+  // The original reporting manager must keep Override Approve / Reject on
+  // any request they previously touched, even after it has been forwarded
+  // or escalated up the chain. Two independent signals identify them:
+  //   (a) `request.supervisorId` matches the signed-in user, or
+  //   (b) `request.actionHistory` carries a prior APPROVE / FORWARD /
+  //       REASSIGN / ESCALATE action attributed to the signed-in user.
+  // (b) is the load-bearing one in Team History — the supervisorId field
+  // is sometimes blank on retrieve, but the action history always survives.
+  const matchesMe = (raw?: string | null): boolean => {
     if (!raw) return false;
     const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
     const code = stripped.includes(" - ")
@@ -105,15 +108,33 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
       (myComposite && stripped === myComposite) ||
       (myCode && code === myCode),
     );
-  })();
+  };
+  const isRequestSupervisor = matchesMe(request.supervisorId);
+  const PRIOR_APPROVER_ACTIONS = new Set([
+    "APPROVE",
+    "APPROVED",
+    "FORWARD",
+    "FORWARDED",
+    "REASSIGN",
+    "REASSIGNED",
+    "ESCALATE",
+    "ESCALATED",
+  ]);
+  const hasPriorAction = (request.actionHistory ?? []).some((a) => {
+    const action = (a.action ?? "").toUpperCase();
+    return PRIOR_APPROVER_ACTIONS.has(action) && matchesMe(a.actorId);
+  });
   const isPendingRequest =
     request.status === "PENDING_SUPERVISOR" ||
     request.status === "PENDING_NEXT_SUPERIOR" ||
     request.status === "PENDING_HR" ||
-    // Item 5: escalation also leaves the request in flight; the original
-    // reporting manager must still be able to step in via Override.
+    // Escalation also leaves the request in flight; the original reporting
+    // manager must still be able to step in via Override.
     request.status === "ESCALATED";
-  const forwardedOnward = isRequestSupervisor && isPendingRequest && !isCurrentApprover;
+  const forwardedOnward =
+    (isRequestSupervisor || hasPriorAction) &&
+    isPendingRequest &&
+    !isCurrentApprover;
 
   const [loading, setLoading] = React.useState(false);
   const [approvalConfig, setApprovalConfig] = React.useState<LeaveApprovalConfig | null>(null);
