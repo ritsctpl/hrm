@@ -28,7 +28,7 @@ export function useTravelData() {
   } = useHrmTravelStore();
 
   const loadMyRequests = useCallback(async () => {
-    if (!identity.isReady) return;
+    if (!employeeId) return;  // Only return if employeeId is empty
     setListLoading(true);
     setError(null);
     try {
@@ -47,10 +47,10 @@ export function useTravelData() {
     } finally {
       setListLoading(false);
     }
-  }, [organizationId, employeeId, identity.isReady, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange, setListLoading, setError, setMyRequests]);
 
   const loadApproverInbox = useCallback(async () => {
-    if (!identity.isReady) return;
+    if (!employeeId) return;  // Only return if employeeId is empty
     setInboxLoading(true);
     try {
       const data = await HrmTravelService.getApproverInbox({ organizationId,
@@ -63,7 +63,7 @@ export function useTravelData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [organizationId, employeeId, identity.isReady, activeInboxTab]);
+  }, [organizationId, employeeId, activeInboxTab, setInboxLoading, setApproverInbox]);
 
   const loadPolicies = useCallback(async () => {
     try {
@@ -77,7 +77,7 @@ export function useTravelData() {
   }, [organizationId]);
 
   const exportRequests = useCallback(async () => {
-    if (!identity.isReady) return;
+    if (!employeeId) return;  // Only return if employeeId is empty
     try {
       const blob = await HrmTravelService.exportRequests({ organizationId,
         employeeId,
@@ -97,7 +97,7 @@ export function useTravelData() {
     } catch {
       message.error("Failed to export travel requests.");
     }
-  }, [organizationId, employeeId, identity.isReady, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange]);
 
   return { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests };
 }

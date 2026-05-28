@@ -20,6 +20,8 @@ export type TravelReportFetcher = (params: {
   fromDate?: string;
   toDate?: string;
   travelType?: TravelType;
+  status?: string;
+  currentApproverId?: string;
 }) => Promise<unknown>;
 
 interface Props {
@@ -34,6 +36,8 @@ interface Props {
   defaultDays?: number;
   /** When true, shows a travel-type filter. Default false. */
   showTypeFilter?: boolean;
+  /** When true, removes pagination and uses dynamic table height. Default false. */
+  noPagination?: boolean;
 }
 
 const TRAVEL_TYPE_OPTIONS = [
@@ -52,6 +56,7 @@ const TravelReportScreen: React.FC<Props> = ({
   requireDateRange,
   defaultDays = 30,
   showTypeFilter,
+  noPagination = false,
 }) => {
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>([
     dayjs().subtract(defaultDays, "day"),
@@ -74,8 +79,20 @@ const TravelReportScreen: React.FC<Props> = ({
         fromDate: range?.[0]?.format("YYYY-MM-DD"),
         toDate: range?.[1]?.format("YYYY-MM-DD"),
         travelType: (travelType || undefined) as TravelType | undefined,
+        status: "ALL", // Include all statuses: DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, CANCELLED, RECALLED
+        currentApproverId: empId, // Pass current approver ID for filtering
       });
-      setData(Array.isArray(result) ? (result as TravelRequest[]) : []);
+      let filtered = Array.isArray(result) ? (result as TravelRequest[]) : [];
+      
+      // Filter out RECALLED, DRAFT, CANCELLED statuses
+      filtered = filtered.filter(
+        (r) => !["RECALLED", "DRAFT", "CANCELLED"].includes(r.status)
+      );
+      
+      // Show only records where currentApproverId matches logged-in employee
+      filtered = filtered.filter((r) => r.currentApproverId === empId);
+      
+      setData(filtered);
     } catch {
       message.error(`Failed to load ${title.toLowerCase()}.`);
       setData([]);
@@ -89,6 +106,14 @@ const TravelReportScreen: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
+  // Auto-load when date range or travel type changes (for reports with requireDateRange)
+  useEffect(() => {
+    if (requireDateRange && range && range[0] && range[1]) {
+      void load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, travelType, requireDateRange]);
+
   const exportCsv = () => {
     if (data.length === 0) {
       message.warning("Nothing to export.");
@@ -98,6 +123,7 @@ const TravelReportScreen: React.FC<Props> = ({
       "Request ID",
       "Employee",
       "Type",
+      "Purpose",
       "Destination",
       "Status",
       "Submitted",
@@ -108,6 +134,7 @@ const TravelReportScreen: React.FC<Props> = ({
       r.requestId,
       r.employeeName,
       r.travelType,
+      r.purpose,
       [r.destinationCity, r.destinationState, r.destinationCountry].filter(Boolean).join(" / "),
       r.status,
       r.submittedAt ?? "",
@@ -137,6 +164,11 @@ const TravelReportScreen: React.FC<Props> = ({
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },
     {
+      title: "Purpose",
+      dataIndex: "purpose",
+      width: 150,
+    },
+    {
       title: "Employee",
       dataIndex: "employeeName",
       width: 160,
@@ -158,22 +190,7 @@ const TravelReportScreen: React.FC<Props> = ({
       title: "Submitted",
       key: "submitted",
       width: 110,
-      render: (_, r) => (r.submittedAt ? dayjs(r.submittedAt).format("DD MMM YYYY") : "—"),
-    },
-    {
-      title: "Aging",
-      key: "aging",
-      width: 100,
-      render: (_, r) => {
-        if (!r.submittedAt) return "—";
-        const days = dayjs().diff(dayjs(r.submittedAt), "day");
-        const color = days > 7 ? "#cf1322" : days > 3 ? "#d48806" : "#595959";
-        return (
-          <span style={{ color, fontSize: 12 }}>
-            {days} day{days !== 1 ? "s" : ""}
-          </span>
-        );
-      },
+      render: (_, r) => (r.createdDateTime ? dayjs(r.createdDateTime).format("DD MMM YYYY") : "—"),
     },
     {
       title: "Status",
@@ -186,7 +203,7 @@ const TravelReportScreen: React.FC<Props> = ({
   return (
     <div
       className={styles.tableWrapper}
-      style={{ display: "flex", flexDirection: "column", height: "100%" }}
+      style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
     >
       <TravelScreenHeader
         title={title}
@@ -222,20 +239,22 @@ const TravelReportScreen: React.FC<Props> = ({
           </Text>
         </div>
       )}
-      <div style={{ flex: 1, overflow: "auto" }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         <Table
           rowKey="handle"
           size="small"
           columns={columns}
           dataSource={data}
           loading={loading}
-          pagination={{ pageSize: 25, showSizeChanger: true }}
+          pagination={noPagination ? false : { pageSize: 25, showSizeChanger: true }}
           locale={{ emptyText: <Empty description="No records for the selected criteria." /> }}
         />
       </div>
-      <div className={styles.recordCount}>
-        Showing {data.length} record{data.length !== 1 ? "s" : ""}
-      </div>
+      {!noPagination && (
+        <div className={styles.recordCount}>
+          Showing {data.length} record{data.length !== 1 ? "s" : ""}
+        </div>
+      )}
     </div>
   );
 };

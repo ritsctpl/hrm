@@ -8,12 +8,13 @@ const { Text } = Typography;
 
 interface Props {
   title: string;
+  subtitle?: React.ReactNode;
   extra?: React.ReactNode;
   actions?: React.ReactNode;
   onBack?: () => void;
 }
 
-const TravelScreenHeader: React.FC<Props> = ({ title, extra, actions, onBack }) => {
+const TravelScreenHeader: React.FC<Props> = ({ title, subtitle, extra, actions, onBack }) => {
   return (
     <div
       style={{
@@ -34,9 +35,16 @@ const TravelScreenHeader: React.FC<Props> = ({ title, extra, actions, onBack }) 
           style={{ padding: "4px 8px" }}
         />
       )}
-      <Text strong style={{ fontSize: 15, flex: 1 }}>
-        {title}
-      </Text>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+        <Text strong style={{ fontSize: 15 }}>
+          {title}
+        </Text>
+        {subtitle && (
+          <div>
+            {subtitle}
+          </div>
+        )}
+      </div>
       {extra && <span>{extra}</span>}
       {actions && <Space>{actions}</Space>}
     </div>

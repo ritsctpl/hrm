@@ -27,8 +27,8 @@
 }
 
 .listPanel {
-  width: 55%;
-  min-width: 400px;
+  width: 40%;
+  min-width: 300px;
   border-right: 1px solid #f0f0f0;
   overflow-y: auto;
   background: #fff;
@@ -36,6 +36,7 @@
 
 .detailPanel {
   flex: 1;
+  min-width: 500px;
   overflow-y: auto;
   background: #fff;
 }
@@ -105,12 +106,12 @@
 .detailBody {
   flex: 1;
   min-height: 0;
-  padding: 0 16px 16px;
+  padding: 0 8px 16px;
   overflow-y: auto;
 }
 
 .approvalBar {
-  margin: 16px 16px 0;
+  margin: 8px 8px 0;
   border: 1px solid #faad14;
   border-radius: 8px;
   background: #fffbe6;
@@ -119,24 +120,40 @@
 .sectionCard {
   background: #fff;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 8px 12px;
+  margin: 8px 8px 12px;
   border: 1px solid #f0f0f0;
 }
 
 .infoGrid {
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  row-gap: 8px;
-  column-gap: 16px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+  width: 100%;
+}
+
+.infoRow {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .infoLabel {
   color: #8c8c8c;
   font-size: 13px;
+  word-break: break-word;
+  white-space: nowrap;
+  min-width: fit-content;
+  flex-shrink: 0;
+  width: 140px;
 }
 
 .infoValue {
   font-size: 13px;
   color: #262626;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 0;
 }

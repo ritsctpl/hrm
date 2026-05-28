@@ -284,18 +284,6 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
           </Form.Item>
         </div>
       )}
-
-      <div className={styles.formSection}>
-        <Form.Item label="Remarks">
-          <Input.TextArea
-            placeholder="Optional remarks..."
-            rows={2}
-            value={formState.remarks}
-            onChange={(e) => onChange({ remarks: e.target.value })}
-            disabled={readonly}
-          />
-        </Form.Item>
-      </div>
     </Form>
   );
 };

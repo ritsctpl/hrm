@@ -18,6 +18,7 @@ interface Props {
   selectedHandle?: string;
   onRowClick: (request: TravelRequest) => void;
   onNewRequest?: () => void;
+  searchTerm?: string;
 }
 
 const TravelListTable: React.FC<Props> = ({
@@ -26,7 +27,18 @@ const TravelListTable: React.FC<Props> = ({
   selectedHandle,
   onRowClick,
   onNewRequest,
+  searchTerm = "",
 }) => {
+  // Filter requests based on search term (Req ID and Purpose only)
+  const filteredRequests = searchTerm.trim()
+    ? requests.filter((r) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          r.requestId.toLowerCase().includes(searchLower) ||
+          r.purpose.toLowerCase().includes(searchLower)
+        );
+      })
+    : requests;
   const columns: ColumnsType<TravelRequest> = [
     {
       title: "Req ID",
@@ -39,6 +51,7 @@ const TravelListTable: React.FC<Props> = ({
       title: "Purpose",
       dataIndex: "purpose",
       key: "purpose",
+      width: 150,
       ellipsis: true,
       render: (text) => <span style={{ fontSize: 13 }}>{text}</span>,
     },
@@ -51,7 +64,7 @@ const TravelListTable: React.FC<Props> = ({
     {
       title: "Type",
       key: "type",
-      width: 100,
+      width: 120,
       render: (_, r) => <TravelTypeTag travelType={r.travelType} />,
     },
     {
@@ -103,7 +116,7 @@ const TravelListTable: React.FC<Props> = ({
       <Table
         rowKey="handle"
         columns={columns}
-        dataSource={requests}
+        dataSource={filteredRequests}
         loading={loading}
         size="small"
         pagination={false}
@@ -129,7 +142,7 @@ const TravelListTable: React.FC<Props> = ({
         }}
       />
       <div className={styles.recordCount}>
-        Showing {requests.length} record{requests.length !== 1 ? "s" : ""}
+        Showing {filteredRequests.length} record{filteredRequests.length !== 1 ? "s" : ""}
       </div>
     </div>
   );

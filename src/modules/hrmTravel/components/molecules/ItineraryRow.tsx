@@ -37,6 +37,12 @@ const ItineraryRow: React.FC<Props> = ({
   const timeFormat = "HH:mm";
   const dateFormat = "DD/MM/YYYY";
 
+  // Disable past months - allow current month and future dates
+  const disabledDate = (current: dayjs.Dayjs) => {
+    const currentMonthStart = dayjs().startOf("month");
+    return current && current.isBefore(currentMonthStart, "day");
+  };
+
   if (travelType === "LOCAL") {
     return (
       <div style={{ display: "flex", gap: 16 }}>
@@ -50,6 +56,7 @@ const ItineraryRow: React.FC<Props> = ({
           <DatePicker
             format={dateFormat}
             disabled={readonly}
+            disabledDate={disabledDate}
             value={value.travelDate ? dayjs(value.travelDate, dateFormat) : null}
             onChange={(_, s) => onChange?.("travelDate", (Array.isArray(s) ? s[0] : s) || null)}
             style={{ width: "100%" }}
@@ -101,6 +108,7 @@ const ItineraryRow: React.FC<Props> = ({
         <DatePicker
           format={dateFormat}
           disabled={readonly}
+          disabledDate={disabledDate}
           value={value.startDate ? dayjs(value.startDate, dateFormat) : null}
           onChange={(_, s) => onChange?.("startDate", (Array.isArray(s) ? s[0] : s) || null)}
           style={{ width: "100%" }}
@@ -116,6 +124,7 @@ const ItineraryRow: React.FC<Props> = ({
         <DatePicker
           format={dateFormat}
           disabled={readonly}
+          disabledDate={disabledDate}
           value={value.endDate ? dayjs(value.endDate, dateFormat) : null}
           onChange={(_, s) => onChange?.("endDate", (Array.isArray(s) ? s[0] : s) || null)}
           style={{ width: "100%" }}

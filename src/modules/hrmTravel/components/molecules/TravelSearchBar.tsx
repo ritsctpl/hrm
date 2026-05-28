@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef } from "react";
-import { Input, Select, DatePicker } from "antd";
+import React, { useCallback } from "react";
+import { Input, Select, DatePicker, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
@@ -33,19 +33,38 @@ interface Props {
 const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
   const { searchTerm, statusFilter, typeFilter, setSearchTerm, setStatusFilter, setTypeFilter, setDateRange } =
     useHrmTravelStore();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => onSearch?.(), 400);
-  };
+  }, [setSearchTerm]);
+
+  const handleStatusChange = useCallback((v: string) => {
+    setStatusFilter(v || null);
+  }, [setStatusFilter]);
+
+  const handleTypeChange = useCallback((v: string) => {
+    setTypeFilter(v || null);
+  }, [setTypeFilter]);
+
+  const handleDateRangeChange = useCallback((_, strings: [string, string]) => {
+    if (strings[0] && strings[1]) {
+      const from = dayjs(strings[0], "DD/MM/YYYY").format("YYYY-MM-DD");
+      const to = dayjs(strings[1], "DD/MM/YYYY").format("YYYY-MM-DD");
+      setDateRange([from, to]);
+    } else {
+      setDateRange(null);
+    }
+  }, [setDateRange]);
+
+  const handleGoClick = useCallback(() => {
+    onSearch?.();
+  }, [onSearch]);
 
   return (
-    <div className={styles.toolbar}>
+    <div className={styles.toolbar} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
       <Input
         prefix={<SearchOutlined />}
-        placeholder="Search by purpose / destination..."
+        placeholder="Search by Req ID / Purpose..."
         value={searchTerm}
         onChange={(e) => handleSearchChange(e.target.value)}
         onPressEnter={onSearch}
@@ -55,29 +74,26 @@ const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
       />
       <Select
         value={statusFilter ?? ""}
-        onChange={(v) => setStatusFilter(v || null)}
+        onChange={handleStatusChange}
         options={STATUS_OPTIONS}
         style={{ width: 150 }}
       />
       <Select
         value={typeFilter ?? ""}
-        onChange={(v) => setTypeFilter(v || null)}
+        onChange={handleTypeChange}
         options={TYPE_OPTIONS}
         style={{ width: 130 }}
       />
       <RangePicker
         style={{ width: 230 }}
         format="DD/MM/YYYY"
-        onChange={(_, strings) => {
-          if (strings[0] && strings[1]) {
-            const from = dayjs(strings[0], "DD/MM/YYYY").format("YYYY-MM-DD");
-            const to   = dayjs(strings[1], "DD/MM/YYYY").format("YYYY-MM-DD");
-            setDateRange([from, to]);
-          } else {
-            setDateRange(null);
-          }
-        }}
+        onChange={handleDateRangeChange}
       />
+      <div style={{ marginLeft: "auto" }}>
+        <Button type="primary" onClick={handleGoClick}>
+          Go
+        </Button>
+      </div>
     </div>
   );
 };

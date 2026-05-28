@@ -20,6 +20,8 @@ export interface TravelFormState {
   endDate: string | null;
   remarks: string;
   coTravellerIds: string[];
+  attachmentRefs?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
+  deletedAttachmentIds?: string[];
 }
 
 export interface SlaInfo {
