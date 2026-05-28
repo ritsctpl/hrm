@@ -125,6 +125,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     addMyRequest,
     setLeaveTypes,
     setFormTargetEmployeeId,
+    setSelectedRequest,
   } = useHrmLeaveStore();
 
   // When HR picks an employee, target overrides the prop. Otherwise the
@@ -824,6 +825,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       } as Parameters<typeof HrmLeaveService.submitLeaveRequest>[0];
       const result = await HrmLeaveService.submitLeaveRequest(payload);
       addMyRequest(result);
+      // Surface the newly submitted request in the right panel so the user
+      // immediately sees what they just created (replaces whatever was
+      // selected before, or fills an empty panel).
+      setSelectedRequest(result);
       message.success("Leave request submitted successfully");
       handleClose();
       onSubmitted();
@@ -896,6 +901,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         setDraftHandle(result.handle);
       }
       addMyRequest(result);
+      // Reflect the freshly saved / updated draft in the right panel so it
+      // is visible behind the drawer and once the user closes the drawer.
+      setSelectedRequest(result);
       message.success(draftHandle ? "Draft updated" : "Draft saved — keep editing or click Submit when ready");
       onSubmitted();
     } catch (err: unknown) {

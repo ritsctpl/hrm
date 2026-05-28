@@ -97,8 +97,11 @@ export function useHrmLeaveData(employeeId: string, role: string) {
   }, [organizationId, setGlobalQueue, setGlobalQueueLoading]);
 
   const loadLedgerHistory = useCallback(async (empId?: string) => {
-    const targetId = empId ?? ledgerEmployeeId ?? employeeId;
-    // Allow dept-scoped fetch when HR hasn't picked a specific employee.
+    // Explicit picks win. Fall back to the logged-in user only when no
+    // department filter is in play — otherwise the dept-scoped fetch was
+    // being silently narrowed to that one user's rows (the visible bug).
+    const explicitEmpId = empId ?? ledgerEmployeeId;
+    const targetId = explicitEmpId ?? (ledgerDeptFilter ? undefined : employeeId);
     if (!targetId && !ledgerDeptFilter) return;
     setLedgerLoading(true);
     try {

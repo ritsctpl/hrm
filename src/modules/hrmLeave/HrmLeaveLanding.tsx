@@ -45,7 +45,7 @@ import { useHrmLeaveData } from "./hooks/useHrmLeaveData";
 import { useEmployeeOptions } from "./hooks/useEmployeeOptions";
 import { useCurrentEmployeeStore } from "../hrmAccess/stores/currentEmployeeStore";
 import { useEmployeeIdentity } from "../hrmAccess/hooks/useEmployeeIdentity";
-import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS, LEDGER_REF_TYPE_LABELS } from "./utils/constants";
+import { HR_ROLES, SUPERVISOR_ROLES, LEAVE_STATUS_LABELS } from "./utils/constants";
 import { LeaveRequest } from "./types/domain.types";
 import styles from "./styles/HrmLeave.module.css";
 
@@ -318,31 +318,6 @@ const HrmLeaveLanding: React.FC = () => {
   const [manualAdjModalOpen, setManualAdjModalOpen] = useState(false);
   const [bulkAdjModalOpen, setBulkAdjModalOpen] = useState(false);
   const [compOffCreditModalOpen, setCompOffCreditModalOpen] = useState(false);
-
-  // Ledger client-side filters (item 7): the /ledger/report call already
-  // narrows by employee/leave-type/dept/year; date-range and transaction-type
-  // are applied client-side over the returned entries.
-  const [ledgerDateRange, setLedgerDateRange] = useState<[string, string] | null>(null);
-  const [ledgerRefType, setLedgerRefType] = useState<string | undefined>(undefined);
-  const ledgerRefTypeOptions = useMemo(
-    () => Object.entries(LEDGER_REF_TYPE_LABELS).map(([value, label]) => ({ value, label })),
-    [],
-  );
-  const filteredLedgerHistory = useMemo(() => {
-    return ledgerHistory.filter((e) => {
-      if (ledgerRefType && e.refType !== ledgerRefType) return false;
-      if (ledgerDateRange) {
-        const d = dayjs(e.transactionDate);
-        if (
-          d.isBefore(dayjs(ledgerDateRange[0]), "day") ||
-          d.isAfter(dayjs(ledgerDateRange[1]), "day")
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [ledgerHistory, ledgerRefType, ledgerDateRange]);
 
   // Load data based on role on mount
   useEffect(() => {
@@ -761,25 +736,6 @@ const HrmLeaveLanding: React.FC = () => {
               (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
           />
-          <span className={styles.ledgerToolbarLabel}>Txn Type</span>
-          <Select
-            allowClear
-            placeholder="All transactions"
-            value={ledgerRefType}
-            onChange={(value) => setLedgerRefType(value || undefined)}
-            options={ledgerRefTypeOptions}
-            style={{ minWidth: 160 }}
-          />
-          <span className={styles.ledgerToolbarLabel}>Date Range</span>
-          <DatePicker.RangePicker
-            value={ledgerDateRange ? [dayjs(ledgerDateRange[0]), dayjs(ledgerDateRange[1])] : null}
-            onChange={(_, strs) => {
-              if (strs[0] && strs[1]) setLedgerDateRange([strs[0], strs[1]]);
-              else setLedgerDateRange(null);
-            }}
-            format="DD/MM/YYYY"
-            style={{ minWidth: 230 }}
-          />
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
@@ -862,7 +818,7 @@ const HrmLeaveLanding: React.FC = () => {
                   style={{ padding: "32px 0" }}
                 />
               ) : (
-                <LedgerHistoryTable entries={filteredLedgerHistory} loading={ledgerLoading} />
+                <LedgerHistoryTable entries={ledgerHistory} loading={ledgerLoading} />
               )}
             </div>
           </div>
