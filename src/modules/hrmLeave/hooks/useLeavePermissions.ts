@@ -38,6 +38,7 @@ export function useLeavePermissions(role: string): LeavePermissions {
   const hrQueuePerms = useCan("HRM_LEAVE", "leave_hr_queue");
   const calendarPerms = useCan("HRM_LEAVE", "leave_calendar");
   const teamCalendarPerms = useCan("HRM_LEAVE", "leave_team_calendar");
+  const teamHistoryPerms = useCan("HRM_LEAVE", "leave_team_history");
   const accrualPerms = useCan("HRM_LEAVE", "leave_accrual");
   const compOffPerms = useCan("HRM_LEAVE", "leave_comp_off");
   const adjustmentPerms = useCan("HRM_LEAVE", "leave_adjustment");
@@ -91,6 +92,11 @@ export function useLeavePermissions(role: string): LeavePermissions {
       // Calendar permissions
       canViewCalendar: calendarPerms.canView,
       canViewTeamCalendar: teamCalendarPerms.canView,
+
+      // Team History — strictly RBAC-driven. The tab only appears when the
+      // `leave_team_history` object grants view; backend RBAC controls who
+      // (managers / HR) sees the hierarchy-scoped Team History tab.
+      canViewTeamHistory: teamHistoryPerms.canView,
       
       // Accrual permissions
       canViewAccrual: accrualPerms.canView,
@@ -137,9 +143,10 @@ export function useLeavePermissions(role: string): LeavePermissions {
     };
   }, [
     modulePerms, requestPerms, balancePerms, policyPerms, approvalPerms,
-    hrQueuePerms, calendarPerms, teamCalendarPerms, accrualPerms, compOffPerms,
-    adjustmentPerms, ledgerPerms, reportPerms, yearEndPerms, payrollExportPerms,
-    payrollLockPerms, approvalConfigPerms, role
+    hrQueuePerms, calendarPerms, teamCalendarPerms, teamHistoryPerms,
+    accrualPerms, compOffPerms, adjustmentPerms, ledgerPerms, reportPerms,
+    yearEndPerms, payrollExportPerms, payrollLockPerms, approvalConfigPerms,
+    role
   ]);
 }
 
@@ -178,6 +185,7 @@ export function useLeavePermissionsLegacy(role: string): LeavePermissions {
       canViewAll: isHr,
       canViewCalendar: true,
       canViewTeamCalendar: isSupervisor || isHr,
+      canViewTeamHistory: isSupervisor || isHr,
       canViewAccrual: isHr,
       canPostAccrual: isHr,
       canEditAccrual: isHr,

@@ -336,11 +336,12 @@ const HrmLeaveLanding: React.FC = () => {
 
   useEffect(() => {
     // The global queue also backs the hierarchy-scoped Team History tab, so
-    // load it for team-calendar (manager) permission too — not just HR.
-    if (permissions.canViewHrQueue || permissions.canViewTeamCalendar) {
+    // load it for managers/HR who have leave_team_history granted — not
+    // just for those with leave_hr_queue.
+    if (permissions.canViewHrQueue || permissions.canViewTeamHistory) {
       loadGlobalQueue();
     }
-  }, [organizationId, permissions.canViewHrQueue, permissions.canViewTeamCalendar, loadGlobalQueue]);
+  }, [organizationId, permissions.canViewHrQueue, permissions.canViewTeamHistory, loadGlobalQueue]);
 
   useEffect(() => {
     if (permissions.canViewPolicy || permissions.canViewLedger || permissions.canViewBalance) {
@@ -431,7 +432,7 @@ const HrmLeaveLanding: React.FC = () => {
           if (permissions.canViewHrQueue) loadGlobalQueue();
           break;
         case "teamHistoryHierarchy":
-          if (permissions.canViewHrQueue || permissions.canViewTeamCalendar) loadGlobalQueue();
+          if (permissions.canViewHrQueue || permissions.canViewTeamHistory) loadGlobalQueue();
           break;
         case "compOffInbox":
           if (permissions.canEditCompOff) loadPendingCompOffs();
@@ -887,11 +888,13 @@ const HrmLeaveLanding: React.FC = () => {
     </PermissionGate>
   );
 
-  // ── Tab: Team History (hierarchy-scoped, item 13/14) ──────────────
+  // ── Tab: Team History (hierarchy-scoped) ─────────────────────────
   // A manager's direct + indirect reports, across all statuses. Distinct
-  // from the HR "All Requests" tab; RBAC-gated on the team-calendar object.
+  // from the HR "All Requests" tab. Gated strictly on the dedicated
+  // `leave_team_history` RBAC object — the tab only appears when that
+  // permission is granted.
   const teamHistoryHierarchyPanel = (
-    <PermissionGate object="leave_team_calendar" action="view">
+    <PermissionGate object="leave_team_history" action="view">
       <TeamHistoryPanel
         organizationId={organizationId}
         managerCode={identity.employeeCode || ""}
@@ -975,7 +978,7 @@ const HrmLeaveLanding: React.FC = () => {
     permissions.canViewCompOff && { key: "compOff", label: "My Comp-Off", children: compOffTab },
     permissions.canViewTeamCalendar && { key: "teamCalendar", label: "Team Calendar", children: teamCalendarTab },
     permissions.canViewLedger && { key: "ledger", label: "Ledger & Balances", children: ledgerPanel },
-    permissions.canViewTeamCalendar && { key: "teamHistoryHierarchy", label: "Team History", children: teamHistoryHierarchyPanel },
+    permissions.canViewTeamHistory && { key: "teamHistoryHierarchy", label: "Team History", children: teamHistoryHierarchyPanel },
     permissions.canViewPolicy && { key: "policy", label: "Policy", children: policyPanel },
     permissions.canViewAccrual && { key: "accrual", label: "Accruals", children: accrualPanel },
     permissions.canViewReports && { key: "reports", label: "Reports", children: reportsPanel },

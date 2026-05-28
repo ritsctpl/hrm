@@ -56,7 +56,13 @@ export interface LeavePermissions {
   // Calendar permissions
   canViewCalendar: boolean;
   canViewTeamCalendar: boolean;
-  
+
+  // Team History — hierarchy-scoped Team History tab (direct + indirect
+  // reports across all statuses). Gated on the RBAC `leave_team_history`
+  // object so the tab only appears when that permission is granted.
+  canViewTeamHistory: boolean;
+
+
   // Accrual permissions
   canViewAccrual: boolean;
   canPostAccrual: boolean;

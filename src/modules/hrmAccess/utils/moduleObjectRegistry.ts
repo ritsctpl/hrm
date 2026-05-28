@@ -241,6 +241,7 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "leave_hr_queue", label: "HR Queue" },
     { code: "leave_calendar", label: "Calendar" },
     { code: "leave_team_calendar", label: "Team Calendar" },
+    { code: "leave_team_history", label: "Team History" },
     { code: "leave_accrual", label: "Accrual" },
     { code: "leave_comp_off", label: "Comp Off" },
     { code: "leave_adjustment", label: "Ledger Adjustment" },
