@@ -83,6 +83,9 @@ const LeaveAvailedReportPanel: React.FC<LeaveAvailedReportPanelProps> = ({ organ
       setLoading(true);
       const data = await HrmLeaveService.getLeaveAvailedReport(buildPayload(values));
       setRows(Array.isArray(data) ? data : []);
+      // Item 8: every new generate resets to page 1, otherwise the user
+      // stays on a now-empty page when the new filters return fewer rows.
+      setCurrent(1);
       if (!opts.silent) {
         message.success(`Loaded ${data?.length ?? 0} rows`);
       }

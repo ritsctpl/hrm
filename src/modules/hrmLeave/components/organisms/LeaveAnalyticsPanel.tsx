@@ -586,7 +586,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       {/* Row 1: Monthly Trend BarChart (left) | Department Pie Chart (right) */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         {/* Monthly Leave Trend */}
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Card
             title="Monthly Leave Trend"
             size="small"
@@ -670,7 +670,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
         </Col>
 
         {/* Department Pie Chart */}
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Card
             title="Leave Days by Department"
             size="small"

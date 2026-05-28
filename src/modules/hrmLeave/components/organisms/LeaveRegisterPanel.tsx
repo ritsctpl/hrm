@@ -63,6 +63,13 @@ const LeaveRegisterPanel: React.FC<LeaveRegisterPanelProps> = ({
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Item 8: reset the page index whenever the filtered set might shrink.
+  // Without this the user stays on page N from the previous filter and sees
+  // an empty grid when the new filter yields fewer pages.
+  useEffect(() => {
+    setCurrent(1);
+  }, [employeeFilter, leaveTypeFilter, departmentFilter, selectedYear, selectedFormat]);
+
   // Employee + Leave type dropdowns
   const { options: employeeOptions, employees } = useEmployeeOptions();
   const { options: leaveTypeOptions } = useLeaveTypeOptions();
