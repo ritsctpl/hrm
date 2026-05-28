@@ -9,6 +9,7 @@ export const hrmLeaveSectionMap: Record<string, string> = {
   hrQueue: 'leave_hr_queue',
   calendar: 'leave_calendar',
   teamCalendar: 'leave_team_calendar',
+  teamHistory: 'leave_team_history',
   accrual: 'leave_accrual',
   compOff: 'leave_comp_off',
   manualAdjustment: 'leave_adjustment',
