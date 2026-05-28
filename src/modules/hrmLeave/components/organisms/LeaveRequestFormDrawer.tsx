@@ -683,19 +683,28 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const balanceAfter = availableBalance - leaveFormState.totalDays;
 
   // ── Negative-balance handling (item 15) ────────────────────────────
-  // Whether the effective policy permits a negative balance, and the floor
-  // it may not drop below (e.g. -5). When the policy is unknown we keep the
-  // strict behaviour (no negative balance allowed).
+  // Whether the effective policy permits a negative balance, and how many
+  // days below zero are allowed. The policy stores `negativeFloor` as a
+  // magnitude (e.g. `2.0` means "2 days negative allowed"); the actual
+  // minimum balance is therefore −|negativeFloor|. Math.abs makes the
+  // check robust whether the value arrives positive (2) or negative (−2).
+  // When the policy is unknown we keep the strict behaviour (no negative).
   const negativeAllowed = effectivePolicy?.negativeBalanceAllowed ?? false;
   const negativeFloor = effectivePolicy?.negativeFloor ?? null;
+  const minAllowedBalance =
+    negativeAllowed && negativeFloor != null ? -Math.abs(negativeFloor) : 0;
   const goesNegative =
     balanceKnown && leaveFormState.totalDays > 0 && balanceAfter < 0;
   // Blocking condition: negatives disallowed → any negative blocks; allowed
-  // → only dropping below the configured floor blocks. Only enforced when we
-  // actually know the balance, otherwise the backend validates on submit.
-  const exceedsBalance = negativeAllowed
-    ? goesNegative && negativeFloor != null && balanceAfter < negativeFloor
-    : goesNegative;
+  // → only dropping below the configured floor blocks (balanceAfter is
+  // below −|negativeFloor|). When the policy allows negatives without a
+  // floor, nothing blocks on balance.
+  const exceedsBalance =
+    balanceKnown &&
+    leaveFormState.totalDays > 0 &&
+    (negativeAllowed
+      ? negativeFloor != null && balanceAfter < minAllowedBalance
+      : balanceAfter < 0);
   // Non-blocking warning: balance goes negative but the policy allows it.
   const negativeWarning = goesNegative && !exceedsBalance;
 
@@ -1113,7 +1122,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
             )}
 
             {/* Negative-balance warning (item 15) — shown when the policy
-                permits a negative balance and this request crosses zero. */}
+                permits a negative balance and this request crosses zero.
+                negativeFloor is a magnitude (e.g. 2.0 = "2 days negative
+                allowed"); show the actual floor as a negative day count. */}
             {negativeWarning && (
               <Alert
                 type="warning"
@@ -1122,7 +1133,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 description={`This request will take your ${
                   selectedBalance?.name ?? "leave"
                 } balance to ${balanceAfter.toFixed(1)} day(s). Your leave policy permits a negative balance${
-                  negativeFloor != null ? ` down to ${negativeFloor}` : ""
+                  negativeFloor != null
+                    ? ` down to ${(-Math.abs(negativeFloor)).toFixed(1)} day(s)`
+                    : ""
                 }.`}
                 style={{ marginTop: 8 }}
               />
