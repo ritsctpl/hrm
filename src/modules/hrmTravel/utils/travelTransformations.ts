@@ -20,11 +20,20 @@ export function computeSlaInfo(request: TravelRequest): SlaInfo {
 }
 
 export function formatDateRange(request: TravelRequest): string {
-  if (request.travelType === "LOCAL" && request.travelDate) {
-    return dayjs(request.travelDate).format("DD MMM YYYY");
+  if (request.travelType === "LOCAL") {
+    // For LOCAL travel, use travelDate if available, otherwise use startDate
+    const dateToFormat = request.travelDate || request.startDate;
+    if (dateToFormat) {
+      return dayjs(dateToFormat).format("DD MMM YYYY");
+    }
   }
-  if (request.startDate && request.endDate) {
-    return `${dayjs(request.startDate).format("DD MMM")} – ${dayjs(request.endDate).format("DD MMM YYYY")}`;
+  // For INTERNATIONAL or when endDate is available
+  if (request.startDate) {
+    if (request.endDate) {
+      return `${dayjs(request.startDate).format("DD MMM")} – ${dayjs(request.endDate).format("DD MMM YYYY")}`;
+    }
+    // If only startDate is available, show just that
+    return dayjs(request.startDate).format("DD MMM YYYY");
   }
   return "—";
 }

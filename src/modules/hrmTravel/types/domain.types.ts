@@ -54,6 +54,7 @@ export interface CoTravellerDto {
   employeeId: string;
   employeeName: string;
   department: string;
+  workEmail?: string;
   hasConflict: boolean;
   conflictReason?: string;
   onDutyEntryRef?: string;
@@ -76,6 +77,9 @@ export interface TravelAttachment {
   fileSizeBytes: number;
   uploadedAt: string;
   uploadedBy: string;
+  // Base64 data and file type for local preview/download (populated from backend response)
+  base64?: string;
+  fileType?: string;
 }
 
 export interface TravelAction {

@@ -71,7 +71,6 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, actorRole, onA
             <Can I="edit" object="travel_approval">
               <Button
                 danger
-                icon={<CloseCircleOutlined />}
                 onClick={() => setRejectModal(true)}
                 loading={loading}
               >
@@ -81,7 +80,6 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, actorRole, onA
             <Can I="edit" object="travel_approval">
               <Button
                 type="primary"
-                icon={<CheckCircleOutlined />}
                 onClick={handleApprove}
                 loading={loading}
               >
@@ -103,7 +101,6 @@ const ApprovalActionBar: React.FC<Props> = ({ requestId, loading, actorRole, onA
           <Can I="edit" object="travel_approval" key="ok">
             <Button
               type="primary"
-              danger
               disabled={!rejectRemarks.trim()}
               onClick={handleRejectSubmit}
             >

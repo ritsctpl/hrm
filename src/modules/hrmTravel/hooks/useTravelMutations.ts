@@ -33,6 +33,11 @@ export function useTravelMutations() {
   const saveDraft = useCallback(async (form: TravelFormState, existingHandle?: string) => {
     setSaving(true);
     try {
+      // Extract bare employee code from composite ID for backend storage
+      // Backend expects: createdBy = "EMP001 - Full Name" (for audit trail)
+      // But also needs: employeeId = "EMP001" (for filtering)
+      const bareEmployeeCode = identity.employeeCode;
+      
       const payload = {
         organizationId,
         travelType: form.travelType as TravelType,
@@ -47,7 +52,10 @@ export function useTravelMutations() {
         endHour: form.endHour || undefined,
         remarks: form.remarks || undefined,
         coTravellerEmpIds: form.coTravellerIds,
-        createdBy: actorId,
+        base64Docu: form.attachmentRefs || undefined,
+        deletedAttachmentIds: form.deletedAttachmentIds || undefined,
+        createdBy: actorId,  // Composite for audit trail
+        employeeId: bareEmployeeCode,  // Bare code for filtering
       };
       if (existingHandle) {
         const updated = await HrmTravelService.updateDraft({ ...payload, handle: existingHandle });
@@ -63,13 +71,23 @@ export function useTravelMutations() {
         message.success("Draft created.");
         return created;
       }
-    } catch {
-      message.error("Failed to save draft.");
+    } catch (err) {
+      // Extract detailed error message from backend response
+      let errorMessage = "Failed to save draft.";
+      
+      if (err instanceof Error) {
+        // The API interceptor already extracts message_details.msg and puts it on err.message
+        if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      message.error(errorMessage);
       return null;
     } finally {
       setSaving(false);
     }
-  }, [organizationId, actorId]);
+  }, [organizationId, actorId, identity.employeeCode]);
 
   const submitRequest = useCallback(async (handle: string) => {
     setSubmitting(true);
@@ -79,8 +97,17 @@ export function useTravelMutations() {
       setSelectedRequest(updated);
       message.success("Travel request submitted successfully.");
       return updated;
-    } catch {
-      message.error("Failed to submit request.");
+    } catch (err) {
+      // Extract detailed error message from backend response
+      let errorMessage = "Failed to submit request.";
+      
+      if (err instanceof Error) {
+        if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      message.error(errorMessage);
       return null;
     } finally {
       setSubmitting(false);
@@ -103,8 +130,12 @@ export function useTravelMutations() {
       setSelectedRequest(null);
       message.success("Request approved.");
       return updated;
-    } catch {
-      message.error("Failed to approve request.");
+    } catch (err) {
+      let errorMessage = "Failed to approve request.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      message.error(errorMessage);
       return null;
     } finally {
       setApproving(false);
@@ -127,8 +158,12 @@ export function useTravelMutations() {
       setSelectedRequest(null);
       message.success("Request rejected.");
       return updated;
-    } catch {
-      message.error("Failed to reject request.");
+    } catch (err) {
+      let errorMessage = "Failed to reject request.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      message.error(errorMessage);
       return null;
     } finally {
       setApproving(false);
@@ -143,8 +178,12 @@ export function useTravelMutations() {
       setSelectedRequest(updated);
       message.success("Request cancelled.");
       return updated;
-    } catch {
-      message.error("Failed to cancel request.");
+    } catch (err) {
+      let errorMessage = "Failed to cancel request.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      message.error(errorMessage);
       return null;
     } finally {
       setSaving(false);
@@ -154,18 +193,22 @@ export function useTravelMutations() {
   const recallRequest = useCallback(async (handle: string, reason: string) => {
     setSaving(true);
     try {
-      const updated = await HrmTravelService.recallRequest({ organizationId, handle, reason });
+      const updated = await HrmTravelService.recallRequest({ organizationId, requestId: handle, recalledBy: actorId, reason });
       updateMyRequest(handle, updated);
       setSelectedRequest(updated);
       message.success("Request recalled to draft.");
       return updated;
-    } catch {
-      message.error("Failed to recall request.");
+    } catch (err) {
+      let errorMessage = "Failed to recall request.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      message.error(errorMessage);
       return null;
     } finally {
       setSaving(false);
     }
-  }, [organizationId]);
+  }, [organizationId, actorId]);
 
   const deleteRequest = useCallback(async (handle: string) => {
     setSaving(true);
@@ -175,8 +218,12 @@ export function useTravelMutations() {
       setSelectedRequest(null);
       setScreenMode("list");
       message.success("Request deleted.");
-    } catch {
-      message.error("Failed to delete request.");
+    } catch (err) {
+      let errorMessage = "Failed to delete request.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }

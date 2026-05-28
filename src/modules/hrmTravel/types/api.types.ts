@@ -49,9 +49,10 @@ export interface TravelRequestCreatePayload {
   startHour?: string;
   endHour?: string;
   coTravellerEmpIds?: string[];
-  attachmentRefs?: string[];
+  base64Docu?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
   remarks?: string;
   createdBy: string;
+  employeeId?: string;  // Bare employee code for filtering
 }
 
 export interface TravelRequestUpdatePayload {
@@ -68,9 +69,11 @@ export interface TravelRequestUpdatePayload {
   startHour?: string;
   endHour?: string;
   coTravellerEmpIds?: string[];
-  attachmentRefs?: string[];
+  base64Docu?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
+  deletedAttachmentIds?: string[];
   remarks?: string;
   createdBy: string;
+  employeeId?: string;  // Bare employee code for filtering
 }
 
 export interface TravelSubmitRequest {
@@ -108,7 +111,8 @@ export interface TravelCancelRequest {
 
 export interface TravelRecallRequest {
   organizationId: string;
-  handle: string;
+  requestId: string;
+  recalledBy: string;
   reason: string;
 }
 
@@ -184,6 +188,9 @@ export interface TravelReportByTypeDateRequest {
   fromDate: string;
   toDate: string;
   travelType?: TravelType;
+  status?: string;
+  empId?: string;
+  currentApproverId?: string;
 }
 
 export interface TravelReportPendingAgingRequest {

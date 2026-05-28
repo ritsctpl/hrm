@@ -33,7 +33,6 @@ import type {
   BlackoutPeriod,
 } from "../../types/domain.types";
 
-const { Panel } = Collapse;
 const { Text } = Typography;
 
 const ALL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
@@ -383,312 +382,347 @@ const PolicyTypeForm: React.FC<{
         </Tag>
       )}
 
-      <Collapse defaultActiveKey={["basic", "grade"]} ghost>
-        {/* ── Section 1: Basic Settings ────────────────────────────── */}
-        <Panel header="Basic Settings (Modes, Escalation, Attachments)" key="basic">
-          <Form layout="vertical" size="small">
-            <Form.Item label="Allowed Travel Modes">
-              <Checkbox.Group
-                value={draft.allowedModes}
-                options={ALL_MODES.map((m) => ({ label: m, value: m }))}
-                onChange={(v) => patch({ allowedModes: v as TravelMode[] })}
-              />
-            </Form.Item>
-            <Space wrap size="large">
-              <Form.Item label="Escalation Window (days)">
-                <InputNumber
-                  min={1}
-                  max={30}
-                  value={draft.escalationWindowDays}
-                  onChange={(v) => patch({ escalationWindowDays: v ?? 3 })}
-                />
-              </Form.Item>
-              <Form.Item label="Allowed File Types (comma)">
-                <Input
-                  style={{ width: 260 }}
-                  value={fileTypesStr}
-                  placeholder="pdf, jpg, png"
-                  onChange={(e) =>
-                    patch({
-                      allowedFileTypes: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
-              </Form.Item>
-              <Form.Item label="Max File Size (MB)">
-                <InputNumber
-                  min={1}
-                  max={50}
-                  value={draft.maxFileSizeMb}
-                  onChange={(v) => patch({ maxFileSizeMb: v ?? 5 })}
-                />
-              </Form.Item>
-              <Form.Item label="Max File Count">
-                <InputNumber
-                  min={1}
-                  max={20}
-                  value={draft.maxFileCount}
-                  onChange={(v) => patch({ maxFileCount: v ?? 5 })}
-                />
-              </Form.Item>
-            </Space>
-          </Form>
-        </Panel>
-
-        {/* ── Section 2: Grade Entitlements ───────────────────────── */}
-        <Panel header="Grade Entitlements (Travel Class, Hotel, Per-Diem)" key="grade">
-          <Text type="secondary">
-            Define travel class, hotel category, and per-diem by employee grade.
-          </Text>
-          <div style={{ marginTop: 12 }}>
-            <GradeEntitlementsEditor
-              value={draft.gradeEntitlements}
-              onChange={(v) => patch({ gradeEntitlements: v })}
-            />
-          </div>
-        </Panel>
-
-        {/* ── Section 3: Expense Caps ─────────────────────────────── */}
-        <Panel header="Expense Caps (Lodging, Meals, Incidentals)" key="expense">
-          <Space wrap size="large">
-            <Form.Item label="Currency">
-              <Select
-                style={{ width: 120 }}
-                value={draft.expenseCurrency ?? "INR"}
-                options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-                onChange={(v) => patch({ expenseCurrency: v })}
-              />
-            </Form.Item>
-            <Form.Item label="Max Lodging / Day">
-              <InputNumber
-                min={0}
-                value={draft.maxLodgingPerDay}
-                onChange={(v) => patch({ maxLodgingPerDay: v ?? undefined })}
-              />
-            </Form.Item>
-            <Form.Item label="Max Meals / Day">
-              <InputNumber
-                min={0}
-                value={draft.maxMealsPerDay}
-                onChange={(v) => patch({ maxMealsPerDay: v ?? undefined })}
-              />
-            </Form.Item>
-            <Form.Item label="Max Incidentals / Day">
-              <InputNumber
-                min={0}
-                value={draft.maxIncidentalsPerDay}
-                onChange={(v) => patch({ maxIncidentalsPerDay: v ?? undefined })}
-              />
-            </Form.Item>
-          </Space>
-        </Panel>
-
-        {/* ── Section 4: Advance Policy ───────────────────────────── */}
-        <Panel header="Travel Advance Policy" key="advance">
-          <Space wrap size="large">
-            <Form.Item label="Advance Enabled">
-              <Switch
-                checked={!!draft.advanceEnabled}
-                onChange={(v) => patch({ advanceEnabled: v })}
-              />
-            </Form.Item>
-            <Form.Item label="Max Advance Amount">
-              <InputNumber
-                min={0}
-                disabled={!draft.advanceEnabled}
-                value={draft.maxAdvanceAmount}
-                onChange={(v) => patch({ maxAdvanceAmount: v ?? undefined })}
-              />
-            </Form.Item>
-            <Form.Item label="Max % of Estimated Cost">
-              <InputNumber
-                min={0}
-                max={100}
-                disabled={!draft.advanceEnabled}
-                value={draft.maxAdvancePercent}
-                onChange={(v) => patch({ maxAdvancePercent: v ?? undefined })}
-                addonAfter="%"
-              />
-            </Form.Item>
-            <Form.Item label="Settlement Deadline (days after return)">
-              <InputNumber
-                min={1}
-                max={90}
-                disabled={!draft.advanceEnabled}
-                value={draft.advanceSettlementDays}
-                onChange={(v) => patch({ advanceSettlementDays: v ?? undefined })}
-              />
-            </Form.Item>
-          </Space>
-        </Panel>
-
-        {/* ── Section 5: Booking Rules ────────────────────────────── */}
-        <Panel header="Booking Rules" key="booking">
-          <Space wrap size="large">
-            <Form.Item label="Advance Booking Window (days)">
-              <InputNumber
-                min={0}
-                max={180}
-                value={draft.advanceBookingWindowDays}
-                onChange={(v) => patch({ advanceBookingWindowDays: v ?? undefined })}
-              />
-            </Form.Item>
-            <Form.Item label="Self-Booking Threshold (amount)">
-              <InputNumber
-                min={0}
-                style={{ width: 200 }}
-                value={draft.selfBookingThreshold}
-                onChange={(v) => patch({ selfBookingThreshold: v ?? undefined })}
-              />
-            </Form.Item>
-          </Space>
-          <Form.Item label="Preferred Vendors (comma separated)">
-            <Input
-              value={preferredVendorsStr}
-              placeholder="MakeMyTrip, Yatra, Thomas Cook"
-              onChange={(e) =>
-                patch({
-                  preferredVendors: e.target.value
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-            />
-          </Form.Item>
-        </Panel>
-
-        {/* ── Section 6: Approval Matrix ──────────────────────────── */}
-        <Panel header="Approval Matrix (Levels by Amount)" key="approval">
-          <Text type="secondary">
-            Requests are auto-routed by amount. Levels apply in order.
-          </Text>
-          <div style={{ marginTop: 12 }}>
-            <ApprovalMatrixEditor
-              value={draft.approvalMatrix}
-              onChange={(v) => patch({ approvalMatrix: v })}
-            />
-          </div>
-        </Panel>
-
-        {/* ── Section 7: Claim Submission ─────────────────────────── */}
-        <Panel header="Claim Submission & Documents" key="claim">
-          <Space wrap size="large">
-            <Form.Item label="Claim Deadline (days after return)">
-              <InputNumber
-                min={1}
-                max={90}
-                value={draft.claimDeadlineDaysAfterReturn}
-                onChange={(v) => patch({ claimDeadlineDaysAfterReturn: v ?? undefined })}
-              />
-            </Form.Item>
-          </Space>
-          <Form.Item label="Mandatory Documents (comma separated)">
-            <Input
-              value={mandatoryDocsStr}
-              placeholder="Invoice, Boarding Pass, Itinerary, Receipts"
-              onChange={(e) =>
-                patch({
-                  mandatoryDocuments: e.target.value
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
-            />
-          </Form.Item>
-        </Panel>
-
-        {/* ── Section 8: International Specifics ──────────────────── */}
-        {isIntl && (
-          <Panel header="International Specifics" key="intl">
-            <Space wrap size="large">
-              <Form.Item label="Visa Required (days before)">
-                <InputNumber
-                  min={0}
-                  max={180}
-                  value={draft.visaRequiredDaysBefore}
-                  onChange={(v) => patch({ visaRequiredDaysBefore: v ?? undefined })}
-                />
-              </Form.Item>
-              <Form.Item label="Forex Limit">
-                <InputNumber
-                  min={0}
-                  style={{ width: 180 }}
-                  value={draft.forexLimitAmount}
-                  onChange={(v) => patch({ forexLimitAmount: v ?? undefined })}
-                />
-              </Form.Item>
-              <Form.Item label="Forex Currency">
-                <Select
-                  style={{ width: 120 }}
-                  value={draft.forexLimitCurrency ?? "USD"}
-                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-                  onChange={(v) => patch({ forexLimitCurrency: v })}
-                />
-              </Form.Item>
-              <Form.Item label="Insurance Mandatory">
+      <Collapse 
+        defaultActiveKey={["basic", "grade"]} 
+        ghost
+        items={[
+          {
+            key: "basic",
+            label: "Basic Settings (Modes, Escalation, Attachments)",
+            children: (
+              <Form layout="vertical" size="small">
+                <Form.Item label="Allowed Travel Modes">
+                  <Checkbox.Group
+                    value={draft.allowedModes}
+                    options={ALL_MODES.map((m) => ({ label: m, value: m }))}
+                    onChange={(v) => patch({ allowedModes: v as TravelMode[] })}
+                  />
+                </Form.Item>
+                <Space wrap size="large">
+                  <Form.Item label="Escalation Window (days)">
+                    <InputNumber
+                      min={1}
+                      max={30}
+                      value={draft.escalationWindowDays}
+                      onChange={(v) => patch({ escalationWindowDays: v ?? 3 })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Allowed File Types (comma)">
+                    <Input
+                      style={{ width: 260 }}
+                      value={fileTypesStr}
+                      placeholder="pdf, jpg, png"
+                      onChange={(e) =>
+                        patch({
+                          allowedFileTypes: e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        })
+                      }
+                    />
+                  </Form.Item>
+                  <Form.Item label="Max File Size (MB)">
+                    <InputNumber
+                      min={1}
+                      max={50}
+                      value={draft.maxFileSizeMb}
+                      onChange={(v) => patch({ maxFileSizeMb: v ?? 5 })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Max File Count">
+                    <InputNumber
+                      min={1}
+                      max={20}
+                      value={draft.maxFileCount}
+                      onChange={(v) => patch({ maxFileCount: v ?? 5 })}
+                    />
+                  </Form.Item>
+                </Space>
+              </Form>
+            ),
+          },
+          {
+            key: "grade",
+            label: "Grade Entitlements (Travel Class, Hotel, Per-Diem)",
+            children: (
+              <>
+                <Text type="secondary">
+                  Define travel class, hotel category, and per-diem by employee grade.
+                </Text>
+                <div style={{ marginTop: 12 }}>
+                  <GradeEntitlementsEditor
+                    value={draft.gradeEntitlements}
+                    onChange={(v) => patch({ gradeEntitlements: v })}
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            key: "expense",
+            label: "Expense Caps (Lodging, Meals, Incidentals)",
+            children: (
+              <Space wrap size="large">
+                <Form.Item label="Currency">
+                  <Select
+                    style={{ width: 120 }}
+                    value={draft.expenseCurrency ?? "INR"}
+                    options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    onChange={(v) => patch({ expenseCurrency: v })}
+                  />
+                </Form.Item>
+                <Form.Item label="Max Lodging / Day">
+                  <InputNumber
+                    min={0}
+                    value={draft.maxLodgingPerDay}
+                    onChange={(v) => patch({ maxLodgingPerDay: v ?? undefined })}
+                  />
+                </Form.Item>
+                <Form.Item label="Max Meals / Day">
+                  <InputNumber
+                    min={0}
+                    value={draft.maxMealsPerDay}
+                    onChange={(v) => patch({ maxMealsPerDay: v ?? undefined })}
+                  />
+                </Form.Item>
+                <Form.Item label="Max Incidentals / Day">
+                  <InputNumber
+                    min={0}
+                    value={draft.maxIncidentalsPerDay}
+                    onChange={(v) => patch({ maxIncidentalsPerDay: v ?? undefined })}
+                  />
+                </Form.Item>
+              </Space>
+            ),
+          },
+          {
+            key: "advance",
+            label: "Travel Advance Policy",
+            children: (
+              <Space wrap size="large">
+                <Form.Item label="Advance Enabled">
+                  <Switch
+                    checked={!!draft.advanceEnabled}
+                    onChange={(v) => patch({ advanceEnabled: v })}
+                  />
+                </Form.Item>
+                <Form.Item label="Max Advance Amount">
+                  <InputNumber
+                    min={0}
+                    disabled={!draft.advanceEnabled}
+                    value={draft.maxAdvanceAmount}
+                    onChange={(v) => patch({ maxAdvanceAmount: v ?? undefined })}
+                  />
+                </Form.Item>
+                <Form.Item label="Max % of Estimated Cost">
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    disabled={!draft.advanceEnabled}
+                    value={draft.maxAdvancePercent}
+                    onChange={(v) => patch({ maxAdvancePercent: v ?? undefined })}
+                    addonAfter="%"
+                  />
+                </Form.Item>
+                <Form.Item label="Settlement Deadline (days after return)">
+                  <InputNumber
+                    min={1}
+                    max={90}
+                    disabled={!draft.advanceEnabled}
+                    value={draft.advanceSettlementDays}
+                    onChange={(v) => patch({ advanceSettlementDays: v ?? undefined })}
+                  />
+                </Form.Item>
+              </Space>
+            ),
+          },
+          {
+            key: "booking",
+            label: "Booking Rules",
+            children: (
+              <>
+                <Space wrap size="large">
+                  <Form.Item label="Advance Booking Window (days)">
+                    <InputNumber
+                      min={0}
+                      max={180}
+                      value={draft.advanceBookingWindowDays}
+                      onChange={(v) => patch({ advanceBookingWindowDays: v ?? undefined })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Self-Booking Threshold (amount)">
+                    <InputNumber
+                      min={0}
+                      style={{ width: 200 }}
+                      value={draft.selfBookingThreshold}
+                      onChange={(v) => patch({ selfBookingThreshold: v ?? undefined })}
+                    />
+                  </Form.Item>
+                </Space>
+                <Form.Item label="Preferred Vendors (comma separated)">
+                  <Input
+                    value={preferredVendorsStr}
+                    placeholder="MakeMyTrip, Yatra, Thomas Cook"
+                    onChange={(e) =>
+                      patch({
+                        preferredVendors: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                </Form.Item>
+              </>
+            ),
+          },
+          {
+            key: "approval",
+            label: "Approval Matrix (Levels by Amount)",
+            children: (
+              <>
+                <Text type="secondary">
+                  Requests are auto-routed by amount. Levels apply in order.
+                </Text>
+                <div style={{ marginTop: 12 }}>
+                  <ApprovalMatrixEditor
+                    value={draft.approvalMatrix}
+                    onChange={(v) => patch({ approvalMatrix: v })}
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            key: "claim",
+            label: "Claim Submission & Documents",
+            children: (
+              <>
+                <Space wrap size="large">
+                  <Form.Item label="Claim Deadline (days after return)">
+                    <InputNumber
+                      min={1}
+                      max={90}
+                      value={draft.claimDeadlineDaysAfterReturn}
+                      onChange={(v) => patch({ claimDeadlineDaysAfterReturn: v ?? undefined })}
+                    />
+                  </Form.Item>
+                </Space>
+                <Form.Item label="Mandatory Documents (comma separated)">
+                  <Input
+                    value={mandatoryDocsStr}
+                    placeholder="Invoice, Boarding Pass, Itinerary, Receipts"
+                    onChange={(e) =>
+                      patch({
+                        mandatoryDocuments: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                </Form.Item>
+              </>
+            ),
+          },
+          ...(isIntl ? [{
+            key: "intl",
+            label: "International Specifics",
+            children: (
+              <>
+                <Space wrap size="large">
+                  <Form.Item label="Visa Required (days before)">
+                    <InputNumber
+                      min={0}
+                      max={180}
+                      value={draft.visaRequiredDaysBefore}
+                      onChange={(v) => patch({ visaRequiredDaysBefore: v ?? undefined })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Forex Limit">
+                    <InputNumber
+                      min={0}
+                      style={{ width: 180 }}
+                      value={draft.forexLimitAmount}
+                      onChange={(v) => patch({ forexLimitAmount: v ?? undefined })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Forex Currency">
+                    <Select
+                      style={{ width: 120 }}
+                      value={draft.forexLimitCurrency ?? "USD"}
+                      options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                      onChange={(v) => patch({ forexLimitCurrency: v })}
+                    />
+                  </Form.Item>
+                  <Form.Item label="Insurance Mandatory">
+                    <Switch
+                      checked={!!draft.insuranceMandatory}
+                      onChange={(v) => patch({ insuranceMandatory: v })}
+                    />
+                  </Form.Item>
+                </Space>
+                <Form.Item label="Vaccination Requirements">
+                  <Input.TextArea
+                    rows={2}
+                    value={draft.vaccinationRequirements ?? ""}
+                    placeholder="e.g. Yellow Fever for Africa destinations; check destination-specific"
+                    onChange={(e) => patch({ vaccinationRequirements: e.target.value })}
+                  />
+                </Form.Item>
+              </>
+            ),
+          }] : []),
+          {
+            key: "cancel",
+            label: "Cancellation Policy",
+            children: (
+              <Space wrap size="large">
+                <Form.Item label="Refund Window (days before travel)">
+                  <InputNumber
+                    min={0}
+                    max={90}
+                    value={draft.cancellationRefundWindowDays}
+                    onChange={(v) => patch({ cancellationRefundWindowDays: v ?? undefined })}
+                  />
+                </Form.Item>
+                <Form.Item label="Cancellation Charge (%)">
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    value={draft.cancellationChargePercent}
+                    onChange={(v) => patch({ cancellationChargePercent: v ?? undefined })}
+                    addonAfter="%"
+                  />
+                </Form.Item>
+              </Space>
+            ),
+          },
+          {
+            key: "leave",
+            label: "Leave Integration",
+            children: (
+              <Form.Item label="Auto-apply On-Duty on Approval">
                 <Switch
-                  checked={!!draft.insuranceMandatory}
-                  onChange={(v) => patch({ insuranceMandatory: v })}
+                  checked={!!draft.autoOnDutyOnApproval}
+                  onChange={(v) => patch({ autoOnDutyOnApproval: v })}
                 />
               </Form.Item>
-            </Space>
-            <Form.Item label="Vaccination Requirements">
-              <Input.TextArea
-                rows={2}
-                value={draft.vaccinationRequirements ?? ""}
-                placeholder="e.g. Yellow Fever for Africa destinations; check destination-specific"
-                onChange={(e) => patch({ vaccinationRequirements: e.target.value })}
+            ),
+          },
+          {
+            key: "blackout",
+            label: "Blackout Periods (Travel Restricted)",
+            children: (
+              <BlackoutPeriodsEditor
+                value={draft.blackoutPeriods}
+                onChange={(v) => patch({ blackoutPeriods: v })}
               />
-            </Form.Item>
-          </Panel>
-        )}
-
-        {/* ── Section 9: Cancellation Policy ──────────────────────── */}
-        <Panel header="Cancellation Policy" key="cancel">
-          <Space wrap size="large">
-            <Form.Item label="Refund Window (days before travel)">
-              <InputNumber
-                min={0}
-                max={90}
-                value={draft.cancellationRefundWindowDays}
-                onChange={(v) => patch({ cancellationRefundWindowDays: v ?? undefined })}
-              />
-            </Form.Item>
-            <Form.Item label="Cancellation Charge (%)">
-              <InputNumber
-                min={0}
-                max={100}
-                value={draft.cancellationChargePercent}
-                onChange={(v) => patch({ cancellationChargePercent: v ?? undefined })}
-                addonAfter="%"
-              />
-            </Form.Item>
-          </Space>
-        </Panel>
-
-        {/* ── Section 10: Leave Integration ───────────────────────── */}
-        <Panel header="Leave Integration" key="leave">
-          <Form.Item label="Auto-apply On-Duty on Approval">
-            <Switch
-              checked={!!draft.autoOnDutyOnApproval}
-              onChange={(v) => patch({ autoOnDutyOnApproval: v })}
-            />
-          </Form.Item>
-        </Panel>
-
-        {/* ── Section 11: Blackout Periods ────────────────────────── */}
-        <Panel header="Blackout Periods (Travel Restricted)" key="blackout">
-          <BlackoutPeriodsEditor
-            value={draft.blackoutPeriods}
-            onChange={(v) => patch({ blackoutPeriods: v })}
-          />
-        </Panel>
-      </Collapse>
+            ),
+          },
+        ]}
+      />
 
       <div style={{ textAlign: "right", marginTop: 16, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>
         <Can I={isNew ? "add" : "edit"} object="travel_policy">

@@ -71,7 +71,28 @@ function mapTravelRequest(raw: any): TravelRequest {
     currentApproverId: raw.currentApproverId,
     currentApproverName: raw.currentApproverName,
     approverChainSnapshot: Array.isArray(raw.approverChainSnapshot)
-      ? raw.approverChainSnapshot
+      ? raw.approverChainSnapshot.map((item: any, index: number) => {
+          // API returns either strings (employee IDs) or full objects
+          if (typeof item === "string") {
+            return {
+              level: index + 1,
+              approverId: item,
+              approverName: item,
+              approverRole: undefined,
+              status: undefined,
+              actionAt: undefined,
+            };
+          }
+          // If it's already an object, ensure all required fields exist
+          return {
+            level: item.level ?? index + 1,
+            approverId: item.approverId ?? item.empId ?? "",
+            approverName: item.approverName ?? item.name ?? item.approverId ?? "",
+            approverRole: item.approverRole ?? item.role,
+            status: item.status,
+            actionAt: item.actionAt ?? item.actionDateTime,
+          };
+        })
       : undefined,
     escalationLevel: raw.escalationLevel ?? 0,
     escalationDueDate: raw.escalationDueDate,
@@ -91,20 +112,32 @@ function mapTravelRequest(raw: any): TravelRequest {
           const o = c as Record<string, unknown>;
           return {
             employeeId: String(o.employeeId ?? o.empId ?? ""),
-            employeeName: String(o.employeeName ?? o.fullName ?? o.name ?? ""),
+            employeeName: String(o.employeeName ?? o.empName ?? o.fullName ?? o.name ?? ""),
             department: String(o.department ?? ""),
-            hasConflict: !!o.hasConflict,
+            hasConflict: !!(o.hasConflict ?? o.conflictFlag),
             conflictReason: o.conflictReason as string | undefined,
           };
         })
       : [],
-    attachments: Array.isArray(raw.attachments) ? raw.attachments : [],
+    attachments: Array.isArray(raw.attachments) 
+      ? raw.attachments 
+      : Array.isArray(raw.base64Docu)
+        ? raw.base64Docu.map((doc: any, idx: number) => ({
+            attachmentId: doc.attachmentId || `doc-${idx}`,
+            fileName: doc.fileName || "Unnamed",
+            fileSizeBytes: doc.fileSize || 0,
+            uploadedAt: doc.uploadedAt || new Date().toISOString(),
+            uploadedBy: doc.uploadedBy || "System",
+            base64: doc.base64 || doc.data,  // Include base64 data for local preview/download
+            fileType: doc.fileType || doc.mimeType || "application/octet-stream",  // Include file type
+          }))
+        : [],
     actionHistory: Array.isArray(raw.actionHistory)
       ? raw.actionHistory.map(mapAction)
       : Array.isArray(raw.approvalHistory)
         ? raw.approvalHistory.map(mapAction)
         : [],
-    submittedAt: raw.submittedAt,
+    submittedAt: raw.submittedAt ?? raw.createdDateTime ?? "",
     createdDateTime: raw.createdDateTime ?? "",
     createdBy: raw.createdBy ?? "",
     active: raw.active ?? 1,
@@ -170,7 +203,9 @@ export class HrmTravelService {
   // ── Approval ─────────────────────────────────────────────────────────
   static async getApproverInbox(payload: TravelApproverInboxRequest): Promise<TravelRequest[]> {
     const { data } = await api.post(`${this.BASE}/approver-inbox`, payload);
-    return mapTravelRequestArray(data);
+    // API returns { response: [...], site: null, ... } so extract the response array
+    const requests = Array.isArray(data?.response) ? data.response : Array.isArray(data) ? data : [];
+    return mapTravelRequestArray(requests);
   }
 
   static async approveRequest(payload: TravelApprovalPayload): Promise<TravelRequest> {
@@ -258,7 +293,17 @@ export class HrmTravelService {
   // ── Policy ───────────────────────────────────────────────────────────
   static async getPolicies(payload: SiteRequest): Promise<TravelPolicy[]> {
     const { data } = await api.post(`${this.BASE}/policy/retrieve`, payload);
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+    
+    // Map policies to ensure allowedFileTypes is an array
+    return data.map(policy => ({
+      ...policy,
+      allowedFileTypes: typeof policy.allowedFileTypes === 'string'
+        ? policy.allowedFileTypes.split(',').map((ft: string) => ft.trim().toLowerCase())
+        : Array.isArray(policy.allowedFileTypes)
+        ? policy.allowedFileTypes.map((ft: string) => ft.toLowerCase())
+        : [],
+    }));
   }
 
   static async updatePolicy(payload: TravelPolicyUpdatePayload): Promise<TravelPolicy> {
@@ -306,4 +351,5 @@ export class HrmTravelService {
     const { data } = await api.post(`${this.BASE}/advance/retrieve`, payload);
     return data ?? null;
   }
+
 }

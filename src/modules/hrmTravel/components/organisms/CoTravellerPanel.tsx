@@ -31,6 +31,7 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
   const identity = useEmployeeIdentity();
   const [options, setOptions] = useState<DirectoryOption[]>([]);
   const [searching, setSearching] = useState(false);
+  const [enrichedCoTravellers, setEnrichedCoTravellers] = useState<CoTravellerDto[]>(coTravellers);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addedIds = useMemo(
@@ -42,13 +43,22 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
     async (query: string) => {
       setSearching(true);
       try {
-        const res = await HrmEmployeeService.searchByKeyword(organizationId, query);
+        // Use fetchDirectory for better results - it handles empty queries better
+        console.log('[CoTravellerPanel] Fetching directory with query:', query);
+        const res = await HrmEmployeeService.fetchDirectory({
+          organizationId,
+          keyword: query,
+          page: 0,
+          size: 100,
+        });
+        console.log('[CoTravellerPanel] Directory response:', res);
         const rows = (res?.employees ?? []).filter(
           (r) =>
             r.employeeCode &&
             r.employeeCode !== identity.employeeCode &&
             !addedIds.has(r.employeeCode),
         );
+        console.log('[CoTravellerPanel] Filtered rows:', rows);
         setOptions(
           rows.map((r) => ({
             value: r.employeeCode,
@@ -56,7 +66,8 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
             row: r,
           })),
         );
-      } catch {
+      } catch (error) {
+        console.error('[CoTravellerPanel] Error fetching directory:', error);
         setOptions([]);
       } finally {
         setSearching(false);
@@ -65,11 +76,56 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
     [organizationId, identity.employeeCode, addedIds],
   );
 
+  // Enrich co-travellers with department and email info from employee directory
+  const enrichCoTravellersWithDepartment = useCallback(
+    async (travellers: CoTravellerDto[]) => {
+      if (!travellers.length) {
+        setEnrichedCoTravellers([]);
+        return;
+      }
+      
+      try {
+        // Fetch employee directory to get department and email info
+        const res = await HrmEmployeeService.fetchDirectory({
+          organizationId,
+          page: 0,
+          size: 100,
+        });
+        
+        // Create a map of employee code to directory row
+        const empMap = new Map<string, EmployeeDirectoryRow>();
+        (res?.employees ?? []).forEach((emp) => {
+          empMap.set(emp.employeeCode, emp);
+        });
+        
+        // Enrich travellers with department and email from directory
+        const enriched = travellers.map((t) => {
+          const dirEntry = empMap.get(t.employeeId);
+          return {
+            ...t,
+            department: dirEntry?.department || t.department || "",
+            workEmail: dirEntry?.workEmail || t.workEmail || "",
+          };
+        });
+        setEnrichedCoTravellers(enriched);
+      } catch (error) {
+        console.error('[CoTravellerPanel] Error enriching co-travellers:', error);
+        setEnrichedCoTravellers(travellers);
+      }
+    },
+    [organizationId],
+  );
+
   // Preload the full org directory so the dropdown is populated by default.
   // Typing then refines via backend keyword search.
   useEffect(() => {
     fetchDirectory("");
   }, [fetchDirectory]);
+
+  // Enrich co-travellers with department info when they change
+  useEffect(() => {
+    enrichCoTravellersWithDepartment(coTravellers);
+  }, [coTravellers, enrichCoTravellersWithDepartment]);
 
   const handleSearch = useCallback(
     (raw: string) => {
@@ -139,13 +195,13 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
               color: "#8c8c8c",
             }}
           >
-            <span style={{ width: 80 }}>Emp ID</span>
-            <span style={{ flex: 1 }}>Name</span>
-            <span style={{ width: 120 }}>Department</span>
-            <span style={{ width: 90 }}>Conflict</span>
-            {!readonly && <span style={{ width: 32 }} />}
+            <span style={{ width: 70, flexShrink: 0 }}>Emp ID</span>
+            <span style={{ width: 140, flexShrink: 0 }}>Name</span>
+            <span style={{ width: 110, flexShrink: 0 }}>Department</span>
+            <span style={{ flex: 1, minWidth: 0 }}>Email</span>
+            {!readonly && <span style={{ width: 40, flexShrink: 0 }} />}
           </div>
-          {coTravellers.map((t) => (
+          {enrichedCoTravellers.map((t) => (
             <CoTravellerRow
               key={t.employeeId}
               traveller={t}

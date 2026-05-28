@@ -47,7 +47,6 @@ const HrmTravelLanding: React.FC = () => {
   const isSupervisor = travelPerms.rbacPublished
     ? travelPerms.isSupervisor
     : !isAdmin && SUPERVISOR_ROLES.includes(cookieRole);
-  const role = isAdmin ? "HR" : isSupervisor ? "SUPERVISOR" : "EMPLOYEE";
 
   const {
     myRequests,
@@ -65,6 +64,10 @@ const HrmTravelLanding: React.FC = () => {
     setScreenMode,
     resetFormState,
     setActiveDetailTab,
+    setSearchTerm,
+    setStatusFilter,
+    setTypeFilter,
+    setDateRange,
   } = useHrmTravelStore();
 
   const { loadMyRequests, loadApproverInbox, loadPolicies, exportRequests } = useTravelData();
@@ -83,10 +86,22 @@ const HrmTravelLanding: React.FC = () => {
     ? travelPerms.canViewHistory || travelPerms.canViewApproval
     : isSupervisor || isAdmin;
 
-  // Load data on mount and when filters change
+  // Load data on mount
   useEffect(() => {
     loadMyRequests();
-  }, [loadMyRequests, statusFilter, typeFilter, dateRange, searchTerm]);
+  }, [loadMyRequests]);
+
+  // Load data when filters change - use a timer to debounce rapid changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (screenMode === "list") {
+        loadMyRequests();
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, typeFilter, dateRange, searchTerm]);
 
   useEffect(() => {
     if (canSeeApprovals) {
@@ -111,10 +126,29 @@ const HrmTravelLanding: React.FC = () => {
     setScreenMode("create");
   };
 
+  const handleTabChange = (key: string) => {
+    // Reset filters when switching tabs
+    setSearchTerm("");
+    setStatusFilter(null);
+    setTypeFilter(null);
+    setDateRange(null);
+    setSelectedRequest(null);
+    setScreenMode("list");
+  };
+
   const handleRowClick = useCallback((request: typeof myRequests[0]) => {
-    setSelectedRequest(request);
-    setScreenMode("view");
-  }, []);
+    // Fetch full request details to ensure attachments are included
+    HrmTravelService.getRequestByHandle({ organizationId, handle: request.handle })
+      .then((fullRequest) => {
+        setSelectedRequest(fullRequest);
+        setScreenMode("view");
+      })
+      .catch(() => {
+        // Fallback to the list data if fetch fails
+        setSelectedRequest(request);
+        setScreenMode("view");
+      });
+  }, [organizationId]);
 
   const handleBack = () => {
     setScreenMode("list");
@@ -129,9 +163,18 @@ const HrmTravelLanding: React.FC = () => {
   };
 
   const handleInboxRowClick = useCallback((request: typeof myRequests[0]) => {
-    setSelectedRequest(request);
-    setScreenMode("view");
-  }, []);
+    // Fetch full request details to ensure attachments are included
+    HrmTravelService.getRequestByHandle({ organizationId, handle: request.handle })
+      .then((fullRequest) => {
+        setSelectedRequest(fullRequest);
+        setScreenMode("view");
+      })
+      .catch(() => {
+        // Fallback to the list data if fetch fails
+        setSelectedRequest(request);
+        setScreenMode("view");
+      });
+  }, [organizationId]);
 
   // Build detail panel - passes isApprover based on context
   const buildDetailPanel = (isApproverContext = false) => {
@@ -168,7 +211,7 @@ const HrmTravelLanding: React.FC = () => {
               Export CSV
             </Button>
             <Can I="add" object="travel_request">
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleNewRequest}>
+              <Button type="primary" onClick={handleNewRequest}>
                 New Request
               </Button>
             </Can>
@@ -184,6 +227,7 @@ const HrmTravelLanding: React.FC = () => {
             selectedHandle={selectedRequest?.handle}
             onRowClick={handleRowClick}
             onNewRequest={handleNewRequest}
+            searchTerm={searchTerm}
           />
         }
         detailPanel={buildDetailPanel(false)}
@@ -234,14 +278,11 @@ const HrmTravelLanding: React.FC = () => {
   if (canSeeApprovals) {
     tabItems.push({
       key: "approvals",
-      label: `Approvals (${pendingRequests.length})`,
+      label: "Pending",
       children: (
         <TravelApproverTemplate
           pendingPanel={makeInboxPanel(pendingRequests)}
-          escalatedPanel={makeInboxPanel(escalatedRequests)}
-          decidedPanel={makeInboxPanel(decidedRequests)}
           pendingCount={pendingRequests.length}
-          escalatedCount={escalatedRequests.length}
         />
       ),
     });
@@ -249,27 +290,12 @@ const HrmTravelLanding: React.FC = () => {
 
   if (canSeeReports) {
     tabItems.push({
-      key: "reportPendingAging",
-      label: "Pending Aging Report",
-      children: (
-        <TravelReportScreen
-          title="Pending Approval — Aging Report"
-          description="Travel requests awaiting approval, with days-since-submission aging."
-          organizationId={organizationId}
-          empId={employeeId}
-          fetcher={(p) =>
-            HrmTravelService.reportPendingAging({ organizationId: p.organizationId, empId: p.empId })
-          }
-        />
-      ),
-    });
-    tabItems.push({
       key: "reportByTypeDate",
       label: "By Type & Date Report",
       children: (
         <TravelReportScreen
           title="Travel Reports by Type & Date"
-          description="All travel requests in the selected window, optionally filtered by travel type."
+          description="All travel requests in the selected window."
           organizationId={organizationId}
           empId={employeeId}
           fetcher={(p) =>
@@ -278,10 +304,13 @@ const HrmTravelLanding: React.FC = () => {
               fromDate: p.fromDate ?? "",
               toDate: p.toDate ?? "",
               travelType: p.travelType,
+              status: p.status,
+              empId: p.empId,
+              currentApproverId: p.empId,
             })
           }
           requireDateRange
-          showTypeFilter
+          noPagination
         />
       ),
     });
@@ -303,7 +332,13 @@ const HrmTravelLanding: React.FC = () => {
     <ModuleAccessGate moduleCode="HRM_TRAVEL" appTitle="Travel Requests">
       <div className={`hrm-module-root ${styles.landing}`}>
         <CommonAppBar appTitle="Travel Requests" />
-        <Tabs items={tabItems} size="small" tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} style={{ flex: 1, overflow: "hidden" }} />
+        <Tabs 
+          items={tabItems} 
+          size="small" 
+          onChange={handleTabChange}
+          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }} 
+          style={{ flex: 1, overflow: "hidden" }} 
+        />
       </div>
     </ModuleAccessGate>
   );
