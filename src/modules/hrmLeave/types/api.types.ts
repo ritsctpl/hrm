@@ -94,6 +94,9 @@ export interface LeavePolicyRequest {
   deptId?: string;
   /** Policy applicability — gender ('ALL' | 'MALE' | 'FEMALE' | 'OTHER'). */
   applicableGender?: string;
+  /** Policy applicability — marital status ('ALL' | 'SINGLE' | 'MARRIED' |
+   *  'DIVORCED' | 'WIDOWED'). Drives Maternity / Paternity eligibility. */
+  maritalStatus?: string;
   /** Policy applicability — employment type (PERMANENT, CONTRACT, …). */
   employeeType?: string;
   /** Policy applicability — designation. */

@@ -35,6 +35,7 @@ import {
   ENCASH_RATE_FORMULAS,
   GENDER_APPLICABILITY,
   EMPLOYEE_TYPE_OPTIONS,
+  MARITAL_STATUS_APPLICABILITY,
 } from "../../utils/constants";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
@@ -209,6 +210,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     policyForm.resetFields();
     policyForm.setFieldsValue({
       applicableGender: "ALL",
+      maritalStatus: "ALL",
       accrualFrequency: "QUARTERLY",
       accrualQuantity: 0,
       prorateEnabled: true,
@@ -247,6 +249,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         buId: values.buId,
         deptId: values.deptId,
         applicableGender: values.applicableGender,
+        maritalStatus: values.maritalStatus,
         employeeType: values.employeeType,
         designation: values.designation,
         effectiveFrom: values.effectiveFrom.format("YYYY-MM-DD"),
@@ -606,7 +609,18 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               label="Gender"
               tooltip="Restrict this policy to a gender. ALL applies to everyone."
             >
-              <Select options={GENDER_APPLICABILITY} style={{ width: 160 }} placeholder="All" />
+              <Select options={GENDER_APPLICABILITY} style={{ width: 140 }} placeholder="All" />
+            </Form.Item>
+            <Form.Item
+              name="maritalStatus"
+              label="Marital Status"
+              tooltip="Restrict this policy to a marital status. Drives Maternity / Paternity eligibility together with Gender."
+            >
+              <Select
+                options={MARITAL_STATUS_APPLICABILITY}
+                style={{ width: 160 }}
+                placeholder="All"
+              />
             </Form.Item>
             <Form.Item
               name="employeeType"
@@ -616,7 +630,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <Select
                 allowClear
                 options={EMPLOYEE_TYPE_OPTIONS}
-                style={{ width: 180 }}
+                style={{ width: 170 }}
                 placeholder="All employee types"
               />
             </Form.Item>
@@ -625,7 +639,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               label="Designation"
               tooltip="Restrict this policy to a designation. Blank applies to all."
             >
-              <Input placeholder="All designations" style={{ width: 200 }} allowClear />
+              <Input placeholder="All designations" style={{ width: 180 }} allowClear />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">

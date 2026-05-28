@@ -109,7 +109,10 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   const isPendingRequest =
     request.status === "PENDING_SUPERVISOR" ||
     request.status === "PENDING_NEXT_SUPERIOR" ||
-    request.status === "PENDING_HR";
+    request.status === "PENDING_HR" ||
+    // Item 5: escalation also leaves the request in flight; the original
+    // reporting manager must still be able to step in via Override.
+    request.status === "ESCALATED";
   const forwardedOnward = isRequestSupervisor && isPendingRequest && !isCurrentApprover;
 
   const [loading, setLoading] = React.useState(false);

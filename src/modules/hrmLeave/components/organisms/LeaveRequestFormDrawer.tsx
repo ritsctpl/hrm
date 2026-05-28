@@ -28,6 +28,7 @@ import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/trans
 import { mapBalanceResponseToDomain } from "../../utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance, LeaveRequest, LeavePolicy, LeaveAttachment } from "../../types/domain.types";
+import { checkGenderMaritalEligibility } from "../../utils/constants";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
@@ -360,9 +361,12 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     };
   }, [showLeaveForm, organizationId, effectiveEmployeeId, setLeaveTypes]);
 
-  // Derive the employee's gender from the fetched profile so that
-  // gender-restricted leave types can be hidden / disabled.
+  // Derive the employee's gender and marital status from the fetched
+  // profile so that gender-restricted and marital-restricted leave types
+  // (Maternity → married female, Paternity → married male) can be hidden
+  // / disabled.
   const employeeGender = currentProfile?.personalDetails?.gender?.toUpperCase();
+  const employeeMarital = currentProfile?.personalDetails?.maritalStatus?.toUpperCase();
 
   // Merge prop balances + drawer-fetched balances + configured leave types.
   // The drawer-fetched balances cover the case where the parent never loaded
@@ -421,12 +425,29 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       });
     }
 
+    // Maternity / Paternity eligibility (item 1) — applied even when the
+    // leave type carries no gender/marital config, because the codes
+    // themselves imply the rule.
+    if (currentProfile) {
+      byCode.forEach((opt, code) => {
+        const eligibility = checkGenderMaritalEligibility(
+          code,
+          employeeGender,
+          employeeMarital,
+        );
+        if (!eligibility.ok) {
+          opt.disabled = true;
+          opt.disabledReason = eligibility.reason ?? "Not applicable";
+        }
+      });
+    }
+
     // TODO: probation filter — requires fetching effective policies per leave
     // type and comparing joiningDate + availableAfterMonths with today. The
     // backend already validates at submit time (state "probation_restricted").
 
     return Array.from(byCode.values());
-  }, [balances, fetchedBalances, leaveTypes, employeeGender]);
+  }, [balances, fetchedBalances, leaveTypes, employeeGender, employeeMarital, currentProfile]);
 
   const selectedBalance = choiceOptions.find(
     (o) => o.code === leaveFormState.leaveTypeCode,

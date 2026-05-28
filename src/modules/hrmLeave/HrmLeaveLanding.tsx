@@ -528,8 +528,16 @@ const HrmLeaveLanding: React.FC = () => {
           selectedHandle={selectedRequest?.handle}
           onRowClick={setSelectedRequest}
           onRequestDeleted={() => {
+            // Item 4: a delete must clear the row from every place it can
+            // appear — My Requests, the approver inbox (Team Calendar reads
+            // pendingRequests), the HR queue / Team History (globalQueue),
+            // plus refresh balances so the freed-up days show up.
             loadMyRequests();
             loadBalances();
+            if (permissions.canViewApprovalQueue) loadPendingForApprover();
+            if (permissions.canViewHrQueue || permissions.canViewTeamHistory) {
+              loadGlobalQueue();
+            }
           }}
         />
         {rightPanel}
@@ -837,7 +845,14 @@ const HrmLeaveLanding: React.FC = () => {
             <ManualAdjustmentForm
               organizationId={organizationId}
               onAdjusted={() => {
+                // Item 2: a manual debit / credit must refresh every place
+                // the balance is visible — dashboard tiles, balance summary
+                // and the ledger entries the admin is looking at.
                 loadLedgerHistory();
+                loadBalances();
+                if (permissions.canViewBalance) {
+                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+                }
                 setManualAdjModalOpen(false);
               }}
             />
@@ -857,6 +872,10 @@ const HrmLeaveLanding: React.FC = () => {
               organizationId={organizationId}
               onAdjusted={() => {
                 loadLedgerHistory();
+                loadBalances();
+                if (permissions.canViewBalance) {
+                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+                }
                 setBulkAdjModalOpen(false);
               }}
             />
@@ -879,6 +898,10 @@ const HrmLeaveLanding: React.FC = () => {
               organizationId={organizationId}
               onCredited={() => {
                 loadLedgerHistory();
+                loadBalances();
+                if (permissions.canViewBalance) {
+                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+                }
                 setCompOffCreditModalOpen(false);
               }}
             />
@@ -932,7 +955,14 @@ const HrmLeaveLanding: React.FC = () => {
     <PermissionGate object="leave_year_end" action="view">
       <YearEndOperationsPanel
         organizationId={organizationId}
-        onProcessed={() => loadBalanceSummary(balancesYear)}
+        onProcessed={() => {
+          // Item 10: lapse / carry-forward / encashment all rewrite balance
+          // rows and ledger entries. Refresh the dashboard tiles, balance
+          // summary and ledger so the updated values appear immediately.
+          loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+          loadBalances();
+          loadLedgerHistory();
+        }}
       />
     </PermissionGate>
   );

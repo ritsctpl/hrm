@@ -44,9 +44,19 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   const userId = identity.employeeIdWithName || cookies.userId || "";
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const [attachments, setAttachments] = useState<
-    { name: string; base64: string; contentType: string }[]
-  >([]);
+  // Attachment item — covers both files already on the request being amended
+  // (`existing: true`, carries `url` / `id`) and freshly uploaded ones
+  // (`existing: false`, carries `base64`). View / Download work for both.
+  type AmendAttachment = {
+    uid: string;
+    name: string;
+    contentType: string;
+    base64?: string;
+    url?: string;
+    existing: boolean;
+    id?: string;
+  };
+  const [attachments, setAttachments] = useState<AmendAttachment[]>([]);
 
   useEffect(() => {
     if (open && request) {
@@ -54,7 +64,20 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
         range: [dayjs(request.startDate), dayjs(request.endDate)],
         reason: request.reason,
       });
-      setAttachments([]);
+      // Seed from the request's existing attachments so the admin can see
+      // what's already on the row, view/download them, and optionally
+      // remove + replace.
+      setAttachments(
+        (request.attachments ?? []).map((a, i) => ({
+          uid: a.id || `existing-${i}`,
+          name: a.name,
+          contentType: a.contentType || "application/octet-stream",
+          base64: a.contentBase64,
+          url: a.downloadUrl,
+          existing: true,
+          id: a.id,
+        })),
+      );
     }
     if (!open) {
       form.resetFields();
@@ -86,7 +109,13 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       const base64 = await fileToBase64(file);
       setAttachments((prev) => [
         ...prev,
-        { name: file.name, base64, contentType: file.type || "application/octet-stream" },
+        {
+          uid: `new-${Date.now()}-${file.name}`,
+          name: file.name,
+          base64,
+          contentType: file.type || "application/octet-stream",
+          existing: false,
+        },
       ]);
       message.success(`${file.name} attached`);
     } catch {
@@ -95,20 +124,24 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     return false;
   };
 
-  const removeAttachment = (name: string) => {
-    setAttachments((prev) => prev.filter((a) => a.name !== name));
+  const removeAttachment = (uid: string) => {
+    setAttachments((prev) => prev.filter((a) => a.uid !== uid));
   };
 
-  // View / Download work straight from the in-memory base64 data URI so the
-  // attachment is usable the instant it is uploaded — no save+reload needed.
-  const viewAttachment = (a: { name: string; base64: string }) => {
-    if (!a.base64) return;
-    window.open(a.base64, "_blank", "noopener,noreferrer");
+  // View / Download use the BE-supplied URL when available (existing files)
+  // and fall back to the in-memory base64 data URI (newly uploaded files) so
+  // the file is usable the instant it is added — no save+reload needed.
+  const hrefFor = (a: AmendAttachment): string => a.url || a.base64 || "";
+  const viewAttachment = (a: AmendAttachment) => {
+    const href = hrefFor(a);
+    if (!href) return;
+    window.open(href, "_blank", "noopener,noreferrer");
   };
-  const downloadAttachment = (a: { name: string; base64: string }) => {
-    if (!a.base64) return;
+  const downloadAttachment = (a: AmendAttachment) => {
+    const href = hrefFor(a);
+    if (!href) return;
     const link = document.createElement("a");
-    link.href = a.base64;
+    link.href = href;
     link.download = a.name;
     document.body.appendChild(link);
     link.click();
@@ -138,19 +171,21 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
         totalDays,
         reason: values.reason,
         amendedBy: userId,
-        // Only send attachments when the user actually added files. Sending an
-        // empty array used to ride along under a field the BE didn't model,
-        // which could fail the update — omitting it leaves existing files
-        // untouched and lets the amend succeed.
-        ...(attachments.length > 0
-          ? {
-              attachments: attachments.map((a) => ({
-                name: a.name,
-                contentType: a.contentType,
-                contentBase64: a.base64,
-              })),
-            }
-          : {}),
+        // Only send attachments when there is fresh file content to send
+        // (newly uploaded files carry base64). Existing files without base64
+        // would be silently dropped by the BE's "non-empty list replaces"
+        // contract, so we omit the field and let the BE keep them intact —
+        // matching the apply-leave drawer.
+        ...((() => {
+          const uploads = attachments
+            .filter((a) => !!a.base64)
+            .map((a) => ({
+              name: a.name,
+              contentType: a.contentType,
+              contentBase64: a.base64 as string,
+            }));
+          return uploads.length > 0 ? { attachments: uploads } : {};
+        })()),
       } as Parameters<typeof HrmLeaveService.amendLeaveRequest>[0];
       const updated = await HrmLeaveService.amendLeaveRequest(payload);
       message.success("Leave request amended");
@@ -228,7 +263,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                 >
                   {attachments.map((a) => (
                     <li
-                      key={a.name}
+                      key={a.uid}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -244,11 +279,17 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {a.name}
                       </span>
+                      {a.existing && (
+                        <Text type="secondary" style={{ fontSize: 11, marginLeft: 4, marginRight: 4 }}>
+                          saved
+                        </Text>
+                      )}
                       <Button
                         type="link"
                         size="small"
                         icon={<EyeOutlined />}
                         onClick={() => viewAttachment(a)}
+                        disabled={!hrefFor(a)}
                       >
                         View
                       </Button>
@@ -257,6 +298,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                         size="small"
                         icon={<DownloadOutlined />}
                         onClick={() => downloadAttachment(a)}
+                        disabled={!hrefFor(a)}
                       >
                         Download
                       </Button>
@@ -264,7 +306,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                         type="text"
                         size="small"
                         icon={<DeleteOutlined />}
-                        onClick={() => removeAttachment(a.name)}
+                        onClick={() => removeAttachment(a.uid)}
                       />
                     </li>
                   ))}

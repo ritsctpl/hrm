@@ -176,6 +176,10 @@ export interface LeavePolicy {
   /** Policy applicability — restricts this policy to a gender. 'ALL' (or
    *  unset) applies to everyone. */
   applicableGender?: string;
+  /** Policy applicability — restricts to a marital status (SINGLE, MARRIED,
+   *  DIVORCED, WIDOWED). Drives Maternity / Paternity eligibility together
+   *  with `applicableGender`. */
+  maritalStatus?: string;
   /** Policy applicability — restricts to an employment type (PERMANENT,
    *  CONTRACT, INTERN, …). Unset applies to all employee types. */
   employeeType?: string;

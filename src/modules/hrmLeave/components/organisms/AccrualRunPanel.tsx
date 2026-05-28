@@ -200,16 +200,27 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
     return set;
   }, [leaveTypeList]);
 
-  // Resolved + filtered preview rows. Degrades gracefully: if no leave type
-  // carries the accrualEnabled flag yet (older backend), we show every line
-  // rather than hiding the entire preview.
+  // Resolved + filtered + de-duplicated preview rows. Degrades gracefully:
+  // if no leave type carries the accrualEnabled flag yet (older backend) we
+  // show every line. Item 6: when accruals are re-run (e.g. after a newly
+  // added leave type) the backend can re-emit the same (employee, type)
+  // pair — dedupe in the frontend so the preview never shows duplicate
+  // rows for the same employee + leave type.
   const previewRows = React.useMemo(() => {
     const lines = accrualPreview?.lines ?? [];
     const filtered =
       accrualEnabledCodes.size === 0
         ? lines
         : lines.filter((l) => accrualEnabledCodes.has(l.leaveTypeCode));
-    return filtered.map((line, i) => ({
+    const seen = new Set<string>();
+    const deduped: typeof filtered = [];
+    for (const line of filtered) {
+      const key = `${line.employeeId}|${line.leaveTypeCode}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(line);
+    }
+    return deduped.map((line, i) => ({
       ...line,
       key: `${line.employeeId}-${line.leaveTypeCode}-${i}`,
       employeeName:

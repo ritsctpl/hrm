@@ -4,10 +4,16 @@ import React from "react";
 import { Button, DatePicker, Form, Input, Radio, Select, message } from "antd";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
+import { HrmEmployeeService } from "../../../hrmEmployee/services/hrmEmployeeService";
 import { ManualAdjustmentFormProps } from "../../types/ui.types";
 import { useEmployeeOptions } from "../../hooks/useEmployeeOptions";
 import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
+import {
+  checkGenderMaritalEligibility,
+  isMaternityCode,
+  isPaternityCode,
+} from "../../utils/constants";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -24,17 +30,50 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
   const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const handleSubmit = async () => {
+    let values: Record<string, unknown>;
     try {
-      const values = await form.validateFields();
+      values = await form.validateFields();
+    } catch {
+      // Ant's own validation messages already surface below each field.
+      return;
+    }
+
+    // Maternity / Paternity gender + marital status eligibility (item 1).
+    // Fetch the target employee's profile so the admin can't credit/debit
+    // those leave types for ineligible employees.
+    const code = values.leaveTypeCode as string;
+    if (isMaternityCode(code) || isPaternityCode(code)) {
+      const targetOption = employeeOptions.find((o) => o.value === values.employeeId);
+      const handle = targetOption?.handle;
+      if (handle) {
+        try {
+          const profile = await HrmEmployeeService.fetchProfile(organizationId, handle);
+          const eligibility = checkGenderMaritalEligibility(
+            code,
+            profile?.personalDetails?.gender,
+            profile?.personalDetails?.maritalStatus,
+          );
+          if (!eligibility.ok) {
+            message.error(eligibility.reason);
+            return;
+          }
+        } catch {
+          // If the profile lookup fails we don't block — the BE still
+          // validates and will surface its own error.
+        }
+      }
+    }
+
+    try {
       setLoading(true);
       await HrmLeaveService.postManualAdjustment({ organizationId,
-        employeeId: values.employeeId,
-        leaveTypeCode: values.leaveTypeCode,
-        quantity: parseFloat(values.quantity),
-        direction: values.direction,
-        transactionDate: values.transactionDate.format("YYYY-MM-DD"),
-        reasonCode: values.reasonCode,
-        notes: values.notes,
+        employeeId: values.employeeId as string,
+        leaveTypeCode: code,
+        quantity: parseFloat(String(values.quantity)),
+        direction: values.direction as "CR" | "DR",
+        transactionDate: (values.transactionDate as import("dayjs").Dayjs).format("YYYY-MM-DD"),
+        reasonCode: values.reasonCode as string,
+        notes: values.notes as string | undefined,
         createdBy: userId,
       });
       message.success("Adjustment posted successfully");

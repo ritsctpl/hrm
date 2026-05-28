@@ -93,6 +93,65 @@ export const EMPLOYEE_TYPE_OPTIONS = [
   { value: "PART_TIME", label: "Part Time" },
 ];
 
+// Policy applicability — marital status. Drives Maternity / Paternity
+// eligibility (only married female / married male respectively).
+export const MARITAL_STATUS_APPLICABILITY = [
+  { value: "ALL", label: "All" },
+  { value: "SINGLE", label: "Single" },
+  { value: "MARRIED", label: "Married" },
+  { value: "DIVORCED", label: "Divorced" },
+  { value: "WIDOWED", label: "Widowed" },
+];
+
+/** Detect Maternity / Paternity leave type from its code. The eligibility
+ *  rule (married female / married male) is enforced regardless of whether
+ *  the effective policy carries the applicability fields yet. */
+export const isMaternityCode = (code?: string): boolean => {
+  const upper = (code ?? "").toUpperCase();
+  return upper === "ML" || upper.includes("MATERNITY");
+};
+
+export const isPaternityCode = (code?: string): boolean => {
+  const upper = (code ?? "").toUpperCase();
+  // PL alone is "Privilege Leave" in most setups, so we match only the
+  // explicit PAT short code and any code containing "PATERNITY".
+  return upper === "PAT" || upper.includes("PATERNITY");
+};
+
+export interface GenderMaritalEligibility {
+  ok: boolean;
+  reason?: string;
+}
+
+export const checkGenderMaritalEligibility = (
+  leaveTypeCode: string | null | undefined,
+  gender: string | null | undefined,
+  maritalStatus: string | null | undefined,
+): GenderMaritalEligibility => {
+  if (!leaveTypeCode) return { ok: true };
+  const g = (gender ?? "").toUpperCase();
+  const m = (maritalStatus ?? "").toUpperCase();
+  if (isMaternityCode(leaveTypeCode)) {
+    if (g !== "FEMALE") {
+      return { ok: false, reason: "Maternity Leave is only available to female employees." };
+    }
+    if (m !== "MARRIED") {
+      return { ok: false, reason: "Maternity Leave is only available to married employees." };
+    }
+    return { ok: true };
+  }
+  if (isPaternityCode(leaveTypeCode)) {
+    if (g !== "MALE") {
+      return { ok: false, reason: "Paternity Leave is only available to male employees." };
+    }
+    if (m !== "MARRIED") {
+      return { ok: false, reason: "Paternity Leave is only available to married employees." };
+    }
+    return { ok: true };
+  }
+  return { ok: true };
+};
+
 export const DIRECTION_COLORS: Record<string, string> = {
   CR: "green",
   DR: "red",
