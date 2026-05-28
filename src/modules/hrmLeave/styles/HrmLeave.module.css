@@ -11,6 +11,38 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Don't let the long tab list push the page wider than the viewport.
+     `min-width: 0` lets the flex child shrink, `max-width: 100%` caps it. */
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Tab heading row: stays within the container and scrolls horizontally on
+   its own (native overflow-x: auto). AntD's transform-based arrow scroll
+   is disabled so native scroll alone drives what is visible, and the
+   "more" overflow dropdown is hidden because the arrows can no longer
+   function with the transform mechanism off. */
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap) {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap)::-webkit-scrollbar {
+  height: 4px;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap) > :global(.ant-tabs-nav-list) {
+  transform: none !important;
+}
+
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-operations) {
+  display: none !important;
 }
 
 .landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) {
