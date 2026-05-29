@@ -735,6 +735,35 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const balanceKnown = selectedBalance?.hasBalance ?? false;
   const balanceAfter = availableBalance - leaveFormState.totalDays;
 
+  // ── Policy-driven eligibility (item 1) ─────────────────────────────
+  // Beyond the hardcoded ML / PAT rule on the choice cards, the effective
+  // policy can carry applicableGender + applicableMaritalStatus that pin
+  // the leave type to a subset of employees (e.g. married females only).
+  // When the employee's profile mismatches, surface a clear inline error
+  // and block submit.
+  const policyApplicabilityError = useMemo<string | null>(() => {
+    if (!effectivePolicy || !currentProfile) return null;
+    const allowedGender = (effectivePolicy.applicableGender ?? "ALL").toUpperCase();
+    const allowedMarital = (effectivePolicy.applicableMaritalStatus ?? "ALL").toUpperCase();
+    const empG = (employeeGender ?? "").toUpperCase();
+    const empM = (employeeMarital ?? "").toUpperCase();
+    const typeName = selectedBalance?.name ?? leaveFormState.leaveTypeCode ?? "This leave type";
+    if (allowedGender !== "ALL" && empG && allowedGender !== empG) {
+      return `${typeName} is restricted to ${allowedGender.toLowerCase()} employees per policy.`;
+    }
+    if (allowedMarital !== "ALL" && empM && allowedMarital !== empM) {
+      return `${typeName} is restricted to ${allowedMarital.toLowerCase()} employees per policy.`;
+    }
+    return null;
+  }, [
+    effectivePolicy,
+    currentProfile,
+    employeeGender,
+    employeeMarital,
+    selectedBalance,
+    leaveFormState.leaveTypeCode,
+  ]);
+
   // ── Negative-balance handling (item 15) ────────────────────────────
   // Whether the effective policy permits a negative balance, and how many
   // days below zero are allowed. The policy stores `negativeFloor` as a
@@ -796,7 +825,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     // Block non-HR users from backdating before the current month
     !backdatedBlocked &&
     // Block non-HR users from submitting during a blackout period
-    !(overlappingBlackout && !isHrUser);
+    !(overlappingBlackout && !isHrUser) &&
+    // Block when the effective policy restricts this leave type to a
+    // gender / marital status the employee doesn't match.
+    !policyApplicabilityError;
 
   const handleReset = () => {
     setAttachments([]);
@@ -1025,15 +1057,17 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                   exceedsBalance ? styles.submitButtonInsufficient : ""
                 }`}
               >
-                {exceedsBalance
-                  ? "Insufficient Balance"
-                  : hasBlockingDuplicate
-                    ? "Duplicate Request Exists"
-                    : backdatedBlocked
-                      ? "Backdated Not Allowed"
-                      : overlappingBlackout && !isHrUser
-                        ? "Blackout Period"
-                        : "Submit Request"}
+                {policyApplicabilityError
+                  ? "Not Eligible"
+                  : exceedsBalance
+                    ? "Insufficient Balance"
+                    : hasBlockingDuplicate
+                      ? "Duplicate Request Exists"
+                      : backdatedBlocked
+                        ? "Backdated Not Allowed"
+                        : overlappingBlackout && !isHrUser
+                          ? "Blackout Period"
+                          : "Submit Request"}
               </Button>
             </Can>
           </div>
@@ -1173,6 +1207,16 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 permits a negative balance and this request crosses zero.
                 negativeFloor is a magnitude (e.g. 2.0 = "2 days negative
                 allowed"); show the actual floor as a negative day count. */}
+            {policyApplicabilityError && (
+              <Alert
+                type="error"
+                showIcon
+                message="Not Eligible"
+                description={policyApplicabilityError}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
             {negativeWarning && (
               <Alert
                 type="warning"

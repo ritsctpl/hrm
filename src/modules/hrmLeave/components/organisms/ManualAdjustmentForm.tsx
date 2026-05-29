@@ -27,7 +27,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
   const { options: employeeOptions, loading: employeeOptionsLoading } = useEmployeeOptions();
-  const { options: leaveTypeOptions, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
+  const { options: leaveTypeOptions, leaveTypes, loading: leaveTypeOptionsLoading } = useLeaveTypeOptions();
 
   const handleSubmit = async () => {
     let values: Record<string, unknown>;
@@ -38,28 +38,67 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
       return;
     }
 
-    // Maternity / Paternity gender + marital status eligibility (item 1).
-    // Fetch the target employee's profile so the admin can't credit/debit
-    // those leave types for ineligible employees.
+    // Eligibility check (item 1) — combines two rules:
+    //   1. Hardcoded Maternity / Paternity (ML / PAT codes always need
+    //      married female / married male).
+    //   2. Policy-driven applicableGender + applicableMaritalStatus on
+    //      the effective Leave Policy. This covers every other leave
+    //      type whose policy carries an applicability restriction
+    //      (e.g. an HR-defined "Spouse Care" with marital = MARRIED).
+    // Both rules require the target employee's profile, so we fetch it
+    // once and reuse for both checks.
     const code = values.leaveTypeCode as string;
-    if (isMaternityCode(code) || isPaternityCode(code)) {
-      const targetOption = employeeOptions.find((o) => o.value === values.employeeId);
-      const handle = targetOption?.handle;
-      if (handle) {
+    const targetOption = employeeOptions.find((o) => o.value === values.employeeId);
+    const handle = targetOption?.handle;
+    if (handle) {
+      let empGender: string | undefined;
+      let empMarital: string | undefined;
+      try {
+        const profile = await HrmEmployeeService.fetchProfile(organizationId, handle);
+        empGender = profile?.personalDetails?.gender;
+        empMarital = profile?.personalDetails?.maritalStatus;
+      } catch {
+        // Profile fetch failed — let the BE validate, no client block.
+      }
+
+      // Rule 1: hardcoded ML / PAT short-circuit.
+      if (isMaternityCode(code) || isPaternityCode(code)) {
+        const eligibility = checkGenderMaritalEligibility(code, empGender, empMarital);
+        if (!eligibility.ok) {
+          message.error(eligibility.reason);
+          return;
+        }
+      }
+
+      // Rule 2: policy-driven check — fetch the effective policy for the
+      // leave type and compare its applicability against the employee.
+      const lt = leaveTypes.find((t) => t.code === code);
+      if (lt?.handle && (empGender || empMarital)) {
         try {
-          const profile = await HrmEmployeeService.fetchProfile(organizationId, handle);
-          const eligibility = checkGenderMaritalEligibility(
-            code,
-            profile?.personalDetails?.gender,
-            profile?.personalDetails?.maritalStatus,
-          );
-          if (!eligibility.ok) {
-            message.error(eligibility.reason);
-            return;
+          const policy = await HrmLeaveService.getEffectivePolicy({
+            organizationId,
+            leaveTypeId: lt.handle,
+          });
+          if (policy) {
+            const allowedGender = (policy.applicableGender ?? "ALL").toUpperCase();
+            const allowedMarital = (policy.applicableMaritalStatus ?? "ALL").toUpperCase();
+            const empG = (empGender ?? "").toUpperCase();
+            const empM = (empMarital ?? "").toUpperCase();
+            if (allowedGender !== "ALL" && empG && allowedGender !== empG) {
+              message.error(
+                `${lt.name} (${code}) is restricted to ${allowedGender.toLowerCase()} employees per policy.`,
+              );
+              return;
+            }
+            if (allowedMarital !== "ALL" && empM && allowedMarital !== empM) {
+              message.error(
+                `${lt.name} (${code}) is restricted to ${allowedMarital.toLowerCase()} employees per policy.`,
+              );
+              return;
+            }
           }
         } catch {
-          // If the profile lookup fails we don't block — the BE still
-          // validates and will surface its own error.
+          // Policy fetch failed — the BE still validates on submit.
         }
       }
     }

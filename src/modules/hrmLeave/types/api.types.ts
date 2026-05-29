@@ -54,6 +54,12 @@ export interface LeavePolicy {
   leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
+  /** Policy applicability — round-tripped from LeavePolicyRequest. */
+  applicableGender?: string;
+  /** Policy applicability — round-tripped from LeavePolicyRequest. */
+  applicableMaritalStatus?: string;
+  employeeType?: string;
+  designation?: string;
   effectiveFrom: string;
   effectiveTo?: string;
   accrualFrequency?: string;
