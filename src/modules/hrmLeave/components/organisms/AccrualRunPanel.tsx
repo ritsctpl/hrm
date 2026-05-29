@@ -231,6 +231,54 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
     }));
   }, [accrualPreview, accrualEnabledCodes, directoryNameLookup]);
 
+  // Group the preview rows by employee so the table renders one row per
+  // person with an expandable per-leave-type breakdown — the same tree
+  // pattern used by the Balance Summary table. The flat per-(employee,
+  // type) view looked noisy when one person accrues across several leave
+  // types.
+  type AccrualEmployeeGroup = {
+    key: string;
+    employeeId: string;
+    employeeName: string;
+    totalDays: number;
+    typeCount: number;
+    eligibleCount: number;
+    proratedCount: number;
+    excludedCount: number;
+    lines: (typeof previewRows)[number][];
+  };
+  const employeeGroups = React.useMemo<AccrualEmployeeGroup[]>(() => {
+    const map = new Map<string, AccrualEmployeeGroup>();
+    for (const line of previewRows) {
+      const id = line.employeeId || line.employeeName || line.key;
+      let group = map.get(id);
+      if (!group) {
+        group = {
+          key: id,
+          employeeId: line.employeeId,
+          employeeName: line.employeeName,
+          totalDays: 0,
+          typeCount: 0,
+          eligibleCount: 0,
+          proratedCount: 0,
+          excludedCount: 0,
+          lines: [],
+        };
+        map.set(id, group);
+      }
+      group.lines.push(line);
+      group.typeCount += 1;
+      if (line.excluded) {
+        group.excludedCount += 1;
+      } else {
+        group.totalDays += Number(line.daysToCredit) || 0;
+        if (line.prorated) group.proratedCount += 1;
+        else group.eligibleCount += 1;
+      }
+    }
+    return Array.from(map.values());
+  }, [previewRows]);
+
   // Auto-fill periodStart/periodEnd whenever the period selector or year
   // changes.  Keeps the run window consistent with the selected period so
   // the dates can't drift.
@@ -530,11 +578,13 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
             />
           )}
 
-          <Table
+          {/* Tree-style table: one row per employee with an expandable
+              per-leave-type breakdown (mirrors the Balance Summary view). */}
+          <Table<AccrualEmployeeGroup>
             className={styles.accrualPreviewTable}
             size="small"
             rowKey="key"
-            dataSource={previewRows}
+            dataSource={employeeGroups}
             pagination={false}
             scroll={{ y: 320 }}
             locale={{
@@ -545,53 +595,99 @@ const AccrualRunPanel: React.FC<AccrualRunPanelProps> = ({ organizationId, onPos
                 />
               ),
             }}
+            expandable={{
+              expandedRowRender: (group) => (
+                <Table<(typeof previewRows)[number]>
+                  size="small"
+                  rowKey="key"
+                  dataSource={group.lines}
+                  pagination={false}
+                  columns={[
+                    {
+                      title: "Leave Type",
+                      dataIndex: "leaveTypeCode",
+                      key: "leaveTypeCode",
+                      width: 140,
+                      render: (v: string) => <Tag>{v}</Tag>,
+                    },
+                    {
+                      title: "Status",
+                      key: "status",
+                      width: 140,
+                      render: (_v, row) =>
+                        row.excluded ? (
+                          <Tag color="default">Excluded</Tag>
+                        ) : row.prorated ? (
+                          <Tooltip title={row.prorateReason ?? "Prorated"}>
+                            <Tag color="orange">Prorated</Tag>
+                          </Tooltip>
+                        ) : (
+                          <Tag color="green">Eligible</Tag>
+                        ),
+                    },
+                    {
+                      title: "Days to Credit",
+                      dataIndex: "daysToCredit",
+                      key: "daysToCredit",
+                      width: 140,
+                      align: "right",
+                      render: (v: number, row) => (
+                        <Text style={{ fontWeight: 600 }}>
+                          {row.excluded ? "–" : `+${(Number(v) || 0).toFixed(1)}d`}
+                        </Text>
+                      ),
+                    },
+                  ] as ColumnsType<(typeof previewRows)[number]>}
+                />
+              ),
+            }}
             columns={[
               {
                 title: "Employee",
                 dataIndex: "employeeName",
                 key: "employeeName",
                 ellipsis: true,
-                render: (v: string, row) => (
-                  <Text strong={!row.excluded} type={row.excluded ? "secondary" : undefined}>
-                    {v}
-                  </Text>
-                ),
+                render: (v: string) => <Text strong>{v}</Text>,
               },
               {
-                title: "Leave Type",
-                dataIndex: "leaveTypeCode",
-                key: "leaveTypeCode",
-                width: 120,
-                render: (v: string) => <Tag>{v}</Tag>,
+                title: "Leave Types",
+                dataIndex: "typeCount",
+                key: "typeCount",
+                width: 110,
+                align: "center",
+                render: (v: number) => <Tag color="blue">{v}</Tag>,
               },
               {
                 title: "Status",
                 key: "status",
-                width: 130,
-                render: (_v, row) =>
-                  row.excluded ? (
-                    <Tag color="default">Excluded</Tag>
-                  ) : row.prorated ? (
-                    <Tooltip title={row.prorateReason ?? "Prorated"}>
-                      <Tag color="orange">Prorated</Tag>
-                    </Tooltip>
-                  ) : (
-                    <Tag color="green">Eligible</Tag>
-                  ),
+                width: 220,
+                render: (_v, g: AccrualEmployeeGroup) => (
+                  <Space size={4} wrap>
+                    {g.eligibleCount > 0 && (
+                      <Tag color="green">{g.eligibleCount} eligible</Tag>
+                    )}
+                    {g.proratedCount > 0 && (
+                      <Tag color="orange">{g.proratedCount} prorated</Tag>
+                    )}
+                    {g.excludedCount > 0 && (
+                      <Tag color="default">{g.excludedCount} excluded</Tag>
+                    )}
+                  </Space>
+                ),
               },
               {
                 title: "Days to Credit",
-                dataIndex: "daysToCredit",
-                key: "daysToCredit",
-                width: 130,
+                dataIndex: "totalDays",
+                key: "totalDays",
+                width: 150,
                 align: "right",
-                render: (v: number, row) => (
+                render: (v: number) => (
                   <Text style={{ fontWeight: 600 }}>
-                    {row.excluded ? "–" : `+${v.toFixed(1)}d`}
+                    {v > 0 ? `+${v.toFixed(1)}d` : "–"}
                   </Text>
                 ),
               },
-            ] as ColumnsType<(typeof previewRows)[number]>}
+            ] as ColumnsType<AccrualEmployeeGroup>}
           />
 
           {accrualPreview.canPost && (
