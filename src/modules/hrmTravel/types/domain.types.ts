@@ -60,6 +60,7 @@ export interface CoTravellerDto {
   onDutyEntryRef?: string;
   localStartTime?: string;
   localEndTime?: string;
+  position?: string;
 }
 
 export interface ApproverChainEntry {
