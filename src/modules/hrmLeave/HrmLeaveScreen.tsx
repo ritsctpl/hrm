@@ -90,39 +90,51 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
   })();
 
   // ── Forwarded-onward override (items 5 + 19) ───────────────────────
-  // The original reporting manager must keep Override Approve / Reject on
-  // any request they previously touched, even after it has been forwarded
-  // or escalated up the chain. Two independent signals identify them:
+  // The supervisor who forwarded / escalated the request must keep Override
+  // Approve / Reject on it in Team History, even though they are no longer
+  // the current approver. Two independent signals identify them:
   //   (a) `request.supervisorId` matches the signed-in user, or
   //   (b) `request.actionHistory` carries a prior APPROVE / FORWARD /
   //       REASSIGN / ESCALATE action attributed to the signed-in user.
   // (b) is the load-bearing one in Team History — the supervisorId field
   // is sometimes blank on retrieve, but the action history always survives.
-  const matchesMe = (raw?: string | null): boolean => {
-    if (!raw) return false;
-    const stripped = raw.includes("_") ? raw.substring(raw.indexOf("_") + 1) : raw;
-    const code = stripped.includes(" - ")
-      ? stripped.split(" - ")[0]?.trim() ?? stripped
-      : stripped;
-    return Boolean(
-      (myComposite && stripped === myComposite) ||
-      (myCode && code === myCode),
-    );
+  const myFullName = (identity.fullName ?? "").trim();
+  const matchesMe = (rawId?: string | null, rawName?: string | null): boolean => {
+    // 1. Match by id (composite "EMP-X - Name" or bare code, optionally
+    //    prefixed by "ROLE_"). Stripped → composite candidate, code → just
+    //    the employee code.
+    if (rawId) {
+      const stripped = rawId.includes("_") ? rawId.substring(rawId.indexOf("_") + 1) : rawId;
+      const code = stripped.includes(" - ")
+        ? stripped.split(" - ")[0]?.trim() ?? stripped
+        : stripped;
+      if (myComposite && stripped === myComposite) return true;
+      if (myCode && code === myCode) return true;
+      // Some BE responses store actorId as just the full name (no code).
+      if (
+        myFullName &&
+        stripped.toLowerCase() === myFullName.toLowerCase()
+      ) {
+        return true;
+      }
+    }
+    // 2. Match by name — many action-history rows carry actorName even
+    //    when actorId is in an unexpected shape.
+    if (rawName && myFullName) {
+      if (rawName.trim().toLowerCase() === myFullName.toLowerCase()) return true;
+    }
+    return false;
   };
   const isRequestSupervisor = matchesMe(request.supervisorId);
-  const PRIOR_APPROVER_ACTIONS = new Set([
-    "APPROVE",
-    "APPROVED",
-    "FORWARD",
-    "FORWARDED",
-    "REASSIGN",
-    "REASSIGNED",
-    "ESCALATE",
-    "ESCALATED",
-  ]);
+  // Match keywords inside the action string (the BE sometimes prefixes /
+  // suffixes them, e.g. `FORWARD_TO_NEXT`, `REASSIGN_TO_MANAGER`). Includes
+  // covers exact matches too.
+  const PRIOR_APPROVER_KEYWORDS = ["APPROVE", "FORWARD", "REASSIGN", "ESCALATE"];
   const hasPriorAction = (request.actionHistory ?? []).some((a) => {
     const action = (a.action ?? "").toUpperCase();
-    return PRIOR_APPROVER_ACTIONS.has(action) && matchesMe(a.actorId);
+    const isPriorAction = PRIOR_APPROVER_KEYWORDS.some((kw) => action.includes(kw));
+    if (!isPriorAction) return false;
+    return matchesMe(a.actorId, a.actorName);
   });
   const isPendingRequest =
     request.status === "PENDING_SUPERVISOR" ||
