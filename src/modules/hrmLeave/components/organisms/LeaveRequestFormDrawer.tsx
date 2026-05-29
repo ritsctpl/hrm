@@ -662,10 +662,20 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         contentBase64: a.base64 as string,
       }));
 
-  // View / Download work immediately after upload (before save) using the
-  // in-memory base64 data URI, and after save using the BE-supplied URL.
-  // Removes the "save first, then refresh to view" round-trip.
-  const attachmentHref = (a: FormAttachment): string => a.url || a.base64 || "";
+  // View / Download work immediately, before any save round-trip. The BE
+  // returns contentBase64 as raw base64 (no `data:<mime>;base64,` prefix)
+  // and downloadUrl as a relative path that doesn't open cleanly, so build
+  // a proper data URI from base64 + contentType. Newly uploaded files
+  // already carry the data: prefix (FileReader.readAsDataURL), so the
+  // helper short-circuits in that case.
+  const attachmentHref = (a: FormAttachment): string => {
+    if (a.base64) {
+      return a.base64.startsWith("data:")
+        ? a.base64
+        : `data:${a.contentType || "application/octet-stream"};base64,${a.base64}`;
+    }
+    return a.url || "";
+  };
 
   const viewAttachment = (a: FormAttachment) => {
     const href = attachmentHref(a);

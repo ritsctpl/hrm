@@ -169,10 +169,20 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     setAttachments((prev) => prev.filter((a) => a.uid !== uid));
   };
 
-  // View / Download use the BE-supplied URL when available (existing files)
-  // and fall back to the in-memory base64 data URI (newly uploaded files) so
-  // the file is usable the instant it is added — no save+reload needed.
-  const hrefFor = (a: AmendAttachment): string => a.url || a.base64 || "";
+  // View / Download work straight from contentBase64. The BE returns the
+  // base64 WITHOUT the `data:<mime>;base64,` prefix and the downloadUrl
+  // as a relative path that doesn't resolve cleanly via window.open, so
+  // build a real data URI from base64 + contentType. Newly uploaded
+  // files already carry the data: prefix (FileReader.readAsDataURL),
+  // so only the bare-base64 path needs the prefix grafted on.
+  const hrefFor = (a: AmendAttachment): string => {
+    if (a.base64) {
+      return a.base64.startsWith("data:")
+        ? a.base64
+        : `data:${a.contentType || "application/octet-stream"};base64,${a.base64}`;
+    }
+    return a.url || "";
+  };
   const viewAttachment = (a: AmendAttachment) => {
     const href = hrefFor(a);
     if (!href) return;
