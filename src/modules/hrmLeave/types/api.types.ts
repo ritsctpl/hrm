@@ -867,6 +867,7 @@ export interface TopAbsenteeData {
   employeeNumber: string;
   department: string;
   totalLeaveDays: number;
+  wfhDays?: number;
   leaveBreakdown: { leaveTypeCode: string; days: number }[];
 }
 

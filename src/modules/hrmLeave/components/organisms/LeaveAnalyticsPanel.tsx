@@ -22,7 +22,6 @@ import {
   BarChartOutlined,
   TeamOutlined,
   CalendarOutlined,
-  LaptopOutlined,
   TableOutlined,
 } from "@ant-design/icons";
 import {
@@ -157,6 +156,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
           employeeNumber: (r.employeeNumber ?? r.employeeCode ?? "") as string,
           department: (r.department ?? "") as string,
           totalLeaveDays: Number(r.totalLeaveDays ?? r.totalDays ?? r.leaveDays ?? 0),
+          wfhDays: Number(r.wfhDays ?? 0),
           leaveBreakdown: (r.leaveBreakdown ?? []) as { leaveTypeCode: string; days: number }[],
         };
       });
@@ -207,24 +207,6 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
       avgRate: isNaN(avgRate) ? 0 : avgRate,
     };
   }, [absenteeismData]);
-
-  // ── WFH Summary ─────────────────────────────────────────────────────
-  // Count WFH days from top-absentees breakdown entries.
-  const wfhStats = useMemo(() => {
-    let totalWfhDays = 0;
-    let wfhEmployeeCount = 0;
-    for (const emp of topAbsentees) {
-      const breakdown = emp.leaveBreakdown ?? [];
-      const wfhEntry = breakdown.find(
-        (b) => (b.leaveTypeCode ?? "").toUpperCase() === "WFH"
-      );
-      if (wfhEntry && (wfhEntry.days ?? 0) > 0) {
-        totalWfhDays += wfhEntry.days;
-        wfhEmployeeCount += 1;
-      }
-    }
-    return { totalWfhDays, wfhEmployeeCount };
-  }, [topAbsentees]);
 
   // ── Monthly Trend BarChart data ──────────────────────────────────────
   // Aggregate all leave-type entries per month into a single "total days" value.
@@ -428,21 +410,24 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
     },
     {
       title: "WFH",
-      key: "wfh",
+      key: "wfhDays",
       align: "right",
       width: 80,
       render: (_: unknown, record: TopAbsenteeData) => {
-        const wfhEntry = (record.leaveBreakdown ?? []).find(
-          (b) => (b.leaveTypeCode ?? "").toUpperCase() === "WFH"
-        );
-        const days = wfhEntry?.days ?? 0;
-        return days > 0 ? (
+        // Backend returns wfhDays directly in the response
+        const wfhDays = record.wfhDays ?? 0;
+        return wfhDays > 0 ? (
           <Tag color="blue" style={{ margin: 0 }}>
-            {days}d
+            {wfhDays}d
           </Tag>
         ) : (
           <Text type="secondary">—</Text>
         );
+      },
+      sorter: (a, b) => {
+        const aWfh = a.wfhDays ?? 0;
+        const bWfh = b.wfhDays ?? 0;
+        return aWfh - bWfh;
       },
     },
   ];
@@ -532,7 +517,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
 
       {/* Summary Statistics */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card size="small">
             <Statistic
               title="Total Employees"
@@ -541,7 +526,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card size="small">
             <Statistic
               title="Total Leave Days"
@@ -550,7 +535,7 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card size="small">
             <Statistic
               title="Avg Absenteeism Rate"
@@ -558,26 +543,6 @@ const LeaveAnalyticsPanel: React.FC<LeaveAnalyticsPanelProps> = ({
               precision={1}
               suffix="%"
               prefix={<BarChartOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          {/* WFH Analytics card */}
-          <Card size="small" style={{ borderColor: "#91caff", background: "#f0f7ff" }}>
-            <Statistic
-              title={
-                <Space size={4}>
-                  <LaptopOutlined style={{ color: "#1677ff" }} />
-                  <span>WFH Days (Top 10)</span>
-                </Space>
-              }
-              value={wfhStats.totalWfhDays}
-              suffix={
-                <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
-                  &nbsp;across {wfhStats.wfhEmployeeCount} emp
-                </Text>
-              }
-              valueStyle={{ color: "#1677ff" }}
             />
           </Card>
         </Col>
