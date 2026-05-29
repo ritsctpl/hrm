@@ -319,6 +319,17 @@ const HrmLeaveLanding: React.FC = () => {
   const [bulkAdjModalOpen, setBulkAdjModalOpen] = useState(false);
   const [compOffCreditModalOpen, setCompOffCreditModalOpen] = useState(false);
 
+  // Bumped by handleActionComplete / Refresh / delete so the self-fetching
+  // TeamHistoryPanel re-pulls /leave-request/team-history. Without this the
+  // panel would still show e.g. PENDING_NEXT_SUPERIOR after an Override
+  // Approve, since its data isn't part of the store the action handlers
+  // mutate.
+  const [teamHistoryRefreshKey, setTeamHistoryRefreshKey] = useState(0);
+  const bumpTeamHistory = useCallback(
+    () => setTeamHistoryRefreshKey((k) => k + 1),
+    [],
+  );
+
   // Load data based on role on mount
   useEffect(() => {
     loadBalances();
@@ -411,6 +422,10 @@ const HrmLeaveLanding: React.FC = () => {
     if (permissions.canViewHrQueue) loadGlobalQueue();
     loadMyRequests();
     loadBalances();
+    // Force the Team History panel (which self-fetches and isn't backed by
+    // the store the other tables share) to re-pull so Override Approve /
+    // Reject show their updated status immediately.
+    bumpTeamHistory();
   };
 
   // ── Per-tab data refresh (item 12) ─────────────────────────────────
@@ -433,6 +448,10 @@ const HrmLeaveLanding: React.FC = () => {
           break;
         case "teamHistoryHierarchy":
           if (permissions.canViewHrQueue || permissions.canViewTeamHistory) loadGlobalQueue();
+          // The Team History panel manages its own data via getTeamHistory;
+          // bump the key so it re-pulls when the tab is re-activated or
+          // when the global Refresh button is clicked.
+          bumpTeamHistory();
           break;
         case "compOffInbox":
           if (permissions.canEditCompOff) loadPendingCompOffs();
@@ -467,6 +486,7 @@ const HrmLeaveLanding: React.FC = () => {
       loadLedgerHistory,
       loadBalanceSummary,
       loadLeaveTypes,
+      bumpTeamHistory,
       balancesYear,
       ledgerDeptFilter,
     ],
@@ -538,6 +558,8 @@ const HrmLeaveLanding: React.FC = () => {
             if (permissions.canViewHrQueue || permissions.canViewTeamHistory) {
               loadGlobalQueue();
             }
+            // TeamHistoryPanel is self-fetching, so reload it explicitly.
+            bumpTeamHistory();
           }}
         />
         {rightPanel}
@@ -927,6 +949,7 @@ const HrmLeaveLanding: React.FC = () => {
         rightPanel={rightPanel}
         leaveTypeOptions={leaveTypes.map((lt) => ({ value: lt.code, label: `${lt.code} – ${lt.name}` }))}
         employeeOptions={employeeOptions}
+        refreshKey={teamHistoryRefreshKey}
       />
     </PermissionGate>
   );

@@ -31,6 +31,10 @@ interface TeamHistoryPanelProps {
   rightPanel: React.ReactNode;
   leaveTypeOptions?: { value: string; label: string }[];
   employeeOptions?: { value: string; label: string }[];
+  /** Bump from the parent to force a re-fetch — used after Override
+   *  Approve / Override Reject so the row's new status is reflected
+   *  in the list without the user having to change a filter. */
+  refreshKey?: number;
 }
 
 const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
@@ -41,6 +45,7 @@ const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
   rightPanel,
   leaveTypeOptions = [],
   employeeOptions = [],
+  refreshKey = 0,
 }) => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +95,10 @@ const TeamHistoryPanel: React.FC<TeamHistoryPanelProps> = ({
     dateRange,
     currentPage,
     pageSize,
+    // Including refreshKey here is what lets the parent trigger a refetch
+    // by bumping it (e.g. after Override Approve / Reject) — the callback
+    // identity changes, the useEffect re-runs, and the list reloads.
+    refreshKey,
   ]);
 
   // Fetch data when filters change
