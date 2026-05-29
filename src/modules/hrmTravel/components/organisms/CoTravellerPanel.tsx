@@ -85,7 +85,7 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
       }
       
       try {
-        // Fetch employee directory to get department and email info
+        // Fetch employee directory to get department, email, and position info
         const res = await HrmEmployeeService.fetchDirectory({
           organizationId,
           page: 0,
@@ -98,13 +98,14 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
           empMap.set(emp.employeeCode, emp);
         });
         
-        // Enrich travellers with department and email from directory
+        // Enrich travellers with department, email, and position from directory
         const enriched = travellers.map((t) => {
           const dirEntry = empMap.get(t.employeeId);
           return {
             ...t,
             department: dirEntry?.department || t.department || "",
             workEmail: dirEntry?.workEmail || t.workEmail || "",
+            position: dirEntry?.role || "", // Add position/role from directory
           };
         });
         setEnrichedCoTravellers(enriched);
@@ -142,12 +143,14 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
 
   const handleSelect = (value: string, opt: DirectoryOption) => {
     const r = opt.row;
-    onAdd({
+    const traveller: CoTravellerDto = {
       employeeId: r.employeeCode,
       employeeName: r.fullName,
       department: r.department ?? "",
       hasConflict: false,
-    });
+      position: r.role ?? "",
+    };
+    onAdd(traveller);
     setOptions((prev) => prev.filter((o) => o.value !== value));
   };
 
@@ -195,8 +198,8 @@ const CoTravellerPanel: React.FC<Props> = ({ coTravellers, onAdd, onRemove, read
               color: "#8c8c8c",
             }}
           >
-            <span style={{ width: 70, flexShrink: 0 }}>Emp ID</span>
-            <span style={{ width: 140, flexShrink: 0 }}>Name</span>
+            <span style={{ width: 200, flexShrink: 0 }}>Employee</span>
+            <span style={{ width: 120, flexShrink: 0 }}>Position</span>
             <span style={{ width: 110, flexShrink: 0 }}>Department</span>
             <span style={{ flex: 1, minWidth: 0 }}>Email</span>
             {!readonly && <span style={{ width: 40, flexShrink: 0 }} />}

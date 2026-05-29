@@ -30,8 +30,12 @@ const CoTravellerRow: React.FC<Props> = ({ traveller, readonly, onRemove }) => {
         gap: 8,
       }}
     >
-      <span style={{ width: 70, fontSize: 12, color: "#8c8c8c", flexShrink: 0 }}>{traveller.employeeId}</span>
-      <span style={{ width: 140, fontSize: 13, flexShrink: 0 }}>{traveller.employeeName}</span>
+      <span style={{ width: 200, fontSize: 12, color: "#8c8c8c", flexShrink: 0 }}>
+        {traveller.employeeId} - {traveller.employeeName}
+      </span>
+      <span style={{ width: 120, fontSize: 12, color: "#595959", flexShrink: 0 }}>
+        {traveller.position || "—"}
+      </span>
       <span style={{ width: 110, fontSize: 12, color: "#595959", flexShrink: 0 }}>{traveller.department}</span>
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
         <Tooltip title={traveller.workEmail || "No email"}>

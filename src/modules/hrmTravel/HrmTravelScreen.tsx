@@ -199,13 +199,57 @@ const HrmTravelScreen: React.FC<Props> = ({
 
     let handle = currentRequest?.handle;
     if (!handle) {
-      const saved = await saveDraft(formState, undefined);
+      // Ensure form state has the latest co-travellers before saving
+      const updatedFormState = {
+        ...formState,
+        coTravellerIds: formState.coTravellerIds && formState.coTravellerIds.length > 0 
+          ? formState.coTravellerIds 
+          : pendingCoTravellers.map(t => t.employeeId),
+      };
+      const saved = await saveDraft(updatedFormState, undefined);
       if (!saved) return;
       handle = saved.handle;
     }
+
+    // Call update API first before submitting
+    try {
+      await HrmTravelService.updateDraft({
+        handle,
+        organizationId,
+        travelType: formState.travelType,
+        purpose: formState.purpose,
+        destinationCity: formState.destinationCity,
+        destinationState: formState.destinationState,
+        destinationCountry: formState.destinationCountry,
+        travelMode: formState.travelMode,
+        startDate: formState.startDate || formState.travelDate,
+        endDate: formState.endDate,
+        startHour: formState.startHour,
+        endHour: formState.endHour,
+        remarks: formState.remarks,
+        coTravellerEmpIds: formState.coTravellerIds,
+        base64Docu: formState.attachmentRefs,
+        deletedAttachmentIds: formState.deletedAttachmentIds,
+        createdBy: actorId,
+      });
+    } catch (err) {
+      // Extract detailed error message from backend response
+      let errorMessage = "Failed to update request. Please try again.";
+      
+      if (err instanceof Error) {
+        // First priority: use the error message (already extracted by API interceptor)
+        if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      message.error(errorMessage);
+      return;
+    }
+
     await submitRequest(handle);
     onActionComplete();
-  }, [formState, currentRequest?.handle, formValid, isReadonly, saveDraft, submitRequest, onActionComplete, organizationId]);
+  }, [formState, currentRequest?.handle, formValid, isReadonly, saveDraft, submitRequest, onActionComplete, organizationId, actorId, pendingCoTravellers]);
 
   const handleCoTravellerAdd = (traveller: CoTravellerDto) => {
     if (!formState.coTravellerIds.includes(traveller.employeeId)) {
@@ -707,7 +751,7 @@ const HrmTravelScreen: React.FC<Props> = ({
                   <>
                     <div className={styles.infoRow}>
                       <div className={styles.infoLabel}>Travel Date</div>
-                      <div className={styles.infoValue}>{request.travelDate ?? "—"}</div>
+                      <div className={styles.infoValue}>{request.startDate ?? request.travelDate ?? "—"}</div>
                     </div>
                     <div className={styles.infoRow}>
                       <div className={styles.infoLabel}>Hours</div>

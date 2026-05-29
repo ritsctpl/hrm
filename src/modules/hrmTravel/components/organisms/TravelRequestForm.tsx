@@ -189,21 +189,6 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
                 optionFilterProp="label"
                 disabled={readonly}
                 style={{ width: "100%" }}
-                popupRender={(menu) => (
-                  <>
-                    {menu}
-                    <div style={{ borderTop: "1px solid #f0f0f0", padding: "6px 10px" }}>
-                      <Input
-                        size="small"
-                        placeholder="Can't find it? Type a custom city + press Enter"
-                        onPressEnter={(e) => {
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val) onChange({ destinationCity: val });
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
               />
             ) : (
               <Select
@@ -218,23 +203,6 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
                 optionFilterProp="label"
                 disabled={readonly || !formState.destinationState}
                 style={{ width: "100%" }}
-                popupRender={(menu) => (
-                  <>
-                    {menu}
-                    {formState.destinationState && (
-                      <div style={{ borderTop: "1px solid #f0f0f0", padding: "6px 10px" }}>
-                        <Input
-                          size="small"
-                          placeholder="Can't find it? Type a custom city + press Enter"
-                          onPressEnter={(e) => {
-                            const val = (e.target as HTMLInputElement).value.trim();
-                            if (val) onChange({ destinationCity: val });
-                          }}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
               />
             )}
           </Form.Item>
