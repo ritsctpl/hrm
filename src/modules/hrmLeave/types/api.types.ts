@@ -95,8 +95,10 @@ export interface LeavePolicyRequest {
   /** Policy applicability — gender ('ALL' | 'MALE' | 'FEMALE' | 'OTHER'). */
   applicableGender?: string;
   /** Policy applicability — marital status ('ALL' | 'SINGLE' | 'MARRIED' |
-   *  'DIVORCED' | 'WIDOWED'). Drives Maternity / Paternity eligibility. */
-  maritalStatus?: string;
+   *  'DIVORCED' | 'WIDOWED'). Drives Maternity / Paternity eligibility.
+   *  Named to mirror `applicableGender` so the backend sees both fields
+   *  under the same naming convention. */
+  applicableMaritalStatus?: string;
   /** Policy applicability — employment type (PERMANENT, CONTRACT, …). */
   employeeType?: string;
   /** Policy applicability — designation. */

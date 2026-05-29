@@ -178,8 +178,8 @@ export interface LeavePolicy {
   applicableGender?: string;
   /** Policy applicability — restricts to a marital status (SINGLE, MARRIED,
    *  DIVORCED, WIDOWED). Drives Maternity / Paternity eligibility together
-   *  with `applicableGender`. */
-  maritalStatus?: string;
+   *  with `applicableGender`. Named to mirror `applicableGender`. */
+  applicableMaritalStatus?: string;
   /** Policy applicability — restricts to an employment type (PERMANENT,
    *  CONTRACT, INTERN, …). Unset applies to all employee types. */
   employeeType?: string;

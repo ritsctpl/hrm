@@ -210,7 +210,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     policyForm.resetFields();
     policyForm.setFieldsValue({
       applicableGender: "ALL",
-      maritalStatus: "ALL",
+      applicableMaritalStatus: "ALL",
       accrualFrequency: "QUARTERLY",
       accrualQuantity: 0,
       prorateEnabled: true,
@@ -249,7 +249,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         buId: values.buId,
         deptId: values.deptId,
         applicableGender: values.applicableGender,
-        maritalStatus: values.maritalStatus,
+        applicableMaritalStatus: values.applicableMaritalStatus,
         employeeType: values.employeeType,
         designation: values.designation,
         effectiveFrom: values.effectiveFrom.format("YYYY-MM-DD"),
@@ -612,7 +612,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
               <Select options={GENDER_APPLICABILITY} style={{ width: 140 }} placeholder="All" />
             </Form.Item>
             <Form.Item
-              name="maritalStatus"
+              name="applicableMaritalStatus"
               label="Marital Status"
               tooltip="Restrict this policy to a marital status. Drives Maternity / Paternity eligibility together with Gender."
             >
