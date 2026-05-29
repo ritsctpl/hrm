@@ -233,7 +233,17 @@ const HrmTravelScreen: React.FC<Props> = ({
         createdBy: actorId,
       });
     } catch (err) {
-      message.error("Failed to update request. Please try again.");
+      // Extract detailed error message from backend response
+      let errorMessage = "Failed to update request. Please try again.";
+      
+      if (err instanceof Error) {
+        // First priority: use the error message (already extracted by API interceptor)
+        if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      message.error(errorMessage);
       return;
     }
 
