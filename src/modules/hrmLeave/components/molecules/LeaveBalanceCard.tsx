@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
-import { Card, Progress, Tooltip } from "antd";
+import { Card, Progress, Tag, Tooltip, Typography } from "antd";
 import { LeaveBalanceCardProps } from "../../types/ui.types";
 import { LEAVE_TYPE_COLORS } from "../../utils/constants";
 import styles from "../../styles/HrmLeave.module.css";
+
+const { Text } = Typography;
 
 const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
   balance,
@@ -14,6 +16,10 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
   const color = LEAVE_TYPE_COLORS[balance.leaveTypeCode] ?? "#8c8c8c";
   const total = balance.ytdCredits + balance.openingCarryForward || 1;
   const usedPercent = Math.min(100, Math.round((balance.ytdDebits / total) * 100));
+  // Item 4: surface negative-balance usage on the tile. The exact floor +
+  // remaining-negative numbers live on the policy; show them in the apply-
+  // leave drawer where the policy is loaded. Here just flag the state.
+  const usingNegative = balance.availableBalance < 0;
 
   return (
     <Card
@@ -31,9 +37,24 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
       </div>
 
       <div className={styles.balanceCardMain}>
-        <span className={styles.balanceCardAvailable}>{balance.availableBalance.toFixed(1)}</span>
+        <span
+          className={styles.balanceCardAvailable}
+          style={usingNegative ? { color: "#dc2626" } : undefined}
+        >
+          {balance.availableBalance.toFixed(1)}
+        </span>
         <span className={styles.balanceCardUnit}>days available</span>
+        {usingNegative && (
+          <Tooltip title="You are using negative leave balance.">
+            <Tag color="orange" style={{ marginLeft: 6 }}>Negative</Tag>
+          </Tooltip>
+        )}
       </div>
+      {usingNegative && (
+        <Text type="warning" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
+          Warning: negative balance in use.
+        </Text>
+      )}
 
       <Progress
         percent={usedPercent}

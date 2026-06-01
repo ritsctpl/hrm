@@ -45,6 +45,15 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  // Item 6: live working-day count + balance impact for the new range.
+  const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  // Watch the form's range field so we can recalculate days the moment
+  // the user moves either picker (no need to submit first).
+  const watchedRange = Form.useWatch<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(
+    "range",
+    form,
+  );
   // Attachment item — covers both files already on the request being amended
   // (`existing: true`, carries `url` / `id`) and freshly uploaded ones
   // (`existing: false`, carries `base64`). View / Download work for both.
@@ -92,6 +101,70 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       setAttachments([]);
     }
   }, [open, request, form, seedAttachmentsFrom]);
+
+  // Item 6: re-fetch the live balance for the request's leave type on open
+  // so we can show "current → after" impact. Falls silently if the BE call
+  // fails; the rest of the amend flow continues to work.
+  useEffect(() => {
+    if (!open || !request || !organizationId) return;
+    let cancelled = false;
+    const year = dayjs(request.startDate).year() || new Date().getFullYear();
+    HrmLeaveService.getBalanceByType({
+      organizationId,
+      employeeId: request.employeeId,
+      leaveTypeCode: request.leaveTypeCode,
+      year,
+    })
+      .then((bal) => {
+        if (!cancelled) {
+          const avail = Number((bal as { availableBalance?: number })?.availableBalance);
+          setCurrentBalance(Number.isFinite(avail) ? avail : null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentBalance(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, request, organizationId]);
+
+  // Item 6: recalculate working days whenever the user adjusts the range.
+  // Backend gives the authoritative number (excludes weekends/holidays);
+  // a simple inclusive day-diff serves as a synchronous fallback while
+  // the request is in flight.
+  useEffect(() => {
+    if (!open || !request || !organizationId) return;
+    const range = watchedRange;
+    if (!range || !range[0] || !range[1]) {
+      setCalculatedDays(null);
+      return;
+    }
+    const start = range[0];
+    const end = range[1];
+    const fallback = Math.max(0, end.diff(start, "day") + 1);
+    setCalculatedDays(fallback);
+    let cancelled = false;
+    HrmLeaveService.calculateWorkingDays({
+      organizationId,
+      employeeId: request.employeeId,
+      startDate: start.format("YYYY-MM-DD"),
+      endDate: end.format("YYYY-MM-DD"),
+      startDayType: request.startDayType,
+      endDayType: request.endDayType,
+    })
+      .then((res) => {
+        if (!cancelled && typeof res?.calculatedDays === "number") {
+          setCalculatedDays(res.calculatedDays);
+        }
+      })
+      .catch(() => {
+        // Keep the fallback estimate; BE will re-validate on submit.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, request, organizationId, watchedRange]);
 
   // /my-requests often returns a truncated row without the `attachments`
   // array populated — the previously-uploaded files would then never render
@@ -210,7 +283,13 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     try {
       const values = await form.validateFields();
       const [start, end] = values.range as [dayjs.Dayjs, dayjs.Dayjs];
-      const totalDays = end.diff(start, "day") + 1;
+      // Prefer the working-day figure already computed by the live recalc
+      // (which excludes weekends/holidays via the BE) and fall back to the
+      // simple calendar-day diff only when the recalc hasn't resolved yet.
+      const totalDays =
+        calculatedDays != null && calculatedDays > 0
+          ? calculatedDays
+          : Math.max(0, end.diff(start, "day") + 1);
       setSubmitting(true);
       const payload = {
         organizationId,
@@ -281,6 +360,45 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
             >
               <RangePicker format="DD-MMM-YYYY" style={{ width: "100%" }} />
             </Form.Item>
+
+            {/* Item 6: live recalc + balance impact. Updates the moment
+                either picker moves; no need to submit to see the new
+                day count or the resulting balance. */}
+            {watchedRange && watchedRange[0] && watchedRange[1] && (
+              <div
+                style={{
+                  margin: "-4px 0 12px",
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  fontSize: 12,
+                }}
+              >
+                <div>
+                  <strong>Updated days:</strong>{" "}
+                  {calculatedDays != null ? `${calculatedDays.toFixed(1)} day(s)` : "—"}
+                  {request &&
+                    calculatedDays != null &&
+                    calculatedDays !== request.totalDays && (
+                      <Text type="secondary" style={{ marginLeft: 6 }}>
+                        (was {request.totalDays.toFixed(1)})
+                      </Text>
+                    )}
+                </div>
+                {currentBalance != null && calculatedDays != null && (
+                  <div style={{ marginTop: 2 }}>
+                    <strong>Balance impact:</strong> {currentBalance.toFixed(1)}{" "}
+                    → {(currentBalance - calculatedDays).toFixed(1)} day(s)
+                    {currentBalance - calculatedDays < 0 && (
+                      <Text type="warning" style={{ marginLeft: 6 }}>
+                        will go negative
+                      </Text>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <Form.Item
               name="reason"
               label="Reason"

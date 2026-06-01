@@ -416,16 +416,40 @@ const HrmLeaveLanding: React.FC = () => {
     }
   };
 
+  // Single refresh point for every CRUD / approval action. Reloads each
+  // surface that can show a leave row: dashboard tiles, My Requests,
+  // approver inbox, HR queue, ledger entries, balance summary, and the
+  // self-fetching Team History panel. Individual call sites can still
+  // pick targeted loads if they want, but they should otherwise call
+  // refreshAll so nothing goes stale.
+  const refreshAll = useCallback(() => {
+    loadBalances();
+    loadMyRequests();
+    if (permissions.canViewApprovalQueue) loadPendingForApprover();
+    if (permissions.canViewHrQueue || permissions.canViewTeamHistory) {
+      loadGlobalQueue();
+    }
+    loadLedgerHistory();
+    if (permissions.canViewBalance) {
+      loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
+    }
+    bumpTeamHistory();
+  }, [
+    permissions,
+    loadBalances,
+    loadMyRequests,
+    loadPendingForApprover,
+    loadGlobalQueue,
+    loadLedgerHistory,
+    loadBalanceSummary,
+    bumpTeamHistory,
+    balancesYear,
+    ledgerDeptFilter,
+  ]);
+
   const handleActionComplete = () => {
     setSelectedRequest(null);
-    if (permissions.canViewApprovalQueue) loadPendingForApprover();
-    if (permissions.canViewHrQueue) loadGlobalQueue();
-    loadMyRequests();
-    loadBalances();
-    // Force the Team History panel (which self-fetches and isn't backed by
-    // the store the other tables share) to re-pull so Override Approve /
-    // Reject show their updated status immediately.
-    bumpTeamHistory();
+    refreshAll();
   };
 
   // ── Per-tab data refresh (item 12) ─────────────────────────────────
@@ -548,18 +572,11 @@ const HrmLeaveLanding: React.FC = () => {
           selectedHandle={selectedRequest?.handle}
           onRowClick={setSelectedRequest}
           onRequestDeleted={() => {
-            // Item 4: a delete must clear the row from every place it can
-            // appear — My Requests, the approver inbox (Team Calendar reads
-            // pendingRequests), the HR queue / Team History (globalQueue),
-            // plus refresh balances so the freed-up days show up.
-            loadMyRequests();
-            loadBalances();
-            if (permissions.canViewApprovalQueue) loadPendingForApprover();
-            if (permissions.canViewHrQueue || permissions.canViewTeamHistory) {
-              loadGlobalQueue();
-            }
-            // TeamHistoryPanel is self-fetching, so reload it explicitly.
-            bumpTeamHistory();
+            // Item 4 + item 8: a delete must clear the row from every surface
+            // it can appear in — My Requests, approver inbox (Team Calendar
+            // reads pendingRequests), HR queue / Team History, ledger,
+            // balance summary, dashboard tiles. refreshAll covers them all.
+            refreshAll();
           }}
         />
         {rightPanel}
@@ -867,14 +884,9 @@ const HrmLeaveLanding: React.FC = () => {
             <ManualAdjustmentForm
               organizationId={organizationId}
               onAdjusted={() => {
-                // Item 2: a manual debit / credit must refresh every place
-                // the balance is visible — dashboard tiles, balance summary
-                // and the ledger entries the admin is looking at.
-                loadLedgerHistory();
-                loadBalances();
-                if (permissions.canViewBalance) {
-                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
-                }
+                // A manual debit / credit changes balances everywhere — go
+                // through refreshAll so every visible surface updates.
+                refreshAll();
                 setManualAdjModalOpen(false);
               }}
             />
@@ -893,11 +905,7 @@ const HrmLeaveLanding: React.FC = () => {
             <BulkAdjustmentForm
               organizationId={organizationId}
               onAdjusted={() => {
-                loadLedgerHistory();
-                loadBalances();
-                if (permissions.canViewBalance) {
-                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
-                }
+                refreshAll();
                 setBulkAdjModalOpen(false);
               }}
             />
@@ -919,11 +927,7 @@ const HrmLeaveLanding: React.FC = () => {
             <CompOffCreditForm
               organizationId={organizationId}
               onCredited={() => {
-                loadLedgerHistory();
-                loadBalances();
-                if (permissions.canViewBalance) {
-                  loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
-                }
+                refreshAll();
                 setCompOffCreditModalOpen(false);
               }}
             />
@@ -956,7 +960,7 @@ const HrmLeaveLanding: React.FC = () => {
 
   const accrualPanel = (
     <PermissionGate object="leave_accrual" action="view">
-      <AccrualRunPanel organizationId={organizationId} onPosted={() => loadBalanceSummary(balancesYear)} />
+      <AccrualRunPanel organizationId={organizationId} onPosted={refreshAll} />
     </PermissionGate>
   );
 
@@ -978,14 +982,7 @@ const HrmLeaveLanding: React.FC = () => {
     <PermissionGate object="leave_year_end" action="view">
       <YearEndOperationsPanel
         organizationId={organizationId}
-        onProcessed={() => {
-          // Item 10: lapse / carry-forward / encashment all rewrite balance
-          // rows and ledger entries. Refresh the dashboard tiles, balance
-          // summary and ledger so the updated values appear immediately.
-          loadBalanceSummary(balancesYear, { deptId: ledgerDeptFilter ?? undefined });
-          loadBalances();
-          loadLedgerHistory();
-        }}
+        onProcessed={refreshAll}
       />
     </PermissionGate>
   );
@@ -1083,11 +1080,7 @@ const HrmLeaveLanding: React.FC = () => {
             employeeId={employeeId}
             balances={balances}
             allowEmployeeSelection={isHrAdmin}
-            onSubmitted={() => {
-              loadMyRequests();
-              loadBalances();
-              if (permissions.canViewHrQueue) loadGlobalQueue();
-            }}
+            onSubmitted={refreshAll}
           />
         )}
         {showCompOffForm && permissions.canAddCompOff && (

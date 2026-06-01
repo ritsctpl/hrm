@@ -390,6 +390,18 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const policyColumns: ColumnsType<LeavePolicy> = [
     { title: "Effective From", dataIndex: "effectiveFrom", key: "effectiveFrom", width: 130 },
     { title: "Effective To", dataIndex: "effectiveTo", key: "effectiveTo", width: 130 },
+    {
+      // Item 1: multiple policies can coexist on the same leave type;
+      // surface the active/inactive flag explicitly so admins can see the
+      // status of each version without having to read between the lines.
+      title: "Status",
+      dataIndex: "active",
+      key: "active",
+      width: 90,
+      render: (v: number | undefined) => (
+        <Tag color={v ? "green" : "default"}>{v ? "Active" : "Inactive"}</Tag>
+      ),
+    },
     { title: "Freq", dataIndex: "accrualFrequency", key: "accrualFrequency", width: 110 },
     { title: "Qty", dataIndex: "accrualQuantity", key: "accrualQuantity", width: 70 },
     {

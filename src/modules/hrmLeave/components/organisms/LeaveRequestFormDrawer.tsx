@@ -1060,7 +1060,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 {policyApplicabilityError
                   ? "Not Eligible"
                   : exceedsBalance
-                    ? "Insufficient Balance"
+                    ? negativeAllowed && negativeFloor != null
+                      ? "Exceeds Negative Limit"
+                      : "Insufficient Balance"
                     : hasBlockingDuplicate
                       ? "Duplicate Request Exists"
                       : backdatedBlocked
@@ -1221,14 +1223,25 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               <Alert
                 type="warning"
                 showIcon
-                message="Negative Balance"
-                description={`This request will take your ${
-                  selectedBalance?.name ?? "leave"
-                } balance to ${balanceAfter.toFixed(1)} day(s). Your leave policy permits a negative balance${
-                  negativeFloor != null
-                    ? ` down to ${(-Math.abs(negativeFloor)).toFixed(1)} day(s)`
-                    : ""
-                }.`}
+                message="You are using negative leave balance"
+                description={
+                  <>
+                    <div>
+                      <strong>Available Leave:</strong> {balanceAfter.toFixed(1)} day(s)
+                    </div>
+                    {negativeFloor != null && (
+                      <>
+                        <div>
+                          <strong>Negative Floor:</strong> {Math.abs(negativeFloor).toFixed(1)} day(s)
+                        </div>
+                        <div>
+                          <strong>Remaining Negative:</strong>{" "}
+                          {Math.max(0, Math.abs(negativeFloor) - Math.abs(balanceAfter)).toFixed(1)} day(s)
+                        </div>
+                      </>
+                    )}
+                  </>
+                }
                 style={{ marginTop: 8 }}
               />
             )}
@@ -1521,6 +1534,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                     className={`${styles.balancePreviewAfter} ${
                       exceedsBalance ? styles.balancePreviewAfterError : ""
                     }`}
+                    style={
+                      balanceAfter < 0 && !exceedsBalance ? { color: "#d97706" } : undefined
+                    }
                   >
                     {balanceAfter.toFixed(1)}
                   </span>
@@ -1528,9 +1544,56 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 </div>
                 <Text style={{ fontSize: 11, color: exceedsBalance ? "#dc2626" : "#64748b" }}>
                   {exceedsBalance
-                    ? `Exceeds available balance by ${Math.abs(balanceAfter).toFixed(1)} day(s)`
+                    ? negativeAllowed && negativeFloor != null
+                      ? `Requested leave exceeds the allowed negative limit (floor: ${(-Math.abs(negativeFloor)).toFixed(1)} day(s)).`
+                      : `Exceeds available balance by ${Math.abs(balanceAfter).toFixed(1)} day(s)`
                     : `Applying ${leaveFormState.totalDays.toFixed(1)} day(s) of ${selectedBalance.name}`}
                 </Text>
+                {/* Item 4: when a negative balance is permitted by policy and
+                    this request takes the balance below zero, surface the
+                    exact floor + remaining-negative numbers so the user
+                    knows how far the policy still allows them to go. */}
+                {goesNegative && negativeAllowed && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #fde68a" }}>
+                    <Text style={{ fontSize: 11, display: "block" }}>
+                      <strong>Available Leave:</strong> {balanceAfter.toFixed(1)} day(s)
+                    </Text>
+                    {negativeFloor != null && (
+                      <>
+                        <Text style={{ fontSize: 11, display: "block" }}>
+                          <strong>Negative Floor:</strong> {Math.abs(negativeFloor).toFixed(1)} day(s)
+                        </Text>
+                        <Text style={{ fontSize: 11, display: "block" }}>
+                          <strong>Remaining Negative:</strong>{" "}
+                          {Math.max(0, Math.abs(negativeFloor) - Math.abs(balanceAfter)).toFixed(1)} day(s)
+                        </Text>
+                      </>
+                    )}
+                    <Text type="warning" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
+                      Warning: You are using negative leave balance.
+                    </Text>
+                  </div>
+                )}
+                {/* Item 7: prorate badge — surface the configured entitlement
+                    and the joining date the proration is anchored against
+                    when the policy enables it. */}
+                {effectivePolicy?.prorateEnabled && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #e5e7eb" }}>
+                    <Text style={{ fontSize: 11, display: "block" }}>
+                      <strong>Prorate:</strong> Enabled
+                    </Text>
+                    <Text style={{ fontSize: 11, display: "block" }}>
+                      <strong>Annual Entitlement:</strong>{" "}
+                      {(Number(effectivePolicy.accrualQuantity) || 0).toFixed(1)} day(s)
+                    </Text>
+                    {currentProfile?.officialDetails?.joiningDate && (
+                      <Text style={{ fontSize: 11, display: "block" }}>
+                        <strong>Joining Date:</strong>{" "}
+                        {dayjs(currentProfile.officialDetails.joiningDate).format("DD MMM YYYY")}
+                      </Text>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <Text type="secondary" style={{ fontSize: 12 }}>
