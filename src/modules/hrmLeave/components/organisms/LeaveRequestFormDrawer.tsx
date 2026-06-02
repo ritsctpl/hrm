@@ -1076,8 +1076,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                     ? negativeAllowed && negativeFloor != null
                       ? "Exceeds Negative Limit"
                       : "Insufficient Balance"
-                    : hasBlockingDuplicate
-                      ? "Duplicate Request Exists"
+                    // : hasBlockingDuplicate
+                    //   ? "Duplicate Request Exists"
                       : backdatedBlocked
                         ? "Backdated Not Allowed"
                         : overlappingBlackout && !isHrUser
