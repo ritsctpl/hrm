@@ -182,9 +182,10 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   }, [open, request, organizationId]);
 
   // Item 6: recalculate working days whenever the user adjusts the range.
-  // Backend gives the authoritative number (excludes weekends/holidays);
-  // a simple inclusive day-diff serves as a synchronous fallback while
-  // the request is in flight.
+  // Backend gives the authoritative number (excludes weekends + holidays);
+  // a synchronous weekday-only count serves as the fallback so weekends
+  // are NEVER counted while the BE request is in flight, fails, or is
+  // slow. The BE response then trims holidays off that figure on top.
   useEffect(() => {
     if (!open || !request || !organizationId) return;
     const range = watchedRange;
@@ -194,8 +195,24 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     }
     const start = range[0];
     const end = range[1];
-    const fallback = Math.max(0, end.diff(start, "day") + 1);
-    setCalculatedDays(fallback);
+    if (end.isBefore(start, "day")) {
+      setCalculatedDays(0);
+      return;
+    }
+    // Synchronous fallback: walk the range and count Mon–Fri only.
+    // Saturdays (day === 6) and Sundays (day === 0) are excluded.
+    const countWeekdays = (s: dayjs.Dayjs, e: dayjs.Dayjs): number => {
+      let count = 0;
+      let cur = s.startOf("day");
+      const last = e.startOf("day");
+      while (cur.isSame(last, "day") || cur.isBefore(last, "day")) {
+        const dow = cur.day();
+        if (dow !== 0 && dow !== 6) count += 1;
+        cur = cur.add(1, "day");
+      }
+      return count;
+    };
+    setCalculatedDays(countWeekdays(start, end));
     let cancelled = false;
     HrmLeaveService.calculateWorkingDays({
       organizationId,
@@ -211,7 +228,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
         }
       })
       .catch(() => {
-        // Keep the fallback estimate; BE will re-validate on submit.
+        // Keep the weekday-only fallback; BE will re-validate on submit.
       });
     return () => {
       cancelled = true;
@@ -336,12 +353,25 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       const values = await form.validateFields();
       const [start, end] = values.range as [dayjs.Dayjs, dayjs.Dayjs];
       // Prefer the working-day figure already computed by the live recalc
-      // (which excludes weekends/holidays via the BE) and fall back to the
-      // simple calendar-day diff only when the recalc hasn't resolved yet.
+      // (which excludes weekends and holidays via the BE). If that hasn't
+      // resolved yet, fall back to a weekday-only walk so we still skip
+      // Saturdays and Sundays — never a calendar-day count.
+      const countWeekdaysAtSubmit = (s: dayjs.Dayjs, e: dayjs.Dayjs): number => {
+        if (!s || !e || e.isBefore(s, "day")) return 0;
+        let count = 0;
+        let cur = s.startOf("day");
+        const last = e.startOf("day");
+        while (cur.isSame(last, "day") || cur.isBefore(last, "day")) {
+          const dow = cur.day();
+          if (dow !== 0 && dow !== 6) count += 1;
+          cur = cur.add(1, "day");
+        }
+        return count;
+      };
       const totalDays =
         calculatedDays != null && calculatedDays > 0
           ? calculatedDays
-          : Math.max(0, end.diff(start, "day") + 1);
+          : countWeekdaysAtSubmit(start, end);
 
       // Final guard: refuse the amend if it would push the balance below
       // the policy's negative floor. Mirrors the apply-leave drawer's
