@@ -17,7 +17,8 @@ import dayjs from "dayjs";
 import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
-import { LeaveRequest } from "../../types/domain.types";
+import { useLeaveTypeOptions } from "../../hooks/useLeaveTypeOptions";
+import { LeavePolicy, LeaveRequest } from "../../types/domain.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
 
 const { Text, Title } = Typography;
@@ -48,6 +49,11 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   // Item 6: live working-day count + balance impact for the new range.
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  // Source of truth for negativeBalanceAllowed / negativeFloor — the
+  // policy retrieve, NOT the balance retrieve (which currently returns
+  // stale `false` / `0` for these). Loaded once per amend open.
+  const { leaveTypes } = useLeaveTypeOptions();
+  const [effectivePolicy, setEffectivePolicy] = useState<LeavePolicy | null>(null);
   // Watch the form's range field so we can recalculate days the moment
   // the user moves either picker (no need to submit first).
   const watchedRange = Form.useWatch<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(
@@ -101,6 +107,52 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       setAttachments([]);
     }
   }, [open, request, form, seedAttachmentsFrom]);
+
+  // Pull the effective Leave Policy on open so amend respects the same
+  // negative-balance rule as create. The balance retrieve currently
+  // sends `negativeBalanceAllowed: false` / `negativeFloor: 0` even when
+  // the policy says otherwise, so we ignore those fields on the balance
+  // row and read them from /leave-policy/effective instead.
+  useEffect(() => {
+    if (!open || !request || !organizationId) return;
+    const lt = leaveTypes.find((t) => t.code === request.leaveTypeCode);
+    if (!lt?.handle) {
+      setEffectivePolicy(null);
+      return;
+    }
+    let cancelled = false;
+    HrmLeaveService.getEffectivePolicy({
+      organizationId,
+      leaveTypeId: lt.handle,
+    })
+      .then((p) => {
+        if (!cancelled) setEffectivePolicy(p);
+      })
+      .catch(() => {
+        if (!cancelled) setEffectivePolicy(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, request, organizationId, leaveTypes]);
+
+  // Derived negative-balance state. Drives both the live impact display
+  // and the submit-blocked rule. Floor semantics match the apply-leave
+  // drawer: `negativeFloor` is a magnitude; actual minimum = -|floor|.
+  const negativeAllowed = effectivePolicy?.negativeBalanceAllowed ?? false;
+  const negativeFloor = effectivePolicy?.negativeFloor ?? null;
+  const minAllowedBalance =
+    negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0
+      ? -Math.abs(negativeFloor)
+      : 0;
+  const balanceAfter =
+    currentBalance != null && calculatedDays != null
+      ? currentBalance - calculatedDays
+      : null;
+  const exceedsNegativeLimit =
+    balanceAfter != null && balanceAfter < minAllowedBalance;
+  const goesNegative = balanceAfter != null && balanceAfter < 0;
+  const negativeWarning = goesNegative && !exceedsNegativeLimit;
 
   // Item 6: re-fetch the live balance for the request's leave type on open
   // so we can show "current → after" impact. Falls silently if the BE call
@@ -290,6 +342,48 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
         calculatedDays != null && calculatedDays > 0
           ? calculatedDays
           : Math.max(0, end.diff(start, "day") + 1);
+
+      // Final guard: refuse the amend if it would push the balance below
+      // the policy's negative floor. Mirrors the apply-leave drawer's
+      // exceedsBalance gate so both flows enforce the same limit.
+      if (currentBalance != null) {
+        const projected = currentBalance - totalDays;
+        if (negativeAllowed) {
+          if (
+            negativeFloor != null &&
+            Math.abs(negativeFloor) > 0 &&
+            projected < -Math.abs(negativeFloor)
+          ) {
+            message.error(
+              `Requested leave exceeds the allowed negative limit (floor: ${(-Math.abs(
+                negativeFloor,
+              )).toFixed(1)} day(s)).`,
+            );
+            return;
+          }
+          if (negativeFloor == null || Math.abs(negativeFloor) === 0) {
+            // Per the spec: when negativeFloor is 0, treat as no negative
+            // even if negativeBalanceAllowed is true — the floor of 0 means
+            // "no headroom below zero".
+            if (projected < 0) {
+              message.error(
+                `Insufficient balance. Available: ${currentBalance.toFixed(
+                  1,
+                )}, requested: ${totalDays.toFixed(1)}.`,
+              );
+              return;
+            }
+          }
+        } else if (projected < 0) {
+          message.error(
+            `Insufficient balance. Available: ${currentBalance.toFixed(
+              1,
+            )}, requested: ${totalDays.toFixed(1)}.`,
+          );
+          return;
+        }
+      }
+
       setSubmitting(true);
       const payload = {
         organizationId,
@@ -338,8 +432,17 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       footer={
         <div className={styles.formActions}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" onClick={handleSubmit} loading={submitting}>
-            Save Changes
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            loading={submitting}
+            disabled={exceedsNegativeLimit}
+          >
+            {exceedsNegativeLimit
+              ? negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0
+                ? "Exceeds Negative Limit"
+                : "Insufficient Balance"
+              : "Save Changes"}
           </Button>
         </div>
       }
@@ -361,17 +464,29 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
               <RangePicker format="DD-MMM-YYYY" style={{ width: "100%" }} />
             </Form.Item>
 
-            {/* Item 6: live recalc + balance impact. Updates the moment
-                either picker moves; no need to submit to see the new
-                day count or the resulting balance. */}
+            {/* Item 6: live recalc + balance impact + negative-floor view.
+                Updates the moment either picker moves; no need to submit
+                to see the new day count or the resulting balance. The
+                negative-floor block reads from /leave-policy/effective
+                because the balance retrieve currently doesn't carry it. */}
             {watchedRange && watchedRange[0] && watchedRange[1] && (
               <div
                 style={{
                   margin: "-4px 0 12px",
                   padding: "8px 10px",
                   borderRadius: 6,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
+                  background: exceedsNegativeLimit
+                    ? "#fef2f2"
+                    : negativeWarning
+                      ? "#fff7ed"
+                      : "#f8fafc",
+                  border: `1px solid ${
+                    exceedsNegativeLimit
+                      ? "#fecaca"
+                      : negativeWarning
+                        ? "#fed7aa"
+                        : "#e2e8f0"
+                  }`,
                   fontSize: 12,
                 }}
               >
@@ -390,12 +505,40 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                   <div style={{ marginTop: 2 }}>
                     <strong>Balance impact:</strong> {currentBalance.toFixed(1)}{" "}
                     → {(currentBalance - calculatedDays).toFixed(1)} day(s)
-                    {currentBalance - calculatedDays < 0 && (
-                      <Text type="warning" style={{ marginLeft: 6 }}>
-                        will go negative
-                      </Text>
-                    )}
                   </div>
+                )}
+                {balanceAfter != null && balanceAfter < 0 && negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0 && (
+                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed #d4d4d8" }}>
+                    <div>
+                      <strong>Available Leave:</strong> {balanceAfter.toFixed(1)} day(s)
+                    </div>
+                    <div>
+                      <strong>Negative Floor:</strong>{" "}
+                      {Math.abs(negativeFloor).toFixed(1)} day(s)
+                    </div>
+                    <div>
+                      <strong>Remaining Negative:</strong>{" "}
+                      {Math.max(
+                        0,
+                        Math.abs(negativeFloor) - Math.abs(balanceAfter),
+                      ).toFixed(1)}{" "}
+                      day(s)
+                    </div>
+                  </div>
+                )}
+                {exceedsNegativeLimit && (
+                  <Text type="danger" style={{ marginTop: 6, display: "block" }}>
+                    Requested leave exceeds the allowed negative limit
+                    {negativeFloor != null && Math.abs(negativeFloor) > 0
+                      ? ` (floor: ${(-Math.abs(negativeFloor)).toFixed(1)} day(s))`
+                      : ""}
+                    .
+                  </Text>
+                )}
+                {negativeWarning && (
+                  <Text type="warning" style={{ marginTop: 6, display: "block" }}>
+                    Warning: You are using negative leave balance.
+                  </Text>
                 )}
               </div>
             )}
