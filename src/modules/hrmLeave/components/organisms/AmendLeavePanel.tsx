@@ -47,7 +47,15 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   // Item 6: live working-day count + balance impact for the new range.
+  // dayBreakdown captures the BE's calendar / weekend / holiday split so
+  // we can spell out "(excludes N weekends, M holidays)" under the count.
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
+  const [dayBreakdown, setDayBreakdown] = useState<{
+    calendarDays: number;
+    weekendsExcluded: number;
+    holidaysExcluded: number;
+  } | null>(null);
+  const [calculating, setCalculating] = useState(false);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   // Authoritative source for negativeBalanceAllowed / negativeFloor is
   // /leave-balance/retrieve when it carries them (now the case per BE
@@ -217,29 +225,40 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     const range = watchedRange;
     if (!range || !range[0] || !range[1]) {
       setCalculatedDays(null);
+      setDayBreakdown(null);
       return;
     }
     const start = range[0];
     const end = range[1];
     if (end.isBefore(start, "day")) {
       setCalculatedDays(0);
+      setDayBreakdown(null);
       return;
     }
     // Synchronous fallback: walk the range and count Mon–Fri only.
     // Saturdays (day === 6) and Sundays (day === 0) are excluded.
-    const countWeekdays = (s: dayjs.Dayjs, e: dayjs.Dayjs): number => {
-      let count = 0;
+    const splitDays = (s: dayjs.Dayjs, e: dayjs.Dayjs) => {
+      let weekdays = 0;
+      let weekends = 0;
       let cur = s.startOf("day");
       const last = e.startOf("day");
       while (cur.isSame(last, "day") || cur.isBefore(last, "day")) {
         const dow = cur.day();
-        if (dow !== 0 && dow !== 6) count += 1;
+        if (dow === 0 || dow === 6) weekends += 1;
+        else weekdays += 1;
         cur = cur.add(1, "day");
       }
-      return count;
+      return { weekdays, weekends, calendarDays: weekdays + weekends };
     };
-    setCalculatedDays(countWeekdays(start, end));
+    const fb = splitDays(start, end);
+    setCalculatedDays(fb.weekdays);
+    setDayBreakdown({
+      calendarDays: fb.calendarDays,
+      weekendsExcluded: fb.weekends,
+      holidaysExcluded: 0,
+    });
     let cancelled = false;
+    setCalculating(true);
     HrmLeaveService.calculateWorkingDays({
       organizationId,
       employeeId: request.employeeId,
@@ -249,12 +268,32 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       endDayType: request.endDayType,
     })
       .then((res) => {
-        if (!cancelled && typeof res?.calculatedDays === "number") {
+        if (cancelled) return;
+        // BE is authoritative — it excludes weekends + holidays. We still
+        // re-derive the weekend count from the dates so the breakdown is
+        // populated even if the BE response omits excludedWeekends.
+        if (typeof res?.calculatedDays === "number") {
           setCalculatedDays(res.calculatedDays);
         }
+        const beWeekends = Array.isArray(res?.excludedWeekends)
+          ? res.excludedWeekends.length
+          : fb.weekends;
+        const beHolidays = Array.isArray(res?.excludedHolidays)
+          ? res.excludedHolidays.length
+          : 0;
+        const beCalendar =
+          typeof res?.calendarDays === "number" ? res.calendarDays : fb.calendarDays;
+        setDayBreakdown({
+          calendarDays: beCalendar,
+          weekendsExcluded: beWeekends,
+          holidaysExcluded: beHolidays,
+        });
       })
       .catch(() => {
         // Keep the weekday-only fallback; BE will re-validate on submit.
+      })
+      .finally(() => {
+        if (!cancelled) setCalculating(false);
       });
     return () => {
       cancelled = true;
@@ -548,7 +587,12 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
               >
                 <div>
                   <strong>Updated days:</strong>{" "}
-                  {calculatedDays != null ? `${calculatedDays.toFixed(1)} day(s)` : "—"}
+                  {calculatedDays != null ? `${calculatedDays.toFixed(1)} working day(s)` : "—"}
+                  {calculating && (
+                    <Text type="secondary" style={{ marginLeft: 6 }}>
+                      (recalculating…)
+                    </Text>
+                  )}
                   {request &&
                     calculatedDays != null &&
                     calculatedDays !== request.totalDays && (
@@ -557,6 +601,20 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                       </Text>
                     )}
                 </div>
+                {dayBreakdown &&
+                  (dayBreakdown.weekendsExcluded > 0 || dayBreakdown.holidaysExcluded > 0) && (
+                    <Text type="secondary" style={{ fontSize: 11, display: "block" }}>
+                      {dayBreakdown.calendarDays} calendar day(s)
+                      {dayBreakdown.weekendsExcluded > 0 &&
+                        ` − ${dayBreakdown.weekendsExcluded} weekend${
+                          dayBreakdown.weekendsExcluded > 1 ? "s" : ""
+                        }`}
+                      {dayBreakdown.holidaysExcluded > 0 &&
+                        ` − ${dayBreakdown.holidaysExcluded} holiday${
+                          dayBreakdown.holidaysExcluded > 1 ? "s" : ""
+                        }`}
+                    </Text>
+                  )}
                 {currentBalance != null && calculatedDays != null && (
                   <div style={{ marginTop: 2 }}>
                     <strong>Balance impact:</strong> {currentBalance.toFixed(1)}{" "}
