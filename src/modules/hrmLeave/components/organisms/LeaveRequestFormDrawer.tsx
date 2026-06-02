@@ -378,6 +378,10 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       available: number;
       halfDayAllowed: boolean;
       hasBalance: boolean;
+      /** Whether the policy on this balance row permits a negative balance. */
+      negativeBalanceAllowed?: boolean;
+      /** Magnitude of the negative balance the policy permits. */
+      negativeFloor?: number;
       /** When true the card is dimmed and unclickable (gender / probation filter). */
       disabled: boolean;
       disabledReason?: string;
@@ -390,6 +394,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
         available: b.availableBalance,
         halfDayAllowed: b.halfDayAllowed,
         hasBalance: true,
+        negativeBalanceAllowed: b.negativeBalanceAllowed,
+        negativeFloor: b.negativeFloor,
         disabled: false,
       });
     };
@@ -765,14 +771,21 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   ]);
 
   // ── Negative-balance handling (item 15) ────────────────────────────
-  // Whether the effective policy permits a negative balance, and how many
-  // days below zero are allowed. The policy stores `negativeFloor` as a
-  // magnitude (e.g. `2.0` means "2 days negative allowed"); the actual
-  // minimum balance is therefore −|negativeFloor|. Math.abs makes the
-  // check robust whether the value arrives positive (2) or negative (−2).
-  // When the policy is unknown we keep the strict behaviour (no negative).
-  const negativeAllowed = effectivePolicy?.negativeBalanceAllowed ?? false;
-  const negativeFloor = effectivePolicy?.negativeFloor ?? null;
+  // Source of truth for these is the /leave-balance/retrieve row when it
+  // carries them (now the authoritative answer per BE update). Fall back
+  // to /leave-policy/effective when the balance row is silent — older
+  // backends still rely on that. `negativeFloor` is a magnitude (e.g.
+  // `2.0` ⇒ "2 days negative allowed"); the actual minimum balance is
+  // therefore −|negativeFloor|. Math.abs makes the check robust whether
+  // the value arrives positive (2) or negative (−2).
+  const negativeAllowed =
+    selectedBalance?.negativeBalanceAllowed ??
+    effectivePolicy?.negativeBalanceAllowed ??
+    false;
+  const negativeFloor =
+    selectedBalance?.negativeFloor != null
+      ? selectedBalance.negativeFloor
+      : effectivePolicy?.negativeFloor ?? null;
   const minAllowedBalance =
     negativeAllowed && negativeFloor != null ? -Math.abs(negativeFloor) : 0;
   const goesNegative =

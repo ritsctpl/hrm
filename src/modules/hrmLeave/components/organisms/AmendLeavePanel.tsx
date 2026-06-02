@@ -49,9 +49,15 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
   // Item 6: live working-day count + balance impact for the new range.
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
-  // Source of truth for negativeBalanceAllowed / negativeFloor — the
-  // policy retrieve, NOT the balance retrieve (which currently returns
-  // stale `false` / `0` for these). Loaded once per amend open.
+  // Authoritative source for negativeBalanceAllowed / negativeFloor is
+  // /leave-balance/retrieve when it carries them (now the case per BE
+  // update). The policy retrieve stays as a fallback for older backends.
+  const [balanceNegativeAllowed, setBalanceNegativeAllowed] = useState<
+    boolean | null
+  >(null);
+  const [balanceNegativeFloor, setBalanceNegativeFloor] = useState<number | null>(
+    null,
+  );
   const { leaveTypes } = useLeaveTypeOptions();
   const [effectivePolicy, setEffectivePolicy] = useState<LeavePolicy | null>(null);
   // Watch the form's range field so we can recalculate days the moment
@@ -136,11 +142,17 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     };
   }, [open, request, organizationId, leaveTypes]);
 
-  // Derived negative-balance state. Drives both the live impact display
-  // and the submit-blocked rule. Floor semantics match the apply-leave
-  // drawer: `negativeFloor` is a magnitude; actual minimum = -|floor|.
-  const negativeAllowed = effectivePolicy?.negativeBalanceAllowed ?? false;
-  const negativeFloor = effectivePolicy?.negativeFloor ?? null;
+  // Derived negative-balance state. Prefer the values returned on the
+  // /leave-balance/retrieve row (authoritative per latest BE update) and
+  // fall back to the effective policy only when the balance row is silent.
+  // Floor semantics: `negativeFloor` is a magnitude; actual minimum is
+  // -|floor|.
+  const negativeAllowed =
+    balanceNegativeAllowed ?? effectivePolicy?.negativeBalanceAllowed ?? false;
+  const negativeFloor =
+    balanceNegativeFloor != null
+      ? balanceNegativeFloor
+      : effectivePolicy?.negativeFloor ?? null;
   const minAllowedBalance =
     negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0
       ? -Math.abs(negativeFloor)
@@ -168,13 +180,27 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       year,
     })
       .then((bal) => {
-        if (!cancelled) {
-          const avail = Number((bal as { availableBalance?: number })?.availableBalance);
-          setCurrentBalance(Number.isFinite(avail) ? avail : null);
-        }
+        if (cancelled) return;
+        const row = bal as {
+          availableBalance?: number;
+          negativeBalanceAllowed?: boolean;
+          negativeFloor?: number;
+        };
+        const avail = Number(row?.availableBalance);
+        setCurrentBalance(Number.isFinite(avail) ? avail : null);
+        setBalanceNegativeAllowed(
+          typeof row?.negativeBalanceAllowed === "boolean"
+            ? row.negativeBalanceAllowed
+            : null,
+        );
+        const floor = Number(row?.negativeFloor);
+        setBalanceNegativeFloor(Number.isFinite(floor) ? floor : null);
       })
       .catch(() => {
-        if (!cancelled) setCurrentBalance(null);
+        if (cancelled) return;
+        setCurrentBalance(null);
+        setBalanceNegativeAllowed(null);
+        setBalanceNegativeFloor(null);
       });
     return () => {
       cancelled = true;

@@ -155,6 +155,13 @@ export interface LeaveBalanceResponse {
   carryForwardAllowed: boolean;
   carryForwardCap: number;
   encashmentAllowed: boolean;
+  /** Whether the effective policy permits going below zero. Authoritative
+   *  for validation — supersedes the same field on the policy when both
+   *  are present. */
+  negativeBalanceAllowed?: boolean;
+  /** Magnitude of the permitted negative balance (e.g. 2 means the
+   *  balance may reach -2). Authoritative; see `negativeBalanceAllowed`. */
+  negativeFloor?: number;
   halfDayAllowed: boolean;
   lastCalculatedAt: string;
 }

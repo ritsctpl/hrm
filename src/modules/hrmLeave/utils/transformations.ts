@@ -46,6 +46,15 @@ export function mapBalanceResponseToDomain(res: LeaveBalanceResponse): LeaveBala
     carryForwardAllowed: !!res.carryForwardAllowed,
     carryForwardCap: toNum(res.carryForwardCap),
     encashmentAllowed: !!res.encashmentAllowed,
+    // /leave-balance/retrieve now carries the negative-balance settings,
+    // making the balance row the authoritative source for them (the policy
+    // is the backup). Coerce defensively in case the BE sends strings.
+    negativeBalanceAllowed:
+      res.negativeBalanceAllowed != null ? !!res.negativeBalanceAllowed : undefined,
+    negativeFloor:
+      res.negativeFloor != null && Number.isFinite(Number(res.negativeFloor))
+        ? toNum(res.negativeFloor)
+        : undefined,
     halfDayAllowed: !!res.halfDayAllowed,
     lastCalculatedAt: res.lastCalculatedAt,
   };
