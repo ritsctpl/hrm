@@ -281,7 +281,7 @@ const HrmExpenseScreen: React.FC<Props> = ({
         </Can>
       )}
       {canDelete && (
-        <Can I="delete">
+        <Can I="delete" object="expense_record">
           <Button danger icon={<DeleteOutlined />} onClick={() => setDeleteModal(true)}>
             Delete
           </Button>
@@ -360,19 +360,34 @@ const HrmExpenseScreen: React.FC<Props> = ({
     [removeDraftItem]
   );
 
-  const lineItemsTab =
-    expense?.expenseType === "MILEAGE" ? (
-      <div className={styles.detailBody}>
+  const isMileageExpense = expense?.expenseType === "MILEAGE";
+  const lineItemsSectionTitle = isMileageExpense ? "Trips" : "Line items";
+
+  const lineItemsTab = (
+    <div className={styles.detailBody}>
+      <div
+        style={{
+          padding: "8px 16px 4px",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#595959",
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+        }}
+      >
+        {lineItemsSectionTitle}
+      </div>
+      {isMileageExpense ? (
         <MileageLineItemsTable
           mileageItems={mileageItems}
           ratePerKm={mileageConfig?.ratePerKm}
           readonly={isReadonly}
+          headerFromDate={formState.fromDate}
+          headerToDate={formState.toDate}
           onAddItem={handleAddDraftItem}
           onRemoveItem={handleRemoveDraftItem}
         />
-      </div>
-    ) : (
-      <div className={styles.detailBody}>
+      ) : (
         <ExpenseLineItemsTable
           lineItems={regularItems}
           categories={categories}
@@ -382,6 +397,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
           justification={formState.outOfPolicyJustification}
           justificationError={formErrors.outOfPolicyJustification}
           lineErrors={lineErrors}
+          headerFromDate={formState.fromDate}
+          headerToDate={formState.toDate}
           onJustificationChange={(v) => updateFormState({ outOfPolicyJustification: v })}
           onAddItem={handleAddDraftItem}
           onUpdateItem={handleUpdateDraftItem}
@@ -389,8 +406,9 @@ const HrmExpenseScreen: React.FC<Props> = ({
           onUploadReceipts={handleUploadLineReceipts}
           onDeleteReceipt={expense?.handle ? handleDeleteLineReceipt : undefined}
         />
-      </div>
-    );
+      )}
+    </div>
+  );
 
   const tabItems = [
     {
@@ -534,6 +552,8 @@ const HrmExpenseScreen: React.FC<Props> = ({
       {isFinance && expense && (
         <FinanceApprovalPanel
           reportId={expense.requestId}
+          status={expense.status}
+          currency={expense.currency}
           totalClaimedAmountInr={expense.totalClaimedAmountInr}
           panel={financePanel}
           bankDetails={bankDetails}
@@ -622,19 +642,46 @@ const HrmExpenseScreen: React.FC<Props> = ({
 
       {/* Delete Modal */}
       <Modal
-        title="Delete Expense"
+        title="Delete Draft Expense"
         open={deleteModal}
-        onCancel={() => setDeleteModal(false)}
+        onCancel={() => {
+          if (saving) return;
+          setDeleteModal(false);
+        }}
         onOk={() => {
-          deleteExpense(expense!.handle).then(() => {
-            setDeleteModal(false);
-            onActionComplete();
-          });
+          if (!expense) return;
+          deleteExpense(expense.handle)
+            .then(() => {
+              message.success("Draft deleted");
+              setDeleteModal(false);
+              onActionComplete();
+            })
+            .catch((err: unknown) => {
+              message.error(
+                err instanceof Error && err.message ? err.message : "Failed to delete draft",
+              );
+            });
         }}
         okText="Delete"
-        okButtonProps={{ danger: true }}
+        okButtonProps={{ danger: true, loading: saving, disabled: !expense }}
+        cancelButtonProps={{ disabled: saving }}
+        confirmLoading={saving}
+        maskClosable={!saving}
+        closable={!saving}
       >
-        <Text>Are you sure you want to delete this draft? This cannot be undone.</Text>
+        {expense && (
+          <Space direction="vertical" size={6} style={{ width: "100%" }}>
+            <Text>Are you sure you want to delete this draft? This cannot be undone.</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Report ID: <Text code>{expense.requestId}</Text>
+            </Text>
+            {expense.purpose && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Purpose: {expense.purpose}
+              </Text>
+            )}
+          </Space>
+        )}
       </Modal>
     </div>
   );

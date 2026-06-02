@@ -60,3 +60,27 @@ export function isImageBase64(base64Data: string): boolean {
   const mimeType = getMimeTypeFromBase64DataUrl(base64Data);
   return mimeType ? mimeType.startsWith('image/') : false;
 }
+
+/**
+ * Sniff the MIME type from the leading bytes of a base64 string by matching
+ * well-known magic-byte prefixes. Used when the backend returns a wrong or
+ * missing `contentType` (e.g. application/octet-stream) which causes the
+ * browser to render image bytes as text inside an iframe.
+ *
+ * Returns null when nothing matches — callers should fall back to the
+ * server-provided contentType.
+ */
+export function detectMimeFromBase64(base64Data: string): string | null {
+  if (!base64Data) return null;
+  // Strip data URL prefix and whitespace so the comparison is stable.
+  const s = base64Data.replace(/^data:[^;]+;base64,/, "").trimStart();
+  if (s.startsWith("/9j/")) return "image/jpeg";              // FF D8 FF
+  if (s.startsWith("iVBORw0K")) return "image/png";           // 89 50 4E 47 0D 0A 1A 0A
+  if (s.startsWith("R0lGOD")) return "image/gif";             // 47 49 46 38
+  if (s.startsWith("UklGR")) return "image/webp";             // RIFF....WEBP
+  if (s.startsWith("Qk")) return "image/bmp";                 // 42 4D
+  if (s.startsWith("PD94bWwg") || s.startsWith("PHN2Zw")) return "image/svg+xml"; // "<?xml " or "<svg"
+  if (s.startsWith("JVBERi0")) return "application/pdf";      // %PDF-
+  if (s.startsWith("UEsDB")) return "application/zip";        // PK\x03\x04 — also xlsx/docx
+  return null;
+}

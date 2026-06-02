@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
-import { Table, Button, Modal, Form, Input, InputNumber, Checkbox, Switch, message, Popconfirm, Tag } from "antd";
+import { Table, Button, Modal, Form, Input, InputNumber, Checkbox, Switch, message, Popconfirm } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import { HrmExpenseService } from "../../services/hrmExpenseService";
@@ -124,35 +124,27 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
     {
       title: "Daily Limit",
       dataIndex: "dailyLimit",
-      width: 120,
+      width: 140,
       align: "right",
-      render: (v) => (v ? v.toLocaleString() : "—"),
+      render: (v, r) =>
+        r.mileageCategory
+          ? `₹${r.mileageRatePerKm ?? 0}/km`
+          : v
+            ? v.toLocaleString()
+            : "—",
     },
     {
       title: "Per Trip Limit",
       dataIndex: "perTripLimit",
       width: 130,
       align: "right",
-      render: (v) => (v ? v.toLocaleString() : "—"),
+      render: (v, r) => (r.mileageCategory ? "—" : v ? v.toLocaleString() : "—"),
     },
     {
-      title: "Requires Attachment",
+      title: "Receipt",
       dataIndex: "requiresAttachment",
-      width: 160,
-      render: (v) => (v ? "Yes" : "No"),
-    },
-    {
-      title: "Mileage",
-      dataIndex: "mileageCategory",
-      width: 150,
-      render: (v, r) =>
-        v ? <Tag color="blue">{`Yes (${r.mileageRatePerKm ?? 0}/km)`}</Tag> : "No",
-    },
-    {
-      title: "Active",
-      dataIndex: "active",
-      width: 80,
-      render: (v) => <Switch size="small" checked={!!v} disabled />,
+      width: 100,
+      render: (v) => (v ? "Required" : "Optional"),
     },
     {
       title: "",
@@ -216,7 +208,13 @@ const ExpenseCategoryConfig: React.FC<Props> = ({ categories, onRefresh }) => {
         dataSource={filteredCategories}
         size="small"
         pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total ${t}` }}
+        rowClassName={(r) => (!r.active ? "expense-category-inactive-row" : "")}
       />
+      <style jsx global>{`
+        .expense-category-inactive-row td {
+          color: rgba(0, 0, 0, 0.35);
+        }
+      `}</style>
 
       <Modal
         title={editingCategory ? "Edit Category" : "Add Category"}

@@ -17,6 +17,7 @@ export function useExpenseData() {
     setMyExpenses,
     setListLoading,
     setSupervisorInbox,
+    setSupervisorHistory,
     setFinanceInbox,
     setInboxLoading,
     setCategories,
@@ -72,6 +73,23 @@ export function useExpenseData() {
       setSupervisorInbox(data);
     } catch {
       message.error("Failed to load approval inbox.");
+    } finally {
+      setInboxLoading(false);
+    }
+  }, [organizationId, employeeId, identity.employeeIdWithName, isReady]);
+
+  const loadSupervisorHistory = useCallback(async () => {
+    if (!isReady) return;
+    setInboxLoading(true);
+    try {
+      const approverId = identity.employeeIdWithName || employeeId;
+      const data = await HrmExpenseService.getSupervisorHistory({
+        organizationId,
+        employeeId: approverId,
+      });
+      setSupervisorHistory(data);
+    } catch {
+      message.error("Failed to load team history.");
     } finally {
       setInboxLoading(false);
     }
@@ -147,6 +165,7 @@ export function useExpenseData() {
   return {
     loadMyExpenses,
     loadSupervisorInbox,
+    loadSupervisorHistory,
     loadFinanceInbox,
     loadCategories,
     loadMileageConfig,

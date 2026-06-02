@@ -30,7 +30,33 @@ export function computeExpenseSlaInfo(report: ExpenseReport) {
     return { daysRemaining: null, isOverdue: false, label: "", color: "success" as const };
   }
   const days = dayjs(report.slaDeadline).diff(dayjs(), "day");
-  if (days < 0) return { daysRemaining: days, isOverdue: true, label: "Overdue", color: "error" as const };
-  if (days <= 3) return { daysRemaining: days, isOverdue: false, label: `Due ${days}d`, color: "warning" as const };
-  return { daysRemaining: days, isOverdue: false, label: `Due ${days}d`, color: "success" as const };
+  if (days < 0) {
+    const overdue = Math.abs(days);
+    return {
+      daysRemaining: days,
+      isOverdue: true,
+      label: overdue === 1 ? "Overdue 1 day" : `Overdue ${overdue} days`,
+      color: "error" as const,
+    };
+  }
+  if (days === 0) {
+    return { daysRemaining: 0, isOverdue: false, label: "Due today", color: "warning" as const };
+  }
+  if (days === 1) {
+    return { daysRemaining: 1, isOverdue: false, label: "Due tomorrow", color: "warning" as const };
+  }
+  if (days <= 3) {
+    return {
+      daysRemaining: days,
+      isOverdue: false,
+      label: `Due in ${days} days`,
+      color: "warning" as const,
+    };
+  }
+  return {
+    daysRemaining: days,
+    isOverdue: false,
+    label: `Due in ${days} days`,
+    color: "success" as const,
+  };
 }

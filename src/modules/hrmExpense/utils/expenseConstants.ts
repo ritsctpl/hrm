@@ -24,6 +24,34 @@ export const EXPENSE_STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
+export type ExpenseStatusBucket = "DRAFT" | "AWAITING" | "PAID" | "CLOSED";
+
+export const EXPENSE_STATUS_BUCKET: Record<string, ExpenseStatusBucket> = {
+  DRAFT: "DRAFT",
+  RECALLED: "DRAFT",
+  PENDING_SUPERVISOR: "AWAITING",
+  PENDING_FINANCE: "AWAITING",
+  ESCALATED: "AWAITING",
+  PAID: "PAID",
+  APPROVED: "CLOSED",
+  REJECTED: "CLOSED",
+  CANCELLED: "CLOSED",
+};
+
+export const EXPENSE_BUCKET_LABELS: Record<ExpenseStatusBucket, string> = {
+  DRAFT: "Draft",
+  AWAITING: "Awaiting",
+  PAID: "Paid",
+  CLOSED: "Closed",
+};
+
+export const EXPENSE_BUCKET_COLORS: Record<ExpenseStatusBucket, string> = {
+  DRAFT: "default",
+  AWAITING: "warning",
+  PAID: "success",
+  CLOSED: "default",
+};
+
 export const EXPENSE_TYPE_COLORS: Record<string, string> = {
   ADVANCE: "blue",
   REIMBURSEMENT: "green",

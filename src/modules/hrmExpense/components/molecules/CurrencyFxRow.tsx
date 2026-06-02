@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Form, Select, InputNumber, Typography } from "antd";
+import React, { useState } from "react";
+import { Form, Select, InputNumber, Typography, Button, Space } from "antd";
 
 const { Text } = Typography;
 
@@ -29,13 +29,44 @@ const CurrencyFxRow: React.FC<Props> = ({
   onCurrencyChange,
   onRateChange,
 }) => {
+  const nonInr = currency !== "INR";
+  const [expanded, setExpanded] = useState(nonInr);
+
+  // Keep expanded state in sync when currency changes externally (e.g. loading a draft).
+  React.useEffect(() => {
+    if (nonInr && !expanded) setExpanded(true);
+  }, [nonInr, expanded]);
+
+  if (!expanded) {
+    return (
+      <Space size={6} style={{ marginTop: 4 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          Currency: INR
+        </Text>
+        {!readonly && (
+          <Button
+            type="link"
+            size="small"
+            style={{ padding: 0, fontSize: 12 }}
+            onClick={() => setExpanded(true)}
+          >
+            Different currency?
+          </Button>
+        )}
+      </Space>
+    );
+  }
+
   return (
     <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
       <Form.Item label="Currency" style={{ flex: 1 }}>
         <Select
           value={currency}
           options={CURRENCY_OPTIONS}
-          onChange={onCurrencyChange}
+          onChange={(c) => {
+            onCurrencyChange?.(c);
+            if (c === "INR") setExpanded(false);
+          }}
           disabled={readonly}
           style={{ width: "100%" }}
         />

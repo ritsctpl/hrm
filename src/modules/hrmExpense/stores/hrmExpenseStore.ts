@@ -13,6 +13,7 @@ interface ExpenseState {
   // ── Data ──────────────────────────────────────────────────────────────
   myExpenses: ExpenseReport[];
   supervisorInbox: ExpenseReport[];
+  supervisorHistory: ExpenseReport[];
   financeInbox: ExpenseReport[];
   selectedExpense: ExpenseReport | null;
   categories: ExpenseCategory[];
@@ -50,6 +51,7 @@ interface ExpenseState {
   updateMyExpense: (handle: string, changes: Partial<ExpenseReport>) => void;
   removeMyExpense: (handle: string) => void;
   setSupervisorInbox: (expenses: ExpenseReport[]) => void;
+  setSupervisorHistory: (expenses: ExpenseReport[]) => void;
   setFinanceInbox: (expenses: ExpenseReport[]) => void;
   updateInboxExpense: (handle: string, changes: Partial<ExpenseReport>) => void;
   removeFromInbox: (handle: string) => void;
@@ -95,6 +97,7 @@ interface ExpenseState {
 const defaultState = {
   myExpenses: [],
   supervisorInbox: [],
+  supervisorHistory: [],
   financeInbox: [],
   selectedExpense: null,
   categories: [],
@@ -131,6 +134,7 @@ export const useHrmExpenseStore = create<ExpenseState>((set) => ({
   removeMyExpense: (handle) =>
     set((s) => ({ myExpenses: s.myExpenses.filter((e) => e.handle !== handle) })),
   setSupervisorInbox: (supervisorInbox) => set({ supervisorInbox }),
+  setSupervisorHistory: (supervisorHistory) => set({ supervisorHistory }),
   setFinanceInbox: (financeInbox) => set({ financeInbox }),
   updateInboxExpense: (handle, changes) =>
     set((s) => ({

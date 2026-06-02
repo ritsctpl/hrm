@@ -1,5 +1,5 @@
 import api from "@/services/api";
-import { base64ToBlob } from "../utils/base64Utils";
+import { base64ToBlob, detectMimeFromBase64 } from "../utils/base64Utils";
 import type {
   ExpenseListRequest,
   ExpenseApproverInboxRequest,
@@ -69,6 +69,16 @@ export class HrmExpenseService {
   // ── Approval ─────────────────────────────────────────────────────────
   static async getSupervisorInbox(payload: ExpenseApproverInboxRequest): Promise<ExpenseReport[]> {
     const { data } = await api.post(`${this.BASE}/supervisor-inbox`, payload);
+    return data;
+  }
+
+  /**
+   * Returns ALL expenses owned by the supervisor's reportees, in any status.
+   * Used by the "Team History" tab. Backend endpoint: see
+   * src/docs/expense/backend_changes_prompt.md §1.
+   */
+  static async getSupervisorHistory(payload: ExpenseApproverInboxRequest): Promise<ExpenseReport[]> {
+    const { data } = await api.post(`${this.BASE}/supervisor-history`, payload);
     return data;
   }
 
@@ -212,10 +222,21 @@ export class HrmExpenseService {
       
       // Check if it's a JSON response with base64 data
       if (data && typeof data === 'object' && data.response && data.response.base64Data) {
-        const { base64Data, contentType = 'application/octet-stream' } = data.response;
-        
+        const { base64Data, contentType } = data.response;
+
+        // BE sometimes returns no contentType, or sets it to a generic
+        // octet-stream. The browser then renders the bytes as text inside
+        // an iframe, which is the bug surfaced in the screenshot. Sniff
+        // the real MIME from base64 magic bytes when the BE value is
+        // missing or unhelpful.
+        const sniffed = detectMimeFromBase64(base64Data);
+        const effectiveType =
+          !contentType || contentType === 'application/octet-stream'
+            ? sniffed ?? contentType ?? 'application/octet-stream'
+            : contentType;
+
         try {
-          return base64ToBlob(base64Data, contentType);
+          return base64ToBlob(base64Data, effectiveType);
         } catch (base64Error) {
           console.error('Base64 conversion error:', base64Error);
           throw new Error('Failed to convert base64 data to blob');
@@ -272,6 +293,17 @@ export class HrmExpenseService {
 
   static async getMileageConfig(payload: SiteRequest): Promise<MileageConfig> {
     const { data } = await api.post(`${this.BASE}/mileage-config/retrieve`, payload);
+    return data;
+  }
+
+  /**
+   * Petrol-price-driven rate config (new flow). Falls back to a sensible default
+   * if the backend has no row yet. See src/docs/expense/backend_changes_prompt.md §2.
+   */
+  static async getMileageRateConfig(
+    payload: { organizationId: string },
+  ): Promise<import("../types/domain.types").MileageRateConfig> {
+    const { data } = await api.post(`${this.BASE}/mileage-config/get`, payload);
     return data;
   }
 

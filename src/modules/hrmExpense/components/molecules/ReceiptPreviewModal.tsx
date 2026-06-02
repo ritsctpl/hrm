@@ -28,6 +28,7 @@ const ReceiptPreviewModal: React.FC<Props> = ({
 }) => {
   const [index, setIndex] = useState(initialIndex);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [blobType, setBlobType] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ const ReceiptPreviewModal: React.FC<Props> = ({
         if (revoked) return;
         url = URL.createObjectURL(blob);
         setBlobUrl(url);
+        setBlobType(blob.type || "");
       })
       .catch((error) => {
         if (!revoked) {
@@ -151,16 +153,72 @@ const ReceiptPreviewModal: React.FC<Props> = ({
           </div>
         )}
         {blobUrl && !loading && (
-          <iframe
-            key={blobUrl}
-            src={blobUrl}
-            title="Receipt preview"
-            style={{ width: "100%", height: "100%", border: "none" }}
-            onError={(e) => {
-              console.error("Iframe error:", e);
-              message.error("Failed to display receipt");
-            }}
-          />
+          (() => {
+            // Pick the renderer by MIME. An <iframe> with no/unknown type
+            // shows raw bytes as text in Chrome — the original bug. <img>
+            // for image/*, <iframe> for application/pdf, otherwise show a
+            // download fallback so the user can still save the file.
+            const isImage = blobType.startsWith("image/");
+            const isPdf = blobType === "application/pdf";
+            if (isImage) {
+              return (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "auto",
+                    padding: 16,
+                  }}
+                >
+                  <img
+                    key={blobUrl}
+                    src={blobUrl}
+                    alt="Receipt"
+                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                    onError={() => {
+                      console.error("Image render failed; type=", blobType);
+                      message.error("Failed to display receipt");
+                    }}
+                  />
+                </div>
+              );
+            }
+            if (isPdf) {
+              return (
+                <iframe
+                  key={blobUrl}
+                  src={blobUrl}
+                  title="Receipt preview"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  onError={(e) => {
+                    console.error("Iframe error:", e);
+                    message.error("Failed to display receipt");
+                  }}
+                />
+              );
+            }
+            return (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  gap: 12,
+                  color: "#595959",
+                }}
+              >
+                <Text>Preview not available for this file type{blobType ? ` (${blobType})` : ""}.</Text>
+                <Button icon={<DownloadOutlined />} onClick={handleDownload}>
+                  Download to view
+                </Button>
+              </div>
+            );
+          })()
         )}
         {!blobUrl && !loading && (
           <div

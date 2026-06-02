@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Card, Input, Button, Space, Modal, Typography } from "antd";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, CloseCircleOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import Can from "../../../hrmAccess/components/Can";
 
 const { Text } = Typography;
@@ -23,12 +23,17 @@ const SupervisorApprovalBar: React.FC<Props> = ({ reportId, loading, onApprove, 
     <>
       <Card
         size="small"
-        title={<Text strong style={{ fontSize: 13 }}>Supervisor Approval</Text>}
-        style={{ borderColor: "#faad14", background: "#fffbe6", margin: "16px 16px 0" }}
+        title={<Text strong style={{ fontSize: 13 }}>Your decision</Text>}
+        style={{
+          borderColor: "#faad14",
+          background: "#fffbe6",
+          margin: "16px 16px 0",
+          borderTop: "2px solid #faad14",
+        }}
       >
-        <Space direction="vertical" style={{ width: "100%" }} size={8}>
+        <Space direction="vertical" style={{ width: "100%" }} size={10}>
           <Input.TextArea
-            placeholder="Remarks (mandatory for rejection)"
+            placeholder="Add a note for the employee (required if rejecting)"
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             rows={2}
@@ -51,7 +56,7 @@ const SupervisorApprovalBar: React.FC<Props> = ({ reportId, loading, onApprove, 
                 })}
                 loading={loading}
               >
-                Approve
+                Approve <ArrowRightOutlined />
               </Button>
             </Can>
           </Space>
