@@ -165,9 +165,20 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0
       ? -Math.abs(negativeFloor)
       : 0;
+
+  // /leave-balance/retrieve gives us the balance AFTER this request has
+  // already been deducted (e.g. balance 6, request 8 → availableBalance:
+  // -2 with negativeFloor: 2). So for the amend impact we have to refund
+  // the request's existing totalDays first and only then subtract the new
+  // count — otherwise picking the same date range would look like a
+  // second 8-day debit. Net change is `newDays - request.totalDays`.
+  const refundedBalance =
+    currentBalance != null
+      ? currentBalance + (request?.totalDays ?? 0)
+      : null;
   const balanceAfter =
-    currentBalance != null && calculatedDays != null
-      ? currentBalance - calculatedDays
+    refundedBalance != null && calculatedDays != null
+      ? refundedBalance - calculatedDays
       : null;
   const exceedsNegativeLimit =
     balanceAfter != null && balanceAfter < minAllowedBalance;
@@ -439,10 +450,12 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
           : countWeekdaysAtSubmit(start, end);
 
       // Final guard: refuse the amend if it would push the balance below
-      // the policy's negative floor. Mirrors the apply-leave drawer's
-      // exceedsBalance gate so both flows enforce the same limit.
+      // the policy's negative floor. Refund this request's existing days
+      // first — availableBalance already deducts them — so the check
+      // matches the apply-leave drawer's "balance - new days" logic.
       if (currentBalance != null) {
-        const projected = currentBalance - totalDays;
+        const refunded = currentBalance + (request.totalDays ?? 0);
+        const projected = refunded - totalDays;
         if (negativeAllowed) {
           if (
             negativeFloor != null &&
@@ -462,7 +475,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
             // "no headroom below zero".
             if (projected < 0) {
               message.error(
-                `Insufficient balance. Available: ${currentBalance.toFixed(
+                `Insufficient balance. Available: ${refunded.toFixed(
                   1,
                 )}, requested: ${totalDays.toFixed(1)}.`,
               );
@@ -471,7 +484,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
           }
         } else if (projected < 0) {
           message.error(
-            `Insufficient balance. Available: ${currentBalance.toFixed(
+            `Insufficient balance. Available: ${refunded.toFixed(
               1,
             )}, requested: ${totalDays.toFixed(1)}.`,
           );
@@ -615,10 +628,16 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
                         }`}
                     </Text>
                   )}
-                {currentBalance != null && calculatedDays != null && (
+                {refundedBalance != null && balanceAfter != null && (
                   <div style={{ marginTop: 2 }}>
-                    <strong>Balance impact:</strong> {currentBalance.toFixed(1)}{" "}
-                    → {(currentBalance - calculatedDays).toFixed(1)} day(s)
+                    <strong>Balance impact:</strong> {refundedBalance.toFixed(1)}
+                    {" "}→ {balanceAfter.toFixed(1)} day(s)
+                    {request && calculatedDays !== request.totalDays && (
+                      <Text type="secondary" style={{ marginLeft: 6 }}>
+                        (net {calculatedDays > request.totalDays ? "+" : ""}
+                        {(calculatedDays - request.totalDays).toFixed(1)} day(s))
+                      </Text>
+                    )}
                   </div>
                 )}
                 {balanceAfter != null && balanceAfter < 0 && negativeAllowed && negativeFloor != null && Math.abs(negativeFloor) > 0 && (
