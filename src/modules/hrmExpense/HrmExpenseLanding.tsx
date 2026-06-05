@@ -7,6 +7,7 @@ import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseData } from "./hooks/useExpenseData";
+import { useExpenseMutations } from "./hooks/useExpenseMutations";
 import { useDebounce } from "./hooks/useDebounce";
 import ExpenseSearchBar from "./components/molecules/ExpenseSearchBar";
 import ExpenseListTable from "./components/organisms/ExpenseListTable";
@@ -46,6 +47,7 @@ const HrmExpenseLanding: React.FC = () => {
     myExpenses,
     listLoading,
     supervisorInbox,
+    supervisorHistory,
     financeInbox,
     inboxLoading,
     selectedExpense,
@@ -67,12 +69,15 @@ const HrmExpenseLanding: React.FC = () => {
   const {
     loadMyExpenses,
     loadSupervisorInbox,
+    loadSupervisorHistory,
     loadFinanceInbox,
     loadCategories,
     loadMileageConfig,
     exportExpenses,
     loadUnsettledAdvances,
   } = useExpenseData();
+
+  const { deleteExpense: deleteExpenseMutation } = useExpenseMutations();
 
   const [unsettledAdvances, setUnsettledAdvances] = useState<UnsettledAdvance[]>([]);
 
@@ -90,8 +95,9 @@ const HrmExpenseLanding: React.FC = () => {
   useEffect(() => {
     if (canViewApproval) {
       loadSupervisorInbox();
+      loadSupervisorHistory();
     }
-  }, [organizationId, canViewApproval, loadSupervisorInbox]);
+  }, [organizationId, canViewApproval, loadSupervisorInbox, loadSupervisorHistory]);
 
   useEffect(() => {
     if (canViewFinance) {
@@ -119,6 +125,18 @@ const HrmExpenseLanding: React.FC = () => {
     resetDraftItems();
     setScreenMode("create");
   };
+
+  const handleDeleteDraft = useCallback(
+    async (expense: typeof myExpenses[0]) => {
+      try {
+        await deleteExpenseMutation(expense.handle);
+        await loadMyExpenses();
+      } catch (err) {
+        console.error("[Expense] Failed to delete draft:", err);
+      }
+    },
+    [deleteExpenseMutation, loadMyExpenses],
+  );
 
   const handleSettleAdvance = (advance: UnsettledAdvance) => {
     setSelectedExpense(null);
@@ -195,7 +213,10 @@ const HrmExpenseLanding: React.FC = () => {
   const handleActionComplete = () => {
     loadMyExpenses();
     loadUnsettledAdvances().then(setUnsettledAdvances);
-    if (canViewApproval) loadSupervisorInbox();
+    if (canViewApproval) {
+      loadSupervisorInbox();
+      loadSupervisorHistory();
+    }
     if (canViewFinance) loadFinanceInbox();
     setSelectedExpense(null);
     setScreenMode("list");
@@ -267,6 +288,7 @@ const HrmExpenseLanding: React.FC = () => {
             selectedHandle={selectedExpense?.handle}
             onRowClick={handleRowClick}
             onNewExpense={handleNewExpense}
+            onDeleteDraft={handleDeleteDraft}
           />
         }
         detailPanel={buildDetailPanel(false, false)}
@@ -329,6 +351,26 @@ const HrmExpenseLanding: React.FC = () => {
           decidedPanel={panels.decidedPanel}
           pendingCount={panels.pendingCount}
           escalatedCount={panels.escalatedCount}
+        />
+      ),
+    });
+
+    // Team History: every expense by this supervisor's reportees, any status.
+    // Supervisor uses it to audit and follow up — separate from the action inbox.
+    tabItems.push({
+      key: "teamHistory",
+      label: `Team History (${supervisorHistory.length})`,
+      children: (
+        <ExpenseMasterDetailTemplate
+          listPanel={
+            <SupervisorInboxTable
+              expenses={supervisorHistory}
+              loading={inboxLoading}
+              selectedHandle={selectedExpense?.handle}
+              onRowClick={handleRowClick}
+            />
+          }
+          detailPanel={buildDetailPanel(false, false)}
         />
       ),
     });

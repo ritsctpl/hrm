@@ -1,6 +1,27 @@
 import dayjs from "dayjs";
+// Side-effect import: dateHelpers extends dayjs with customParseFormat so we
+// can parse both DD/MM/YYYY (header picker output) and YYYY-MM-DD (server
+// payload) reliably.
+import "./dateHelpers";
 import type { ExpenseFormState } from "../types/ui.types";
 import type { ExpenseItem, ExpenseCategory } from "../types/domain.types";
+
+/**
+ * Parse an expense date string that may be in either DD/MM/YYYY (picker
+ * format) or YYYY-MM-DD (server format). Returns null if neither matches.
+ * Without this, dayjs falls back to native Date parsing which interprets
+ * "02/06/2026" as Feb 6, not Jun 2 — leading to false "out of range" errors.
+ */
+function parseExpenseDate(value: string | null | undefined): dayjs.Dayjs | null {
+  if (!value) return null;
+  const ddmmyyyy = dayjs(value, "DD/MM/YYYY", true);
+  if (ddmmyyyy.isValid()) return ddmmyyyy;
+  const iso = dayjs(value, "YYYY-MM-DD", true);
+  if (iso.isValid()) return iso;
+  // Fall through to lenient parsing as a last resort.
+  const lenient = dayjs(value);
+  return lenient.isValid() ? lenient : null;
+}
 
 export interface ExpenseFormErrors {
   expenseType?: string;
@@ -38,8 +59,12 @@ export function validateExpenseForm(
   if (!form.currency.trim()) errors.currency = "Currency is required.";
 
   // BR7: fromDate must be on or before toDate
-  if (form.fromDate && form.toDate && dayjs(form.toDate).isBefore(dayjs(form.fromDate), "day")) {
-    errors.dateRange = "To date must be on or after From date.";
+  if (form.fromDate && form.toDate) {
+    const from = parseExpenseDate(form.fromDate);
+    const to = parseExpenseDate(form.toDate);
+    if (from && to && to.isBefore(from, "day")) {
+      errors.dateRange = "To date must be on or after From date.";
+    }
   }
 
   // BR1: OOP justification required when any item is flagged out-of-policy
@@ -88,14 +113,16 @@ export function validateLineItems(
 
     // BR8: item expenseDate must fall within [fromDate, toDate]
     if (item.expenseDate && (fromDate || toDate)) {
-      const d = dayjs(item.expenseDate);
-      if (fromDate && d.isBefore(dayjs(fromDate), "day")) {
+      const d = parseExpenseDate(item.expenseDate);
+      const from = parseExpenseDate(fromDate);
+      const to = parseExpenseDate(toDate);
+      if (d && from && d.isBefore(from, "day")) {
         errors.push({
           handle: item.handle,
           field: "expenseDate",
           message: "Item date is before the report From date.",
         });
-      } else if (toDate && d.isAfter(dayjs(toDate), "day")) {
+      } else if (d && to && d.isAfter(to, "day")) {
         errors.push({
           handle: item.handle,
           field: "expenseDate",

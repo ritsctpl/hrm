@@ -5,12 +5,22 @@
  * backend exclusively accepts `YYYY-MM-DD`. Without a consistent
  * normalization step at the boundary, date strings round-trip incorrectly
  * (Invalid Date displays, 500 errors on save, filter mismatches).
+ *
+ * The dayjs plugins below are required for AntD v5 DatePicker to render
+ * calendar cells. Without them, every cell renders the literal text
+ * "Invalid Date".
  */
 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import weekday from 'dayjs/plugin/weekday';
+import localeData from 'dayjs/plugin/localeData';
+import weekOfYear from 'dayjs/plugin/weekOfYear';
 
 dayjs.extend(customParseFormat);
+dayjs.extend(weekday);
+dayjs.extend(localeData);
+dayjs.extend(weekOfYear);
 
 export const DATE_DISPLAY_FORMAT = 'DD/MM/YYYY';
 export const DATE_API_FORMAT = 'YYYY-MM-DD';

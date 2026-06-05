@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { Table, Empty, Button, Tooltip, Tag } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import { Empty, Button, Tooltip, Tag, Spin, Popconfirm } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 import type { ExpenseReport } from "../../types/domain.types";
 import ExpenseStatusChip from "../atoms/ExpenseStatusChip";
-import ExpenseTypeTag from "../atoms/ExpenseTypeTag";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import { formatExpenseDateRange } from "../../utils/expenseTransformations";
+import { EXPENSE_TYPE_LABELS } from "../../utils/expenseConstants";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseList.module.css";
 
@@ -17,6 +17,11 @@ interface Props {
   selectedHandle?: string;
   onRowClick: (expense: ExpenseReport) => void;
   onNewExpense?: () => void;
+  /**
+   * When provided, draft rows show an inline delete icon. The handler is
+   * fired only after the user confirms the popconfirm.
+   */
+  onDeleteDraft?: (expense: ExpenseReport) => void;
 }
 
 const ExpenseListTable: React.FC<Props> = ({
@@ -25,111 +30,128 @@ const ExpenseListTable: React.FC<Props> = ({
   selectedHandle,
   onRowClick,
   onNewExpense,
+  onDeleteDraft,
 }) => {
-  const columns: ColumnsType<ExpenseReport> = [
-    {
-      title: "Report ID",
-      dataIndex: "requestId",
-      key: "requestId",
-      width: 120,
-      render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
-    },
-    {
-      title: "Purpose",
-      dataIndex: "purpose",
-      key: "purpose",
-      ellipsis: true,
-      render: (text) => <span style={{ fontSize: 13 }}>{text}</span>,
-    },
-    {
-      title: "Type",
-      key: "type",
-      width: 160,
-      render: (_, r) => (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <ExpenseTypeTag expenseType={r.expenseType} />
-          {r.outOfPolicy && <OutOfPolicyIcon />}
-          {r.lateSubmission && (
-            <Tooltip title="Submitted after the policy deadline">
-              <Tag color="red" style={{ marginLeft: 4 }}>
-                Late
-              </Tag>
-            </Tooltip>
+  if (loading && expenses.length === 0) {
+    return (
+      <div className={styles.tableWrapper} style={{ textAlign: "center", padding: "32px 0" }}>
+        <Spin />
+      </div>
+    );
+  }
+
+  if (!loading && expenses.length === 0) {
+    return (
+      <div className={styles.tableWrapper}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          imageStyle={{ height: 40 }}
+          description={
+            <span style={{ color: "#8c8c8c", fontSize: 13 }}>No expense reports yet</span>
+          }
+          style={{ padding: "32px 0" }}
+        >
+          {onNewExpense && (
+            <Can I="add">
+              <Button type="primary" size="small" onClick={onNewExpense}>
+                + New Expense
+              </Button>
+            </Can>
           )}
-        </span>
-      ),
-    },
-    {
-      title: "Amount",
-      key: "amount",
-      width: 110,
-      render: (_, r) => (
-        <Tooltip title={r.currency !== "INR" ? `INR ${r.totalClaimedAmountInr?.toLocaleString()}` : undefined}>
-          <span style={{ fontSize: 13 }}>
-            {r.currency} {r.totalClaimedAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: "Dates",
-      key: "dates",
-      width: 140,
-      render: (_, r) => <span style={{ fontSize: 12 }}>{formatExpenseDateRange(r)}</span>,
-    },
-    {
-      title: "Current Approver",
-      key: "currentApprover",
-      width: 160,
-      render: (_, r) =>
-        r.currentApproverName ? (
-          <Tooltip title={r.currentApproverId ? `Emp: ${r.currentApproverId}` : undefined}>
-            <span style={{ fontSize: 12 }}>{r.currentApproverName}</span>
-          </Tooltip>
-        ) : (
-          <span style={{ fontSize: 12, color: "#bfbfbf" }}>—</span>
-        ),
-    },
-    {
-      title: "Status",
-      key: "status",
-      width: 160,
-      render: (_, r) => <ExpenseStatusChip status={r.status} size="sm" />,
-    },
-  ];
+        </Empty>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.tableWrapper}>
-      <Table
-        rowKey="handle"
-        columns={columns}
-        dataSource={expenses}
-        loading={loading}
-        size="small"
-        pagination={false}
-        rowClassName={(r) =>
-          `${styles.rowClickable} ${r.handle === selectedHandle ? styles.rowSelected : ""}`
-        }
-        onRow={(r) => ({ onClick: () => onRowClick(r) })}
-        locale={{
-          emptyText: (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              imageStyle={{ height: 40 }}
-              description={<span style={{ color: "#8c8c8c", fontSize: 13 }}>No expense reports yet</span>}
-              style={{ padding: "16px 0" }}
+      <div className={styles.cardList}>
+        {expenses.map((r) => {
+          const isSelected = r.handle === selectedHandle;
+          return (
+            <div
+              key={r.handle}
+              className={`${styles.expenseCard} ${isSelected ? styles.expenseCardSelected : ""}`}
+              onClick={() => onRowClick(r)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onRowClick(r);
+                }
+              }}
             >
-              {onNewExpense && (
-                <Can I="add">
-                  <Button type="primary" size="small" onClick={onNewExpense}>
-                    + New Expense
-                  </Button>
-                </Can>
-              )}
-            </Empty>
-          ),
-        }}
-      />
+              <div className={styles.cardTopRow}>
+                <span className={styles.cardReportId}>{r.requestId}</span>
+                <span className={styles.cardAmount}>
+                  <Tooltip
+                    title={
+                      r.currency !== "INR"
+                        ? `INR ${r.totalClaimedAmountInr?.toLocaleString()}`
+                        : undefined
+                    }
+                  >
+                    {r.currency}{" "}
+                    {r.totalClaimedAmount.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </Tooltip>
+                </span>
+                <ExpenseStatusChip status={r.status} size="sm" bucketed />
+                {onDeleteDraft && r.status === "DRAFT" && (
+                  <Can I="delete" object="expense_record">
+                    <Popconfirm
+                      title="Delete this draft?"
+                      description={`${r.requestId} will be removed.`}
+                      okText="Delete"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={(e) => {
+                        e?.stopPropagation();
+                        onDeleteDraft(r);
+                      }}
+                      onCancel={(e) => e?.stopPropagation()}
+                    >
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Delete draft"
+                      />
+                    </Popconfirm>
+                  </Can>
+                )}
+              </div>
+              <div className={styles.cardTitle}>{r.purpose || "Untitled expense"}</div>
+              <div className={styles.cardMeta}>
+                <span>{formatExpenseDateRange(r)}</span>
+                <span className={styles.cardMetaSep}>•</span>
+                <span>{EXPENSE_TYPE_LABELS[r.expenseType] ?? r.expenseType}</span>
+                {r.outOfPolicy && (
+                  <>
+                    <span className={styles.cardMetaSep}>•</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                      <OutOfPolicyIcon /> Over policy
+                    </span>
+                  </>
+                )}
+                {r.lateSubmission && (
+                  <>
+                    <span className={styles.cardMetaSep}>•</span>
+                    <Tooltip title="Submitted after the policy deadline">
+                      <Tag color="red" style={{ marginLeft: 0 }}>
+                        Late
+                      </Tag>
+                    </Tooltip>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
       <div className={styles.recordCount}>
         Showing {expenses.length} record{expenses.length !== 1 ? "s" : ""}
       </div>

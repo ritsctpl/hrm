@@ -12,6 +12,10 @@ import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseLineItems.module.css";
 import dayjs from "dayjs";
+// Side-effect import: extends dayjs with the plugins AntD DatePicker needs
+// for calendar cell rendering. Without this the picker shows "Invalid Date"
+// in every cell.
+import "../../utils/dateHelpers";
 
 const { Text } = Typography;
 
@@ -24,6 +28,13 @@ interface Props {
   justification?: string;
   justificationError?: string;
   lineErrors?: LineItemError[];
+  /**
+   * Header date bounds in DD/MM/YYYY. When set, the line-item date picker
+   * blocks dates outside `[headerFromDate, headerToDate]` and shows a hint
+   * so the user can't pick an invalid date by mistake.
+   */
+  headerFromDate?: string | null;
+  headerToDate?: string | null;
   onJustificationChange?: (val: string) => void;
   onAddItem?: (item: Partial<ExpenseItem>) => void;
   onUpdateItem?: (handle: string, changes: Partial<ExpenseItem>) => void;
@@ -59,6 +70,8 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
   justification = "",
   justificationError,
   lineErrors = [],
+  headerFromDate,
+  headerToDate,
   onJustificationChange,
   onAddItem,
   onUpdateItem,
@@ -70,6 +83,40 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
   const [adding, setAdding] = useState(false);
   const [editingHandle, setEditingHandle] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<NewItemRow>({ ...defaultNewRow });
+
+  // Parse header bounds once per render. If parsing fails (e.g. blank), the
+  // picker behaves as before (no bound). Strict format ensures we don't
+  // accidentally allow ambiguous strings through.
+  const minBound = headerFromDate
+    ? (() => {
+        const d = dayjs(headerFromDate, dateFormat, true);
+        return d.isValid() ? d.startOf("day") : null;
+      })()
+    : null;
+  const maxBound = headerToDate
+    ? (() => {
+        const d = dayjs(headerToDate, dateFormat, true);
+        return d.isValid() ? d.endOf("day") : null;
+      })()
+    : null;
+
+  const isDateDisabled = (current: dayjs.Dayjs | null) => {
+    if (!current) return false;
+    if (minBound && current.isBefore(minBound, "day")) return true;
+    if (maxBound && current.isAfter(maxBound, "day")) return true;
+    return false;
+  };
+
+  const dateBoundHint =
+    minBound && maxBound && minBound.isSame(maxBound, "day")
+      ? `Must be ${minBound.format(dateFormat)}`
+      : minBound && maxBound
+        ? `Between ${minBound.format(dateFormat)} and ${maxBound.format(dateFormat)}`
+        : minBound
+          ? `On or after ${minBound.format(dateFormat)}`
+          : maxBound
+            ? `On or before ${maxBound.format(dateFormat)}`
+            : null;
 
   const startEdit = (item: ExpenseItem) => {
     setEditingHandle(item.handle);
@@ -128,13 +175,16 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
       width: 130,
       render: (d, r) =>
         editingHandle === r.handle ? (
-          <DatePicker
-            format={dateFormat}
-            size="small"
-            style={{ width: "100%" }}
-            value={editRow.expenseDate ? dayjs(editRow.expenseDate) : null}
-            onChange={(_, s) => setEditRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
-          />
+          <Tooltip title={dateBoundHint || undefined}>
+            <DatePicker
+              format={dateFormat}
+              size="small"
+              style={{ width: "100%" }}
+              value={editRow.expenseDate ? dayjs(editRow.expenseDate, dateFormat) : null}
+              disabledDate={isDateDisabled}
+              onChange={(_, s) => setEditRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
+            />
+          </Tooltip>
         ) : (
           dayjs(d).format("DD MMM")
         ),
@@ -367,12 +417,16 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
             )}
             {!readonly && adding && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
-                <DatePicker
-                  format={dateFormat}
-                  placeholder="Date"
-                  style={{ width: 120 }}
-                  onChange={(_, s) => setNewRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
-                />
+                <Tooltip title={dateBoundHint || undefined}>
+                  <DatePicker
+                    format={dateFormat}
+                    placeholder="Date"
+                    style={{ width: 120 }}
+                    value={newRow.expenseDate ? dayjs(newRow.expenseDate, dateFormat) : null}
+                    disabledDate={isDateDisabled}
+                    onChange={(_, s) => setNewRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
+                  />
+                </Tooltip>
                 <Select
                   placeholder="Category"
                   style={{ width: 140 }}

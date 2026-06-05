@@ -70,6 +70,8 @@ export interface ExpenseItem {
   distanceKm?: number;
   ratePerKm?: number;
   mileageAmount?: number;
+  /** Mileage mode of travel — e.g. "CAR" or "BIKE". Backend matches against MileageRateConfig.vehicles. */
+  mode?: string;
   attachmentRefs?: string[];
   outOfPolicy: boolean;
 }
@@ -107,6 +109,23 @@ export interface MileageConfig {
   site: string;
   ratePerKm: number;
   effectiveFrom: string;
+}
+
+/**
+ * Petrol-price-driven mileage rate config. Per-mode rate is derived as
+ * `currentPetrolPriceInr / kmPerLitre`. See backend prompt §2 for the contract.
+ */
+export interface VehicleEfficiency {
+  mode: string;            // "CAR" | "BIKE"
+  label: string;           // "Car" | "Bike / Two-wheeler"
+  kmPerLitre: number;
+}
+
+export interface MileageRateConfig {
+  organizationId: string;
+  currentPetrolPriceInr: number;
+  vehicles: VehicleEfficiency[];
+  modifiedAt?: string;
 }
 
 export interface EmployeeBankDetails {
