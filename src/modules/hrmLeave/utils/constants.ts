@@ -6,6 +6,46 @@ export const LEAVE_TYPE_COLORS: Record<string, string> = {
   WFH: "#13c2c2",
 };
 
+/** Fallback palette for leave type codes that are not in LEAVE_TYPE_COLORS.
+ *  Org-configured codes (EL, ML, PAT, LWP, BL, …) used to fall back to a
+ *  single gray; instead we pick a stable, distinct color per code so every
+ *  leave type renders in colour. */
+export const LEAVE_TYPE_COLOR_PALETTE: string[] = [
+  "#eb2f96", // magenta
+  "#2f54eb", // geekblue
+  "#a0d911", // lime
+  "#fa541c", // volcano
+  "#faad14", // gold
+  "#08979c", // cyan-dark
+  "#531dab", // purple-dark
+  "#c41d7f", // magenta-dark
+  "#d4380d", // red-dark
+  "#7cb305", // lime-dark
+  "#096dd9", // blue-dark
+  "#d48806", // gold-dark
+];
+
+/** Deterministic hash → palette index. Same code always yields the same
+ *  colour across renders and sessions. */
+const hashCode = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // force 32-bit int
+  }
+  return Math.abs(hash);
+};
+
+/** Resolve a colour for a leave type code: the well-known mapping when present,
+ *  otherwise a stable colour derived from the code. Never returns the old gray
+ *  default unless the code is empty. */
+export const getLeaveTypeColor = (code?: string | null): string => {
+  if (!code) return "#8c8c8c";
+  const known = LEAVE_TYPE_COLORS[code] ?? LEAVE_TYPE_COLORS[code.toUpperCase()];
+  if (known) return known;
+  return LEAVE_TYPE_COLOR_PALETTE[hashCode(code) % LEAVE_TYPE_COLOR_PALETTE.length];
+};
+
 export const LEAVE_STATUS_COLORS: Record<string, string> = {
   DRAFT: "default",
   PENDING_SUPERVISOR: "orange",

@@ -317,12 +317,9 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_PROJECT: [
     { code: "project_module", label: "Module Access" },
     { code: "project_record", label: "Projects" },
-    { code: "project_task", label: "Tasks" },
-    { code: "project_member", label: "Members" },
-    { code: "project_milestone", label: "Milestones" },
-    { code: "project_time_log", label: "Time Logs" },
     { code: "project_allocation", label: "Resource Allocation" },
     { code: "project_approval", label: "Allocation Approvals" },
+    { code: "project_milestone", label: "Milestones" },
     { code: "project_calendar", label: "Calendar" },
     { code: "project_report", label: "Reports" },
   ],

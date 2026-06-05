@@ -677,7 +677,32 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
             <Form.Item name="carryForwardAllowed" label="Carry Forward" valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item name="carryForwardCap" label="CF Cap">
+            <Form.Item
+              name="carryForwardCap"
+              label="CF Cap"
+              dependencies={["carryForwardAllowed", "accrualQuantity"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  // CF Cap Count is mandatory only when Carry Forward is enabled.
+                  required: !!getFieldValue("carryForwardAllowed"),
+                  message: "CF Cap Count is required when Carry Forward is enabled.",
+                }),
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    // Only enforce the cap when Carry Forward is on and a value exists.
+                    if (!getFieldValue("carryForwardAllowed")) return Promise.resolve();
+                    if (value === undefined || value === null || value === "") return Promise.resolve();
+                    const accrual = Number(getFieldValue("accrualQuantity"));
+                    if (Number.isFinite(accrual) && Number(value) > accrual) {
+                      return Promise.reject(
+                        new Error("CF Cap Count cannot be greater than the Accrual Quantity."),
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+            >
               <InputNumber min={0} disabled={!carryForwardOn} />
             </Form.Item>
             <Form.Item name="lapseRule" label="Lapse Rule">

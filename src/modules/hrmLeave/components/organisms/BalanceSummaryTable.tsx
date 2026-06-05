@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Table, Empty, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { InfoCircleOutlined } from "@ant-design/icons";
@@ -32,6 +32,16 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
 }) => {
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Reset to the first page whenever the selected employee changes. The
+  // consolidated (multi-employee) view and the single-employee flat view
+  // share this `current` state, and switching from e.g. page 2 of the
+  // employee list into a single employee's 3-row balance would otherwise
+  // slice past the data and render an empty table. (Bug: balance summary
+  // disappeared when selecting an employee from page 2/3.)
+  useEffect(() => {
+    setCurrent(1);
+  }, [selectedEmployeeId]);
 
   // Backend was supposed to start returning populated employeeName /
   // employeeNumber / department on each balance row, but in practice the
@@ -141,6 +151,14 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
     { title: "Leave Type", dataIndex: "leaveTypeName", key: "leaveTypeName" },
     { title: "Code", dataIndex: "leaveTypeCode", key: "leaveTypeCode", width: 70 },
     {
+      title: "Total",
+      dataIndex: "currentBalance",
+      key: "currentBalance",
+      width: 100,
+      render: (v: number) => (Number(v) || 0).toFixed(1),
+      align: "right",
+    },
+    {
       title: "Available",
       dataIndex: "availableBalance",
       key: "available",
@@ -165,14 +183,6 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       align: "right",
     },
     {
-      title: "Current",
-      dataIndex: "currentBalance",
-      key: "currentBalance",
-      width: 100,
-      render: (v: number) => (Number(v) || 0).toFixed(1),
-      align: "right",
-    },
-    {
       title: "CF",
       dataIndex: "carryForwardAllowed",
       key: "cf",
@@ -185,6 +195,14 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
   const flatColumns: ColumnsType<LeaveBalance> = [
     { title: "Leave Type", dataIndex: "leaveTypeName", key: "leaveTypeName" },
     { title: "Code", dataIndex: "leaveTypeCode", key: "leaveTypeCode", width: 60 },
+    {
+      title: "Total",
+      dataIndex: "currentBalance",
+      key: "currentBalance",
+      width: 90,
+      render: (v: number) => (Number(v) || 0).toFixed(1),
+      align: "right",
+    },
     {
       title: "Available",
       dataIndex: "availableBalance",
@@ -206,14 +224,6 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       dataIndex: "pendingApproval",
       key: "pendingApproval",
       width: 80,
-      render: (v: number) => (Number(v) || 0).toFixed(1),
-      align: "right",
-    },
-    {
-      title: "Current",
-      dataIndex: "currentBalance",
-      key: "currentBalance",
-      width: 90,
       render: (v: number) => (Number(v) || 0).toFixed(1),
       align: "right",
     },
@@ -258,6 +268,14 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       render: (v: string) => v?.trim() || <Text type="secondary">—</Text>,
     },
     {
+      title: "Total",
+      dataIndex: "current",
+      key: "current",
+      width: 100,
+      render: (v: number) => v.toFixed(1),
+      align: "right",
+    },
+    {
       title: "Available",
       dataIndex: "available",
       key: "available",
@@ -278,14 +296,6 @@ const BalanceSummaryTable: React.FC<BalanceSummaryTableProps> = ({
       dataIndex: "pending",
       key: "pending",
       width: 90,
-      render: (v: number) => v.toFixed(1),
-      align: "right",
-    },
-    {
-      title: "Current",
-      dataIndex: "current",
-      key: "current",
-      width: 100,
       render: (v: number) => v.toFixed(1),
       align: "right",
     },

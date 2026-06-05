@@ -6,7 +6,7 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { LeaveCalendarViewProps } from "../../types/ui.types";
 import { LeaveRequest } from "../../types/domain.types";
-import { LEAVE_TYPE_COLORS } from "../../utils/constants";
+import { getLeaveTypeColor } from "../../utils/constants";
 import { useHolidayCalendar } from "../../hooks/useHolidayCalendar";
 import styles from "../../styles/HrmLeave.module.css";
 
@@ -45,7 +45,7 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
             {dayRequests.slice(0, 2).map((req) => (
               <li key={req.handle}>
                 <Badge
-                  color={LEAVE_TYPE_COLORS[req.leaveTypeCode] ?? "#8c8c8c"}
+                  color={getLeaveTypeColor(req.leaveTypeCode)}
                   text={
                     <span style={{ fontSize: 10 }}>
                       {teamView ? req.employeeName.split(" ")[0] : req.leaveTypeName}

@@ -103,9 +103,32 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
       }
     }
 
+    // try {
+    //   setLoading(true);
+    //   await HrmLeaveService.postManualAdjustment({ organizationId,
+    //     employeeId: values.employeeId as string,
+    //     leaveTypeCode: code,
+    //     quantity: parseFloat(String(values.quantity)),
+    //     direction: values.direction as "CR" | "DR",
+    //     transactionDate: (values.transactionDate as import("dayjs").Dayjs).format("YYYY-MM-DD"),
+    //     reasonCode: values.reasonCode as string,
+    //     notes: values.notes as string | undefined,
+    //     createdBy: userId,
+    //   });
+    //   message.success("Adjustment posted successfully");
+    //   form.resetFields();
+    //   onAdjusted();
+    // } catch {
+    //   message.error("Failed to post adjustment");
+    // } finally {
+    //   setLoading(false);
+    // }
+
     try {
       setLoading(true);
-      await HrmLeaveService.postManualAdjustment({ organizationId,
+
+      const response: any = await HrmLeaveService.postManualAdjustment({
+        organizationId,
         employeeId: values.employeeId as string,
         leaveTypeCode: code,
         quantity: parseFloat(String(values.quantity)),
@@ -115,11 +138,18 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
         notes: values.notes as string | undefined,
         createdBy: userId,
       });
-      message.success("Adjustment posted successfully");
+
+      message.success(
+        response?.data?.message_details?.msg || "Adjustment posted successfully"
+      );
+
       form.resetFields();
       onAdjusted();
-    } catch {
-      message.error("Failed to post adjustment");
+    } catch (error: any) {
+      message.error(
+        error?.response?.data?.message_details?.error ||
+          "Failed to post adjustment"
+      );
     } finally {
       setLoading(false);
     }

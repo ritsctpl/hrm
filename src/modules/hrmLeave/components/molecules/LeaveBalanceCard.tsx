@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, Progress, Tag, Tooltip, Typography } from "antd";
 import { LeaveBalanceCardProps } from "../../types/ui.types";
-import { LEAVE_TYPE_COLORS } from "../../utils/constants";
+import { getLeaveTypeColor } from "../../utils/constants";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Text } = Typography;
@@ -13,7 +13,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
   onClick,
   isSelected,
 }) => {
-  const color = LEAVE_TYPE_COLORS[balance.leaveTypeCode] ?? "#8c8c8c";
+  const color = getLeaveTypeColor(balance.leaveTypeCode);
   const total = balance.ytdCredits + balance.openingCarryForward || 1;
   const usedPercent = Math.min(100, Math.round((balance.ytdDebits / total) * 100));
   // Item 4: surface negative-balance usage on the tile. The exact floor +

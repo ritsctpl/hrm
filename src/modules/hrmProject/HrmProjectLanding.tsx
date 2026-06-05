@@ -18,6 +18,7 @@ import ProjectForm from './components/organisms/ProjectForm';
 import AllocationForm from './components/organisms/AllocationForm';
 import Can from '../hrmAccess/components/Can';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useProjectPermissions } from './hooks/useProjectPermissions';
 import styles from './styles/HrmProject.module.css';
 
 /* ── Client Management Drawer ─────────────────────────────────────── */
@@ -199,6 +200,7 @@ export default function HrmProjectLanding() {
     setSelectedProject,
   } = useHrmProjectStore();
   const { loadProjects, loadProjectDetail, loadPendingAllocations } = useProjectData();
+  const perms = useProjectPermissions();
 
   // Load projects on mount and when filters change
   useEffect(() => {
@@ -232,7 +234,7 @@ export default function HrmProjectLanding() {
   const pendingCount = pendingAllocations.filter((a) => a.status === 'SUBMITTED').length;
 
   const tabItems = [
-    {
+    perms.canAccessProjects && {
       key: 'projects',
       label: 'Projects',
       children: (
@@ -259,7 +261,7 @@ export default function HrmProjectLanding() {
         </div>
       ),
     },
-    {
+    perms.canAccessApprovals && {
       key: 'approvals',
       label: (
         <Badge count={pendingCount} size="small" offset={[6, 0]}>
@@ -272,7 +274,7 @@ export default function HrmProjectLanding() {
         </div>
       ),
     },
-    {
+    perms.canAccessCalendar && {
       key: 'calendar',
       label: 'Calendar',
       children: (
@@ -281,7 +283,7 @@ export default function HrmProjectLanding() {
         </div>
       ),
     },
-    {
+    perms.canAccessReports && {
       key: 'reports',
       label: 'Reports',
       children: (
@@ -290,7 +292,13 @@ export default function HrmProjectLanding() {
         </div>
       ),
     },
-  ];
+  ].filter(Boolean) as { key: string; label: React.ReactNode; children: React.ReactNode }[];
+
+  // If the active tab was gated away (or none selected yet), fall back to the
+  // first visible tab so the panel never renders blank.
+  const visibleKeys = tabItems.map((t) => t.key);
+  const resolvedActiveTab =
+    activeTab && visibleKeys.includes(activeTab) ? activeTab : visibleKeys[0];
 
   return (
     <ModuleAccessGate moduleCode="HRM_PROJECT" appTitle="Projects & Resource Allocation">
@@ -300,7 +308,7 @@ export default function HrmProjectLanding() {
         <ProjectDashboardHeader kpis={projectKpis} />
         <Tabs
           className={styles.mainTabs}
-          activeKey={activeTab}
+          activeKey={resolvedActiveTab}
           onChange={(k) => setActiveTab(k as typeof activeTab)}
           items={tabItems}
           size="small"

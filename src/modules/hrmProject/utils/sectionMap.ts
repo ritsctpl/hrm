@@ -3,8 +3,9 @@
  */
 export const hrmProjectSectionMap: Record<string, string> = {
   projects: 'project_record',
-  tasks: 'project_task',
-  members: 'project_member',
+  allocations: 'project_allocation',
+  approvals: 'project_approval',
   milestones: 'project_milestone',
-  timeLogs: 'project_time_log',
+  calendar: 'project_calendar',
+  reports: 'project_report',
 };

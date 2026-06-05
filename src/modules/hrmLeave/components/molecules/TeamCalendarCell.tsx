@@ -3,7 +3,7 @@
 import React from "react";
 import { Tooltip } from "antd";
 import { TeamCalendarCellProps } from "../../types/ui.types";
-import { LEAVE_TYPE_COLORS } from "../../utils/constants";
+import { getLeaveTypeColor } from "../../utils/constants";
 import styles from "../../styles/HrmLeave.module.css";
 
 const TeamCalendarCell: React.FC<TeamCalendarCellProps> = ({ date, requests, holidayName }) => {
@@ -17,7 +17,7 @@ const TeamCalendarCell: React.FC<TeamCalendarCellProps> = ({ date, requests, hol
         </Tooltip>
       )}
       {requests.slice(0, 3).map((req) => {
-        const color = LEAVE_TYPE_COLORS[req.leaveTypeCode] ?? "#8c8c8c";
+        const color = getLeaveTypeColor(req.leaveTypeCode);
         const isApproved = req.status === "APPROVED";
         return (
           <Tooltip

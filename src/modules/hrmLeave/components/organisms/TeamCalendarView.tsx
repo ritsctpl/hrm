@@ -11,7 +11,7 @@ import { parseCookies } from "nookies";
 import { HrmLeaveService } from "../../services/hrmLeaveService";
 import { TeamCalendarEntry } from "../../types/api.types";
 import { LeaveRequest } from "../../types/domain.types";
-import { LEAVE_TYPE_COLORS } from "../../utils/constants";
+import { LEAVE_TYPE_COLORS, getLeaveTypeColor } from "../../utils/constants";
 import { useHolidayCalendar } from "../../hooks/useHolidayCalendar";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import styles from "../../styles/HrmLeave.module.css";
@@ -136,7 +136,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                 >
                   <span style={{ cursor: "default" }}>
                     <Badge
-                      color={LEAVE_TYPE_COLORS[e.leaveTypeCode] ?? "#8c8c8c"}
+                      color={getLeaveTypeColor(e.leaveTypeCode)}
                       text={
                         <span style={{ fontSize: 10 }}>
                           {e.employeeName.split(" ")[0]}
@@ -403,8 +403,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({
                         >
                           <div
                             style={{
-                              background:
-                                LEAVE_TYPE_COLORS[e.leaveTypeCode] ?? "#8c8c8c",
+                              background: getLeaveTypeColor(e.leaveTypeCode),
                               color: "#fff",
                               borderRadius: 4,
                               padding: "3px 6px",

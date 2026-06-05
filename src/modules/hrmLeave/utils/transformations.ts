@@ -87,16 +87,7 @@ export function formatSlaCountdown(deadline: string): string {
   return `SLA: ${minutes}m`;
 }
 
-export function getLeaveTypeColor(code: string): string {
-  const colors: Record<string, string> = {
-    CL: "#1890ff",
-    SL: "#52c41a",
-    PL: "#722ed1",
-    CO: "#fa8c16",
-    WFH: "#13c2c2",
-  };
-  return colors[code] ?? "#8c8c8c";
-}
+export { getLeaveTypeColor } from "./constants";
 
 export function buildYearOptions(currentYear: number, range = 3): { value: number; label: string }[] {
   const years = [];
