@@ -90,7 +90,7 @@ export default function AssetDepreciationTab({ asset, category, canRunDepreciati
         </Descriptions>
 
         {canRunDepreciation && (
-          <Can I="edit">
+          <Can I="edit" object="asset_record">
             <Popconfirm
               title="Run depreciation for this asset?"
               description="This will create a new depreciation snapshot as of today."

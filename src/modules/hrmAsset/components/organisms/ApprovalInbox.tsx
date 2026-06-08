@@ -1,12 +1,12 @@
 'use client';
 
 import { Tabs, Empty, Spin, Descriptions, Timeline, Typography, message } from 'antd';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import ApprovalActionBar from '../molecules/ApprovalActionBar';
 import AssetRequestStatusBadge from '../atoms/AssetRequestStatusBadge';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate, formatDateTime } from '../../utils/assetHelpers';
 import { APPROVAL_TABS } from '../../utils/assetConstants';
 import type { AssetRequest } from '../../types/domain.types';
@@ -31,18 +31,26 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
     approvingRequest,
     setApprovingRequest,
   } = useHrmAssetStore();
+  // Canonical signed-in approver. Sent as actorEmployeeId/actorName so the
+  // backend can resolve the acting employee and record an accurate trail.
+  // (Previously read empty userId/employeeName cookies → blank actor + the
+  // approve endpoint rejecting with "Employee not found".)
+  const identity = useEmployeeIdentity();
 
   const handleApproveSupervisor = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    const { userId, employeeName } = parseCookies();
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
         organizationId,
         requestId,
         action: 'APPROVE_SUPERVISOR',
-        actorEmployeeId: userId ?? '',
-        actorName: employeeName ?? '',
+        actorEmployeeId: identity.employeeCode,
+        actorName: identity.fullName,
         actorRole: 'SUPERVISOR',
         remarks,
       });
@@ -57,15 +65,18 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleRejectSupervisor = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    const { userId, employeeName } = parseCookies();
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
         organizationId,
         requestId,
         action: 'REJECT_SUPERVISOR',
-        actorEmployeeId: userId ?? '',
-        actorName: employeeName ?? '',
+        actorEmployeeId: identity.employeeCode,
+        actorName: identity.fullName,
         actorRole: 'SUPERVISOR',
         remarks,
       });
@@ -80,15 +91,18 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleApproveAdmin = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    const { userId, employeeName } = parseCookies();
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
         organizationId,
         requestId,
         action: 'APPROVE_ADMIN',
-        actorEmployeeId: userId ?? '',
-        actorName: employeeName ?? '',
+        actorEmployeeId: identity.employeeCode,
+        actorName: identity.fullName,
         actorRole: 'ADMIN',
         remarks,
       });
@@ -103,15 +117,18 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleRejectAdmin = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    const { userId, employeeName } = parseCookies();
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
     setApprovingRequest(true);
     try {
       await HrmAssetService.approveOrRejectRequest({
         organizationId,
         requestId,
         action: 'REJECT_ADMIN',
-        actorEmployeeId: userId ?? '',
-        actorName: employeeName ?? '',
+        actorEmployeeId: identity.employeeCode,
+        actorName: identity.fullName,
         actorRole: 'ADMIN',
         remarks,
       });
@@ -179,8 +196,11 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
     return <div className={styles.spinWrapper}><Spin /></div>;
   }
 
+  // Reporting Manager (asset_approval EDIT) → Supervisor queue only.
+  // Admin (asset_approval DELETE) → all three tabs, including the Supervisor
+  // queue, even if EDIT wasn't separately granted.
   const tabItems = [
-    ...(isSupervisor ? [{
+    ...((isSupervisor || isAdmin) ? [{
       key: 'supervisor',
       label: `Pending Supervisor (${pendingSupervisorRequests.length})`,
       children: (
@@ -230,7 +250,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
                   <Descriptions.Item label="Purpose" span={2}>{req.purpose}</Descriptions.Item>
                 </Descriptions>
                 <div style={{ marginTop: 8 }}>
-                  <Can I="edit">
+                  <Can I="delete" object="asset_approval">
                     <button
                       style={{
                         background: '#1890ff', color: '#fff', border: 'none',

@@ -53,7 +53,7 @@ export default function ReturnAssetModal() {
       footer={[
         <Space key="return-footer">
           <Button onClick={() => { form.resetFields(); closeReturnModal(); }}>Cancel</Button>
-          <Can I="edit">
+          <Can I="edit" object="asset_record">
             <Button type="primary" onClick={handleOk}>Confirm Return</Button>
           </Can>
         </Space>,

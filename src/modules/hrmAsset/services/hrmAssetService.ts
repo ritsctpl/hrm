@@ -4,6 +4,7 @@
  */
 
 import api from '@/services/api';
+import { fileToBase64 } from '../utils/fileToBase64';
 import type {
   AssetCategoryPayload,
   AssetCategoryResponse,
@@ -253,13 +254,17 @@ export class HrmAssetService {
     file: File,
     uploadedBy: string,
   ): Promise<AssetAttachmentDto> {
-    const form = new FormData();
-    form.append('file', file);
-    form.append('organizationId', organizationId);
-    form.append('assetId', assetId);
-    form.append('uploadedBy', uploadedBy);
-    const res = await api.post(`${this.BASE}/asset/attachment/upload`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    // Send the file inline as raw base64 — strip the `data:<mime>;base64,`
+    // prefix so contentBase64 carries only the encoded bytes.
+    const dataUri = await fileToBase64(file);
+    const contentBase64 = dataUri.replace(/^data:[^;]+;base64,/, '');
+    const res = await api.post(`${this.BASE}/asset/attachment/upload`, {
+      organizationId,
+      assetId,
+      fileName: file.name,
+      fileType: file.type,
+      contentBase64,
+      uploadedBy,
     });
     return res.data;
   }

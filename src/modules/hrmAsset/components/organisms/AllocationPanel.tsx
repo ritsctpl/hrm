@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Drawer, Form, Input, DatePicker, Select, Button, Space, message, Spin, Empty } from 'antd';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import type { AssetListResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import styles from '../../styles/AssetForm.module.css';
 
 export default function AllocationPanel() {
@@ -22,6 +22,10 @@ export default function AllocationPanel() {
     setAllocatingAsset,
   } = useHrmAssetStore();
   const [form] = Form.useForm();
+  // Canonical signed-in employee — the allocator. Sent as `allocatedBy` so the
+  // backend can resolve the acting employee. (Previously read an empty userId
+  // cookie, which the allocate endpoint rejected with "Employee not found".)
+  const identity = useEmployeeIdentity();
   const [inStoreAssets, setInStoreAssets] = useState<AssetListResponse[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
@@ -47,7 +51,10 @@ export default function AllocationPanel() {
 
   const handleAllocate = async () => {
     const organizationId = getOrganizationId();
-    const { userId } = parseCookies();
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
     try {
       const values = await form.validateFields();
       setAllocatingAsset(true);
@@ -56,7 +63,7 @@ export default function AllocationPanel() {
         requestId: selectedRequest!.requestId,
         assetId: values.assetId,
         allocationDate: dayjs(values.allocationDate).format('YYYY-MM-DD'),
-        allocatedBy: userId ?? '',
+        allocatedBy: identity.employeeCode,
         remarks: values.remarks,
       });
       setPendingAllocationRequests(
@@ -83,7 +90,7 @@ export default function AllocationPanel() {
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
-            <Can I="edit">
+            <Can I="delete" object="asset_approval">
               <Button type="primary" loading={allocatingAsset} onClick={handleAllocate}>
                 Allocate
               </Button>

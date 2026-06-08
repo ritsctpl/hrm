@@ -45,7 +45,7 @@ export default function ApprovalActionBar({
         </Typography.Text>
       )}
       <Space>
-        <Can I="edit">
+        <Can I="edit" object="asset_approval">
           <Button
             danger
             icon={<CancelIcon style={{ fontSize: 16 }} />}
@@ -56,7 +56,7 @@ export default function ApprovalActionBar({
             Reject
           </Button>
         </Can>
-        <Can I="edit">
+        <Can I="edit" object="asset_approval">
           <Button
             type="primary"
             icon={<CheckCircleOutlineIcon style={{ fontSize: 16 }} />}

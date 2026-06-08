@@ -140,7 +140,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <Button onClick={handleClose}>Cancel</Button>
-          <Can I={isEdit ? 'edit' : 'add'}>
+          <Can I={isEdit ? 'edit' : 'add'} object="asset_record">
             <Button type="primary" loading={savingAsset} onClick={handleSave}>
               {isEdit ? 'Update' : 'Create'}
             </Button>

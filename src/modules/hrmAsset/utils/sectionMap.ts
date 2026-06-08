@@ -3,7 +3,8 @@
  */
 export const hrmAssetSectionMap: Record<string, string> = {
   assets: 'asset_record',
-  assignments: 'asset_assignment',
+  requests: 'asset_request',
+  approvals: 'asset_approval',
   categories: 'asset_category',
   maintenance: 'asset_maintenance',
   history: 'asset_history',

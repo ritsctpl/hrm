@@ -47,7 +47,7 @@ export default function AssetAttributesTab({ asset, category, canEdit, onEditAtt
 
       {canEdit && onEditAttributes && (
         <div style={{ marginTop: 12 }}>
-          <Can I="edit">
+          <Can I="edit" object="asset_record">
             <Button icon={<EditIcon style={{ fontSize: 16 }} />} size="small" onClick={onEditAttributes}>
               Edit Attributes
             </Button>

@@ -1,18 +1,23 @@
 'use client';
 
 import { useCallback } from 'react';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { message } from 'antd';
 import { HrmAssetService } from '../services/hrmAssetService';
 import { useHrmAssetStore } from '../stores/hrmAssetStore';
+import { useEmployeeIdentity } from '../../hrmAccess/hooks/useEmployeeIdentity';
+import type { Asset } from '../types/domain.types';
 
 export function useHrmAssetData() {
   const store = useHrmAssetStore();
+  const identity = useEmployeeIdentity();
 
-  const getUserId = () => parseCookies().userId ?? parseCookies().user ?? '';
-  // The logged-in user IS the supervisor — pass their own userId as supervisorId
-  const getSupervisorId = () => getUserId();
+  // Canonical employee code — matches the value AssetRequestForm sends as
+  // employeeId/supervisorId, so "My Requests" and the supervisor approval
+  // queue resolve the same records. (Previously read an empty userId cookie.)
+  const getUserId = () => identity.employeeCode;
+  // The logged-in user IS the supervisor when viewing their own approval queue.
+  const getSupervisorId = () => identity.employeeCode;
 
   const loadDashboard = useCallback(async () => {
     store.setLoadingDashboard(true);
@@ -93,10 +98,26 @@ export function useHrmAssetData() {
   }, [store]);
 
   const loadAssetDetail = useCallback(async (assetId: string) => {
+    const organizationId = getOrganizationId();
+
+    // Retrieve the full asset by assetId and map it into the detail tabs.
+    // The list row (AssetListResponse) is a thin projection with no
+    // attributes/attachments/purchase info, so we hydrate the selected asset
+    // from /asset/retrieve. updateAssetInList merges into both the list row
+    // and selectedAsset (same assetId), so all detail tabs render real data.
+    store.setLoadingAssetDetail(true);
+    try {
+      const asset = await HrmAssetService.getAsset(organizationId, assetId);
+      store.updateAssetInList(assetId, asset as unknown as Partial<Asset>);
+    } catch {
+      message.error('Failed to load asset details');
+    } finally {
+      store.setLoadingAssetDetail(false);
+    }
+
     store.setLoadingCustody(true);
     store.setLoadingMaintenance(true);
     store.setLoadingDepreciation(true);
-    const organizationId = getOrganizationId();
     try {
       const [custody, maintenance, depreciation] = await Promise.allSettled([
         HrmAssetService.getCustodyHistory(organizationId, assetId),

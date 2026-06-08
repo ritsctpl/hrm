@@ -46,6 +46,7 @@ interface HrmAssetState {
   loadingCategories: boolean;
   loadingRequests: boolean;
   loadingDashboard: boolean;
+  loadingAssetDetail: boolean;
   loadingCustody: boolean;
   loadingMaintenance: boolean;
   loadingDepreciation: boolean;
@@ -92,6 +93,7 @@ interface HrmAssetState {
   setLoadingCategories: (v: boolean) => void;
   setLoadingRequests: (v: boolean) => void;
   setLoadingDashboard: (v: boolean) => void;
+  setLoadingAssetDetail: (v: boolean) => void;
   setLoadingCustody: (v: boolean) => void;
   setLoadingMaintenance: (v: boolean) => void;
   setLoadingDepreciation: (v: boolean) => void;
@@ -131,6 +133,7 @@ const defaultState = {
   loadingCategories: false,
   loadingRequests: false,
   loadingDashboard: false,
+  loadingAssetDetail: false,
   loadingCustody: false,
   loadingMaintenance: false,
   loadingDepreciation: false,
@@ -184,6 +187,7 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   setLoadingCategories: (v) => set({ loadingCategories: v }),
   setLoadingRequests: (v) => set({ loadingRequests: v }),
   setLoadingDashboard: (v) => set({ loadingDashboard: v }),
+  setLoadingAssetDetail: (v) => set({ loadingAssetDetail: v }),
   setLoadingCustody: (v) => set({ loadingCustody: v }),
   setLoadingMaintenance: (v) => set({ loadingMaintenance: v }),
   setLoadingDepreciation: (v) => set({ loadingDepreciation: v }),

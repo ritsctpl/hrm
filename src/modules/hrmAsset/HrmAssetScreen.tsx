@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tabs, Button, Space, Typography } from 'antd';
+import { Tabs, Button, Space, Typography, Spin } from 'antd';
 import { CloseOutlined, EditOutlined } from '@ant-design/icons';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import AssetOverviewTab from './components/organisms/AssetOverviewTab';
@@ -13,6 +13,7 @@ import AssetDepreciationTab from './components/organisms/AssetDepreciationTab';
 import AllocationPanel from './components/organisms/AllocationPanel';
 import ReturnAssetModal from './components/organisms/ReturnAssetModal';
 import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
+import { useCan } from '../hrmAccess/hooks/useCan';
 import Can from '../hrmAccess/components/Can';
 
 interface HrmAssetScreenProps {
@@ -22,8 +23,12 @@ interface HrmAssetScreenProps {
 
 const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
   const perms = useModulePermissions('HRM_ASSET');
-  const canEdit = props.canEdit ?? perms.canEdit;
-  const canAssign = props.canAssign ?? perms.canEdit;
+  const assetPerms = useCan('HRM_ASSET', 'asset_record');
+  const historyPerms = useCan('HRM_ASSET', 'asset_history');
+  const maintenancePerms = useCan('HRM_ASSET', 'asset_maintenance');
+  
+  const canEdit = props.canEdit ?? assetPerms.canEdit;
+  const canAssign = props.canAssign ?? assetPerms.canEdit;
   const store = useHrmAssetStore();
   const { selectedAsset, activeDetailTab, setActiveDetailTab, setSelectedAsset, openAssetForm } = store;
 
@@ -56,16 +61,18 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
       label: 'Attachments',
       children: <AssetAttachmentsTab asset={selectedAsset} canUpload={canEdit} />,
     },
-    {
+    // Show custody history only if user has permission
+    ...(historyPerms.canView ? [{
       key: 'custody' as const,
       label: 'Custody History',
       children: <AssetCustodyHistoryTab />,
-    },
-    {
+    }] : []),
+    // Show maintenance only if user has permission
+    ...(maintenancePerms.canView ? [{
       key: 'maintenance' as const,
       label: 'Maintenance',
-      children: <AssetMaintenanceTab asset={selectedAsset} canAdd={canEdit} />,
-    },
+      children: <AssetMaintenanceTab asset={selectedAsset} canAdd={maintenancePerms.canAdd} />,
+    }] : []),
     {
       key: 'depreciation' as const,
       label: 'Depreciation',
@@ -95,7 +102,7 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
         </div>
         <Space>
           {canEdit && (
-            <Can I="edit">
+            <Can I="edit" object="asset_record">
               <Button
                 size="small"
                 icon={<EditOutlined />}
@@ -113,14 +120,20 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
         </Space>
       </div>
 
-      <Tabs
-        activeKey={activeDetailTab}
-        onChange={(k) => setActiveDetailTab(k as typeof activeDetailTab)}
-        items={tabItems}
-        size="small"
-        style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }}
-        destroyOnHidden={false}
-      />
+      {store.loadingAssetDetail ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spin />
+        </div>
+      ) : (
+        <Tabs
+          activeKey={activeDetailTab}
+          onChange={(k) => setActiveDetailTab(k as typeof activeDetailTab)}
+          items={tabItems}
+          size="small"
+          style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }}
+          destroyOnHidden={false}
+        />
+      )}
 
       {store.isAllocationPanelOpen && <AllocationPanel />}
       {store.isReturnModalOpen && <ReturnAssetModal />}

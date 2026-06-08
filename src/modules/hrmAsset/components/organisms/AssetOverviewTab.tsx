@@ -78,7 +78,7 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
             <AssetStatusBadge status={asset.status} />
           </div>
           {canEdit && STATUS_TRANSITIONS[asset.status].length > 0 && (
-            <Can I="edit">
+            <Can I="edit" object="asset_record">
               <Select
                 placeholder="Change status..."
                 style={{ width: '100%', marginBottom: 8 }}
@@ -96,7 +96,7 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
               <div>{asset.currentHolderName}</div>
               <div style={{ color: '#8c8c8c', fontSize: 12 }}>{asset.currentHolderEmployeeId}</div>
               {canAssign && (
-                <Can I="edit">
+                <Can I="edit" object="asset_record">
                   <Button size="small" danger onClick={openReturnModal} style={{ marginTop: 8 }}>
                     Unassign / Return
                   </Button>

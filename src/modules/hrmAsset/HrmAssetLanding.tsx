@@ -21,6 +21,7 @@ import type { Asset, AssetRequest } from './types/domain.types';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import Can from '../hrmAccess/components/Can';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useHrmRbacStore } from '../hrmAccess/stores/hrmRbacStore';
 import styles from './styles/HrmAsset.module.css';
 
 const HrmAssetLanding: React.FC = () => {
@@ -30,28 +31,77 @@ const HrmAssetLanding: React.FC = () => {
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<import('./types/domain.types').AssetCategory | null>(null);
 
-  // RBAC — read once for hook logic (effect deps, approval flow branching).
-  // UI-level gating uses <Can> so permissions flow automatically from the
-  // enclosing ModuleAccessGate context.
-  const perms = useCan('HRM_ASSET');
-  const isSupervisor = perms.canEdit; // Approval flows reuse edit permission
-  const isAdmin = perms.canDelete;    // Admin actions require delete permission
+  // RBAC — Object-level permissions for fine-grained access control.
+  // UI-level gating uses <Can object="..."> so permissions flow from
+  // the section cache loaded by ModuleAccessGate.
+  //
+  // Object → matrix role mapping:
+  //   asset_record   VIEW  → Assets tab (Admin)
+  //   asset_request  ADD   → create requests (Admin, RM, Employee)
+  //   asset_approval VIEW  → Approval Inbox visible (Admin, RM)
+  //   asset_approval EDIT  → supervisor-tier approve/reject (RM, Admin)
+  //   asset_approval DELETE→ admin-tier approve/reject + allocation (Admin)
+  const assetPerms = useCan('HRM_ASSET', 'asset_record');
+  const approvalPerms = useCan('HRM_ASSET', 'asset_approval');
+  const canViewAssets = assetPerms.canView;
+  // Whether RBAC has finished resolving for this module. Until the section
+  // cache loads, every useCan() returns EMPTY (canView=false), so we must NOT
+  // act on a "false" permission yet — otherwise the default-tab redirect below
+  // strands even an Admin on Requests during the initial load window.
+  const rbacResolved = useHrmRbacStore(
+    s => s.isReady && s.sectionPermissionCache['HRM_ASSET'] !== undefined,
+  );
+  const canViewApprovals = approvalPerms.canView;
+  const isSupervisor = approvalPerms.canEdit; // supervisor-tier approve/reject
+  const isAdmin = approvalPerms.canDelete;    // admin-tier approve/reject + allocation
 
-  // Load once on mount — no function refs in deps to avoid infinite loop
+  // Everyone with module access can submit/track their own requests, and the
+  // request form needs the category list — load these once on mount.
   useEffect(() => {
-    data.initialLoad();
-    if (isSupervisor || isAdmin) {
-      data.loadPendingApprovals();
-    }
+    data.loadCategories();
+    data.loadMyRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load requests and approvals when switching to that tab
+  // Asset inventory + dashboard are Admin-only (asset_record VIEW). Perms are
+  // EMPTY until the section cache loads (ModuleAccessGate lives inside this
+  // tree), so key this off canViewAssets — it flips false→true once the cache
+  // resolves, and stays false for RM/Employee so no forbidden calls fire.
+  useEffect(() => {
+    if (canViewAssets) {
+      data.loadDashboard();
+      data.loadAssets();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canViewAssets]);
+
+  // Approval inbox data only for users who can view approvals (Admin, RM).
+  useEffect(() => {
+    if (canViewApprovals) {
+      data.loadPendingApprovals();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canViewApprovals]);
+
+  // Assets is the default tab (store init = 'assets'). Only redirect to
+  // Requests once RBAC has RESOLVED and the user genuinely can't view Assets —
+  // never during the initial EMPTY-perms window, or an Admin would be bounced
+  // off their default Assets screen.
+  useEffect(() => {
+    if (rbacResolved && !canViewAssets && store.activeTab === 'assets') {
+      store.setActiveTab('requests');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rbacResolved, canViewAssets, store.activeTab]);
+
+  // Refresh requests/approvals when switching to that tab
   const activeTab = store.activeTab;
   useEffect(() => {
     if (activeTab === 'requests') {
       data.loadMyRequests();
-      data.loadPendingApprovals();
+      if (canViewApprovals) {
+        data.loadPendingApprovals();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -93,11 +143,11 @@ const HrmAssetLanding: React.FC = () => {
           onClear={store.clearFilters}
         />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <Can I="add">
+          <Can I="view" object="asset_category">
             <Button
               size="small"
               icon={<SettingOutlined />}
-              onClick={() => setCategoryFormOpen(true)}
+              onClick={() => { setEditingCategory(null); setCategoryFormOpen(true); }}
             >
               Categories
             </Button>
@@ -107,7 +157,7 @@ const HrmAssetLanding: React.FC = () => {
             icon={<ReloadOutlined />}
             onClick={data.loadAssets}
           />
-          <Can I="add">
+          <Can I="add" object="asset_record">
             <Button
               type="primary"
               size="small"
@@ -149,7 +199,11 @@ const HrmAssetLanding: React.FC = () => {
           justifyContent: 'flex-end',
         }}
       >
-        <Can I="add">
+        {/* Requests are universal — anyone who can open the module (asset_module
+            VIEW, enforced by ModuleAccessGate) may submit one. passIf makes the
+            action self-service so it works even before asset_request grants are
+            configured, while still honoring an explicit asset_request ADD grant. */}
+        <Can I="add" object="asset_request" passIf>
           <Button
             type="primary"
             size="small"
@@ -186,34 +240,37 @@ const HrmAssetLanding: React.FC = () => {
           )}
         </div>
 
-        {/* Approval Inbox Section */}
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#262626' }}>
-            Approval Inbox
-            {ui.approvalsBadgeCount > 0 && (
-              <Badge
-                count={ui.approvalsBadgeCount}
-                size="small"
-                style={{ marginLeft: 8 }}
-              />
-            )}
+        {/* Approval Inbox Section — Admin & Reporting Manager only */}
+        {canViewApprovals && (
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#262626' }}>
+              Approval Inbox
+              {ui.approvalsBadgeCount > 0 && (
+                <Badge
+                  count={ui.approvalsBadgeCount}
+                  size="small"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+            </div>
+            <ApprovalInbox
+              isSupervisor={isSupervisor}
+              isAdmin={isAdmin}
+              loading={store.loadingRequests}
+            />
           </div>
-          <ApprovalInbox
-            isSupervisor={isSupervisor}
-            isAdmin={isAdmin}
-            loading={store.loadingRequests}
-          />
-        </div>
+        )}
       </div>
     </div>
   );
 
   const tabItems = [
-    {
+    // Assets tab — Admin only (asset_record VIEW)
+    ...(canViewAssets ? [{
       key: 'assets',
       label: 'Assets',
       children: assetsTabContent,
-    },
+    }] : []),
     {
       key: 'requests',
       label: (
@@ -225,16 +282,23 @@ const HrmAssetLanding: React.FC = () => {
     },
   ];
 
+  // Never point Tabs at a hidden key (e.g. 'assets' for a user without access,
+  // before the redirect effect runs) — fall back to the first visible tab.
+  const visibleTabKeys = tabItems.map((t) => t.key);
+  const activeTabKey = visibleTabKeys.includes(store.activeTab)
+    ? store.activeTab
+    : visibleTabKeys[0];
+
   return (
     <ModuleAccessGate moduleCode="HRM_ASSET" appTitle="Asset Management">
     <div className={`hrm-module-root ${styles.assetRoot}`}>
       <CommonAppBar appTitle="Asset Management" />
-      {(store.dashboard || store.loadingDashboard) && (
+      {canViewAssets && (store.dashboard || store.loadingDashboard) && (
         <AssetDashboardHeader dashboard={store.dashboard!} loading={store.loadingDashboard} />
       )}
       <div className={`${styles.assetContent} ${styles.tabsWrapper}`}>
         <Tabs
-          activeKey={store.activeTab}
+          activeKey={activeTabKey}
           onChange={(k) => store.setActiveTab(k as 'assets' | 'requests')}
           items={tabItems}
           size="small"

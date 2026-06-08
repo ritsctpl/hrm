@@ -157,7 +157,8 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_ASSET: [
     { code: "asset_module", label: "Module Access" },
     { code: "asset_record", label: "Assets" },
-    { code: "asset_assignment", label: "Assignments" },
+    { code: "asset_request", label: "Requests" },
+    { code: "asset_approval", label: "Approvals" },
     { code: "asset_category", label: "Categories" },
     { code: "asset_maintenance", label: "Maintenance" },
     { code: "asset_history", label: "History" },

@@ -62,7 +62,7 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
     <div className={styles.tabContent}>
       {canAdd && (
         <div style={{ marginBottom: 12 }}>
-          <Can I="add">
+          <Can I="add" object="asset_maintenance">
             <Button
               size="small"
               type="primary"
@@ -91,7 +91,7 @@ export default function AssetMaintenanceTab({ asset, canAdd }: AssetMaintenanceT
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Space>
               <Button onClick={() => setDrawerOpen(false)}>Cancel</Button>
-              <Can I="add">
+              <Can I="add" object="asset_maintenance">
                 <Button type="primary" loading={saving} onClick={handleSave}>Save</Button>
               </Can>
             </Space>
