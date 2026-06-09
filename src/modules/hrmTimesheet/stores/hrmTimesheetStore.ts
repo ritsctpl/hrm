@@ -14,21 +14,33 @@ import type {
 } from '../types/domain.types';
 import type { ManagerScope, ManagerStatusFilter, ManagerTargetEmployee } from '../types/ui.types';
 
-function getMonday(d: Date): Date {
+/** Local YYYY-MM-DD — NEVER use toISOString() here: it converts to UTC and
+ *  shifts the date back a day in positive-offset timezones (e.g. IST), which
+ *  made the calendar default to the previous month. */
+function ymdLocal(d: Date): string {
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function getMonday(d: Date): string {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(new Date(d).setDate(diff));
+  const m = new Date(d);
+  m.setDate(diff);
+  return ymdLocal(m);
 }
 
 function firstDayOfMonth(d: Date): string {
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  return ymdLocal(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
 function mondayOf(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(`${dateStr}T00:00:00`); // parse as local, not UTC
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(new Date(d).setDate(diff)).toISOString().slice(0, 10);
+  d.setDate(diff);
+  return ymdLocal(d);
 }
 
 interface TimesheetUIState {
@@ -143,7 +155,7 @@ interface TimesheetActions {
 
 type HrmTimesheetStore = TimesheetUIState & TimesheetDataState & TimesheetLoadingState & TimesheetActions;
 
-const today = new Date().toISOString().slice(0, 10);
+const today = ymdLocal(new Date());
 
 export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
   devtools(
@@ -152,7 +164,7 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       myViewMode: 'month',
       selectedMonth: firstDayOfMonth(new Date()),
       selectedDate: today,
-      selectedWeekStart: getMonday(new Date()).toISOString().slice(0, 10),
+      selectedWeekStart: getMonday(new Date()),
       activeTab: 'my',
       activeReportTab: 'payroll',
       selectedTimesheetHandle: null,
@@ -214,7 +226,15 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       setManagerSearch: (v) => set({ managerSearch: v }),
       setManagerStatusFilter: (f) => set({ managerStatusFilter: f }),
       openEmployeeReview: (emp) =>
-        set({ managerViewMode: 'detail', targetEmployee: emp, targetEmployeeTimesheets: [] }),
+        set((state) => ({
+          managerViewMode: 'detail',
+          targetEmployee: emp,
+          targetEmployeeTimesheets: [],
+          // Align the drill-down period to the week the manager was viewing, so
+          // the monthly grid loads/renders the month that actually has data.
+          selectedDate: state.selectedWeekStart,
+          selectedMonth: firstDayOfMonth(new Date(state.selectedWeekStart)),
+        })),
       backToDashboard: () => set({ managerViewMode: 'dashboard', targetEmployee: null }),
       setTargetEmployeeTimesheets: (ts) => set({ targetEmployeeTimesheets: ts }),
 

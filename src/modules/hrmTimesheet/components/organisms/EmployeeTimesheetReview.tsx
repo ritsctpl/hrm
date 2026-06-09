@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal, Space, Spin, Tag, Tooltip, Typography } from 'antd';
+import { Button, Input, Modal, Segmented, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -58,6 +58,8 @@ export default function EmployeeTimesheetReview() {
   // Reject modal — used for both single-day and global reject (handles list).
   const [reject, setReject] = useState<{ scope: string; handles: string[] } | null>(null);
   const [remarks, setRemarks] = useState('');
+  // Drill-down view toggle: monthly calendar summary vs weekly matrix verification.
+  const [layout, setLayout] = useState<'month' | 'week'>('month');
 
   useEffect(() => {
     void loadTargetEmployeeMonth();
@@ -144,6 +146,15 @@ export default function EmployeeTimesheetReview() {
             )}
           </div>
         </Space>
+        <Segmented
+          size="small"
+          value={layout}
+          onChange={(v) => setLayout(v as 'month' | 'week')}
+          options={[
+            { label: 'Monthly', value: 'month' },
+            { label: 'Weekly', value: 'week' },
+          ]}
+        />
         <Space>
           <Text className={styles.calTotal}>
             Total Hours<span className={styles.calTotalValue}>{decimalToHHMM(monthTotal)}</span>
@@ -183,6 +194,8 @@ export default function EmployeeTimesheetReview() {
         </div>
       ) : (
         <>
+          {layout === 'month' && (
+          <>
           {/* Layout 1: read-only month calendar drill-down */}
           <div style={{ marginBottom: 8 }}>
             <Text strong>{dayjs(selectedMonth).format('MMMM YYYY')}</Text>
@@ -211,7 +224,12 @@ export default function EmployeeTimesheetReview() {
                     key={cell.date}
                     className={cellClass}
                     style={inWeek ? { borderColor: '#4096ff' } : undefined}
-                    onClick={() => cell.inMonth && setSelectedDate(cell.date)}
+                    onClick={() => {
+                      if (cell.inMonth) {
+                        setSelectedDate(cell.date);
+                        setLayout('week');
+                      }
+                    }}
                   >
                     <div className={styles.calCellTop}>
                       <span className={`${styles.calDateNum} ${isToday(cell.date) ? styles.calDateToday : ''}`}>
@@ -231,6 +249,32 @@ export default function EmployeeTimesheetReview() {
                         ) : (
                           ts?.status && <span style={{ fontSize: 10, color: '#8c8c8c' }}>{ts.status}</span>
                         )}
+                        {ts?.status === 'SUBMITTED' && ts?.handle && (
+                          <div
+                            className={styles.dayActionIcons}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Can I="edit">
+                              <Tooltip title="Approve this day">
+                                <CheckCircleOutlined
+                                  className={styles.dayApprove}
+                                  onClick={() => approveDay(ts.handle)}
+                                />
+                              </Tooltip>
+                            </Can>
+                            <Can I="edit">
+                              <Tooltip title="Reject this day">
+                                <CloseCircleOutlined
+                                  className={styles.dayReject}
+                                  onClick={() => {
+                                    setReject({ scope: dayjs(cell.date).format('DD MMM'), handles: [ts.handle] });
+                                    setRemarks('');
+                                  }}
+                                />
+                              </Tooltip>
+                            </Can>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -238,7 +282,11 @@ export default function EmployeeTimesheetReview() {
               })}
             </div>
           ))}
+          </>
+          )}
 
+          {layout === 'week' && (
+          <>
           {/* Layout 2: weekly matrix verification with per-day actions */}
           <div style={{ margin: '16px 0 8px' }}>
             <Text strong>
@@ -333,6 +381,8 @@ export default function EmployeeTimesheetReview() {
               </Text>
               <div>{weekNote}</div>
             </div>
+          )}
+          </>
           )}
         </>
       )}

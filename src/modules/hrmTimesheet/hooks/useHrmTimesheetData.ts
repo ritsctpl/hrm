@@ -9,6 +9,14 @@ import { HrmProjectService } from '../../hrmProject/services/hrmProjectService';
 import { useEmployeeIdentity } from '../../hrmAccess/hooks/useEmployeeIdentity';
 import type { TimesheetHeader, TimesheetLine } from '../types/domain.types';
 
+/** Last day of the month as local YYYY-MM-DD (avoids the toISOString UTC shift
+ *  that dropped the final day of the month in positive-offset timezones). */
+function monthEndLocal(monthStart: string): string {
+  const [y, m] = monthStart.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate(); // day 0 of next month = last day of this month
+  return `${y}-${String(m).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
+}
+
 export function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse): TimesheetHeader {
   return {
     handle: r.handle,
@@ -74,13 +82,11 @@ export function useHrmTimesheetData() {
     store.setLoadingMonth(true);
     try {
       const monthStart = store.selectedMonth; // YYYY-MM-01
-      const start = new Date(monthStart);
-      const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0); // last day
       const data = await HrmTimesheetService.listTimesheets(
         organizationId,
         employeeId,
         monthStart,
-        monthEnd.toISOString().slice(0, 10)
+        monthEndLocal(monthStart)
       );
       store.setMonthlyTimesheets(data.map(mapTimesheetResponse));
     } catch (err) {
@@ -234,13 +240,11 @@ export function useHrmTimesheetData() {
     store.setLoadingTargetEmployee(true);
     try {
       const monthStart = store.selectedMonth;
-      const start = new Date(monthStart);
-      const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
       const data = await HrmTimesheetService.listTimesheets(
         organizationId,
         target.employeeId,
         monthStart,
-        monthEnd.toISOString().slice(0, 10)
+        monthEndLocal(monthStart)
       );
       store.setTargetEmployeeTimesheets(data.map(mapTimesheetResponse));
     } catch (err) {
