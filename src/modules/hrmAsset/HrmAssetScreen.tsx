@@ -10,7 +10,6 @@ import AssetAttachmentsTab from './components/organisms/AssetAttachmentsTab';
 import AssetCustodyHistoryTab from './components/organisms/AssetCustodyHistoryTab';
 import AssetMaintenanceTab from './components/organisms/AssetMaintenanceTab';
 import AssetDepreciationTab from './components/organisms/AssetDepreciationTab';
-import AllocationPanel from './components/organisms/AllocationPanel';
 import ReturnAssetModal from './components/organisms/ReturnAssetModal';
 import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
 import { useCan } from '../hrmAccess/hooks/useCan';
@@ -135,7 +134,6 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
         />
       )}
 
-      {store.isAllocationPanelOpen && <AllocationPanel />}
       {store.isReturnModalOpen && <ReturnAssetModal />}
     </div>
   );

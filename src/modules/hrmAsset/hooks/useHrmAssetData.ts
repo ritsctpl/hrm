@@ -97,6 +97,25 @@ export function useHrmAssetData() {
     }
   }, [store]);
 
+  // Hydrate the full detail for a selected request. List rows (My Requests
+  // and the approval queues) can be thin projections without the complete
+  // approvalHistory, so we re-fetch via /asset/request/retrieve and stash it
+  // in `requestDetail` for the detail panel + timeline to read.
+  const loadRequestDetail = useCallback(async (requestId: string) => {
+    store.setLoadingRequestDetail(true);
+    try {
+      const detail = await HrmAssetService.getRequest(getOrganizationId(), requestId);
+      store.setRequestDetail({
+        ...detail,
+        approvalHistory: detail.approvalHistory ?? [],
+      } as unknown as Parameters<typeof store.setRequestDetail>[0]);
+    } catch {
+      // Leave requestDetail null — the panel falls back to the list row.
+    } finally {
+      store.setLoadingRequestDetail(false);
+    }
+  }, [store]);
+
   const loadAssetDetail = useCallback(async (assetId: string) => {
     const organizationId = getOrganizationId();
 
@@ -144,6 +163,7 @@ export function useHrmAssetData() {
     loadAssets,
     loadMyRequests,
     loadPendingApprovals,
+    loadRequestDetail,
     loadAssetDetail,
     initialLoad,
   };

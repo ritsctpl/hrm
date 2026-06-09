@@ -158,7 +158,12 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "asset_module", label: "Module Access" },
     { code: "asset_record", label: "Assets" },
     { code: "asset_request", label: "Requests" },
-    { code: "asset_approval", label: "Approvals" },
+    // Reporting-manager tier: sees + acts on the FIRST approval step only
+    // (the "Pending Supervisor" tab).
+    { code: "asset_approval", label: "Supervisor Approval" },
+    // Admin tier: sees ALL three approval steps (Supervisor, Admin,
+    // Allocation) and can act on the Admin + Allocation steps.
+    { code: "asset_all_approval", label: "All Approvals" },
     { code: "asset_category", label: "Categories" },
     { code: "asset_maintenance", label: "Maintenance" },
     { code: "asset_history", label: "History" },

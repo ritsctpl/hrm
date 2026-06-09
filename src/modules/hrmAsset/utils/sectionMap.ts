@@ -4,7 +4,8 @@
 export const hrmAssetSectionMap: Record<string, string> = {
   assets: 'asset_record',
   requests: 'asset_request',
-  approvals: 'asset_approval',
+  approvals: 'asset_approval',        // reporting manager — Supervisor step only
+  allApprovals: 'asset_all_approval', // admin — all three approval steps
   categories: 'asset_category',
   maintenance: 'asset_maintenance',
   history: 'asset_history',

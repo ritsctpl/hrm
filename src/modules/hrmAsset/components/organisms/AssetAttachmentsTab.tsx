@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Empty, Typography, Button, Upload, message, Space, Tooltip } from 'antd';
+import { Empty, Typography, Button, Upload, message, Space, Tooltip, Popconfirm } from 'antd';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmAssetService } from '../../services/hrmAssetService';
@@ -41,25 +42,70 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   };
 
   /**
-   * Handle attachment preview by converting filePath (data URI) to Blob URL
+   * Resolve an attachment's content to something a browser can open.
+   * The backend may return `filePath` as:
+   *   - a full data URI (`data:application/pdf;base64,...`) → use as-is
+   *   - an http(s) URL or server path (`/...`) → open directly
+   *   - **bare base64** (no `data:` prefix) → graft on a `data:<mime>;base64,`
+   *     prefix from `fileType` so the document opens instead of trying to load
+   *     a giant base64 string as a URL (which failed to show "properly").
+   */
+  // Resolve a real MIME type so the browser PREVIEWS (pdf/image) instead of
+  // downloading. `fileType` may be a full MIME ("application/pdf"), a bare
+  // extension ("pdf"), or empty — fall back to the filename extension.
+  const EXT_MIME: Record<string, string> = {
+    pdf: 'application/pdf',
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+    webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml',
+    txt: 'text/plain', csv: 'text/csv',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  };
+  const resolveMime = (att: AssetAttachment): string => {
+    const ft = (att.fileType || '').toLowerCase().trim();
+    if (ft.includes('/')) return ft;
+    if (ft && EXT_MIME[ft]) return EXT_MIME[ft];
+    const ext = (att.fileName || '').split('.').pop()?.toLowerCase() ?? '';
+    return EXT_MIME[ext] ?? 'application/octet-stream';
+  };
+
+  const buildHref = (att: AssetAttachment): string => {
+    const fp = att.filePath;
+    if (!fp) return '';
+    if (fp.startsWith('data:')) {
+      // A data URI whose MIME is generic (octet-stream / missing) makes the
+      // browser DOWNLOAD instead of preview — rewrite it with a real MIME.
+      const m = fp.match(/^data:([^;]*);base64,([\s\S]*)$/);
+      if (m && (!m[1] || m[1].toLowerCase() === 'application/octet-stream')) {
+        return `data:${resolveMime(att)};base64,${m[2]}`;
+      }
+      return fp;
+    }
+    if (/^https?:\/\//i.test(fp) || fp.startsWith('/')) return fp;
+    return `data:${resolveMime(att)};base64,${fp}`;
+  };
+
+  /**
+   * Open the document in a new tab. Data URIs are materialised as a Blob first
+   * (large data: URLs can't be opened directly), plain URLs open as-is.
    */
   const handlePreview = (att: AssetAttachment) => {
-    if (!att.filePath) {
-      message.warning('No file path available');
+    const href = buildHref(att);
+    if (!href) {
+      message.warning('No file available for this attachment');
       return;
     }
     setBusyAttachmentId(att.attachmentId);
     try {
-      // If filePath is a data URI (starts with data:), convert to Blob
-      if (att.filePath.startsWith('data:')) {
-        const blob = dataURItoBlob(att.filePath);
+      if (href.startsWith('data:')) {
+        const blob = dataURItoBlob(href);
         const blobURL = URL.createObjectURL(blob);
         window.open(blobURL, '_blank', 'noopener,noreferrer');
-        // Clean up the object URL after a delay to allow the browser to load it
-        setTimeout(() => URL.revokeObjectURL(blobURL), 100);
+        setTimeout(() => URL.revokeObjectURL(blobURL), 60_000);
       } else {
-        // If it's a regular URL, open directly
-        window.open(att.filePath, '_blank', 'noopener,noreferrer');
+        window.open(href, '_blank', 'noopener,noreferrer');
       }
     } catch (error) {
       console.error('Preview error:', error);
@@ -70,38 +116,51 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   };
 
   /**
-   * Handle attachment download by converting filePath to Blob and triggering download
+   * Download the document, materialising data URIs as a Blob first.
    */
   const handleDownload = (att: AssetAttachment) => {
-    if (!att.filePath) {
-      message.warning('No file path available');
+    const href = buildHref(att);
+    if (!href) {
+      message.warning('No file available for this attachment');
       return;
     }
     setBusyAttachmentId(att.attachmentId);
     try {
-      // If filePath is a data URI, convert to Blob and download
-      if (att.filePath.startsWith('data:')) {
-        const blob = dataURItoBlob(att.filePath);
-        const blobURL = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobURL;
-        link.download = att.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobURL);
-      } else {
-        // If it's a regular URL, trigger download
-        const link = document.createElement('a');
-        link.href = att.filePath;
-        link.download = att.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      let linkHref = href;
+      let revoke: string | null = null;
+      if (href.startsWith('data:')) {
+        const blob = dataURItoBlob(href);
+        linkHref = URL.createObjectURL(blob);
+        revoke = linkHref;
       }
+      const link = document.createElement('a');
+      link.href = linkHref;
+      link.download = att.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (revoke) URL.revokeObjectURL(revoke);
     } catch (error) {
       console.error('Download error:', error);
       message.error('Failed to download attachment');
+    } finally {
+      setBusyAttachmentId(null);
+    }
+  };
+
+  const handleDelete = async (att: AssetAttachment) => {
+    const organizationId = getOrganizationId();
+    const { userId, rl_user_id, userEmail } = parseCookies();
+    const deletedBy = userId || rl_user_id || userEmail || '';
+    setBusyAttachmentId(att.attachmentId);
+    try {
+      await HrmAssetService.deleteAttachment(organizationId, asset.assetId, att.attachmentId, deletedBy);
+      updateAssetInList(asset.assetId, {
+        attachments: (asset.attachments ?? []).filter((a) => a.attachmentId !== att.attachmentId),
+      });
+      message.success('Attachment deleted');
+    } catch {
+      message.error('Failed to delete attachment');
     } finally {
       setBusyAttachmentId(null);
     }
@@ -196,6 +255,25 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
                 onClick={() => handleDownload(att)}
               />
             </Tooltip>
+            <Can I="delete" object="asset_record">
+              <Popconfirm
+                title="Delete attachment"
+                description={`Delete "${att.fileName}"? This cannot be undone.`}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                onConfirm={() => handleDelete(att)}
+              >
+                <Tooltip title="Delete">
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteIcon style={{ fontSize: 16 }} />}
+                    loading={busyAttachmentId === att.attachmentId}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </Can>
           </Space>
         </div>
       ))}

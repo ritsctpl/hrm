@@ -11,7 +11,12 @@ import Can from '../../../hrmAccess/components/Can';
 import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import styles from '../../styles/AssetForm.module.css';
 
-export default function AllocationPanel() {
+interface AllocationPanelProps {
+  /** Refresh the request lists + open detail after a successful allocation. */
+  onAllocated?: () => void;
+}
+
+export default function AllocationPanel({ onAllocated }: AllocationPanelProps = {}) {
   const {
     isAllocationPanelOpen,
     closeAllocationPanel,
@@ -71,6 +76,8 @@ export default function AllocationPanel() {
       );
       message.success('Asset allocated successfully');
       handleClose();
+      // Refresh the lists + open detail so the request reflects ALLOCATED.
+      onAllocated?.();
     } catch {
       message.error('Failed to allocate asset');
     } finally {

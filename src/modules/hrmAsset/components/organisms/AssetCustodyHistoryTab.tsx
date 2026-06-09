@@ -15,7 +15,7 @@ export default function AssetCustodyHistoryTab() {
   return (
     <div className={styles.tabContent}>
       <div style={{ display: 'flex', gap: 12, padding: '6px 0', fontWeight: 600, fontSize: 12, color: '#595959', borderBottom: '1px solid #f0f0f0' }}>
-        <Typography.Text strong style={{ minWidth: 80 }}>Custody ID</Typography.Text>
+        {/* <Typography.Text strong style={{ minWidth: 80 }}>Custody ID</Typography.Text> */}
         <Typography.Text strong style={{ minWidth: 140 }}>Employee</Typography.Text>
         <Typography.Text strong style={{ minWidth: 100 }}>From</Typography.Text>
         <Typography.Text strong style={{ minWidth: 100 }}>To</Typography.Text>

@@ -74,6 +74,8 @@ export interface UpdateAssetPayload {
   invoiceNo?: string;
   invoiceDate?: string;
   location?: string;
+  // Category-defined custom attributes. Sent when editing the Attributes tab.
+  attributes?: { attrName: string; attrValue: string }[];
   modifiedBy: string;
 }
 
@@ -320,6 +322,10 @@ export interface AssetRequestResponse {
   allocatedBy?: string;
   escalated: boolean;
   pendingProcurement: boolean;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  cancelledByName?: string;
+  cancelledAt?: string;
   approvalHistory: AssetApprovalActionResponse[];
   createdDateTime: string;
   modifiedDateTime: string;
@@ -342,5 +348,36 @@ export interface AllocateAssetPayload {
   allocatedBy: string;
   allocationDate: string;
   expectedReturnDate?: string;
+  remarks?: string;
+}
+
+/**
+ * Edit an in-flight request. Only permitted while the request is still
+ * PENDING_SUPERVISOR or PENDING_ADMIN (mirrors the Leave amend flow). The
+ * creator may revise the category, quantity, purpose and remarks.
+ */
+export interface UpdateAssetRequestPayload {
+  organizationId: string;
+  requestId: string;
+  categoryCode: string;
+  quantity: number;
+  purpose: string;
+  remarks?: string;
+  modifiedBy: string;
+}
+
+/**
+ * Forward / escalate a pending request to the next-level approver. The
+ * backend resolves who the next approver is from the current approver's
+ * reporting chain (mirrors Leave's reassign / escalate). `moveNext` is the
+ * approver explicitly pushing the request up a level; `escalate` is the
+ * auto-route equivalent — both share the same payload shape.
+ */
+export interface MoveNextAssetRequestPayload {
+  organizationId: string;
+  requestId: string;
+  actorEmployeeId: string;
+  actorName: string;
+  actorRole: string;
   remarks?: string;
 }

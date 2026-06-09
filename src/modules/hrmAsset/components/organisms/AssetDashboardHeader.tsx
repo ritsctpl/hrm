@@ -14,7 +14,7 @@ export default function AssetDashboardHeader({ dashboard, loading }: AssetDashbo
     { label: 'In Store', value: dashboard.inStore, colorVariant: 'info' as const },
     { label: 'Working', value: dashboard.assigned, colorVariant: 'success' as const },
     { label: 'Under Repair', value: dashboard.underRepair, colorVariant: 'warning' as const },
-    { label: 'Warranty Expiring', value: dashboard.warrantyExpiringIn30Days, colorVariant: 'danger' as const },
+    // { label: 'Warranty Expiring', value: dashboard.warrantyExpiringIn30Days, colorVariant: 'danger' as const },
     { label: 'Pending Requests', value: dashboard.pendingRequests, colorVariant: 'warning' as const },
   ];
 

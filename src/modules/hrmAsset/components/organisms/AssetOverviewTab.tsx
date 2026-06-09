@@ -8,6 +8,7 @@ import QrDownloadButton from '../atoms/QrDownloadButton';
 import WarrantyReminderBanner from '../molecules/WarrantyReminderBanner';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import { formatDate, formatCurrency } from '../../utils/assetHelpers';
 import type { Asset, AssetStatus } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
@@ -19,17 +20,21 @@ interface AssetOverviewTabProps {
   canAssign: boolean;
 }
 
+// Manual status transitions. Note: WORKING is intentionally NOT a manual
+// target — an asset becomes WORKING only by being allocated to a user. So a
+// repaired/damaged asset goes back to IN_STORE first, and is then allocated.
 const STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
   IN_STORE: ['UNDER_REPAIR', 'DAMAGED', 'LOST', 'RETIRED'],
-  WORKING: ['UNDER_REPAIR', 'DAMAGED', 'LOST', 'RETIRED'],
-  UNDER_REPAIR: ['IN_STORE', 'WORKING', 'DAMAGED', 'RETIRED'],
-  DAMAGED: ['UNDER_REPAIR', 'RETIRED'],
-  LOST: ['RETIRED'],
+  WORKING: ['IN_STORE', 'UNDER_REPAIR', 'DAMAGED', 'LOST', 'RETIRED'],
+  UNDER_REPAIR: ['IN_STORE', 'DAMAGED', 'RETIRED'],
+  DAMAGED: ['UNDER_REPAIR', 'IN_STORE', 'RETIRED'],
+  LOST: ['IN_STORE', 'RETIRED'],
   RETIRED: [],
 };
 
 export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOverviewTabProps) {
   const { updateAssetInList, openReturnModal } = useHrmAssetStore();
+  const { loadDashboard } = useHrmAssetData();
   const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
 
   const handleStatusChange = async (newStatus: string) => {
@@ -44,6 +49,9 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
       });
       updateAssetInList(asset.assetId, { status: newStatus as AssetStatus });
       message.success('Status updated');
+      // Status moved between buckets (e.g. WORKING → UNDER_REPAIR), so refresh
+      // the dashboard tiles.
+      loadDashboard();
     } catch {
       message.error('Failed to update status');
     }

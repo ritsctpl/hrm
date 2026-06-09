@@ -1,9 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Button, Space, message } from 'antd';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import { HrmAssetService } from '../../services/hrmAssetService';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 
 interface QrDownloadButtonProps {
@@ -12,6 +12,12 @@ interface QrDownloadButtonProps {
 }
 
 export default function QrDownloadButton({ assetId, qrUrl }: QrDownloadButtonProps) {
+  // The QR image is loaded ONLY when the user asks to see it. Previously the
+  // <img src={qrUrl}> rendered on mount, which made the browser auto-GET
+  // `/asset/<id>/qr?site=...` every time the Overview tab opened — an unwanted
+  // network call. Now nothing fetches until "View QR" is clicked.
+  const [showQr, setShowQr] = useState(false);
+
   const handleGenerate = async () => {
     const organizationId = getOrganizationId();
     try {
@@ -24,7 +30,7 @@ export default function QrDownloadButton({ assetId, qrUrl }: QrDownloadButtonPro
 
   return (
     <Space direction="vertical" size={4} align="center">
-      {qrUrl ? (
+      {qrUrl && showQr ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={qrUrl} alt="QR Code" style={{ width: 80, height: 80, border: '1px solid #f0f0f0' }} />
       ) : (
@@ -35,13 +41,12 @@ export default function QrDownloadButton({ assetId, qrUrl }: QrDownloadButtonPro
       <Space size={4}>
         {qrUrl ? (
           <>
-            <Button size="small" href={qrUrl} download={`${assetId}.png`}>PNG</Button>
-            <Button size="small" onClick={() => {
-              const link = document.createElement('a');
-              link.href = qrUrl!;
-              link.download = `${assetId}-qr.pdf`;
-              link.click();
-            }}>PDF</Button>
+            {!showQr && (
+              <Button size="small" onClick={() => setShowQr(true)} icon={<QrCodeIcon style={{ fontSize: 14 }} />}>
+                View QR
+              </Button>
+            )}
+            <Button size="small" href={qrUrl} target="_blank" download={`${assetId}.png`}>PNG</Button>
           </>
         ) : (
           <Button size="small" onClick={handleGenerate} icon={<QrCodeIcon style={{ fontSize: 14 }} />}>

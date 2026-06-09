@@ -18,10 +18,16 @@ interface HrmAssetState {
   // UI state
   selectedAsset: Asset | null;
   selectedRequest: AssetRequest | null;
+  // Fully-hydrated detail for the selected request (full approvalHistory).
+  // The list rows can be thin projections, so the detail panel reads this.
+  requestDetail: AssetRequest | null;
+  // The request currently being edited in the edit drawer.
+  editingRequest: AssetRequest | null;
   activeTab: 'assets' | 'requests';
   activeDetailTab: AssetDetailTab;
   isAssetFormOpen: boolean;
   isRequestFormOpen: boolean;
+  isEditRequestDrawerOpen: boolean;
   isAllocationPanelOpen: boolean;
   isReturnModalOpen: boolean;
   searchQuery: string;
@@ -45,6 +51,7 @@ interface HrmAssetState {
   loadingAssets: boolean;
   loadingCategories: boolean;
   loadingRequests: boolean;
+  loadingRequestDetail: boolean;
   loadingDashboard: boolean;
   loadingAssetDetail: boolean;
   loadingCustody: boolean;
@@ -59,12 +66,15 @@ interface HrmAssetState {
   // UI actions
   setSelectedAsset: (asset: Asset | null) => void;
   setSelectedRequest: (request: AssetRequest | null) => void;
+  setRequestDetail: (request: AssetRequest | null) => void;
   setActiveTab: (tab: 'assets' | 'requests') => void;
   setActiveDetailTab: (tab: AssetDetailTab) => void;
   openAssetForm: () => void;
   closeAssetForm: () => void;
   openRequestForm: () => void;
   closeRequestForm: () => void;
+  openEditRequestDrawer: (request: AssetRequest) => void;
+  closeEditRequestDrawer: () => void;
   openAllocationPanel: () => void;
   closeAllocationPanel: () => void;
   openReturnModal: () => void;
@@ -92,6 +102,7 @@ interface HrmAssetState {
   setLoadingAssets: (v: boolean) => void;
   setLoadingCategories: (v: boolean) => void;
   setLoadingRequests: (v: boolean) => void;
+  setLoadingRequestDetail: (v: boolean) => void;
   setLoadingDashboard: (v: boolean) => void;
   setLoadingAssetDetail: (v: boolean) => void;
   setLoadingCustody: (v: boolean) => void;
@@ -109,10 +120,13 @@ interface HrmAssetState {
 const defaultState = {
   selectedAsset: null as Asset | null,
   selectedRequest: null as AssetRequest | null,
+  requestDetail: null as AssetRequest | null,
+  editingRequest: null as AssetRequest | null,
   activeTab: 'assets' as const,
   activeDetailTab: 'overview' as AssetDetailTab,
   isAssetFormOpen: false,
   isRequestFormOpen: false,
+  isEditRequestDrawerOpen: false,
   isAllocationPanelOpen: false,
   isReturnModalOpen: false,
   searchQuery: '',
@@ -132,6 +146,7 @@ const defaultState = {
   loadingAssets: false,
   loadingCategories: false,
   loadingRequests: false,
+  loadingRequestDetail: false,
   loadingDashboard: false,
   loadingAssetDetail: false,
   loadingCustody: false,
@@ -148,13 +163,18 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   ...defaultState,
 
   setSelectedAsset: (asset) => set({ selectedAsset: asset, activeDetailTab: 'overview' }),
-  setSelectedRequest: (request) => set({ selectedRequest: request }),
+  // Selecting a request resets the cached detail so the panel shows a
+  // loading state until the fresh detail (with full history) arrives.
+  setSelectedRequest: (request) => set({ selectedRequest: request, requestDetail: null }),
+  setRequestDetail: (request) => set({ requestDetail: request }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
   openAssetForm: () => set({ isAssetFormOpen: true }),
   closeAssetForm: () => set({ isAssetFormOpen: false }),
   openRequestForm: () => set({ isRequestFormOpen: true }),
   closeRequestForm: () => set({ isRequestFormOpen: false }),
+  openEditRequestDrawer: (request) => set({ editingRequest: request, isEditRequestDrawerOpen: true }),
+  closeEditRequestDrawer: () => set({ editingRequest: null, isEditRequestDrawerOpen: false }),
   openAllocationPanel: () => set({ isAllocationPanelOpen: true }),
   closeAllocationPanel: () => set({ isAllocationPanelOpen: false }),
   openReturnModal: () => set({ isReturnModalOpen: true }),
@@ -186,6 +206,7 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   setLoadingAssets: (v) => set({ loadingAssets: v }),
   setLoadingCategories: (v) => set({ loadingCategories: v }),
   setLoadingRequests: (v) => set({ loadingRequests: v }),
+  setLoadingRequestDetail: (v) => set({ loadingRequestDetail: v }),
   setLoadingDashboard: (v) => set({ loadingDashboard: v }),
   setLoadingAssetDetail: (v) => set({ loadingAssetDetail: v }),
   setLoadingCustody: (v) => set({ loadingCustody: v }),

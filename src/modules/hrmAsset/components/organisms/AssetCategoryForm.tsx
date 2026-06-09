@@ -29,6 +29,7 @@ import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import { categoryFormRules } from '../../utils/assetValidations';
 import { CATEGORY_DATA_TYPES } from '../../utils/assetConstants';
 import type { AssetCategory } from '../../types/domain.types';
@@ -45,6 +46,7 @@ const NEW_DEFAULTS = { wdvRatePct: 15, attributeSchema: [] as AssetCategory['att
 
 export default function AssetCategoryForm({ open, onClose, editCategory, onEditCategory }: AssetCategoryFormProps) {
   const { categories, setCategories } = useHrmAssetStore();
+  const { loadDashboard } = useHrmAssetData();
   const [saving, setSaving] = useState(false);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
   const [form] = Form.useForm();
@@ -113,6 +115,8 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
         setCategories([...categories, updated]);
         message.success('Category created');
       }
+      // Refresh dashboard tiles (category breakdown / counts).
+      loadDashboard();
       handleClose();
     } catch {
       message.error(`Failed to ${isEdit ? 'update' : 'create'} category`);
@@ -129,6 +133,7 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
       await HrmAssetService.deleteCategory(organizationId, cat.categoryCode, userId ?? '');
       setCategories(categories.filter((c) => c.categoryCode !== cat.categoryCode));
       message.success('Category deleted');
+      loadDashboard();
     } catch {
       message.error('Failed to delete category');
     } finally {

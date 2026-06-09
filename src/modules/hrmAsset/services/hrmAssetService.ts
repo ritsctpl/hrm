@@ -32,6 +32,8 @@ import type {
   ApproveRejectAssetRequestPayload,
   AllocateAssetPayload,
   AssetApprovalActionResponse,
+  UpdateAssetRequestPayload,
+  MoveNextAssetRequestPayload,
 } from '../types/api.types';
 
 export class HrmAssetService {
@@ -196,13 +198,56 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async cancelAssetRequest(organizationId: string, requestId: string, employeeId: string): Promise<AssetRequestResponse> {
-    const res = await api.post(`${this.BASE}/asset/request/cancel`, { organizationId, requestId, employeeId });
+  static async cancelAssetRequest(
+    organizationId: string,
+    requestId: string,
+    employeeId: string,
+    reason?: string,
+  ): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/cancel`, {
+      organizationId,
+      requestId,
+      employeeId,
+      // Sent so the backend can record why the request was withdrawn and
+      // surface it on the detail panel + timeline (mirrors Leave).
+      reason,
+    });
     return res.data;
   }
 
   static async approveOrRejectRequest(payload: ApproveRejectAssetRequestPayload): Promise<AssetRequestResponse> {
     const res = await api.post(`${this.BASE}/asset/request/approve`, payload);
+    return res.data;
+  }
+
+  /**
+   * Edit a request that is still pending approval (PENDING_SUPERVISOR /
+   * PENDING_ADMIN). Mirrors HrmLeaveService.amendLeaveRequest.
+   * NOTE: backend endpoint pending — see ASSET_BACKEND_ISSUES_2.md.
+   */
+  static async updateAssetRequest(payload: UpdateAssetRequestPayload): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/update`, payload);
+    return res.data;
+  }
+
+  /**
+   * Forward a pending request to the next-level supervisor. The current
+   * approver pushes the request up the chain; backend resolves the next
+   * approver. Mirrors HrmLeaveService.reassignRequest.
+   * NOTE: backend endpoint pending — see ASSET_BACKEND_ISSUES_2.md.
+   */
+  static async moveToNextSupervisor(payload: MoveNextAssetRequestPayload): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/moveNext`, payload);
+    return res.data;
+  }
+
+  /**
+   * Auto-escalate a pending request to the next level in the hierarchy.
+   * Mirrors HrmLeaveService.escalateRequest.
+   * NOTE: backend endpoint pending — see ASSET_BACKEND_ISSUES_2.md.
+   */
+  static async escalateAssetRequest(payload: MoveNextAssetRequestPayload): Promise<AssetRequestResponse> {
+    const res = await api.post(`${this.BASE}/asset/request/escalate`, payload);
     return res.data;
   }
 

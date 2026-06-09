@@ -181,6 +181,12 @@ export interface AssetRequest {
   allocatedBy?: string;
   escalated: boolean;
   pendingProcurement: boolean;
+  // Cancellation details — populated once the creator withdraws the request,
+  // so the detail panel can show why/when/by-whom (mirrors the Leave module).
+  cancellationReason?: string;
+  cancelledBy?: string;
+  cancelledByName?: string;
+  cancelledAt?: string;
   approvalHistory: AssetApprovalAction[];
   createdDateTime: string;
   modifiedDateTime: string;

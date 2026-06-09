@@ -6,6 +6,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
+import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import Can from '../../../hrmAccess/components/Can';
 
 export default function ReturnAssetModal() {
@@ -15,6 +16,7 @@ export default function ReturnAssetModal() {
     selectedAsset,
     updateAssetInList,
   } = useHrmAssetStore();
+  const data = useHrmAssetData();
   const [form] = Form.useForm();
 
   const handleOk = async () => {
@@ -39,6 +41,10 @@ export default function ReturnAssetModal() {
       message.success('Asset returned successfully');
       form.resetFields();
       closeReturnModal();
+      // The asset just moved WORKING → IN_STORE, so refresh the dashboard
+      // tiles (In Store / Working counts) and the asset's custody history.
+      data.loadDashboard();
+      data.loadAssetDetail(selectedAsset!.assetId);
     } catch {
       message.error('Failed to return asset');
     }

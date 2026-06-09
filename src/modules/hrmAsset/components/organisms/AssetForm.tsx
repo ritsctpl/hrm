@@ -29,7 +29,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
     setSavingAsset,
     updateAssetInList,
   } = useHrmAssetStore();
-  const { loadAssets } = useHrmAssetData();
+  const { loadAssets, loadDashboard } = useHrmAssetData();
   const [form] = Form.useForm();
 
   const isEdit = !!editAsset;
@@ -103,6 +103,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         const fresh = await HrmAssetService.getAsset(organizationId, editAsset!.assetId);
         updateAssetInList(fresh.assetId, fresh as Partial<Asset>);
         message.success('Asset updated');
+        loadDashboard();
       } else {
         const createPayload: CreateAssetPayload = {
           organizationId,
@@ -119,7 +120,9 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
         await HrmAssetService.createAsset(createPayload);
         message.success('Asset created');
         handleClose();
-        await loadAssets();
+        // Refresh the inventory list AND the dashboard tiles (Total / In Store
+        // counts change with a new asset).
+        await Promise.all([loadAssets(), loadDashboard()]);
         return;
       }
       handleClose();
