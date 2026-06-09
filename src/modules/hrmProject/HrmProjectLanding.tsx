@@ -12,7 +12,6 @@ import ProjectDashboardHeader from './components/organisms/ProjectDashboardHeade
 import ProjectTable from './components/organisms/ProjectTable';
 import ProjectDetailPanel from './components/organisms/ProjectDetailPanel';
 import AllocationApprovalInbox from './components/organisms/AllocationApprovalInbox';
-import ResourceCalendarView from './components/organisms/ResourceCalendarView';
 import ProjectReportPanel from './components/organisms/ProjectReportPanel';
 import ProjectForm from './components/organisms/ProjectForm';
 import AllocationForm from './components/organisms/AllocationForm';
@@ -256,15 +255,6 @@ export default function HrmProjectLanding() {
       children: (
         <div style={{ padding: 16 }}>
           <AllocationApprovalInbox />
-        </div>
-      ),
-    },
-    perms.canAccessCalendar && {
-      key: 'calendar',
-      label: 'Calendar',
-      children: (
-        <div style={{ padding: 16 }}>
-          <ResourceCalendarView />
         </div>
       ),
     },
