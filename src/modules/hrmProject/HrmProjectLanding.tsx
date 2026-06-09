@@ -9,7 +9,7 @@ import { useHrmProjectStore } from './stores/hrmProjectStore';
 import { useProjectData } from './hooks/useProjectData';
 import { HrmProjectService } from './services/hrmProjectService';
 import ProjectDashboardHeader from './components/organisms/ProjectDashboardHeader';
-import ProjectMasterList from './components/organisms/ProjectMasterList';
+import ProjectTable from './components/organisms/ProjectTable';
 import ProjectDetailPanel from './components/organisms/ProjectDetailPanel';
 import AllocationApprovalInbox from './components/organisms/AllocationApprovalInbox';
 import ResourceCalendarView from './components/organisms/ResourceCalendarView';
@@ -152,6 +152,7 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
         open={formOpen}
         onCancel={() => setFormOpen(false)}
         destroyOnHidden
+        maskClosable={false}
         footer={[
           <Button key="cancel" onClick={() => setFormOpen(false)}>Cancel</Button>,
           <Can key="save" I={editingClient ? 'edit' : 'add'}>
@@ -183,11 +184,11 @@ export default function HrmProjectLanding() {
     isProjectFormOpen,
     closeProjectForm,
     isAllocationFormOpen,
+    allocationPrefill,
     closeAllocationForm,
     isClientDrawerOpen,
     openClientDrawer,
     closeClientDrawer,
-    openProjectForm,
     selectedProject,
     projects,
     projectKpis,
@@ -238,27 +239,11 @@ export default function HrmProjectLanding() {
       key: 'projects',
       label: 'Projects',
       children: (
-        <div className={styles.masterDetailLayout}>
-          <div className={`${styles.masterPane} ${selectedProject ? styles.shrink : ''}`}>
-            <div className={styles.masterHeader}>
-              <span className={styles.masterTitle}>Projects ({filteredProjects.length})</span>
-              <Can I="add">
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
-                  New Project
-                </Button>
-              </Can>
-            </div>
-            <ProjectMasterList
-              projects={filteredProjects}
-              loading={loadingProjects}
-              selectedHandle={selectedProject?.handle}
-              onSelect={handleSelectProject}
-            />
-          </div>
-          <div className={`${styles.detailPane} ${selectedProject ? styles.show : ''}`}>
-            <ProjectDetailPanel />
-          </div>
-        </div>
+        <ProjectTable
+          projects={filteredProjects}
+          loading={loadingProjects}
+          onView={handleSelectProject}
+        />
       ),
     },
     perms.canAccessApprovals && {
@@ -328,20 +313,35 @@ export default function HrmProjectLanding() {
         footer={null}
         width={720}
         destroyOnHidden
+        maskClosable={false}
+        keyboard={false}
       >
         <ProjectForm />
       </Modal>
 
       <Modal
-        title="Add Resource Allocation"
+        title={allocationPrefill ? 'Assign Task To Resource' : 'Add Resource Allocation'}
         open={isAllocationFormOpen}
         onCancel={closeAllocationForm}
         footer={null}
         width={640}
         destroyOnHidden
+        maskClosable={false}
+        keyboard={false}
       >
         {selectedProject && <AllocationForm projectHandle={selectedProject.handle} />}
       </Modal>
+
+      <Drawer
+        title={selectedProject ? `${selectedProject.projectCode} — ${selectedProject.projectName}` : ''}
+        open={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+        width="72%"
+        destroyOnHidden
+        styles={{ body: { padding: 0 } }}
+      >
+        <ProjectDetailPanel />
+      </Drawer>
 
       <ClientManagementDrawer open={isClientDrawerOpen} onClose={closeClientDrawer} />
     </div>

@@ -8,17 +8,23 @@ import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { formatDate } from '../../utils/projectHelpers';
+import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
+
+const TYPE_LABELS: Record<string, string> = {
+  BILLABLE: 'Billable', NON_BILLABLE: 'Non-Billable', REVENUE_GENERATION: 'Revenue Generation',
+};
 
 interface ProjectOverviewTabProps {
   project: Project;
 }
 
 const STATUS_TRANSITIONS: Record<string, ProjectStatus[]> = {
-  DRAFT: ['ACTIVE'],
-  ACTIVE: ['ON_HOLD', 'COMPLETED', 'CANCELLED'],
-  ON_HOLD: ['ACTIVE', 'CANCELLED'],
+  INITIATED: ['DRAFT', 'CANCELLED'],
+  DRAFT: ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['ON_HOLD', 'COMPLETED', 'CANCELLED'],
+  ON_HOLD: ['IN_PROGRESS', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -30,7 +36,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     const user = parseCookies().rl_user_id ?? parseCookies().user ?? '';
-    await updateProjectStatus(project.handle, newStatus as 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED', '', user);
+    await updateProjectStatus(project.handle, newStatus, '', user);
   };
 
   const handleEdit = () => {
@@ -47,13 +53,17 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Code">{project.projectCode}</Descriptions.Item>
           <Descriptions.Item label="Name">{project.projectName}</Descriptions.Item>
-          <Descriptions.Item label="Type">{project.projectType}</Descriptions.Item>
+          <Descriptions.Item label="Status"><ProjectStatusBadge status={project.status} /></Descriptions.Item>
+          <Descriptions.Item label="Type">{TYPE_LABELS[project.projectType] ?? project.projectType}</Descriptions.Item>
           <Descriptions.Item label="BU">{project.buCode}</Descriptions.Item>
           {project.departmentCode && (
             <Descriptions.Item label="Department">{project.departmentCode}</Descriptions.Item>
           )}
           {project.clientName && (
             <Descriptions.Item label="Client">{project.clientName}</Descriptions.Item>
+          )}
+          {project.currency && (
+            <Descriptions.Item label="Currency">{project.currency}</Descriptions.Item>
           )}
           <Descriptions.Item label="PM">{project.projectManagerName}</Descriptions.Item>
           <Descriptions.Item label="Start">{formatDate(project.startDate)}</Descriptions.Item>

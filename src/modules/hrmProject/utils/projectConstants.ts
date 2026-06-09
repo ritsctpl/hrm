@@ -1,16 +1,18 @@
 import type { ProjectStatus, AllocationStatus, MilestoneStatus, CapacityStatus } from '../types/domain.types';
 
 export const PROJECT_STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
+  { value: 'INITIATED', label: 'Initiated' },
   { value: 'DRAFT', label: 'Draft' },
-  { value: 'ACTIVE', label: 'Active' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'ON_HOLD', label: 'On Hold' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
 export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
+  INITIATED: 'cyan',
   DRAFT: 'default',
-  ACTIVE: 'success',
+  IN_PROGRESS: 'success',
   ON_HOLD: 'warning',
   COMPLETED: 'blue',
   CANCELLED: 'error',
@@ -53,8 +55,20 @@ export const REPORT_TYPE_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const PROJECT_TYPES = [
-  { value: 'INTERNAL', label: 'Internal' },
-  { value: 'EXTERNAL', label: 'External' },
+  { value: 'BILLABLE', label: 'Billable' },
+  { value: 'NON_BILLABLE', label: 'Non-Billable' },
+  { value: 'REVENUE_GENERATION', label: 'Revenue Generation' },
+];
+
+/** Currencies supported for client billing. */
+export const CURRENCY_OPTIONS = [
+  { value: 'INR', label: 'INR — Indian Rupee' },
+  { value: 'USD', label: 'USD — US Dollar' },
+  { value: 'EUR', label: 'EUR — Euro' },
+  { value: 'GBP', label: 'GBP — British Pound' },
+  { value: 'AED', label: 'AED — UAE Dirham' },
+  { value: 'SGD', label: 'SGD — Singapore Dollar' },
+  { value: 'AUD', label: 'AUD — Australian Dollar' },
 ];
 
 export const RECURRENCE_PATTERNS = [

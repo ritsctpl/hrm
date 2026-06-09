@@ -1,7 +1,7 @@
 // src/modules/hrmProject/types/domain.types.ts
 
-export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
-export type ProjectType = 'INTERNAL' | 'EXTERNAL';
+export type ProjectStatus = 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+export type ProjectType = 'BILLABLE' | 'NON_BILLABLE' | 'REVENUE_GENERATION';
 export type AllocationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type MilestoneStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
 export type RecurrencePattern = 'WEEKLY' | 'MONTHLY';
@@ -14,6 +14,20 @@ export interface Milestone {
   targetDate: string;
   status: MilestoneStatus;
   description?: string;
+}
+
+// NOTE: field names mirror the agreed spec — reconcile with ProjectTaskResponse before Stage B UI.
+export interface ProjectTask {
+  handle: string; // task identifier
+  projectHandle: string;
+  taskName: string;
+  description?: string;
+  estimatedHours: number;
+  billableRate?: number | null;
+  billable: boolean;
+  isDefault: boolean;
+  actualHours?: number;
+  active?: number;
 }
 
 export interface ProjectAttachment {
@@ -33,6 +47,7 @@ export interface Project {
   projectName: string;
   description?: string;
   projectType: ProjectType;
+  baseProjectHandle?: string;
   buCode: string;
   departmentCode?: string;
   clientName?: string;
@@ -47,6 +62,7 @@ export interface Project {
   hourlyRate?: number;
   currency?: string;
   milestones: Milestone[];
+  tasks?: ProjectTask[];
   attachments: ProjectAttachment[];
   totalAllocatedHours: number;
   totalActualHours: number;
@@ -73,6 +89,10 @@ export interface ResourceAllocation {
   projectName: string;
   employeeId: string;
   employeeName: string;
+  taskId?: string | null;
+  taskName?: string | null;
+  billableRate?: number | null;
+  costRate?: number | null;
   hoursPerDay: number;
   startDate: string;
   endDate: string;

@@ -1,6 +1,7 @@
 'use client';
 import { Tabs, Skeleton } from 'antd';
 import ProjectOverviewTab from './ProjectOverviewTab';
+import ProjectTasksTab from './ProjectTasksTab';
 import ProjectAllocationsTab from './ProjectAllocationsTab';
 import ProjectMilestonesTab from './ProjectMilestonesTab';
 import ProjectAttachmentsTab from './ProjectAttachmentsTab';
@@ -25,18 +26,15 @@ export default function ProjectDetailPanel() {
 
   const items = [
     { key: 'overview', label: 'Overview', children: <ProjectOverviewTab project={selectedProject} /> },
-    { key: 'allocations', label: 'Allocations', children: <ProjectAllocationsTab /> },
+    { key: 'tasks', label: 'Tasks', children: <ProjectTasksTab /> },
+    { key: 'allocations', label: 'Team', children: <ProjectAllocationsTab /> },
     { key: 'milestones', label: 'Milestones', children: <ProjectMilestonesTab /> },
-    { key: 'attachments', label: 'Attachments', children: <ProjectAttachmentsTab /> },
-    { key: 'audit', label: 'Audit', children: <ProjectAuditTab /> },
+    { key: 'attachments', label: 'Files', children: <ProjectAttachmentsTab /> },
+    { key: 'audit', label: 'History', children: <ProjectAuditTab /> },
   ];
 
   return (
     <div className={styles.detailPanel}>
-      <div className={styles.detailTitle}>
-        <span className={styles.projectCode}>{selectedProject.projectCode}</span>
-        <span className={styles.projectName}> — {selectedProject.projectName}</span>
-      </div>
       <Tabs
         activeKey={activeDetailTab}
         onChange={(k) => setActiveDetailTab(k as typeof activeDetailTab)}

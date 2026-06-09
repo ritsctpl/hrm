@@ -1,13 +1,16 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Divider, Radio, message } from 'antd';
+import { Form, Input, Select, DatePicker, InputNumber, Button, Space, Steps, Radio, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { HrmProjectService } from '../../services/hrmProjectService';
+import { CURRENCY_OPTIONS, PROJECT_TYPES, PROJECT_STATUS_OPTIONS } from '../../utils/projectConstants';
 import type { ProjectFormValues } from '../../types/ui.types';
+import type { ClientResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
@@ -20,11 +23,8 @@ let milestoneKey = 0;
 
 export default function ProjectForm() {
   const [form] = Form.useForm<ProjectFormValues>();
-  const { editingProject, closeProjectForm, savingProject } = useHrmProjectStore();
+  const { editingProject, closeProjectForm, savingProject, projects } = useHrmProjectStore();
   const { createProject, updateProject } = useProjectMutations();
-  const [projectType, setProjectType] = useState<'INTERNAL' | 'EXTERNAL'>(
-    editingProject?.projectType ?? 'INTERNAL'
-  );
   const [milestones, setMilestones] = useState(
     editingProject?.milestones.map((m) => ({ key: m.milestoneId, ...m })) ?? []
   );
@@ -35,6 +35,17 @@ export default function ProjectForm() {
   const [loadingBUs, setLoadingBUs] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepts, setLoadingDepts] = useState(false);
+  const [clients, setClients] = useState<ClientResponse[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [step, setStep] = useState(0);
+  // Dates are kept in local state (not Form-bound) so the latest picked value is
+  // always submitted — avoids stale-value issues when the field sits in a hidden step.
+  const [startDate, setStartDate] = useState<Dayjs | null>(
+    editingProject?.startDate ? dayjs(editingProject.startDate) : null
+  );
+  const [endDate, setEndDate] = useState<Dayjs | null>(
+    editingProject?.endDate ? dayjs(editingProject.endDate) : null
+  );
 
   const watchBuCode = Form.useWatch('buCode', form);
   const watchPm = Form.useWatch('projectManagerId', form);
@@ -52,6 +63,11 @@ export default function ProjectForm() {
       .then((data) => setBusinessUnits(data ?? []))
       .catch(() => message.error('Failed to load business units'))
       .finally(() => setLoadingBUs(false));
+    setLoadingClients(true);
+    HrmProjectService.listClients(organizationId)
+      .then((data) => setClients(data ?? []))
+      .catch(() => message.error('Failed to load clients'))
+      .finally(() => setLoadingClients(false));
   }, []);
 
   useEffect(() => {
@@ -75,8 +91,8 @@ export default function ProjectForm() {
   const handleSubmit = async (values: ProjectFormValues) => {
     const formValues: ProjectFormValues = {
       ...values,
-      startDate: values.startDate ? dayjs(values.startDate).format('YYYY-MM-DD') : '',
-      endDate: values.endDate ? dayjs(values.endDate).format('YYYY-MM-DD') : '',
+      startDate: startDate ? startDate.format('YYYY-MM-DD') : '',
+      endDate: endDate ? endDate.format('YYYY-MM-DD') : '',
       milestones: milestones.map((m) => ({
         key: m.key,
         milestoneName: m.milestoneName,
@@ -84,10 +100,19 @@ export default function ProjectForm() {
         description: m.description ?? '',
       })),
     };
-    const userId = parseCookies().userId ?? parseCookies().user ?? '';
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     if (editingProject) {
       await updateProject(editingProject.handle, formValues, userId);
     } else {
+      // Block duplicate project names within the org before hitting the service
+      const name = formValues.projectName.trim().toLowerCase();
+      const isDuplicate = projects.some((p) => p.projectName?.trim().toLowerCase() === name);
+      if (isDuplicate) {
+        message.error('A project with this name already exists');
+        setStep(0);
+        form.scrollToField('projectName');
+        return;
+      }
       await createProject(formValues, userId);
     }
   };
@@ -100,6 +125,33 @@ export default function ProjectForm() {
     ]);
   };
 
+  // Form-bound fields validated before leaving each step (dates handled separately
+  // via local state; step 2 = milestones, optional)
+  const STEP_FIELDS: Record<number, (keyof ProjectFormValues)[]> = {
+    0: ['projectName', 'projectType', 'buCode', 'projectManagerId'],
+    1: ['estimateHours'],
+  };
+
+  const goNext = async () => {
+    try {
+      await form.validateFields(STEP_FIELDS[step] ?? []);
+    } catch {
+      return; /* validation errors are shown inline on the fields */
+    }
+    if (step === 1) {
+      if (!startDate || !endDate) {
+        message.error('Start and End date are required');
+        return;
+      }
+      if (endDate.isBefore(startDate, 'day')) {
+        message.error('End date cannot be before start date');
+        return;
+      }
+    }
+    setStep((s) => Math.min(2, s + 1));
+  };
+  const goBack = () => setStep((s) => Math.max(0, s - 1));
+
   return (
     <Form
       form={form}
@@ -108,31 +160,90 @@ export default function ProjectForm() {
       initialValues={editingProject ? {
         projectName: editingProject.projectName,
         projectType: editingProject.projectType,
+        status: editingProject.status,
+        baseProjectHandle: editingProject.baseProjectHandle,
         clientName: editingProject.clientName,
+        clientId: editingProject.clientId,
+        currency: editingProject.currency,
         buCode: editingProject.buCode,
         departmentCode: editingProject.departmentCode,
         projectManagerId: editingProject.projectManagerId,
         estimateHours: editingProject.estimateHours,
-        startDate: editingProject.startDate ? dayjs(editingProject.startDate) : null,
-        endDate: editingProject.endDate ? dayjs(editingProject.endDate) : null,
         description: editingProject.description,
-      } : { projectType: 'INTERNAL' }}
+      } : { projectType: 'BILLABLE', status: 'INITIATED' }}
     >
-      <Divider orientation="left">Project Identity</Divider>
+      <Steps
+        current={step}
+        size="small"
+        style={{ marginBottom: 20 }}
+        items={[{ title: 'Details' }, { title: 'Planning' }, { title: 'Milestones' }]}
+      />
+
+      <div style={{ display: step === 0 ? 'block' : 'none' }}>
       <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
         <Input placeholder="e.g. Customer Portal V2" />
       </Form.Item>
       <Form.Item name="projectType" label="Type" rules={[{ required: true }]}>
-        <Radio.Group onChange={(e) => setProjectType(e.target.value)}>
-          <Radio value="INTERNAL">Internal</Radio>
-          <Radio value="EXTERNAL">External</Radio>
+        <Radio.Group>
+          {PROJECT_TYPES.map((t) => (
+            <Radio key={t.value} value={t.value}>{t.label}</Radio>
+          ))}
         </Radio.Group>
       </Form.Item>
-      {projectType === 'EXTERNAL' && (
-        <Form.Item name="clientName" label="Client Name">
-          <Input placeholder="Client company name" />
+      <Space style={{ display: 'flex' }} align="start">
+        <Form.Item name="status" label="Status" style={{ flex: 1 }}>
+          <Select placeholder="Initiated" options={PROJECT_STATUS_OPTIONS} />
         </Form.Item>
-      )}
+        <Form.Item name="baseProjectHandle" label="Base Project" style={{ flex: 1 }}>
+          <Select
+            placeholder="Link existing project (optional)"
+            showSearch
+            allowClear
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            options={projects
+              .filter((p) => p.handle !== editingProject?.handle)
+              .map((p) => ({ value: p.handle, label: `${p.projectCode} - ${p.projectName}` }))}
+          />
+        </Form.Item>
+      </Space>
+      <Space style={{ display: 'flex' }} align="start">
+          <Form.Item name="clientName" label="Client" style={{ flex: 1 }}>
+            <Select
+              placeholder="Select client"
+              loading={loadingClients}
+              showSearch
+              allowClear
+              notFoundContent={loadingClients ? 'Loading…' : 'No clients found'}
+              filterOption={(input, option) =>
+                String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={clients.map((c) => ({
+                value: c.name,
+                label: `${c.code} - ${c.name}`,
+              }))}
+              onChange={(name) => {
+                const picked = clients.find((c) => c.name === name);
+                form.setFieldValue('clientId', picked?.id ?? picked?.handle ?? picked?.code ?? undefined);
+              }}
+            />
+          </Form.Item>
+          <Form.Item name="currency" label="Currency" style={{ width: 200 }}>
+            <Select
+              placeholder="Select currency"
+              showSearch
+              allowClear
+              filterOption={(input, option) =>
+                String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={CURRENCY_OPTIONS}
+            />
+          </Form.Item>
+        </Space>
+      <Form.Item name="clientId" hidden>
+        <Input />
+      </Form.Item>
       <Space style={{ display: 'flex' }}>
         <Form.Item name="buCode" label="Business Unit" rules={[{ required: true }]} style={{ flex: 1 }}>
           <Select
@@ -181,23 +292,39 @@ export default function ProjectForm() {
         />
       </Form.Item>
 
-      <Divider orientation="left">Planning</Divider>
+      </div>
+
+      <div style={{ display: step === 1 ? 'block' : 'none' }}>
       <Form.Item name="estimateHours" label="Estimate Hours" rules={[{ required: true, type: 'number', min: 0 }]}>
         <InputNumber min={0} step={0.5} style={{ width: '100%' }} />
       </Form.Item>
       <Space style={{ display: 'flex' }}>
-        <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]} style={{ flex: 1 }}>
-          <DatePicker style={{ width: '100%' }} />
+        <Form.Item label="Start Date" required style={{ flex: 1 }}>
+          <DatePicker
+            style={{ width: '100%' }}
+            value={startDate}
+            onChange={(d) => setStartDate(d)}
+          />
         </Form.Item>
-        <Form.Item name="endDate" label="End Date" rules={[{ required: true }]} style={{ flex: 1 }}>
-          <DatePicker style={{ width: '100%' }} />
+        <Form.Item label="End Date" required style={{ flex: 1 }}>
+          <DatePicker
+            style={{ width: '100%' }}
+            value={endDate}
+            onChange={(d) => setEndDate(d)}
+            disabledDate={(d) => !!startDate && d.isBefore(startDate, 'day')}
+          />
         </Form.Item>
       </Space>
       <Form.Item name="description" label="Description">
         <Input.TextArea rows={3} />
       </Form.Item>
 
-      <Divider orientation="left">Milestones (optional)</Divider>
+      </div>
+
+      <div style={{ display: step === 2 ? 'block' : 'none' }}>
+      <p style={{ color: '#888', marginBottom: 12 }}>
+        Add key milestones (optional) — or skip and add them later from the project page.
+      </p>
       {milestones.map((m, idx) => (
         <Space key={m.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
           <Input
@@ -222,14 +349,21 @@ export default function ProjectForm() {
       <Button type="dashed" icon={<PlusOutlined />} onClick={addMilestone} block>
         Add Milestone
       </Button>
+      </div>
 
       <div className={styles.formActions}>
         <Button onClick={closeProjectForm}>Cancel</Button>
-        <Can I={editingProject ? 'edit' : 'add'}>
-          <Button type="primary" htmlType="submit" loading={savingProject}>
-            {editingProject ? 'Update Project' : 'Save Project'}
-          </Button>
-        </Can>
+        {step > 0 && <Button onClick={goBack}>Back</Button>}
+        {step < 2 && (
+          <Button type="primary" onClick={goNext}>Next</Button>
+        )}
+        {step === 2 && (
+          <Can I={editingProject ? 'edit' : 'add'}>
+            <Button type="primary" htmlType="submit" loading={savingProject}>
+              {editingProject ? 'Update Project' : 'Save Project'}
+            </Button>
+          </Can>
+        )}
       </div>
     </Form>
   );
