@@ -163,7 +163,7 @@ export class HrmTimesheetService {
   }
 
   static async getLockPeriods(organizationId: string): Promise<TimesheetLockPeriodResponse[]> {
-    const res = await api.post(`${this.BASE}/lockPeriod/retrieve`, { organizationId });
+    const res = await api.post(`${this.BASE}/lockPeriod/list`, { organizationId });
     return Array.isArray(res.data) ? res.data : [];
   }
 

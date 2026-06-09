@@ -3,11 +3,10 @@ import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Typo
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { message } from 'antd';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
-import { resolveEmployeeId } from '../../utils/resolveEmployeeId';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import Can from '../../../hrmAccess/components/Can';
 import type { UnplannedCategory } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheet.module.css';
@@ -22,9 +21,8 @@ interface CategoryFormValues {
 
 export default function UnplannedCategoryManager() {
   const { unplannedCategories, setUnplannedCategories } = useHrmTimesheetStore();
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const employeeId = resolveEmployeeId(cookies);
+  const employeeId = useEmployeeIdentity().employeeCode;
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UnplannedCategory | null>(null);
   const [saving, setSaving] = useState(false);

@@ -10,7 +10,9 @@ import type {
   UnplannedCategory,
   TimesheetApproval,
   AllocationForDay,
+  AssignedAllocation,
 } from '../types/domain.types';
+import type { ManagerScope, ManagerStatusFilter, ManagerTargetEmployee } from '../types/ui.types';
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -22,35 +24,59 @@ function firstDayOfMonth(d: Date): string {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function mondayOf(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(new Date(d).setDate(diff)).toISOString().slice(0, 10);
+}
+
 interface TimesheetUIState {
+  /** Employee tab view: month calendar (landing) -> week matrix (on date click). */
+  myViewMode: 'month' | 'week';
+  /** First day (YYYY-MM-01) of the month shown in the calendar. */
+  selectedMonth: string;
   selectedDate: string;
   selectedWeekStart: string;
-  activeTab: 'my' | 'approvals' | 'team' | 'reports';
+  activeTab: 'my' | 'employees' | 'reports';
   activeReportTab: 'payroll' | 'compliance' | 'unplanned' | 'holiday' | 'categories' | 'lockPeriods';
   selectedTimesheetHandle: string | null;
   isDayEditorOpen: boolean;
   reportPeriodStart: string;
   reportPeriodEnd: string;
   reportDept: string;
+
+  // Manager "Employee Timesheets" dashboard
+  managerViewMode: 'dashboard' | 'detail';
+  managerScope: ManagerScope;
+  managerSearch: string;
+  managerStatusFilter: ManagerStatusFilter;
 }
 
 interface TimesheetDataState {
+  monthlyTimesheets: TimesheetHeader[];
   weeklyTimesheets: TimesheetHeader[];
   currentDayTimesheet: TimesheetHeader | null;
   allocationsForDay: AllocationForDay[];
+  assignedAllocations: AssignedAllocation[];
   unplannedCategories: UnplannedCategory[];
   teamTimesheets: TeamTimesheetSummary[];
   pendingApprovals: TimesheetHeader[];
   approvalHistory: TimesheetApproval[];
   weekSummary: WeeklyTimesheetSummary | null;
+  /** Manager drill-down: the reviewed employee + their loaded month of day-timesheets. */
+  targetEmployee: ManagerTargetEmployee | null;
+  targetEmployeeTimesheets: TimesheetHeader[];
 }
 
 interface TimesheetLoadingState {
+  loadingMonth: boolean;
   loadingWeek: boolean;
   loadingDay: boolean;
   loadingAllocations: boolean;
   loadingTeam: boolean;
   loadingApprovals: boolean;
+  loadingTargetEmployee: boolean;
   savingTimesheet: boolean;
   submittingTimesheet: boolean;
   submittingWeek: boolean;
@@ -59,6 +85,12 @@ interface TimesheetLoadingState {
 }
 
 interface TimesheetActions {
+  setMyViewMode: (m: TimesheetUIState['myViewMode']) => void;
+  setSelectedMonth: (d: string) => void;
+  /** Drill from calendar into the week matrix for a clicked date. */
+  openWeekForDate: (date: string) => void;
+  /** Return to the month calendar from the week matrix. */
+  backToMonthView: () => void;
   setSelectedDate: (d: string) => void;
   setSelectedWeekStart: (d: string) => void;
   setActiveTab: (tab: TimesheetUIState['activeTab']) => void;
@@ -70,9 +102,20 @@ interface TimesheetActions {
   setReportPeriodEnd: (d: string) => void;
   setReportDept: (v: string) => void;
 
+  setManagerScope: (s: ManagerScope) => void;
+  setManagerSearch: (v: string) => void;
+  setManagerStatusFilter: (f: ManagerStatusFilter) => void;
+  /** Open the manager drill-down for an employee. */
+  openEmployeeReview: (emp: ManagerTargetEmployee) => void;
+  /** Return to the manager dashboard from the drill-down. */
+  backToDashboard: () => void;
+  setTargetEmployeeTimesheets: (ts: TimesheetHeader[]) => void;
+
+  setMonthlyTimesheets: (ts: TimesheetHeader[]) => void;
   setWeeklyTimesheets: (ts: TimesheetHeader[]) => void;
   setCurrentDayTimesheet: (ts: TimesheetHeader | null) => void;
   setAllocationsForDay: (a: AllocationForDay[]) => void;
+  setAssignedAllocations: (a: AssignedAllocation[]) => void;
   setUnplannedCategories: (c: UnplannedCategory[]) => void;
   setTeamTimesheets: (t: TeamTimesheetSummary[]) => void;
   setPendingApprovals: (a: TimesheetHeader[]) => void;
@@ -84,11 +127,13 @@ interface TimesheetActions {
   removeLineFromCurrentDay: (lineId: string) => void;
   updateLineInCurrentDay: (lineId: string, partial: Partial<TimesheetLine>) => void;
 
+  setLoadingMonth: (v: boolean) => void;
   setLoadingWeek: (v: boolean) => void;
   setLoadingDay: (v: boolean) => void;
   setLoadingAllocations: (v: boolean) => void;
   setLoadingTeam: (v: boolean) => void;
   setLoadingApprovals: (v: boolean) => void;
+  setLoadingTargetEmployee: (v: boolean) => void;
   setSavingTimesheet: (v: boolean) => void;
   setSubmittingTimesheet: (v: boolean) => void;
   setSubmittingWeek: (v: boolean) => void;
@@ -104,6 +149,8 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
   devtools(
     (set) => ({
       // UI defaults
+      myViewMode: 'month',
+      selectedMonth: firstDayOfMonth(new Date()),
       selectedDate: today,
       selectedWeekStart: getMonday(new Date()).toISOString().slice(0, 10),
       activeTab: 'my',
@@ -113,23 +160,33 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       reportPeriodStart: firstDayOfMonth(new Date()),
       reportPeriodEnd: today,
       reportDept: '',
+      managerViewMode: 'dashboard',
+      managerScope: 'direct',
+      managerSearch: '',
+      managerStatusFilter: 'ALL',
 
       // Data defaults
+      monthlyTimesheets: [],
       weeklyTimesheets: [],
       currentDayTimesheet: null,
       allocationsForDay: [],
+      assignedAllocations: [],
       unplannedCategories: [],
       teamTimesheets: [],
       pendingApprovals: [],
       approvalHistory: [],
       weekSummary: null,
+      targetEmployee: null,
+      targetEmployeeTimesheets: [],
 
       // Loading defaults
+      loadingMonth: false,
       loadingWeek: false,
       loadingDay: false,
       loadingAllocations: false,
       loadingTeam: false,
       loadingApprovals: false,
+      loadingTargetEmployee: false,
       savingTimesheet: false,
       submittingTimesheet: false,
       submittingWeek: false,
@@ -137,6 +194,11 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       loadingReport: false,
 
       // UI actions
+      setMyViewMode: (m) => set({ myViewMode: m }),
+      setSelectedMonth: (d) => set({ selectedMonth: d }),
+      openWeekForDate: (date) =>
+        set({ myViewMode: 'week', selectedDate: date, selectedWeekStart: mondayOf(date) }),
+      backToMonthView: () => set({ myViewMode: 'month' }),
       setSelectedDate: (d) => set({ selectedDate: d }),
       setSelectedWeekStart: (d) => set({ selectedWeekStart: d }),
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -148,10 +210,20 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       setReportPeriodEnd: (d) => set({ reportPeriodEnd: d }),
       setReportDept: (v) => set({ reportDept: v }),
 
+      setManagerScope: (s) => set({ managerScope: s }),
+      setManagerSearch: (v) => set({ managerSearch: v }),
+      setManagerStatusFilter: (f) => set({ managerStatusFilter: f }),
+      openEmployeeReview: (emp) =>
+        set({ managerViewMode: 'detail', targetEmployee: emp, targetEmployeeTimesheets: [] }),
+      backToDashboard: () => set({ managerViewMode: 'dashboard', targetEmployee: null }),
+      setTargetEmployeeTimesheets: (ts) => set({ targetEmployeeTimesheets: ts }),
+
       // Data actions
+      setMonthlyTimesheets: (ts) => set({ monthlyTimesheets: ts }),
       setWeeklyTimesheets: (ts) => set({ weeklyTimesheets: ts }),
       setCurrentDayTimesheet: (ts) => set({ currentDayTimesheet: ts }),
       setAllocationsForDay: (a) => set({ allocationsForDay: a }),
+      setAssignedAllocations: (a) => set({ assignedAllocations: a }),
       setUnplannedCategories: (c) => set({ unplannedCategories: c }),
       setTeamTimesheets: (t) => set({ teamTimesheets: t }),
       setPendingApprovals: (a) => set({ pendingApprovals: a }),
@@ -184,11 +256,13 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
         ),
 
       // Loading actions
+      setLoadingMonth: (v) => set({ loadingMonth: v }),
       setLoadingWeek: (v) => set({ loadingWeek: v }),
       setLoadingDay: (v) => set({ loadingDay: v }),
       setLoadingAllocations: (v) => set({ loadingAllocations: v }),
       setLoadingTeam: (v) => set({ loadingTeam: v }),
       setLoadingApprovals: (v) => set({ loadingApprovals: v }),
+      setLoadingTargetEmployee: (v) => set({ loadingTargetEmployee: v }),
       setSavingTimesheet: (v) => set({ savingTimesheet: v }),
       setSubmittingTimesheet: (v) => set({ submittingTimesheet: v }),
       setSubmittingWeek: (v) => set({ submittingWeek: v }),

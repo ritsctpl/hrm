@@ -1,51 +1,35 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Tabs } from 'antd';
+import { Breadcrumb, Button, Tabs } from 'antd';
+import { ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmTimesheetStore } from './stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from './hooks/useHrmTimesheetData';
 import TimesheetEmployeeTemplate from './components/templates/TimesheetEmployeeTemplate';
-import TimesheetSupervisorTemplate from './components/templates/TimesheetSupervisorTemplate';
-import TeamTimesheetGrid from './components/organisms/TeamTimesheetGrid';
-import WeekNavigator from './components/molecules/WeekNavigator';
+import TimesheetManagerTemplate from './components/templates/TimesheetManagerTemplate';
 import TimesheetReportsTemplate from './components/templates/TimesheetReportsTemplate';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
-import styles from './styles/HrmTimesheet.module.css';
 
 export default function HrmTimesheetLanding() {
-  const {
-    activeTab,
-    selectedWeekStart,
-    setActiveTab,
-  } = useHrmTimesheetStore();
+  const { activeTab, selectedWeekStart, setActiveTab, openWeekForDate } = useHrmTimesheetStore();
 
-  const {
-    loadWeeklyTimesheets,
-    loadUnplannedCategories,
-    loadPendingApprovals,
-    loadTeamTimesheets,
-  } = useHrmTimesheetData();
+  const today = dayjs().format('YYYY-MM-DD');
 
-  // Load initial data
+  const { loadWeeklyTimesheets, loadUnplannedCategories } = useHrmTimesheetData();
+
+  // Load shared data once on mount.
   useEffect(() => {
     void loadWeeklyTimesheets();
     void loadUnplannedCategories();
   }, [loadWeeklyTimesheets, loadUnplannedCategories]);
 
-  // Load approval/team data when switching to those tabs
-  useEffect(() => {
-    if (activeTab === 'approvals') void loadPendingApprovals();
-  }, [activeTab, loadPendingApprovals]);
-
-  useEffect(() => {
-    if (activeTab === 'team') void loadTeamTimesheets();
-  }, [activeTab, selectedWeekStart, loadTeamTimesheets]);
-
   // Week label for AppBar subtitle
   const weekEnd = dayjs(selectedWeekStart).add(6, 'day');
-  const weekLabel = `${dayjs(selectedWeekStart).format('DD MMM')} \u2013 ${weekEnd.format('DD MMM YYYY')}`;
+  const weekLabel = `${dayjs(selectedWeekStart).format('DD MMM')} – ${weekEnd.format('DD MMM YYYY')}`;
+
+  const crumbLabel = activeTab === 'employees' ? 'Employee TimeSheets' : 'Timesheet';
 
   const mainTabs = [
     {
@@ -54,21 +38,9 @@ export default function HrmTimesheetLanding() {
       children: <TimesheetEmployeeTemplate />,
     },
     {
-      key: 'approvals',
-      label: 'Approvals',
-      children: <TimesheetSupervisorTemplate />,
-    },
-    {
-      key: 'team',
-      label: 'Team',
-      children: (
-        <div style={{ padding: '12px 16px' }}>
-          <div style={{ marginBottom: 12 }}>
-            <WeekNavigator />
-          </div>
-          <TeamTimesheetGrid />
-        </div>
-      ),
+      key: 'employees',
+      label: 'Employee Timesheets',
+      children: <TimesheetManagerTemplate />,
     },
     {
       key: 'reports',
@@ -84,7 +56,28 @@ export default function HrmTimesheetLanding() {
   return (
     <ModuleAccessGate moduleCode="HRM_TIMESHEET" appTitle="Timesheets">
       <div className="hrm-module-root">
-        <CommonAppBar appTitle={`Timesheets \u2014 ${weekLabel}`} />
+        <CommonAppBar appTitle={`Timesheets — ${weekLabel}`} />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 16px',
+            borderBottom: '1px solid #f0f0f0',
+          }}
+        >
+          <Breadcrumb items={[{ title: 'Home' }, { title: 'Time' }, { title: crumbLabel }]} />
+          {activeTab === 'my' && (
+            <Button
+              type="primary"
+              icon={<ClockCircleOutlined />}
+              onClick={() => openWeekForDate(today)}
+              style={{ background: '#fadb14', borderColor: '#fadb14', color: '#262626', fontWeight: 600 }}
+            >
+              Enter Time
+            </Button>
+          )}
+        </div>
         <Tabs
           activeKey={activeTab}
           onChange={(k) => setActiveTab(k as typeof activeTab)}
