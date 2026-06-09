@@ -183,9 +183,10 @@ export interface AllocationDayResponse {
 
 export interface AllocationApprovalRequest {
   organizationId: string;
-  handle: string;
-  approved: boolean;
-  approvedBy: string;
+  allocationHandle: string;
+  action: 'APPROVED' | 'REJECTED';
+  approverEmployeeId: string;
+  approverName?: string;
   remarks?: string;
 }
 

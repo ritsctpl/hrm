@@ -101,8 +101,8 @@ export class HrmProjectService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPendingApprovals(organizationId: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { organizationId });
+  static async getPendingApprovals(organizationId: string, managerId?: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/pending`, { organizationId, managerId });
     return Array.isArray(res.data) ? res.data : [];
   }
 

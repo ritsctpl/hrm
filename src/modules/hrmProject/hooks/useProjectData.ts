@@ -2,6 +2,7 @@
 // src/modules/hrmProject/hooks/useProjectData.ts
 import { useCallback } from 'react';
 import { getOrganizationId } from '@/utils/cookieUtils';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
 import type { Project, ResourceAllocation } from '../types/domain.types';
@@ -103,6 +104,7 @@ function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
 export function useProjectData() {
   const store = useHrmProjectStore();
   const organizationId = getOrganizationId();
+  const { employeeCode } = useEmployeeIdentity();
 
   const loadProjects = useCallback(async () => {
     store.setLoadingProjects(true);
@@ -207,14 +209,15 @@ export function useProjectData() {
   const loadPendingAllocations = useCallback(async () => {
     store.setLoadingApprovals(true);
     try {
-      const data = await HrmProjectService.getPendingApprovals(organizationId);
+      // Filter to the logged-in manager's projects (BE uses managerId = employeeId)
+      const data = await HrmProjectService.getPendingApprovals(organizationId, employeeCode || undefined);
       store.setPendingAllocations(data.map(mapAllocationResponse));
     } catch (error) {
       console.error('Failed to load pending allocations:', error);
     } finally {
       store.setLoadingApprovals(false);
     }
-  }, [organizationId]);
+  }, [organizationId, employeeCode]);
 
   const checkCapacity = useCallback(async (
     employeeId: string,

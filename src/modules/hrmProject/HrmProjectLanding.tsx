@@ -249,7 +249,7 @@ export default function HrmProjectLanding() {
       key: 'approvals',
       label: (
         <Badge count={pendingCount} size="small" offset={[6, 0]}>
-          Approvals
+          Allocation Approvals
         </Badge>
       ),
       children: (

@@ -1,12 +1,13 @@
 'use client';
 import React from 'react';
-import { Descriptions, Progress, Card, Space, Button, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Descriptions, Progress, Card, Space, Button, Popconfirm, Dropdown } from 'antd';
+import { EditOutlined, DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import type { Project, ProjectStatus } from '../../types/domain.types';
 import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import Can from '../../../hrmAccess/components/Can';
@@ -14,6 +15,11 @@ import styles from '../../styles/ProjectDetail.module.css';
 
 const TYPE_LABELS: Record<string, string> = {
   BILLABLE: 'Billable', NON_BILLABLE: 'Non-Billable', REVENUE_GENERATION: 'Revenue Generation',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  INITIATED: 'Initiated', DRAFT: 'Draft', IN_PROGRESS: 'In Progress',
+  ON_HOLD: 'On Hold', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
 };
 
 interface ProjectOverviewTabProps {
@@ -32,7 +38,12 @@ const STATUS_TRANSITIONS: Record<string, ProjectStatus[]> = {
 const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const store = useHrmProjectStore();
   const { deleteProject, updateProjectStatus } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
   const util = Math.min(project.utilizationPercentage ?? 0, 100);
+
+  // Project status is progress tracking (no approval). Only the project manager moves stages.
+  const isPM = !!employeeCode && employeeCode === project.projectManagerId;
+  const nextStages = STATUS_TRANSITIONS[project.status] ?? [];
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     const user = parseCookies().rl_user_id ?? parseCookies().user ?? '';
@@ -95,17 +106,21 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
             <Can I="edit">
               <Button size="small" icon={<EditOutlined />} onClick={handleEdit}>Edit Project</Button>
             </Can>
-            {STATUS_TRANSITIONS[project.status]?.map((nextStatus) => (
-              <Can key={nextStatus} I="edit">
-                <Popconfirm
-                  title={`Change status to ${nextStatus}?`}
-                  onConfirm={() => handleStatusChange(nextStatus)}
-                  okText="Confirm"
-                >
-                  <Button size="small">{nextStatus.replace('_', ' ')}</Button>
-                </Popconfirm>
-              </Can>
-            ))}
+            {isPM && nextStages.length > 0 && (
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: nextStages.map((s) => ({
+                    key: s,
+                    label: STATUS_LABELS[s] ?? s,
+                    danger: s === 'CANCELLED',
+                  })),
+                  onClick: ({ key }) => handleStatusChange(key as ProjectStatus),
+                }}
+              >
+                <Button size="small">Move to next stage <DownOutlined /></Button>
+              </Dropdown>
+            )}
             <Can I="delete">
               <Popconfirm title="Delete this project?" onConfirm={handleDelete} okText="Delete" okType="danger">
                 <Button size="small" danger icon={<DeleteOutlined />}>Delete</Button>

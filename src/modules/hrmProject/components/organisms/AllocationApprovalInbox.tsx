@@ -1,43 +1,56 @@
 'use client';
-import { useEffect } from 'react';
-import { Spin, Tabs, Empty, message } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { Table, Input, Radio, Button, Space, Tag, Modal, Spin, Typography, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
-import AllocationRow from '../molecules/AllocationRow';
-import AllocationApprovalActionBar from '../molecules/AllocationApprovalActionBar';
+import { formatDate } from '../../utils/projectHelpers';
+import type { ResourceAllocation } from '../../types/domain.types';
+import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
+const { Text } = Typography;
+
 export default function AllocationApprovalInbox() {
-  const {
-    pendingAllocations,
-    selectedAllocation,
-    setSelectedAllocation,
-    loadingApprovals,
-    approvingAllocation,
-  } = useHrmProjectStore();
+  const { pendingAllocations, loadingApprovals, approvingAllocation } = useHrmProjectStore();
   const { loadPendingAllocations } = useProjectData();
-  const { approveAllocation } = useProjectMutations();
+  const { approveAllocations } = useProjectMutations();
   const { employeeCode, isReady } = useEmployeeIdentity();
+
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'MEMBERSHIP' | 'TASK'>('ALL');
+  const [rejectTarget, setRejectTarget] = useState<ResourceAllocation | null>(null);
+  const [rejectRemarks, setRejectRemarks] = useState('');
 
   useEffect(() => {
     loadPendingAllocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const submitted = pendingAllocations.filter((a) => a.status === 'SUBMITTED');
+  const submitted = useMemo(
+    () => pendingAllocations.filter((a) => a.status === 'SUBMITTED'),
+    [pendingAllocations],
+  );
+
+  // Task allocations that cascade when a membership (project-level) row is actioned
+  const tasksOf = (a: ResourceAllocation) =>
+    submitted.filter((x) => x.employeeId === a.employeeId && x.projectHandle === a.projectHandle && x.taskId).map((x) => x.handle);
+  const handlesFor = (a: ResourceAllocation) => (a.taskId ? [a.handle] : [a.handle, ...tasksOf(a)]);
+
+  const rows = useMemo(() => submitted.filter((a) => {
+    if (typeFilter === 'MEMBERSHIP' && a.taskId) return false;
+    if (typeFilter === 'TASK' && !a.taskId) return false;
+    if (search && !a.employeeName?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }), [submitted, typeFilter, search]);
 
   const resolveActor = () => {
     const cookies = parseCookies();
     const actor =
-      employeeCode ||
-      cookies.employeeCode ||
-      cookies.employeeId ||
-      cookies.userId ||
-      cookies.user ||
-      cookies.rl_user_id ||
-      '';
+      employeeCode || cookies.employeeCode || cookies.employeeId || cookies.userId || cookies.user || cookies.rl_user_id || '';
     if (!actor) {
       message.error('Could not identify the signed-in user — please sign in again');
       return '';
@@ -48,55 +61,99 @@ export default function AllocationApprovalInbox() {
     return actor;
   };
 
-  const handleApprove = (remarks: string) => {
-    if (!selectedAllocation) return;
+  const handleApprove = (a: ResourceAllocation) => {
     const actor = resolveActor();
     if (!actor) return;
-    approveAllocation(selectedAllocation.handle, 'APPROVED', remarks, actor);
+    approveAllocations(handlesFor(a), 'APPROVED', '', actor);
   };
 
-  const handleReject = (remarks: string) => {
-    if (!selectedAllocation) return;
+  const confirmReject = () => {
+    if (!rejectTarget) return;
     const actor = resolveActor();
     if (!actor) return;
-    approveAllocation(selectedAllocation.handle, 'REJECTED', remarks, actor);
+    approveAllocations(handlesFor(rejectTarget), 'REJECTED', rejectRemarks, actor);
+    setRejectTarget(null);
+    setRejectRemarks('');
   };
+
+  const columns: ColumnsType<ResourceAllocation> = [
+    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName', render: (n: string) => <Text strong>{n}</Text> },
+    {
+      title: 'Item', key: 'item',
+      render: (_, a) => (a.taskName
+        ? <Tag color="blue">{a.taskName}</Tag>
+        : (
+          <Space size={6}>
+            <Tag>Membership</Tag>
+            {tasksOf(a).length > 0 && <Text type="secondary" style={{ fontSize: 12 }}>+{tasksOf(a).length} task(s) auto-approve</Text>}
+          </Space>
+        )),
+    },
+    { title: 'Hours/Day', dataIndex: 'hoursPerDay', key: 'hoursPerDay', width: 90, align: 'right' },
+    { title: 'Project', dataIndex: 'projectCode', key: 'projectCode', width: 160 },
+    {
+      title: 'Period', key: 'period', width: 200,
+      render: (_, a) => <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(a.startDate)} – {formatDate(a.endDate)}</Text>,
+    },
+    {
+      title: 'Actions', key: 'actions', width: 170, align: 'right',
+      render: (_, a) => (
+        <Can I="edit">
+          <Space size={4}>
+            <Button size="small" type="primary" onClick={() => handleApprove(a)} loading={approvingAllocation}>Approve</Button>
+            <Button size="small" danger onClick={() => setRejectTarget(a)}>Reject</Button>
+          </Space>
+        </Can>
+      ),
+    },
+  ];
 
   return (
     <div className={styles.approvalInbox}>
       {loadingApprovals ? (
         <Spin />
       ) : (
-        <div className={styles.inboxLayout}>
-          <div className={styles.inboxList}>
-            <Tabs items={[{ key: 'pending', label: `Pending (${submitted.length})`, children: (
-              submitted.length === 0 ? <Empty description="No pending allocations" /> : (
-                submitted.map((a) => (
-                  <AllocationRow
-                    key={a.handle}
-                    allocation={a}
-                    onEdit={() => setSelectedAllocation(a)}
-                  />
-                ))
-              )
-            )}]} />
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+            <Radio.Group value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} optionType="button" size="small">
+              <Radio.Button value="ALL">All ({submitted.length})</Radio.Button>
+              <Radio.Button value="MEMBERSHIP">Membership</Radio.Button>
+              <Radio.Button value="TASK">Tasks</Radio.Button>
+            </Radio.Group>
+            <Input.Search placeholder="Search by employee" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
           </div>
-          {selectedAllocation && (
-            <div className={styles.inboxDetail}>
-              <div><strong>Project:</strong> {selectedAllocation.projectCode}</div>
-              <div><strong>Employee:</strong> {selectedAllocation.employeeName}</div>
-              <div><strong>Hours/Day:</strong> {selectedAllocation.hoursPerDay}</div>
-              <div><strong>Period:</strong> {selectedAllocation.startDate} — {selectedAllocation.endDate}</div>
-              <div><strong>Pattern:</strong> {selectedAllocation.recurrencePattern ?? 'N/A'}</div>
-              <AllocationApprovalActionBar
-                onApprove={handleApprove}
-                onReject={handleReject}
-                loading={approvingAllocation}
-              />
-            </div>
-          )}
-        </div>
+
+          <Table<ResourceAllocation>
+            rowKey="handle"
+            size="middle"
+            columns={columns}
+            dataSource={rows}
+            pagination={{ pageSize: 10, hideOnSinglePage: true }}
+            locale={{ emptyText: 'No pending allocations' }}
+          />
+        </>
       )}
+
+      <Modal
+        title="Reject allocation"
+        open={!!rejectTarget}
+        onCancel={() => { setRejectTarget(null); setRejectRemarks(''); }}
+        onOk={confirmReject}
+        okText="Reject"
+        okButtonProps={{ danger: true, disabled: !rejectRemarks.trim(), loading: approvingAllocation }}
+        destroyOnHidden
+      >
+        {rejectTarget && !rejectTarget.taskId && tasksOf(rejectTarget).length > 0 && (
+          <Text type="secondary">This will also reject {tasksOf(rejectTarget).length} task allocation(s) for {rejectTarget.employeeName}.</Text>
+        )}
+        <Input.TextArea
+          rows={3}
+          style={{ marginTop: 8 }}
+          placeholder="Reason for rejection (required)"
+          value={rejectRemarks}
+          onChange={(e) => setRejectRemarks(e.target.value)}
+        />
+      </Modal>
     </div>
   );
 }

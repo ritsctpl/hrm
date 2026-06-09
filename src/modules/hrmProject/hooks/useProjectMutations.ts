@@ -196,9 +196,9 @@ export function useProjectMutations() {
     try {
       await HrmProjectService.approveOrRejectAllocation({
         organizationId,
-        handle: allocationHandle,
-        approved: action === 'APPROVED',
-        approvedBy,
+        allocationHandle,
+        action,
+        approverEmployeeId: approvedBy,
         remarks,
       });
       message.success(`Allocation ${action.toLowerCase()}`);
@@ -209,6 +209,40 @@ export function useProjectMutations() {
     } finally {
       store.setApprovingAllocation(false);
     }
+  }, [organizationId, loadPendingAllocations]);
+
+  // Approve/reject several allocations in one go (e.g. a membership + its task allocations)
+  const approveAllocations = useCallback(async (
+    handles: string[],
+    action: 'APPROVED' | 'REJECTED',
+    remarks: string,
+    approvedBy: string,
+  ) => {
+    if (handles.length === 0) return;
+    store.setApprovingAllocation(true);
+    let ok = 0;
+    let fail = 0;
+    let lastErr = '';
+    for (const allocationHandle of handles) {
+      try {
+        await HrmProjectService.approveOrRejectAllocation({
+          organizationId,
+          allocationHandle,
+          action,
+          approverEmployeeId: approvedBy,
+          remarks,
+        });
+        ok++;
+      } catch (error: any) {
+        fail++;
+        lastErr = extractBackendMsg(error, 'Failed to process approval');
+        console.error(error);
+      }
+    }
+    if (ok) message.success(`${ok} allocation${ok > 1 ? 's' : ''} ${action.toLowerCase()}`);
+    if (fail) message.error(`${fail} failed${lastErr ? `: ${lastErr}` : ''}`);
+    await loadPendingAllocations();
+    store.setApprovingAllocation(false);
   }, [organizationId, loadPendingAllocations]);
 
   const addMilestone = useCallback(async (
@@ -331,6 +365,7 @@ export function useProjectMutations() {
     submitAllocation,
     cancelAllocation,
     approveAllocation,
+    approveAllocations,
     addMilestone,
     updateMilestone,
     removeMilestone,
