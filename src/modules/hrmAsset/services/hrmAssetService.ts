@@ -82,6 +82,13 @@ export class HrmAssetService {
     return res.data;
   }
 
+  /**
+   * Unified, role-aware asset list. Only organizationId is sent; the backend
+   * determines the caller's role from the session/token and returns:
+   *   Admin    → all assets in the organization.
+   *   Employee → only assets allocated to them.
+   * See ASSET_PENDING_BACKEND_CHANGES_V2.md #2.
+   */
   static async getAllAssets(organizationId: string): Promise<AssetListResponse[]> {
     const res = await api.post(`${this.BASE}/asset/retrieveAll`, { organizationId });
     return res.data;

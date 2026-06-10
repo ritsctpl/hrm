@@ -19,6 +19,7 @@ export interface TravelFormState {
   startDate: string | null;
   endDate: string | null;
   remarks: string;
+  projectCode: string;
   coTravellerIds: string[];
   attachmentRefs?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
   deletedAttachmentIds?: string[];

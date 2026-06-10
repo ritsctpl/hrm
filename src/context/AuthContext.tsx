@@ -75,6 +75,14 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
           if (keycloak.realmAccess?.roles) {
             setCookie(null, 'role', `${keycloak.realmAccess.roles}`, { path: '/' });
           }
+          // Persist the employee's role claim from the token so modules that
+          // read `cookies.userRole` (hrmLeave, hrmDashboard, WFH, etc.) have it
+          // available without re-decoding the JWT on every page.
+          const employeeRole = (keycloak.tokenParsed as Record<string, unknown> | undefined)
+            ?.employeeRole;
+          if (employeeRole) {
+            setCookie(null, 'userRole', `${employeeRole}`, { path: '/', sameSite: 'lax' });
+          }
         } else {
           destroyCookie(null, 'token');
         }
@@ -121,6 +129,8 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
       setToken(null);
       destroyCookie(null, 'token');
       destroyCookie(null, 'role');
+      destroyCookie(null, 'userRole');
+      destroyCookie(null, 'employeeCode');
     } catch (err) {
       console.error('Logout failed:', err);
     }

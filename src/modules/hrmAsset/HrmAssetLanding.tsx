@@ -21,6 +21,7 @@ import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailT
 import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
 import { useCan } from '../hrmAccess/hooks/useCan';
+import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
 import Can from '../hrmAccess/components/Can';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { useHrmRbacStore } from '../hrmAccess/stores/hrmRbacStore';
@@ -53,6 +54,9 @@ const HrmAssetLanding: React.FC = () => {
   const approvalPerms = useCan('HRM_ASSET', 'asset_approval');        // reporting manager
   const allApprovalPerms = useCan('HRM_ASSET', 'asset_all_approval'); // admin
   const canViewAssets = assetPerms.canView;
+  // Signed-in employee — used to load the "My Assets" (allocated-to-me) list
+  // for non-admins, who don't have the full-register asset_record grant.
+  const identity = useEmployeeIdentity();
   // Whether RBAC has finished resolving for this module. Until the section
   // cache loads, every useCan() returns EMPTY (canView=false), so we must NOT
   // act on a "false" permission yet — otherwise the default-tab redirect below
@@ -90,6 +94,16 @@ const HrmAssetLanding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewAssets]);
 
+  // "My Assets" — non-admins (no full-register grant) load only the assets
+  // allocated to them. Gated on rbacResolved so we don't fire before we know
+  // the user isn't an admin, and on identity so we have an employeeCode.
+  useEffect(() => {
+    if (rbacResolved && !canViewAssets && identity.isReady && identity.employeeCode) {
+      data.loadAssets();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rbacResolved, canViewAssets, identity.isReady, identity.employeeCode]);
+
   // Approval inbox data only for users who can view approvals (Admin, RM).
   useEffect(() => {
     if (canViewApprovals) {
@@ -97,17 +111,6 @@ const HrmAssetLanding: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewApprovals]);
-
-  // Assets is the default tab (store init = 'assets'). Only redirect to
-  // Requests once RBAC has RESOLVED and the user genuinely can't view Assets —
-  // never during the initial EMPTY-perms window, or an Admin would be bounced
-  // off their default Assets screen.
-  useEffect(() => {
-    if (rbacResolved && !canViewAssets && store.activeTab === 'assets') {
-      store.setActiveTab('requests');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rbacResolved, canViewAssets, store.activeTab]);
 
   // Refresh requests/approvals when switching to that tab
   const activeTab = store.activeTab;
@@ -136,9 +139,12 @@ const HrmAssetLanding: React.FC = () => {
   const handleReloadAll = () => {
     data.loadCategories();
     data.loadMyRequests();
+    // Assets list refreshes for everyone — loadAssets scopes itself (full
+    // register for admins, allocated-to-me for employees). Dashboard tiles are
+    // admin-only.
+    data.loadAssets();
     if (canViewAssets) {
       data.loadDashboard();
-      data.loadAssets();
     }
     if (canViewApprovals) {
       data.loadPendingApprovals();
@@ -343,12 +349,17 @@ const HrmAssetLanding: React.FC = () => {
   );
 
   const tabItems = [
-    // Assets tab — Admin only (asset_record VIEW)
-    ...(canViewAssets ? [{
+    // Assets tab — admins see the full register ("Assets"); everyone else sees
+    // their own allocated assets ("My Assets"). The list data is scoped in
+    // loadAssets; admin-only controls (Add Asset, Categories) stay <Can>-gated.
+    {
       key: 'assets',
-      label: 'Assets',
+      // Admin → full register ("Assets"); everyone else → their own allocated
+      // assets ("My Assets"). The list is role-filtered server-side via the
+      // employeeId sent to /asset/retrieveAll.
+      label: canViewAssets ? 'Assets' : 'My Assets',
       children: assetsTabContent,
-    }] : []),
+    },
     {
       key: 'requests',
       label: (

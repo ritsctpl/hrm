@@ -84,6 +84,10 @@ export interface AssetAttachmentDto {
   fileType: string;
   fileName: string;
   filePath: string;
+  // Raw base64 of the file content (no data: prefix), returned on upload and
+  // on asset retrieve so the frontend can preview/download without an extra
+  // call. Preferred over filePath when present.
+  contentBase64?: string;
   fileSizeBytes: number;
   uploadedAt: string;
   uploadedBy: string;
@@ -115,7 +119,11 @@ export interface AssetResponse {
   currentHolderName?: string;
   presentValueINR: number;
   lastDepreciationDate?: string;
+  // Legacy: a relative URL to fetch the QR. Being replaced by qrCodeBase64.
   qrDownloadUrl?: string;
+  // Preferred: the QR code as a base64-encoded PNG (raw base64 or a full
+  // data: URI). Lets the frontend render + download without an extra call.
+  qrCodeBase64?: string;
   attributes: { attrName: string; attrValue: string }[];
   attachments: AssetAttachmentDto[];
   chargeRecovery?: ChargeRecoveryDto;
@@ -281,6 +289,14 @@ export interface AssetCustodyResponse {
   handoverReceiptNo?: string;
 }
 
+/**
+ * NEW  = employee requests a new asset (category-based, default).
+ * RETURN = employee requests to return an asset already allocated to them;
+ *          routed through the same approval hierarchy. The asset becomes
+ *          RETURNED only after the workflow completes (backend-driven).
+ */
+export type AssetRequestType = 'NEW' | 'RETURN';
+
 export interface CreateAssetRequestPayload {
   organizationId: string;
   employeeId: string;
@@ -292,6 +308,13 @@ export interface CreateAssetRequestPayload {
   supervisorId: string;
   supervisorName: string;
   createdBy: string;
+  // Defaults to NEW server-side when omitted. RETURN requests reference the
+  // asset being returned. Both assetId and linkedAssetId are sent so the
+  // request succeeds regardless of which one the backend validates on
+  // (see ASSET_BACKEND_ISSUES_2 / backend v2 doc — error ASSET_REQ_010).
+  requestType?: AssetRequestType;
+  assetId?: string;
+  linkedAssetId?: string;
 }
 
 export interface AssetApprovalActionResponse {
@@ -315,6 +338,7 @@ export interface AssetRequestResponse {
   purpose: string;
   remarks?: string;
   status: AssetRequestStatus;
+  requestType?: AssetRequestType;
   supervisorId: string;
   supervisorName: string;
   linkedAssetId?: string;

@@ -48,6 +48,7 @@ export interface TravelRequestCreatePayload {
   endDate?: string;
   startHour?: string;
   endHour?: string;
+  projectCode?: string;
   coTravellerEmpIds?: string[];
   base64Docu?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
   remarks?: string;
@@ -68,6 +69,7 @@ export interface TravelRequestUpdatePayload {
   endDate?: string;
   startHour?: string;
   endHour?: string;
+  projectCode?: string;
   coTravellerEmpIds?: string[];
   base64Docu?: (string | { fileName: string; base64: string; fileSize?: number; fileType?: string })[];
   deletedAttachmentIds?: string[];

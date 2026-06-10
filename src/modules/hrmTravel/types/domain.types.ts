@@ -29,6 +29,7 @@ export interface TravelRequest {
   startDate?: string;
   endDate?: string;
   remarks?: string;
+  projectCode?: string;
   onDutyApplied: boolean;
   onDutyEntryRef?: string;
   status: TravelStatus;

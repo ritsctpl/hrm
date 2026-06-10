@@ -60,5 +60,6 @@ export const DEFAULT_FORM_STATE = {
   startDate: null,
   endDate: null,
   remarks: "",
+  projectCode: "",
   coTravellerIds: [],
 };

@@ -53,6 +53,9 @@ export interface AssetAttachment {
   fileType: string;
   fileName: string;
   filePath: string;
+  // Raw base64 of the file content (no data: prefix) — preferred over filePath
+  // for preview/download when present.
+  contentBase64?: string;
   fileSizeBytes: number;
   uploadedAt: string;
   uploadedBy: string;
@@ -84,7 +87,9 @@ export interface Asset {
   currentHolderName?: string;
   presentValueINR: number;
   lastDepreciationDate?: string;
+  // Legacy URL form being replaced by qrCodeBase64 (base64 PNG / data URI).
   qrDownloadUrl?: string;
+  qrCodeBase64?: string;
   attributes: AssetAttribute[];
   attachments: AssetAttachment[];
   chargeRecovery?: ChargeRecovery;
@@ -174,6 +179,8 @@ export interface AssetRequest {
   purpose: string;
   remarks?: string;
   status: AssetRequestStatus;
+  // 'NEW' (default) or 'RETURN' — return requests reference linkedAssetId.
+  requestType?: 'NEW' | 'RETURN';
   supervisorId: string;
   supervisorName: string;
   linkedAssetId?: string;

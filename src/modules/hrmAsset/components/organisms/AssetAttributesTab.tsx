@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Descriptions, Button, Empty, Form, Input, InputNumber, DatePicker, Switch, Space, message,
+  Button, Empty, Form, Input, InputNumber, DatePicker, Switch, Space, Typography, message,
 } from 'antd';
 import EditIcon from '@mui/icons-material/Edit';
 import dayjs from 'dayjs';
@@ -143,6 +143,8 @@ export default function AssetAttributesTab({ asset, category, canEdit }: AssetAt
   }
 
   // ── Read-only view ─────────────────────────────────────────────────────
+  const filledCount = fields.filter((f) => valueFor(f.fieldName) !== '').length;
+
   return (
     <div className={styles.tabContent}>
       {fields
@@ -151,30 +153,78 @@ export default function AssetAttributesTab({ asset, category, canEdit }: AssetAt
           <WarrantyReminderBanner key={f.fieldName} expiryDate={valueFor(f.fieldName)} label={f.label} />
         ))}
 
-      <Descriptions column={2} size="small" bordered>
-        {fields.map((f) => {
+      {/* Header: attribute count + inline Edit action */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+        }}
+      >
+        <Typography.Text strong style={{ fontSize: 13 }}>
+          Attributes{' '}
+          <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 12 }}>
+            ({filledCount}/{fields.length} set)
+          </Typography.Text>
+        </Typography.Text>
+        {canEdit && (
+          <Can I="edit" object="asset_record">
+            <Button icon={<EditIcon style={{ fontSize: 16 }} />} size="small" onClick={beginEdit}>
+              Edit
+            </Button>
+          </Can>
+        )}
+      </div>
+
+      {/* Two-column box per attribute: attrName on the left (light background),
+          attrValue on the right. Box is 50% wide and centered. */}
+      <div style={{ border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden', width: '50%', margin: '0 auto' }}>
+        {fields.map((f, i) => {
           const raw = valueFor(f.fieldName);
+          const hasValue = raw !== '';
           const displayValue =
             f.dataType === 'DATE' ? (raw ? formatDate(raw) : '')
             : f.dataType === 'BOOLEAN' ? (raw === 'true' || raw === '1' ? 'Yes' : 'No')
             : raw;
           return (
-            <Descriptions.Item key={f.fieldName} label={f.label}>
-              {displayValue || '—'}
-            </Descriptions.Item>
+            <div
+              key={f.fieldName}
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                borderBottom: i < fields.length - 1 ? '1px solid #f0f0f0' : 'none',
+              }}
+            >
+              {/* Left: attribute name with a very light background */}
+              <div
+                style={{
+                  width: '42%',
+                  minWidth: 120,
+                  background: '#f7f9fc',
+                  borderRight: '1px solid #f0f0f0',
+                  padding: '10px 12px',
+                  fontWeight: 600,
+                  color: '#595959',
+                }}
+              >
+                {f.label}
+                {f.required && <span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span>}
+              </div>
+              {/* Right: attribute value */}
+              <div style={{ flex: 1, padding: '10px 12px', color: '#262626', wordBreak: 'break-word' }}>
+                {hasValue ? (
+                  <Typography.Text>{displayValue}</Typography.Text>
+                ) : (
+                  <Typography.Text type="secondary" italic style={{ fontSize: 12 }}>
+                    Not set
+                  </Typography.Text>
+                )}
+              </div>
+            </div>
           );
         })}
-      </Descriptions>
-
-      {canEdit && (
-        <div style={{ marginTop: 12 }}>
-          <Can I="edit" object="asset_record">
-            <Button icon={<EditIcon style={{ fontSize: 16 }} />} size="small" onClick={beginEdit}>
-              Edit Attributes
-            </Button>
-          </Can>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

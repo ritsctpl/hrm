@@ -30,10 +30,14 @@ export default function AssetListRow({ asset, isSelected, onClick }: AssetListRo
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
           {asset.currentHolderName ?? asset.location ?? '—'}
         </Typography.Text>
-        <DepreciationBadge
+        {/* Asset value is intentionally hidden in the listing screen — only a
+            non-monetary depreciation indicator is shown. The actual value
+            remains visible on the asset detail page (AssetOverviewTab). */}
+        {/* <DepreciationBadge
           presentValueINR={asset.presentValueINR}
           purchaseValueINR={asset.purchaseValueINR}
-        />
+          showAmount={false}
+        /> */}
       </div>
     </div>
   );

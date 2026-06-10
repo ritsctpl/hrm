@@ -50,6 +50,7 @@ export function useTravelMutations() {
         endDate: form.endDate || undefined,
         startHour: form.startHour || undefined,
         endHour: form.endHour || undefined,
+        projectCode: form.projectCode || undefined,
         remarks: form.remarks || undefined,
         coTravellerEmpIds: form.coTravellerIds,
         base64Docu: form.attachmentRefs || undefined,

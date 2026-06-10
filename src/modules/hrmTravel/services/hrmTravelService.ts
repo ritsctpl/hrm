@@ -65,6 +65,7 @@ function mapTravelRequest(raw: any): TravelRequest {
     startDate: raw.startDate,
     endDate: raw.endDate,
     remarks: raw.remarks,
+    projectCode: raw.projectCode,
     onDutyApplied: raw.onDutyApplied ?? false,
     onDutyEntryRef: raw.onDutyEntryRef,
     status: raw.status,

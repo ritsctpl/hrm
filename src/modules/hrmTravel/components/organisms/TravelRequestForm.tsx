@@ -10,6 +10,7 @@ import { COUNTRY_OPTIONS, COUNTRY_STATES } from "../../../hrmOrganization/utils/
 import { STATE_CITIES } from "../../../hrmOrganization/utils/locationSearch";
 import { useHrmTravelStore } from "../../stores/hrmTravelStore";
 import ItineraryRow from "../molecules/ItineraryRow";
+import ProjectPicker from "../molecules/ProjectPicker";
 import styles from "../../styles/TravelForm.module.css";
 
 interface Props {
@@ -17,11 +18,20 @@ interface Props {
   onChange: (changes: Partial<TravelFormState>) => void;
   readonly?: boolean;
   errors?: TravelFormErrors;
+  organizationId: string;
+  employeeId: string;
 }
 
 const TRAVEL_TYPES: TravelType[] = ["LOCAL", "DOMESTIC", "INTERNATIONAL"];
 
-const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, errors = {} }) => {
+const TravelRequestForm: React.FC<Props> = ({
+  formState,
+  onChange,
+  readonly,
+  errors = {},
+  organizationId,
+  employeeId,
+}) => {
   const policies = useHrmTravelStore((s) => s.policies);
   // Allowed modes come from the admin's saved policy for this travel type.
   // If no policy is configured (or the retrieve was denied), fall back to
@@ -110,6 +120,24 @@ const TravelRequestForm: React.FC<Props> = ({ formState, onChange, readonly, err
             value={formState.purpose}
             onChange={(e) => onChange({ purpose: e.target.value })}
             disabled={readonly}
+          />
+        </Form.Item>
+      </div>
+
+      <div className={styles.formSection}>
+        <div className={styles.sectionTitle}>Project</div>
+        <Form.Item
+          label="Project"
+          validateStatus={errors.projectCode ? "error" : undefined}
+          help={errors.projectCode}
+          style={{ marginBottom: 0 }}
+        >
+          <ProjectPicker
+            organizationId={organizationId}
+            employeeId={employeeId}
+            value={formState.projectCode || null}
+            disabled={readonly}
+            onChange={(code) => onChange({ projectCode: code ?? "" })}
           />
         </Form.Item>
       </div>

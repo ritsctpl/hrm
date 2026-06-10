@@ -1,6 +1,7 @@
 'use client';
 
-import { Descriptions, Button, Space, Popconfirm, Select, message } from 'antd';
+import { useState } from 'react';
+import { Descriptions, Button, Space, Popconfirm, Select, Modal, Input, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import AssetStatusBadge from '../atoms/AssetStatusBadge';
@@ -9,6 +10,7 @@ import WarrantyReminderBanner from '../molecules/WarrantyReminderBanner';
 import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { useHrmAssetData } from '../../hooks/useHrmAssetData';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate, formatCurrency } from '../../utils/assetHelpers';
 import type { Asset, AssetStatus } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
@@ -35,7 +37,52 @@ const STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOverviewTabProps) {
   const { updateAssetInList, openReturnModal } = useHrmAssetStore();
   const { loadDashboard } = useHrmAssetData();
+  const identity = useEmployeeIdentity();
   const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
+
+  // The signed-in employee currently holds this asset → they may raise a
+  // RETURN request that routes through the approval workflow. (Distinct from
+  // the admin "Unassign / Return" override below, which is immediate.)
+  const isHolder = !!identity.employeeCode && asset.currentHolderEmployeeId === identity.employeeCode;
+  const [returnReqOpen, setReturnReqOpen] = useState(false);
+  const [returnPurpose, setReturnPurpose] = useState('');
+  const [submittingReturn, setSubmittingReturn] = useState(false);
+
+  const handleRequestReturn = async () => {
+    if (!identity.isReady) {
+      message.error('Your employee profile is still loading — please try again in a moment');
+      return;
+    }
+    setSubmittingReturn(true);
+    try {
+      await HrmAssetService.createAssetRequest({
+        organizationId: getOrganizationId(),
+        employeeId: identity.employeeCode,
+        employeeName: identity.fullName,
+        categoryCode: asset.categoryCode,
+        quantity: 1,
+        purpose: returnPurpose.trim() || `Return of ${asset.assetName}`,
+        // Supervisor left blank — the backend resolves the approver from the
+        // employee's reporting manager (same as the new-request flow).
+        supervisorId: '',
+        supervisorName: '',
+        createdBy: identity.employeeCode,
+        requestType: 'RETURN',
+        // Send both keys — the backend validates RETURN requests on the asset
+        // reference (error ASSET_REQ_010 when missing); which key is canonical
+        // is being settled in the backend v2 doc.
+        assetId: asset.assetId,
+        linkedAssetId: asset.assetId,
+      });
+      message.success('Return request submitted for approval');
+      setReturnReqOpen(false);
+      setReturnPurpose('');
+    } catch {
+      message.error('Failed to submit return request');
+    } finally {
+      setSubmittingReturn(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     const organizationId = getOrganizationId();
@@ -103,13 +150,24 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
             <>
               <div>{asset.currentHolderName}</div>
               <div style={{ color: '#8c8c8c', fontSize: 12 }}>{asset.currentHolderEmployeeId}</div>
-              {canAssign && (
-                <Can I="edit" object="asset_record">
-                  <Button size="small" danger onClick={openReturnModal} style={{ marginTop: 8 }}>
-                    Unassign / Return
-                  </Button>
-                </Can>
-              )}
+              <Space size={8} style={{ marginTop: 8 }} wrap>
+                {/* Holder self-service: raise a return request through approval. */}
+                {isHolder && (
+                  <Can I="add" object="asset_request" passIf>
+                    <Button size="small" onClick={() => setReturnReqOpen(true)}>
+                      Request Return
+                    </Button>
+                  </Can>
+                )}
+                {/* Admin override: immediate unassign/return. */}
+                {canAssign && (
+                  <Can I="edit" object="asset_record">
+                    <Button size="small" danger onClick={openReturnModal}>
+                      Unassign / Return
+                    </Button>
+                  </Can>
+                )}
+              </Space>
             </>
           ) : (
             <span style={{ color: '#8c8c8c' }}>Unassigned</span>
@@ -118,9 +176,33 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
 
         <div className={styles.overviewCard}>
           <div style={{ fontWeight: 600, marginBottom: 8 }}>QR Code</div>
-          <QrDownloadButton assetId={asset.assetId} qrUrl={asset.qrDownloadUrl} />
+          <QrDownloadButton assetId={asset.assetId} qrUrl={asset.qrCodeBase64 ?? asset.qrDownloadUrl} />
         </div>
       </div>
+
+      <Modal
+        title="Request Asset Return"
+        open={returnReqOpen}
+        onOk={handleRequestReturn}
+        onCancel={() => { setReturnReqOpen(false); setReturnPurpose(''); }}
+        okText="Submit Request"
+        okButtonProps={{ loading: submittingReturn }}
+        destroyOnHidden
+      >
+        <p style={{ marginBottom: 12, color: '#595959' }}>
+          Raise a return request for <strong>{asset.assetName}</strong>. It will be routed
+          through your reporting hierarchy. The asset is marked Returned only after the
+          approval workflow completes.
+        </p>
+        <Input.TextArea
+          rows={3}
+          placeholder="Reason / remarks for return (optional)"
+          value={returnPurpose}
+          onChange={(e) => setReturnPurpose(e.target.value)}
+          maxLength={500}
+          showCount
+        />
+      </Modal>
     </div>
   );
 }

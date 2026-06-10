@@ -46,7 +46,7 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
   // Wait for RBAC initialization and section permissions load
   if (!isRbacReady || isSectionLoading) {
     return (
-      <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column' }}>
         <CommonAppBar appTitle={appTitle} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
           <Spin size="large" />
@@ -57,7 +57,7 @@ const ModuleAccessGate: React.FC<ModuleAccessGateProps> = ({
 
   if (!perms.canView) {
     return (
-      <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="hrm-module-root" style={{ display: 'flex', flexDirection: 'column' }}>
         <CommonAppBar appTitle={appTitle} />
         <Result
           icon={<LockOutlined style={{ color: '#bfbfbf' }} />}

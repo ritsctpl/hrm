@@ -33,7 +33,7 @@ export const requestFormRules = {
 export const categoryFormRules = {
   categoryCode: [
     { required: true, message: 'Category code is required' },
-    { pattern: /^[A-Z0-9_]+$/, message: 'Uppercase letters, digits and underscores only' },
+    // { pattern: /^[A-Z0-9_]+$/, message: 'Uppercase letters, digits and underscores only' },
     { max: 20, message: 'Max 20 characters' },
   ],
   categoryName: [

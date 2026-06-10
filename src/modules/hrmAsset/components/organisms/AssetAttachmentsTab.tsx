@@ -72,6 +72,12 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   };
 
   const buildHref = (att: AssetAttachment): string => {
+    // Prefer the base64 content returned on upload / asset-retrieve — lets us
+    // preview + download with no extra call and no conversion logic.
+    if (att.contentBase64) {
+      const c = att.contentBase64;
+      return c.startsWith('data:') ? c : `data:${resolveMime(att)};base64,${c}`;
+    }
     const fp = att.filePath;
     if (!fp) return '';
     if (fp.startsWith('data:')) {
@@ -240,7 +246,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
                 type="text"
                 size="small"
                 icon={<VisibilityIcon style={{ fontSize: 16 }} />}
-                disabled={!att.filePath}
+                disabled={!att.filePath && !att.contentBase64}
                 loading={busyAttachmentId === att.attachmentId}
                 onClick={() => handlePreview(att)}
               />
@@ -250,7 +256,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
                 type="text"
                 size="small"
                 icon={<DownloadIcon style={{ fontSize: 16 }} />}
-                disabled={!att.filePath}
+                disabled={!att.filePath && !att.contentBase64}
                 loading={busyAttachmentId === att.attachmentId}
                 onClick={() => handleDownload(att)}
               />

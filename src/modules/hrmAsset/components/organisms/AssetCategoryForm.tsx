@@ -81,7 +81,8 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
       setSaving(true);
       const payload = {
         organizationId,
-        categoryCode: values.categoryCode,
+        // Normalise to uppercase defensively (e.g. autofilled values).
+        categoryCode: (values.categoryCode ?? '').toUpperCase(),
         categoryName: values.categoryName,
         description: values.description,
         wdvRatePct: values.wdvRatePct,
@@ -325,7 +326,15 @@ export default function AssetCategoryForm({ open, onClose, editCategory, onEditC
         <Row gutter={12}>
           <Col span={12}>
             <Form.Item label="Category Code" name="categoryCode" rules={categoryFormRules.categoryCode}>
-              <Input disabled={isEdit} placeholder="e.g. LAPTOP" style={{ textTransform: 'uppercase' }} />
+              {/* Force the actual value to uppercase as the user types, so the
+                  uppercase-only rule never fires (textTransform alone only
+                  changes the display, not the stored value). */}
+              <Input
+                disabled={isEdit}
+                placeholder="e.g. LAPTOP"
+                style={{ textTransform: 'uppercase' }}
+                onChange={(e) => form.setFieldValue('categoryCode', e.target.value.toUpperCase())}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>

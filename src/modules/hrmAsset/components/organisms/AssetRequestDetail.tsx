@@ -148,6 +148,12 @@ export default function AssetRequestDetail({
         <Descriptions.Item label="Requester">
           {request.employeeName} ({request.employeeId})
         </Descriptions.Item>
+        {request.requestType === 'RETURN' && (
+          <Descriptions.Item label="Type">
+            <Text strong style={{ color: '#fa8c16' }}>Asset Return</Text>
+            {request.linkedAssetId ? ` · ${request.linkedAssetId}` : ''}
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="Category">{request.categoryName}</Descriptions.Item>
         <Descriptions.Item label="Quantity">{request.quantity}</Descriptions.Item>
         <Descriptions.Item label="Purpose">{request.purpose}</Descriptions.Item>

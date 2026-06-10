@@ -331,6 +331,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         startDate: isTravelLocal ? null : convertDateFormat(currentRequest.startDate),
         endDate: isTravelLocal ? null : convertDateFormat(currentRequest.endDate),
         remarks: currentRequest.remarks || "",
+        projectCode: currentRequest.projectCode || "",
         coTravellerIds: currentRequest.coTravellers?.map(c => c.employeeId) || [],
       });
       // Also populate pending co-travellers for display
@@ -747,6 +748,12 @@ const HrmTravelScreen: React.FC<Props> = ({
                   <div className={styles.infoLabel}>Travel Mode</div>
                   <div className={styles.infoValue}>{request.travelMode}</div>
                 </div>
+                {request.projectCode && (
+                  <div className={styles.infoRow}>
+                    <div className={styles.infoLabel}>Project</div>
+                    <div className={styles.infoValue}>{request.projectCode}</div>
+                  </div>
+                )}
                 {request.travelType === "LOCAL" ? (
                   <>
                     <div className={styles.infoRow}>
@@ -807,6 +814,8 @@ const HrmTravelScreen: React.FC<Props> = ({
               onChange={updateFormState}
               readonly={isReadonly}
               errors={formErrors}
+              organizationId={organizationId}
+              employeeId={identity.employeeCode}
             />
           )}
         </div>

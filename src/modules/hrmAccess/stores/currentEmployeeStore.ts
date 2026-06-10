@@ -15,7 +15,7 @@
  */
 
 import { create } from 'zustand';
-import { parseCookies } from 'nookies';
+import { parseCookies, setCookie } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
@@ -30,6 +30,9 @@ interface CurrentEmployeeCard {
   photoBase64?: string;
   designation?: string;
   department?: string;
+  /** officialDetails.role from the profile (e.g. "System Administrator").
+   *  Used for role-based admin checks. */
+  role?: string;
 }
 
 interface CurrentOrgCard {
@@ -106,14 +109,30 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
           null;
         if (!match) return null;
 
+        // Persist the resolved employeeId (employeeCode, e.g. "EMP0012") to a
+        // cookie so it survives reloads and is available to modules before this
+        // store re-resolves. `useEmployeeIdentity` reads `cookies.employeeCode`
+        // as its fallback (see resolution order in employeeIdentity hook).
+        if (match.employeeCode) {
+          setCookie(null, 'employeeCode', match.employeeCode, {
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60,
+            sameSite: 'lax',
+          });
+        }
+
         // Directory rows often omit photo data. Fetch the full profile to
-        // get photoBase64 / photoUrl reliably.
+        // get photoBase64 / photoUrl and the official role reliably.
         let photoUrl = match.photoUrl;
         let photoBase64: string | undefined;
+        let role: string | undefined = match.role;
         try {
           const fullProfile = await HrmEmployeeService.fetchProfile(organizationId, match.handle);
           photoUrl = fullProfile.basicDetails?.photoUrl || photoUrl;
           photoBase64 = fullProfile.basicDetails?.photoBase64;
+          // officialDetails.role is the authoritative position/role
+          // (e.g. "System Administrator"); fall back to roleName / directory role.
+          role = fullProfile.officialDetails?.role || fullProfile.officialDetails?.roleName || role;
         } catch {
           // ignore — fall back to whatever the directory row had
         }
@@ -127,6 +146,7 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
           photoBase64,
           designation: match.role,
           department: match.department,
+          role,
         } satisfies CurrentEmployeeCard;
       })(),
       (async () => {

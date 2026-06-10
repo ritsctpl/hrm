@@ -54,6 +54,8 @@ export function useHrmAssetData() {
   const loadAssets = useCallback(async () => {
     store.setLoadingAssets(true);
     try {
+      // Single role-aware list call — the backend filters by the caller's role
+      // (derived from the session/token): admin → all, employee → only theirs.
       const data = await HrmAssetService.getAllAssets(getOrganizationId());
       store.setAssets(data as unknown as Parameters<typeof store.setAssets>[0]);
     } catch {

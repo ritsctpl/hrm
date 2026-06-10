@@ -14,6 +14,7 @@ export interface TravelFormErrors {
   endHour?: string;
   startDate?: string;
   endDate?: string;
+  projectCode?: string;
   coTravellers?: string;
   policy?: string;
 }
