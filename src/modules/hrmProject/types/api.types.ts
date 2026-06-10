@@ -4,10 +4,14 @@ export interface ProjectRequest {
   organizationId: string;
   projectName: string;
   description?: string;
-  projectType: 'INTERNAL' | 'EXTERNAL';
+  projectType: 'BILLABLE' | 'NON_BILLABLE' | 'REVENUE_GENERATION';
+  status?: 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+  baseProjectHandle?: string;
   buCode: string;
   departmentCode?: string;
   clientName?: string;
+  clientId?: string;
+  currency?: string;
   estimateHours: number;
   startDate: string;
   endDate: string;
@@ -26,7 +30,7 @@ export interface MilestoneRequest {
 export interface ProjectStatusUpdateRequest {
   organizationId: string;
   handle: string;
-  status: 'DRAFT' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+  status: 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
   reason?: string;
   modifiedBy: string;
 }
@@ -39,6 +43,16 @@ export interface MilestoneStatusUpdateRequest {
   modifiedBy: string;
 }
 
+export interface MilestoneUpdateRequest {
+  organizationId: string;
+  projectHandle: string;
+  milestoneId: string;
+  milestoneName: string;
+  targetDate: string;
+  description?: string;
+  modifiedBy: string;
+}
+
 export interface ProjectResponse {
   handle: string;
   organizationId: string;
@@ -46,6 +60,7 @@ export interface ProjectResponse {
   projectName: string;
   description?: string;
   projectType: string;
+  baseProjectHandle?: string;
   buCode: string;
   departmentCode?: string;
   clientName?: string;
@@ -60,6 +75,7 @@ export interface ProjectResponse {
   hourlyRate?: number;
   currency?: string;
   milestones: MilestoneResponse[];
+  tasks?: ProjectTaskResponse[];
   attachments: ProjectAttachmentResponse[];
   totalAllocatedHours: number;
   totalActualHours: number;
@@ -77,6 +93,7 @@ export interface ProjectListResponse {
   projectCode: string;
   projectName: string;
   projectType: string;
+  baseProjectHandle?: string;
   buCode: string;
   status: string;
   projectManagerName: string;
@@ -111,6 +128,9 @@ export interface AllocationRequest {
   projectHandle: string;
   employeeId: string;
   employeeName?: string;
+  taskId?: string | null;
+  billableRate?: number | null;
+  costRate?: number | null;
   role: string;
   bookingType: 'FIRM' | 'TENTATIVE';
   hoursPerDay: number;
@@ -130,6 +150,10 @@ export interface AllocationResponse {
   projectName: string;
   employeeId: string;
   employeeName: string;
+  taskId?: string | null;
+  taskName?: string | null;
+  billableRate?: number | null;
+  costRate?: number | null;
   hoursPerDay: number;
   startDate: string;
   endDate: string;
@@ -159,9 +183,10 @@ export interface AllocationDayResponse {
 
 export interface AllocationApprovalRequest {
   organizationId: string;
-  handle: string;
-  approved: boolean;
-  approvedBy: string;
+  allocationHandle: string;
+  action: 'APPROVED' | 'REJECTED';
+  approverEmployeeId: string;
+  approverName?: string;
   remarks?: string;
 }
 
@@ -259,6 +284,45 @@ export interface ResourceCalendarResponse {
     leave: boolean;
     capacityStatus: 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
   }[];
+}
+
+// ─── Task Types (S2) — confirm exact field names with BE ProjectTask DTOs ────────
+
+export interface ProjectTaskRequest {
+  organizationId: string;
+  projectHandle: string;
+  handle?: string; // for update — the task handle being updated
+  taskName: string;
+  description?: string;
+  estimatedHours?: number;
+  billableRate?: number;
+  billable?: boolean;
+  isDefault?: boolean;
+  createdBy?: string;
+  modifiedBy?: string;
+}
+
+export interface ProjectTaskResponse {
+  handle: string; // task identifier
+  projectHandle: string;
+  taskName: string;
+  description?: string;
+  estimatedHours: number;
+  billableRate?: number;
+  billable: boolean;
+  isDefault: boolean;
+  actualHours?: number;
+  active?: number;
+  createdDateTime?: string;
+  modifiedDateTime?: string;
+}
+
+export interface ImportTasksRequest {
+  organizationId: string;
+  targetProjectHandle: string;
+  sourceProjectHandle: string;
+  taskHandles?: string[]; // omit to copy ALL tasks from source
+  createdBy: string;
 }
 
 // ─── Client Types ────────────────────────────────────────────────────────────

@@ -5,8 +5,8 @@ import type { ProjectStatusBadgeProps } from '../../types/ui.types';
 import { PROJECT_STATUS_COLORS } from '../../utils/projectConstants';
 
 const LABELS: Record<string, string> = {
-  DRAFT: 'Draft', ACTIVE: 'Active', ON_HOLD: 'On Hold',
-  COMPLETED: 'Completed', CANCELLED: 'Cancelled',
+  INITIATED: 'Initiated', DRAFT: 'Draft', IN_PROGRESS: 'In Progress',
+  ON_HOLD: 'On Hold', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
 };
 
 const ProjectStatusBadge: React.FC<ProjectStatusBadgeProps> = ({ status }) => (

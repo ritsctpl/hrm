@@ -5,6 +5,7 @@ import type {
   ProjectListResponse,
   ProjectStatusUpdateRequest,
   MilestoneStatusUpdateRequest,
+  MilestoneUpdateRequest,
   AllocationRequest,
   AllocationResponse,
   AllocationApprovalRequest,
@@ -18,6 +19,9 @@ import type {
   ClientResponse,
   BillingConfigRequest,
   BillingSummaryResponse,
+  ProjectTaskRequest,
+  ProjectTaskResponse,
+  ImportTasksRequest,
 } from '../types/api.types';
 
 const BASE = '/hrm-service/project';
@@ -72,6 +76,11 @@ export class HrmProjectService {
     return res.data;
   }
 
+  static async updateMilestone(payload: MilestoneUpdateRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/milestone/update`, payload);
+    return res.data;
+  }
+
   static async removeMilestone(projectHandle: string, milestoneId: string, removedBy: string): Promise<ProjectResponse> {
     const res = await api.post(`${BASE}/milestone/remove`, { projectHandle, milestoneId, removedBy });
     return res.data;
@@ -92,8 +101,8 @@ export class HrmProjectService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPendingApprovals(organizationId: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { organizationId });
+  static async getPendingApprovals(organizationId: string, managerId?: string): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/pending`, { organizationId, managerId });
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -194,6 +203,38 @@ export class HrmProjectService {
 
   static async deleteClient(organizationId: string, id: string, deletedBy: string): Promise<void> {
     await api.post(`${BASE}/client/delete`, { organizationId, id, deletedBy });
+  }
+
+  // ─── Tasks (S2) ────────────────────────────────────────────────────────────
+  // NOTE: request shapes for remove/list confirmed against BE ProjectTask DTOs.
+
+  static async createTask(payload: ProjectTaskRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/create`, payload);
+    return res.data;
+  }
+
+  static async updateTask(payload: ProjectTaskRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/update`, payload);
+    return res.data;
+  }
+
+  static async removeTask(taskHandle: string, removedBy: string): Promise<void> {
+    await api.post(`${BASE}/task/remove`, { taskHandle, removedBy });
+  }
+
+  static async listTasksByProject(organizationId: string, projectHandle: string): Promise<ProjectTaskResponse[]> {
+    const res = await api.post(`${BASE}/task/listByProject`, { organizationId, projectHandle });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async listDefaultTasks(organizationId: string): Promise<ProjectTaskResponse[]> {
+    const res = await api.post(`${BASE}/task/listDefaults`, { organizationId });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async importTasksFromProject(payload: ImportTasksRequest): Promise<ProjectTaskResponse[]> {
+    const res = await api.post(`${BASE}/task/importFromProject`, payload);
+    return Array.isArray(res.data) ? res.data : [];
   }
 
   // ─── Billing ───────────────────────────────────────────────────────────────

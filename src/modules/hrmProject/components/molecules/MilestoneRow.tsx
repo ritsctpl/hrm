@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { Select, Button, Typography, Popconfirm } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Select, Button, Typography, Popconfirm, Tooltip } from 'antd';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { MilestoneRowProps } from '../../types/ui.types';
 import type { MilestoneStatus } from '../../types/domain.types';
 import { formatDate } from '../../utils/projectHelpers';
@@ -12,31 +12,38 @@ const { Text } = Typography;
 
 const MILESTONE_STATUSES: MilestoneStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED'];
 
-const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, onStatusChange, onRemove }) => (
+const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, onStatusChange, onEdit, onRemove }) => (
   <div className={styles.milestoneRow}>
-    <Text style={{ flex: 1 }}>{milestone.milestoneName}</Text>
-    <Text type="secondary" style={{ width: 110, fontSize: 12 }}>{formatDate(milestone.targetDate)}</Text>
+    <Text ellipsis={{ tooltip: milestone.milestoneName }}>{milestone.milestoneName}</Text>
+    <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(milestone.targetDate)}</Text>
     {onStatusChange ? (
       <Select
         value={milestone.status}
         onChange={(v) => onStatusChange(milestone.milestoneId, v as MilestoneStatus)}
-        style={{ width: 140 }}
+        style={{ width: '100%' }}
         size="small"
         options={MILESTONE_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
       />
     ) : (
-      <Text style={{ width: 140 }}>{milestone.status.replace('_', ' ')}</Text>
+      <Text>{milestone.status.replace('_', ' ')}</Text>
     )}
-    {milestone.description && (
-      <Text type="secondary" style={{ fontSize: 11, flex: 1 }}>{milestone.description}</Text>
-    )}
-    {onRemove && (
-      <Can I="delete">
-        <Popconfirm title="Remove this milestone?" onConfirm={() => onRemove(milestone.milestoneId)}>
-          <Button size="small" type="link" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      </Can>
-    )}
+    <Text type="secondary" style={{ fontSize: 11 }} ellipsis={{ tooltip: milestone.description }}>
+      {milestone.description || '—'}
+    </Text>
+    <div style={{ textAlign: 'right' }}>
+      {onEdit && (
+        <Can I="edit">
+          <Tooltip title="Edit"><Button size="small" type="link" icon={<EditOutlined />} onClick={() => onEdit(milestone)} /></Tooltip>
+        </Can>
+      )}
+      {onRemove && (
+        <Can I="delete">
+          <Popconfirm title="Remove this milestone?" onConfirm={() => onRemove(milestone.milestoneId)}>
+            <Tooltip title="Remove"><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Tooltip>
+          </Popconfirm>
+        </Can>
+      )}
+    </div>
   </div>
 );
 

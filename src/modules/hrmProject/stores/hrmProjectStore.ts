@@ -17,9 +17,10 @@ interface ProjectUIState {
   editingProject: Project | null;
   selectedAllocation: ResourceAllocation | null;
   activeTab: 'projects' | 'approvals' | 'calendar' | 'reports';
-  activeDetailTab: 'overview' | 'allocations' | 'milestones' | 'attachments' | 'audit';
+  activeDetailTab: 'overview' | 'tasks' | 'allocations' | 'milestones' | 'attachments' | 'audit';
   isProjectFormOpen: boolean;
   isAllocationFormOpen: boolean;
+  allocationPrefill: { employeeId: string; employeeName: string; role?: string; bookingType?: string; startDate?: string; endDate?: string } | null;
   isClientDrawerOpen: boolean;
   searchQuery: string;
   filterBU: string;
@@ -64,7 +65,7 @@ interface ProjectActions {
   setActiveDetailTab: (tab: ProjectUIState['activeDetailTab']) => void;
   openProjectForm: (project?: Project) => void;
   closeProjectForm: () => void;
-  openAllocationForm: () => void;
+  openAllocationForm: (prefill?: { employeeId: string; employeeName: string; role?: string; bookingType?: string; startDate?: string; endDate?: string }) => void;
   closeAllocationForm: () => void;
   openClientDrawer: () => void;
   closeClientDrawer: () => void;
@@ -113,6 +114,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       activeDetailTab: 'overview',
       isProjectFormOpen: false,
       isAllocationFormOpen: false,
+      allocationPrefill: null,
       isClientDrawerOpen: false,
       searchQuery: '',
       filterBU: '',
@@ -144,15 +146,20 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       approvingAllocation: false,
       loadingReport: false,
 
-      setSelectedProject: (p) => set({ selectedProject: p, activeDetailTab: 'overview' }),
+      setSelectedProject: (p) => set((state) => ({
+        selectedProject: p,
+        // keep the current tab when refreshing the same project; reset to overview only
+        // when opening a different project (or clearing the selection)
+        activeDetailTab: p && state.selectedProject?.handle === p.handle ? state.activeDetailTab : 'overview',
+      })),
       setEditingProject: (p) => set({ editingProject: p }),
       setSelectedAllocation: (a) => set({ selectedAllocation: a }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
       openProjectForm: (project) => set({ isProjectFormOpen: true, editingProject: project ?? null }),
       closeProjectForm: () => set({ isProjectFormOpen: false, editingProject: null }),
-      openAllocationForm: () => set({ isAllocationFormOpen: true }),
-      closeAllocationForm: () => set({ isAllocationFormOpen: false }),
+      openAllocationForm: (prefill) => set({ isAllocationFormOpen: true, capacityCheck: null, allocationPrefill: prefill ?? null }),
+      closeAllocationForm: () => set({ isAllocationFormOpen: false, capacityCheck: null, allocationPrefill: null }),
       openClientDrawer: () => set({ isClientDrawerOpen: true }),
       closeClientDrawer: () => set({ isClientDrawerOpen: false }),
       setSearchQuery: (q) => set({ searchQuery: q }),

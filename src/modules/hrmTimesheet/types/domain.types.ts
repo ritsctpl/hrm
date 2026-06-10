@@ -11,6 +11,8 @@ export interface TimesheetLine {
   projectCode?: string;
   projectName?: string;
   allocationHandle?: string;
+  taskId?: string;
+  taskName?: string;
   hours: number;
   categoryId?: string;
   categoryLabel?: string;
@@ -97,4 +99,21 @@ export interface AllocationForDay {
   projectCode: string;
   projectName: string;
   allocatedHoursForDay: number;
+}
+
+/**
+ * An approved project allocation assigned to the signed-in employee, sourced
+ * from hrm-project (`/project/allocation/listByEmployee`). Used to seed the
+ * weekly matrix's project→task rows so only ASSIGNED work is loggable.
+ */
+export interface AssignedAllocation {
+  allocationHandle: string;
+  projectHandle: string;
+  projectCode: string;
+  projectName: string;
+  taskId?: string;
+  taskName?: string;
+  hoursPerDay: number;
+  startDate: string;
+  endDate: string;
 }

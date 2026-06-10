@@ -2,6 +2,7 @@
 // src/modules/hrmProject/hooks/useProjectData.ts
 import { useCallback } from 'react';
 import { getOrganizationId } from '@/utils/cookieUtils';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
 import type { Project, ResourceAllocation } from '../types/domain.types';
@@ -18,9 +19,14 @@ function mapProjectResponse(r: ProjectResponse): Project {
     projectName: r.projectName,
     description: r.description,
     projectType: r.projectType as Project['projectType'],
+    baseProjectHandle: r.baseProjectHandle,
     buCode: r.buCode,
     departmentCode: r.departmentCode,
     clientName: r.clientName,
+    clientId: r.clientId,
+    billingType: r.billingType,
+    hourlyRate: r.hourlyRate,
+    currency: r.currency,
     estimateHours: r.estimateHours,
     startDate: r.startDate,
     endDate: r.endDate,
@@ -33,6 +39,18 @@ function mapProjectResponse(r: ProjectResponse): Project {
       targetDate: m.targetDate,
       status: m.status as 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED',
       description: m.description,
+    })),
+    tasks: (r.tasks ?? []).map((t) => ({
+      handle: t.handle,
+      projectHandle: t.projectHandle,
+      taskName: t.taskName,
+      description: t.description,
+      estimatedHours: t.estimatedHours,
+      billableRate: t.billableRate,
+      billable: t.billable,
+      isDefault: t.isDefault,
+      actualHours: t.actualHours,
+      active: t.active,
     })),
     attachments: r.attachments.map((a) => ({
       attachmentId: a.attachmentId,
@@ -62,6 +80,10 @@ function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
     projectName: r.projectName,
     employeeId: r.employeeId,
     employeeName: r.employeeName,
+    taskId: r.taskId,
+    taskName: r.taskName,
+    billableRate: r.billableRate,
+    costRate: r.costRate,
     hoursPerDay: r.hoursPerDay,
     startDate: r.startDate,
     endDate: r.endDate,
@@ -82,6 +104,7 @@ function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
 export function useProjectData() {
   const store = useHrmProjectStore();
   const organizationId = getOrganizationId();
+  const { employeeCode } = useEmployeeIdentity();
 
   const loadProjects = useCallback(async () => {
     store.setLoadingProjects(true);
@@ -106,11 +129,13 @@ export function useProjectData() {
           projectCode: p.projectCode,
           projectName: p.projectName,
           projectType: p.projectType as Project['projectType'],
+          baseProjectHandle: p.baseProjectHandle,
           buCode: p.buCode,
           status: p.status as Project['status'],
           projectManagerId: '',
           projectManagerName: p.projectManagerName,
           milestones: [],
+          tasks: [],
           attachments: [],
           estimateHours: p.estimateHours,
           totalAllocatedHours: p.totalAllocatedHours,
@@ -184,14 +209,15 @@ export function useProjectData() {
   const loadPendingAllocations = useCallback(async () => {
     store.setLoadingApprovals(true);
     try {
-      const data = await HrmProjectService.getPendingApprovals(organizationId);
+      // Filter to the logged-in manager's projects (BE uses managerId = employeeId)
+      const data = await HrmProjectService.getPendingApprovals(organizationId, employeeCode || undefined);
       store.setPendingAllocations(data.map(mapAllocationResponse));
     } catch (error) {
       console.error('Failed to load pending allocations:', error);
     } finally {
       store.setLoadingApprovals(false);
     }
-  }, [organizationId]);
+  }, [organizationId, employeeCode]);
 
   const checkCapacity = useCallback(async (
     employeeId: string,

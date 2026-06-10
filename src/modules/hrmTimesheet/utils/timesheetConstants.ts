@@ -27,6 +27,8 @@ export const HOURS_STEP = 0.5;
 export const MAX_HOURS_PER_DAY = 24;
 export const GREEN_THRESHOLD = 9;
 export const YELLOW_THRESHOLD = 6;
+/** PRD soft daily limit: exceeding this warns the user but does NOT block save. */
+export const SOFT_DAILY_HOUR_LIMIT = 9;
 
 export const REPORT_TABS = [
   { key: 'payroll', label: 'Payroll Export' },

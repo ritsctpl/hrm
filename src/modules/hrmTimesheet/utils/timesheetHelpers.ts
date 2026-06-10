@@ -50,3 +50,83 @@ export function addDays(dateStr: string, days: number): string {
   d.setDate(d.getDate() + days);
   return toISODate(d);
 }
+
+// ─── Calendar / matrix helpers (PRD redesign) ──────────────────────────────
+
+/** Local YYYY-MM-DD (avoids the UTC shift that toISOString can introduce). */
+function ymd(d: Date): string {
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+/** Sunday of the week containing the given date (PRD weeks run Sun→Sat). */
+export function sundayOf(dateStr: string): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() - d.getDay());
+  return ymd(d);
+}
+
+/** The 7 dates (Sun→Sat) of the week containing `dateStr`. */
+export function weekDates(dateStr: string): string[] {
+  const start = sundayOf(dateStr);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+export function isToday(dateStr: string): boolean {
+  return dateStr === ymd(new Date());
+}
+
+export function isFutureDate(dateStr: string): boolean {
+  return dateStr > ymd(new Date());
+}
+
+/** PRD core rule: entry is allowed only for dates in the current calendar month. */
+export function isInCurrentMonth(dateStr: string): boolean {
+  const now = new Date();
+  const d = new Date(dateStr);
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+/** Formats decimal hours as "HH:MM" (e.g. 8.5 -> "08:30"). */
+export function decimalToHHMM(hours: number): string {
+  const safe = Number.isFinite(hours) ? hours : 0;
+  const h = Math.floor(safe);
+  const m = Math.round((safe - h) * 60);
+  return `${`${h}`.padStart(2, '0')}:${`${m}`.padStart(2, '0')}`;
+}
+
+/**
+ * Builds the month calendar grid as full Sun→Sat weeks covering `monthStart`
+ * (YYYY-MM-01). Leading/trailing cells from adjacent months are included so
+ * every row has 7 days; `inMonth` flags which belong to the displayed month.
+ */
+export function buildMonthMatrix(monthStart: string): { date: string; inMonth: boolean }[][] {
+  const first = new Date(monthStart);
+  const year = first.getFullYear();
+  const month = first.getMonth();
+  const gridStart = new Date(sundayOf(ymd(first)));
+  const weeks: { date: string; inMonth: boolean }[][] = [];
+  const cursor = new Date(gridStart);
+  // Up to 6 rows; stop once we've passed the month and completed the week.
+  for (let w = 0; w < 6; w++) {
+    const row: { date: string; inMonth: boolean }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const ds = ymd(cursor);
+      row.push({ date: ds, inMonth: cursor.getMonth() === month && cursor.getFullYear() === year });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(row);
+    if (cursor.getMonth() !== month && cursor > first) break;
+  }
+  return weeks;
+}
+
+/** 1-based index of the week (within its month) that `dateStr` falls in. */
+export function weekOfMonthIndex(dateStr: string): number {
+  const d = new Date(dateStr);
+  const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1);
+  const firstSunday = new Date(sundayOf(ymd(monthFirst)));
+  const diffDays = Math.round((new Date(sundayOf(dateStr)).getTime() - firstSunday.getTime()) / 86400000);
+  return Math.floor(diffDays / 7) + 1;
+}

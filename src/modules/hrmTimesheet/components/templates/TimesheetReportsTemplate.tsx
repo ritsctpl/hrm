@@ -2,12 +2,11 @@
 import { useEffect, useCallback, useState } from 'react';
 import { Tabs, Table, Button, DatePicker, Popconfirm, Empty, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { HrmTimesheetService } from '../../services/hrmTimesheetService';
-import { resolveEmployeeId } from '../../utils/resolveEmployeeId';
+import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
 import PayrollExportPanel from '../organisms/PayrollExportPanel';
 import ComplianceReportPanel from '../organisms/ComplianceReportPanel';
 import UnplannedWorkReportPanel from '../organisms/UnplannedWorkReportPanel';
@@ -29,9 +28,8 @@ function LockPeriodManager() {
   const [periods, setPeriods] = useState<LockPeriodRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [newDate, setNewDate] = useState<dayjs.Dayjs | null>(null);
-  const cookies = parseCookies();
   const organizationId = getOrganizationId();
-  const user = resolveEmployeeId(cookies) || 'system';
+  const user = useEmployeeIdentity().employeeCode || 'system';
 
   // TODO(backend): no /lockPeriod/list endpoint exists. This loadPeriods is a
   // no-op until the backend exposes one — periods are tracked in local state

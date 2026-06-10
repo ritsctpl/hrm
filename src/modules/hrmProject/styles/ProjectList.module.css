@@ -57,6 +57,38 @@
   transition: width 0.3s;
 }
 
+/* Clean project table layout */
+.tableContainer {
+  padding: 16px;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tableSearch {
+  flex: 1;
+}
+
+/* search bar lives inside toolbar now — drop its bottom margin */
+.tableSearch .filterBar {
+  margin-bottom: 0;
+}
+
+.cellProject {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
 .filterBar {
   display: flex;
   gap: 8px;

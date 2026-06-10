@@ -78,7 +78,21 @@
 .allocationsList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+/* One card per team member: membership row + nested task rows */
+.memberGroup {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+.memberTasks {
+  margin: 4px 0 0 16px;
+  padding-left: 12px;
+  border-left: 2px solid #f0f0f0;
 }
 
 /* Milestones */
@@ -97,11 +111,17 @@
   flex-direction: column;
 }
 
-.milestoneHeader {
+/* Header and rows share the SAME grid so columns line up exactly */
+.milestoneHeader,
+.milestoneRow {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 2fr;
-  gap: 8px;
+  grid-template-columns: minmax(120px, 2fr) 100px 150px minmax(120px, 2fr) 80px;
+  gap: 12px;
+  align-items: center;
   padding: 8px 0;
+}
+
+.milestoneHeader {
   font-weight: 600;
   font-size: 12px;
   color: #8c8c8c;
@@ -109,10 +129,6 @@
 }
 
 .milestoneRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
   border-bottom: 1px solid #f5f5f5;
 }
 

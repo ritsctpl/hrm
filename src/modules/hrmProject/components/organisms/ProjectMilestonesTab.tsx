@@ -2,18 +2,20 @@
 import React, { useState } from 'react';
 import { Button, Modal, Form, Input, DatePicker } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import MilestoneRow from '../molecules/MilestoneRow';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
-import type { MilestoneStatus } from '../../types/domain.types';
+import type { Milestone, MilestoneStatus } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 export default function ProjectMilestonesTab() {
   const { selectedProject } = useHrmProjectStore();
-  const { updateMilestoneStatus, addMilestone, removeMilestone } = useProjectMutations();
+  const { updateMilestoneStatus, addMilestone, updateMilestone, removeMilestone } = useProjectMutations();
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Milestone | null>(null);
   const [form] = Form.useForm();
 
   if (!selectedProject) return null;
@@ -27,24 +29,48 @@ export default function ProjectMilestonesTab() {
     removeMilestone(selectedProject.handle, milestoneId);
   };
 
-  const handleAdd = async () => {
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    setAddModalOpen(true);
+  };
+
+  const handleEdit = (m: Milestone) => {
+    setEditing(m);
+    form.setFieldsValue({
+      milestoneName: m.milestoneName,
+      targetDate: m.targetDate ? dayjs(m.targetDate) : null,
+      description: m.description,
+    });
+    setAddModalOpen(true);
+  };
+
+  const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      await addMilestone(selectedProject.handle, {
+      const payload = {
         milestoneName: values.milestoneName,
         targetDate: values.targetDate.format('YYYY-MM-DD'),
         description: values.description,
-      });
+      };
+      if (editing) {
+        await updateMilestone(selectedProject.handle, editing.milestoneId, payload);
+      } else {
+        await addMilestone(selectedProject.handle, payload);
+      }
       setAddModalOpen(false);
+      setEditing(null);
       form.resetFields();
-    } catch { /* validation error */ }
+    } catch (e) {
+      if ((e as { errorFields?: unknown })?.errorFields) return; // antd validation
+    }
   };
 
   return (
     <div className={styles.milestonesTab}>
       <div className={styles.tabHeader}>
         <Can I="add">
-          <Button type="primary" ghost icon={<PlusOutlined />} size="small" onClick={() => setAddModalOpen(true)}>
+          <Button type="primary" ghost icon={<PlusOutlined />} size="small" onClick={openCreate}>
             Add Milestone
           </Button>
         </Can>
@@ -63,6 +89,7 @@ export default function ProjectMilestonesTab() {
             milestone={m}
             isEditing={false}
             onStatusChange={handleStatusChange}
+            onEdit={handleEdit}
             onRemove={handleRemove}
           />
         ))}
@@ -72,14 +99,16 @@ export default function ProjectMilestonesTab() {
       </div>
 
       <Modal
-        title="Add Milestone"
+        title={editing ? 'Edit Milestone' : 'Add Milestone'}
         open={addModalOpen}
-        onCancel={() => setAddModalOpen(false)}
+        onCancel={() => { setAddModalOpen(false); setEditing(null); }}
         destroyOnHidden
+        maskClosable={false}
+        keyboard={false}
         footer={[
-          <Button key="cancel" onClick={() => setAddModalOpen(false)}>Cancel</Button>,
-          <Can key="ok" I="add">
-            <Button type="primary" onClick={handleAdd}>OK</Button>
+          <Button key="cancel" onClick={() => { setAddModalOpen(false); setEditing(null); }}>Cancel</Button>,
+          <Can key="ok" I={editing ? 'edit' : 'add'}>
+            <Button type="primary" onClick={handleSave}>{editing ? 'Update' : 'OK'}</Button>
           </Can>,
         ]}
       >

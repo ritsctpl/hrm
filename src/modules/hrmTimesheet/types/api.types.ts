@@ -13,6 +13,7 @@ export interface TimesheetLineRequest {
   lineType: 'PROJECT' | 'ALLOCATED' | 'UNPLANNED' | 'LEAVE' | 'HOLIDAY_WORKING';
   projectHandle?: string;
   allocationHandle?: string;
+  taskId?: string;
   hours: number;
   categoryId?: string;
   reason?: string;
@@ -51,6 +52,8 @@ export interface TimesheetLineResponse {
   projectCode?: string;
   projectName?: string;
   allocationHandle?: string;
+  taskId?: string;
+  taskName?: string;
   hours: number;
   categoryId?: string;
   categoryLabel?: string;

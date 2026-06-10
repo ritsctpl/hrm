@@ -2,7 +2,7 @@
 import type { Project, ResourceAllocation, Milestone, MilestoneStatus, AllocationStatus, ProjectStatus } from './domain.types';
 
 export type ProjectMainTab = 'projects' | 'allocations' | 'approvals' | 'calendar' | 'reports';
-export type ProjectDetailTab = 'overview' | 'allocations' | 'milestones' | 'attachments' | 'audit';
+export type ProjectDetailTab = 'overview' | 'tasks' | 'allocations' | 'milestones' | 'attachments' | 'audit';
 export type ReportType = 'allocationVsActual' | 'utilization' | 'capacityDemand';
 
 export interface ProjectFilters {
@@ -23,8 +23,12 @@ export interface MilestoneFormItem {
 
 export interface ProjectFormValues {
   projectName: string;
-  projectType: 'INTERNAL' | 'EXTERNAL';
+  projectType: 'BILLABLE' | 'NON_BILLABLE' | 'REVENUE_GENERATION';
+  status?: 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+  baseProjectHandle?: string;
   clientName?: string;
+  clientId?: string;
+  currency?: string;
   buCode: string;
   departmentCode?: string;
   projectManagerId: string;
@@ -35,9 +39,21 @@ export interface ProjectFormValues {
   milestones: MilestoneFormItem[];
 }
 
+export interface TaskFormValues {
+  taskName: string;
+  description?: string;
+  estimatedHours?: number;
+  billableRate?: number;
+  billable?: boolean;
+  isDefault?: boolean;
+}
+
 export interface AllocationFormValues {
   employeeId: string;
   employeeName: string;
+  taskIds?: string[];
+  billableRate?: number | null;
+  costRate?: number | null;
   role: string;
   bookingType: 'FIRM' | 'TENTATIVE';
   hoursPerDay: number;
@@ -89,12 +105,14 @@ export interface AllocationRowProps {
   onEdit?: (a: ResourceAllocation) => void;
   onSubmit?: (a: ResourceAllocation) => void;
   onCancel?: (a: ResourceAllocation) => void;
+  onAssignTask?: (a: ResourceAllocation) => void;
 }
 
 export interface MilestoneRowProps {
   milestone: Milestone;
   isEditing?: boolean;
   onStatusChange?: (milestoneId: string, status: MilestoneStatus) => void;
+  onEdit?: (milestone: Milestone) => void;
   onRemove?: (milestoneId: string) => void;
 }
 
