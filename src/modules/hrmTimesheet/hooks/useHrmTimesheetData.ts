@@ -17,6 +17,13 @@ function monthEndLocal(monthStart: string): string {
   return `${y}-${String(m).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
 }
 
+/** Add days to a local YYYY-MM-DD without the toISOString UTC shift. */
+function addDaysLocal(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function mapTimesheetResponse(r: import('../types/api.types').TimesheetResponse): TimesheetHeader {
   return {
     handle: r.handle,
@@ -157,13 +164,21 @@ export function useHrmTimesheetData() {
     if (!isReady) return;
     store.setLoadingTeam(true);
     try {
-      const endDate = new Date(store.selectedWeekStart);
-      endDate.setDate(endDate.getDate() + 6);
+      // Dashboard defaults to month granularity; week is the opt-in view.
+      let startDate: string;
+      let endDate: string;
+      if (store.managerPeriod === 'week') {
+        startDate = store.selectedWeekStart;
+        endDate = addDaysLocal(store.selectedWeekStart, 6);
+      } else {
+        startDate = store.selectedMonth;
+        endDate = monthEndLocal(store.selectedMonth);
+      }
       const data = await HrmTimesheetService.getTeamTimesheets(
         organizationId,
         supervisorId,
-        store.selectedWeekStart,
-        endDate.toISOString().slice(0, 10)
+        startDate,
+        endDate
       );
       // Backend audit (C3): the team endpoint returns FLAT day-rows
       // ({employeeId, date, totalHours, colorCode, status, ...}), not the
@@ -203,7 +218,7 @@ export function useHrmTimesheetData() {
     } finally {
       store.setLoadingTeam(false);
     }
-  }, [organizationId, supervisorId, isReady, store.selectedWeekStart]);
+  }, [organizationId, supervisorId, isReady, store.managerPeriod, store.selectedWeekStart, store.selectedMonth]);
 
   const loadAssignedAllocations = useCallback(async () => {
     if (!isReady) return;

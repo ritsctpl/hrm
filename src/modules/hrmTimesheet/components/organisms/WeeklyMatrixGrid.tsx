@@ -170,7 +170,10 @@ export default function WeeklyMatrixGrid() {
     return Array.from(map.values());
   }, [dates, draft, weekAllocations, allocByHandle]);
 
-  // Group PROJECT rows by project for the expandable left column.
+  // Group PROJECT rows by project for the expandable left column. The project
+  // is a read-only TOTAL header; only TASK rows (rows that carry a task) are
+  // editable time-entry rows — a project-level allocation with no task must not
+  // appear as an enterable row.
   const projectGroups = useMemo(() => {
     const groups = new Map<string, { code?: string; name?: string; rows: MatrixRow[] }>();
     rows
@@ -178,7 +181,9 @@ export default function WeeklyMatrixGrid() {
       .forEach((r) => {
         const pk = r.projectHandle ?? r.projectCode ?? '?';
         if (!groups.has(pk)) groups.set(pk, { code: r.projectCode, name: r.projectName, rows: [] });
-        groups.get(pk)!.rows.push(r);
+        // Only task-bearing rows are entry rows; project-level rows seed the
+        // header total but never become an editable line.
+        if (r.taskName || r.taskId) groups.get(pk)!.rows.push(r);
       });
     return groups;
   }, [rows]);
@@ -413,6 +418,15 @@ export default function WeeklyMatrixGrid() {
                         <td className={styles.matrixTotalCol}>{rowWeekTotal(row.key).toFixed(1)}</td>
                       </tr>
                     ))}
+                  {!isCollapsed && group.rows.length === 0 && (
+                    <tr className={styles.matrixSubRow}>
+                      <td className="projCol" colSpan={9}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          No tasks assigned — ask your manager to add a task on this project.
+                        </Text>
+                      </td>
+                    </tr>
+                  )}
                 </Fragment>
               );
             })}
