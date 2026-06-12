@@ -79,6 +79,7 @@ export interface ProjectResponse {
   attachments: ProjectAttachmentResponse[];
   totalAllocatedHours: number;
   totalActualHours: number;
+  committedWorkHours?: number;
   utilizationPercentage: number;
   scheduleVariance: number;
   active: number;
@@ -100,6 +101,7 @@ export interface ProjectListResponse {
   estimateHours: number;
   totalAllocatedHours: number;
   totalActualHours: number;
+  committedWorkHours?: number;
   utilizationPercentage: number;
   startDate: string;
   endDate: string;

@@ -8,6 +8,8 @@ import { HrmProjectService } from '../../services/hrmProjectService';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { REPORT_TYPE_OPTIONS } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
+import { exportToExcel, exportToPdf } from '../../utils/reportExport';
+import { FileExcelOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { Project, ProjectAllocationVsActual, ResourceUtilizationReport } from '../../types/domain.types';
 import type { CapacityDemandReport, ResourceWorkloadReport, ResourceWorkloadEmployee } from '../../types/api.types';
 import styles from '../../styles/HrmProject.module.css';
@@ -81,6 +83,12 @@ export default function ProjectReportPanel() {
     }
   };
 
+  // Column-filter option helpers (declared before column defs that use them)
+  const uniq = <T,>(arr: T[]): T[] => Array.from(new Set(arr));
+  const statusFilters = [
+    { text: 'UNDER', value: 'UNDER' }, { text: 'OPTIMAL', value: 'OPTIMAL' }, { text: 'OVER', value: 'OVER' },
+  ];
+
   const breakdownColumns: ColumnsType<ProjectAllocationVsActual['employeeBreakdown'][number]> = [
     { title: 'Employee', dataIndex: 'employeeName', key: 'name' },
     { title: 'Allocated (h)', dataIndex: 'allocatedHours', key: 'alloc', align: 'right', render: (v) => v.toFixed(1) },
@@ -90,12 +98,20 @@ export default function ProjectReportPanel() {
 
   const utilColumns: ColumnsType<ResourceUtilizationReport['employees'][number]> = [
     { title: 'Employee', dataIndex: 'employeeName', key: 'name' },
-    { title: 'Department', dataIndex: 'department', key: 'dept' },
+    {
+      title: 'Department', dataIndex: 'department', key: 'dept',
+      filters: uniq((utilizationReport?.employees ?? []).map((e) => e.department)).filter(Boolean).map((d) => ({ text: d, value: d })),
+      onFilter: (v, e) => e.department === v,
+    },
     { title: 'Capacity (h)', dataIndex: 'totalCapacityHours', key: 'cap', align: 'right', render: (v) => v.toFixed(1) },
     { title: 'Allocated (h)', dataIndex: 'allocatedHours', key: 'alloc', align: 'right', render: (v) => v.toFixed(1) },
     { title: 'Actual (h)', dataIndex: 'actualHours', key: 'act', align: 'right', render: (v) => v.toFixed(1) },
-    { title: 'Utilization %', dataIndex: 'utilizationPercentage', key: 'util', align: 'right', render: (v) => `${v.toFixed(1)}%` },
-    { title: 'Status', dataIndex: 'utilizationStatus', key: 'status' },
+    { title: 'Utilization %', dataIndex: 'utilizationPercentage', key: 'util', align: 'right', sorter: (a, b) => a.utilizationPercentage - b.utilizationPercentage, render: (v) => `${v.toFixed(1)}%` },
+    {
+      title: 'Status', dataIndex: 'utilizationStatus', key: 'status',
+      filters: statusFilters,
+      onFilter: (v, e) => e.utilizationStatus === v,
+    },
   ];
 
   const capacityColumns: ColumnsType<CapacityDemandReport['byDepartment'][number]> = [
@@ -116,24 +132,37 @@ export default function ProjectReportPanel() {
         <div><Text strong>{p.projectName}</Text><div><Text type="secondary" style={{ fontSize: 12 }}>{p.projectCode}</Text></div></div>
       ),
     },
-    { title: 'Status', key: 'status', width: 110, render: (_, p) => <ProjectStatusBadge status={p.status} /> },
     {
-      title: 'Type', dataIndex: 'projectType', key: 'type', width: 120,
+      title: 'Status', key: 'status', width: 120,
+      filters: uniq(projects.map((p) => p.status)).map((s) => ({ text: s, value: s })),
+      onFilter: (v, p) => p.status === v,
+      render: (_, p) => <ProjectStatusBadge status={p.status} />,
+    },
+    {
+      title: 'Type', dataIndex: 'projectType', key: 'type', width: 130,
+      filters: [{ text: 'Billable', value: 'BILLABLE' }, { text: 'Non-Billable', value: 'NON_BILLABLE' }, { text: 'Revenue Gen', value: 'REVENUE_GENERATION' }],
+      onFilter: (v, p) => p.projectType === v,
       render: (t: string) => (t === 'BILLABLE' ? 'Billable' : t === 'NON_BILLABLE' ? 'Non-Billable' : 'Revenue Gen'),
     },
-    { title: 'Est (h)', dataIndex: 'estimateHours', key: 'est', width: 80, align: 'right' },
-    { title: 'Actual (h)', dataIndex: 'totalActualHours', key: 'act', width: 90, align: 'right', render: (v?: number) => (v ?? 0).toFixed(1) },
-    { title: 'Progress', key: 'pct', width: 90, align: 'right', render: (_, p) => `${computeHealth(p).pct}%` },
+    { title: 'Est (h)', dataIndex: 'estimateHours', key: 'est', width: 80, align: 'right', sorter: (a, b) => (a.estimateHours || 0) - (b.estimateHours || 0) },
+    { title: 'Actual (h)', dataIndex: 'totalActualHours', key: 'act', width: 90, align: 'right', sorter: (a, b) => (a.totalActualHours || 0) - (b.totalActualHours || 0), render: (v?: number) => (v ?? 0).toFixed(1) },
+    { title: 'Progress', key: 'pct', width: 100, align: 'right', sorter: (a, b) => computeHealth(a).pct - computeHealth(b).pct, render: (_, p) => `${computeHealth(p).pct}%` },
     { title: 'End', dataIndex: 'endDate', key: 'end', width: 120, render: (d?: string) => (d ? dayjs(d).format('DD MMM YYYY') : '—') },
     {
-      title: 'Health', key: 'health', width: 110,
+      title: 'Health', key: 'health', width: 120,
+      filters: ['On Track', 'At Risk', 'Off Track', 'Completed', 'Cancelled'].map((h) => ({ text: h, value: h })),
+      onFilter: (v, p) => computeHealth(p).health === v,
       render: (_, p) => { const h = computeHealth(p).health; return <Tag color={HEALTH_COLOR[h]}>{h}</Tag>; },
     },
   ];
 
   const workloadColumns: ColumnsType<ResourceWorkloadEmployee> = [
     { title: 'Employee', dataIndex: 'employeeName', key: 'name', render: (n: string) => <Text strong>{n}</Text> },
-    { title: 'Department', dataIndex: 'department', key: 'dept' },
+    {
+      title: 'Department', dataIndex: 'department', key: 'dept',
+      filters: uniq((workloadReport?.employees ?? []).map((e) => e.department)).filter(Boolean).map((d) => ({ text: d, value: d })),
+      onFilter: (v, e) => e.department === v,
+    },
     {
       title: 'Projects', key: 'projects',
       render: (_, e) => (e.unassigned ? <Tag>Unassigned</Tag> : (
@@ -147,9 +176,11 @@ export default function ProjectReportPanel() {
     { title: 'Capacity', dataIndex: 'capacityHours', key: 'cap', width: 90, align: 'right', render: (v: number) => v.toFixed(1) },
     { title: 'Allocated', dataIndex: 'allocatedHours', key: 'alloc', width: 90, align: 'right', render: (v: number) => v.toFixed(1) },
     { title: 'Actual', dataIndex: 'actualHours', key: 'act', width: 80, align: 'right', render: (v: number) => v.toFixed(1) },
-    { title: 'Util %', dataIndex: 'utilizationPercentage', key: 'util', width: 80, align: 'right', render: (v: number) => `${v.toFixed(0)}%` },
+    { title: 'Util %', dataIndex: 'utilizationPercentage', key: 'util', width: 90, align: 'right', sorter: (a, b) => a.utilizationPercentage - b.utilizationPercentage, render: (v: number) => `${v.toFixed(0)}%` },
     {
       title: 'Status', dataIndex: 'utilizationStatus', key: 'status', width: 100,
+      filters: statusFilters,
+      onFilter: (v, e) => e.utilizationStatus === v,
       render: (s: string) => <Tag color={s === 'OVER' ? 'red' : s === 'UNDER' ? 'orange' : 'green'}>{s}</Tag>,
     },
   ];
@@ -167,15 +198,73 @@ export default function ProjectReportPanel() {
 
   const hasResult = !!(allocationReport || utilizationReport || capacityReport || workloadReport);
 
+  const buildExport = (): { title: string; headers: string[]; rows: (string | number)[][] } | null => {
+    if (reportType === 'projectHealth') {
+      return {
+        title: 'Project Health',
+        headers: ['Code', 'Project', 'Status', 'Type', 'Est (h)', 'Actual (h)', 'Progress %', 'End', 'Health'],
+        rows: projects.map((p) => {
+          const { pct, health } = computeHealth(p);
+          return [p.projectCode, p.projectName, p.status, p.projectType, p.estimateHours || 0, (p.totalActualHours || 0).toFixed(1), pct, p.endDate ? dayjs(p.endDate).format('YYYY-MM-DD') : '', health];
+        }),
+      };
+    }
+    if (reportType === 'resourceWorkload' && workloadReport) {
+      return {
+        title: 'Resource Workload',
+        headers: ['Employee', 'Department', 'Projects', 'Capacity', 'Allocated', 'Actual', 'Util %', 'Status'],
+        rows: workloadRows.map((e) => [e.employeeName, e.department, e.unassigned ? 'Unassigned' : e.assignedProjects.map((p) => `${p.projectCode}(${p.projectType})`).join('; '), e.capacityHours.toFixed(1), e.allocatedHours.toFixed(1), e.actualHours.toFixed(1), e.utilizationPercentage.toFixed(0), e.utilizationStatus]),
+      };
+    }
+    if (reportType === 'allocationVsActual' && allocationReport) {
+      return {
+        title: `Allocation vs Actual — ${allocationReport.projectCode}`,
+        headers: ['Employee', 'Allocated (h)', 'Actual (h)', 'Adherence %'],
+        rows: allocationReport.employeeBreakdown.map((b) => [b.employeeName, b.allocatedHours.toFixed(1), b.actualHours.toFixed(1), b.adherencePercentage.toFixed(1)]),
+      };
+    }
+    if (reportType === 'utilization' && utilizationReport) {
+      return {
+        title: 'Resource Utilization',
+        headers: ['Employee', 'Department', 'Capacity', 'Allocated', 'Actual', 'Util %', 'Status'],
+        rows: utilizationReport.employees.map((e) => [e.employeeName, e.department, e.totalCapacityHours.toFixed(1), e.allocatedHours.toFixed(1), e.actualHours.toFixed(1), e.utilizationPercentage.toFixed(1), e.utilizationStatus]),
+      };
+    }
+    if (reportType === 'capacityDemand' && capacityReport) {
+      return {
+        title: 'Capacity Demand',
+        headers: ['Department', 'Headcount', 'Capacity', 'Demand', 'Gap'],
+        rows: capacityReport.byDepartment.map((d) => [d.department, d.headcount, d.capacityHours.toFixed(1), d.demandHours.toFixed(1), d.gapHours.toFixed(1)]),
+      };
+    }
+    return null;
+  };
+
+  const canExport = reportType === 'projectHealth' ? projects.length > 0 : hasResult;
+
+  const doExport = (fmt: 'excel' | 'pdf') => {
+    const data = buildExport();
+    if (!data || data.rows.length === 0) { message.warning('Nothing to export'); return; }
+    const fname = `${data.title.replace(/[^a-z0-9]+/gi, '_')}_${dayjs().format('YYYYMMDD')}`;
+    if (fmt === 'excel') exportToExcel(fname, data.headers, data.rows);
+    else exportToPdf(fname, data.title, data.headers, data.rows);
+  };
+
   return (
     <div className={styles.reportPanel}>
-      <Space wrap style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <Radio.Group value={reportType} onChange={(e) => { setReportType(e.target.value); setHasGenerated(false); }} optionType="button" buttonStyle="solid">
           {REPORT_TYPE_OPTIONS.map((r) => (
             <Radio.Button key={r.value} value={r.value}>{r.label}</Radio.Button>
           ))}
         </Radio.Group>
-      </Space>
+        {canExport && (
+          <Space>
+            <Button size="small" icon={<FileExcelOutlined />} onClick={() => doExport('excel')}>Excel</Button>
+            <Button size="small" icon={<FilePdfOutlined />} onClick={() => doExport('pdf')}>PDF</Button>
+          </Space>
+        )}
+      </div>
 
       {reportType === 'projectHealth' && (
         <>
@@ -185,7 +274,7 @@ export default function ProjectReportPanel() {
               return n > 0 ? <Tag key={h} color={HEALTH_COLOR[h]}>{h}: {n}</Tag> : null;
             })}
           </Space>
-          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={{ pageSize: 10, hideOnSinglePage: true }} locale={{ emptyText: 'No projects' }} />
+          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No projects' }} />
         </>
       )}
 
@@ -228,12 +317,12 @@ export default function ProjectReportPanel() {
                 <Descriptions.Item label="Adherence">{allocationReport.allocationAdherence.toFixed(1)}%</Descriptions.Item>
                 <Descriptions.Item label="Forecast Accuracy">{allocationReport.forecastAccuracy.toFixed(1)}%</Descriptions.Item>
               </Descriptions>
-              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} locale={{ emptyText: 'No employee data' }} />
+              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No employee data' }} />
             </>
           )}
 
           {utilizationReport && reportType === 'utilization' && (
-            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" locale={{ emptyText: 'No utilization data' }} />
+            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No utilization data' }} />
           )}
 
           {capacityReport && reportType === 'capacityDemand' && (
@@ -249,7 +338,7 @@ export default function ProjectReportPanel() {
                   />
                 </Col>
               </Row>
-              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} locale={{ emptyText: 'No department data' }} />
+              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No department data' }} />
             </>
           )}
 
@@ -265,7 +354,7 @@ export default function ProjectReportPanel() {
                   <Radio.Button value="OVER">Overloaded ({workloadReport.overloadedCount})</Radio.Button>
                 </Radio.Group>
               </Space>
-              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={{ pageSize: 15, hideOnSinglePage: true }} locale={{ emptyText: 'No employees in this bucket' }} />
+              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No employees in this bucket' }} />
             </>
           )}
 

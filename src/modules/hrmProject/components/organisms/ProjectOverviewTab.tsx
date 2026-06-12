@@ -7,6 +7,7 @@ import { parseCookies } from 'nookies';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
+import { ALLOCATION_OVER_THRESHOLD_PCT } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import styles from '../../styles/ProjectDetail.module.css';
 
@@ -37,11 +38,13 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const { employeeCode } = useEmployeeIdentity();
 
   const estimate = project.estimateHours || 0;
-  const allocated = project.totalAllocatedHours || 0;
+  // committed work = approved task allocations (excludes membership); fall back to total if absent
+  const committed = project.committedWorkHours ?? project.totalAllocatedHours ?? 0;
   const actual = project.totalActualHours || 0;
   const remaining = Math.max(estimate - actual, 0);
   const actualPct = estimate > 0 ? Math.round((actual / estimate) * 100) : 0;
-  const overAllocated = estimate > 0 && allocated > estimate;
+  const allowed = estimate * (ALLOCATION_OVER_THRESHOLD_PCT / 100);
+  const overCommitted = estimate > 0 && committed > allowed;
 
   // Project status is progress tracking (no approval). Only the project manager moves stages.
   // Edit / delete live on the list row's Actions — not duplicated here.
@@ -110,9 +113,9 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
           </div>
 
           <div style={{ fontSize: 12, color: '#595959' }}>
-            Resources booked: <strong>{allocated} h</strong>
-            {overAllocated && (
-              <Tag color="orange" style={{ marginLeft: 8 }}>over-allocated by {allocated - estimate} h</Tag>
+            Committed work: <strong>{committed} h</strong> of {estimate} h
+            {overCommitted && (
+              <Tag color="red" style={{ marginLeft: 8 }}>exceeds {ALLOCATION_OVER_THRESHOLD_PCT}% ({allowed.toFixed(0)} h allowed)</Tag>
             )}
           </div>
         </Card>
