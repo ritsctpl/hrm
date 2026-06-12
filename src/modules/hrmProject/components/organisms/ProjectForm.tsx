@@ -8,7 +8,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { HrmProjectService } from '../../services/hrmProjectService';
-import { CURRENCY_OPTIONS, PROJECT_TYPES, PROJECT_STATUS_OPTIONS } from '../../utils/projectConstants';
+import { CURRENCY_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import type { ProjectFormValues } from '../../types/ui.types';
 import type { ClientResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
@@ -160,7 +160,6 @@ export default function ProjectForm() {
       initialValues={editingProject ? {
         projectName: editingProject.projectName,
         projectType: editingProject.projectType,
-        status: editingProject.status,
         baseProjectHandle: editingProject.baseProjectHandle,
         clientName: editingProject.clientName,
         clientId: editingProject.clientId,
@@ -170,7 +169,7 @@ export default function ProjectForm() {
         projectManagerId: editingProject.projectManagerId,
         estimateHours: editingProject.estimateHours,
         description: editingProject.description,
-      } : { projectType: 'BILLABLE', status: 'INITIATED' }}
+      } : { projectType: 'BILLABLE' }}
     >
       <Steps
         current={step}
@@ -190,24 +189,19 @@ export default function ProjectForm() {
           ))}
         </Radio.Group>
       </Form.Item>
-      <Space style={{ display: 'flex' }} align="start">
-        <Form.Item name="status" label="Status" style={{ flex: 1 }}>
-          <Select placeholder="Initiated" options={PROJECT_STATUS_OPTIONS} />
-        </Form.Item>
-        <Form.Item name="baseProjectHandle" label="Base Project" style={{ flex: 1 }}>
-          <Select
-            placeholder="Link existing project (optional)"
-            showSearch
-            allowClear
-            filterOption={(input, option) =>
-              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
-            options={projects
-              .filter((p) => p.handle !== editingProject?.handle)
-              .map((p) => ({ value: p.handle, label: `${p.projectCode} - ${p.projectName}` }))}
-          />
-        </Form.Item>
-      </Space>
+      <Form.Item name="baseProjectHandle" label="Base Project">
+        <Select
+          placeholder="Link existing project (optional)"
+          showSearch
+          allowClear
+          filterOption={(input, option) =>
+            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={projects
+            .filter((p) => p.handle !== editingProject?.handle)
+            .map((p) => ({ value: p.handle, label: `${p.projectCode} - ${p.projectName}` }))}
+        />
+      </Form.Item>
       <Space style={{ display: 'flex' }} align="start">
           <Form.Item name="clientName" label="Client" style={{ flex: 1 }}>
             <Select

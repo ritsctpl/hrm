@@ -8,7 +8,6 @@ import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmProjectStore } from './stores/hrmProjectStore';
 import { useProjectData } from './hooks/useProjectData';
 import { HrmProjectService } from './services/hrmProjectService';
-import ProjectDashboardHeader from './components/organisms/ProjectDashboardHeader';
 import ProjectTable from './components/organisms/ProjectTable';
 import ProjectDetailPanel from './components/organisms/ProjectDetailPanel';
 import AllocationApprovalInbox from './components/organisms/AllocationApprovalInbox';
@@ -190,7 +189,6 @@ export default function HrmProjectLanding() {
     closeClientDrawer,
     selectedProject,
     projects,
-    projectKpis,
     loadingProjects,
     pendingAllocations,
     filterBU,
@@ -280,7 +278,6 @@ export default function HrmProjectLanding() {
     <div className={`hrm-module-root ${styles.hrmProjectLanding}`}>
       <CommonAppBar appTitle="Projects & Resource Allocation" />
       <div className={styles.content}>
-        <ProjectDashboardHeader kpis={projectKpis} />
         <Tabs
           className={styles.mainTabs}
           activeKey={resolvedActiveTab}

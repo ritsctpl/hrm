@@ -49,6 +49,8 @@ export const ALLOCATION_STATUS_OPTIONS: { value: AllocationStatus; label: string
 ];
 
 export const REPORT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'projectHealth', label: 'Project Health' },
+  { value: 'resourceWorkload', label: 'Resource Workload' },
   { value: 'allocationVsActual', label: 'Allocation vs Actual' },
   { value: 'utilization', label: 'Resource Utilization' },
   { value: 'capacityDemand', label: 'Capacity Demand' },
@@ -91,6 +93,9 @@ export const BOOKING_TYPES = [
   { value: 'FIRM', label: 'Firm' },
   { value: 'TENTATIVE', label: 'Tentative' },
 ];
+
+/** Booked task-work hours may exceed the project estimate up to this %; beyond → blocked. */
+export const ALLOCATION_OVER_THRESHOLD_PCT = 120;
 
 export const MAX_HOURS_PER_DAY = 9.0;
 export const MIN_HOURS_PER_DAY = 0.5;

@@ -14,6 +14,7 @@ import type {
   ProjectAllocationVsActualReport,
   ResourceUtilizationReport,
   CapacityDemandReport,
+  ResourceWorkloadReport,
   ClientRequest,
   ClientUpdateRequest,
   ClientResponse,
@@ -142,6 +143,23 @@ export class HrmProjectService {
 
   static async getCapacityDemand(organizationId: string, startDate: string, endDate: string): Promise<CapacityDemandReport> {
     const res = await api.post(`${BASE}/report/capacityDemand`, { organizationId, startDate, endDate });
+    return res.data;
+  }
+
+  static async getResourceWorkload(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+    underThreshold?: number,
+    overThreshold?: number,
+  ): Promise<ResourceWorkloadReport> {
+    const res = await api.post(`${BASE}/report/resourceWorkload`, {
+      organizationId,
+      startDate,
+      endDate,
+      underThreshold: underThreshold != null ? String(underThreshold) : undefined,
+      overThreshold: overThreshold != null ? String(overThreshold) : undefined,
+    });
     return res.data;
   }
 

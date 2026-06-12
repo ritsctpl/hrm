@@ -263,6 +263,36 @@ export interface CapacityDemandReport {
   }[];
 }
 
+export interface ResourceWorkloadEmployee {
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  onBillable: boolean;
+  onNonBillable: boolean;
+  assignedProjects: { projectCode: string; projectName: string; projectType: string }[];
+  unassigned: boolean;
+  capacityHours: number;
+  allocatedHours: number;
+  actualHours: number;
+  utilizationPercentage: number;
+  utilizationStatus: 'UNDER' | 'OPTIMAL' | 'OVER' | string;
+}
+
+export interface ResourceWorkloadReport {
+  periodStart: string;
+  periodEnd: string;
+  underThreshold: number;
+  overThreshold: number;
+  totalEmployees: number;
+  billableCount: number;
+  nonBillableCount: number;
+  unassignedCount: number;
+  underUtilizedCount: number;
+  optimalCount: number;
+  overloadedCount: number;
+  employees: ResourceWorkloadEmployee[];
+}
+
 export interface ProjectKpiResponse {
   total: number;
   active: number;

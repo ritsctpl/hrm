@@ -33,7 +33,7 @@ export default function ProjectLandingTemplate() {
       children: (
         <div className={styles.masterDetailLayout}>
           <div className={styles.masterPane}>
-            <ProjectDashboardHeader kpis={projectKpis} />
+            <ProjectDashboardHeader />
             <ProjectMasterList
               projects={projects}
               loading={loadingProjects}
