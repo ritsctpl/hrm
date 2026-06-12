@@ -125,6 +125,33 @@
   font-weight: 500;
 }
 
+/* Holiday day (green) — locked from time entry */
+.calHolidayCell {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  cursor: default;
+}
+
+.calHolidayCell:hover {
+  border-color: #b7eb8f;
+  box-shadow: none;
+}
+
+.calHolidayLabel {
+  font-size: 11px;
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.matrixDayHoliday {
+  color: #52c41a;
+  font-weight: 700;
+}
+
+.matrixColHoliday {
+  background: #f6ffed;
+}
+
 .calCellTop {
   display: flex;
   align-items: center;

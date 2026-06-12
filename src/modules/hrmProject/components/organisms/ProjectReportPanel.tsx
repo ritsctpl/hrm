@@ -274,7 +274,7 @@ export default function ProjectReportPanel() {
               return n > 0 ? <Tag key={h} color={HEALTH_COLOR[h]}>{h}: {n}</Tag> : null;
             })}
           </Space>
-          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No projects' }} />
+          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No projects' }} />
         </>
       )}
 
@@ -317,12 +317,12 @@ export default function ProjectReportPanel() {
                 <Descriptions.Item label="Adherence">{allocationReport.allocationAdherence.toFixed(1)}%</Descriptions.Item>
                 <Descriptions.Item label="Forecast Accuracy">{allocationReport.forecastAccuracy.toFixed(1)}%</Descriptions.Item>
               </Descriptions>
-              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No employee data' }} />
+              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No employee data' }} />
             </>
           )}
 
           {utilizationReport && reportType === 'utilization' && (
-            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No utilization data' }} />
+            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No utilization data' }} />
           )}
 
           {capacityReport && reportType === 'capacityDemand' && (
@@ -338,7 +338,7 @@ export default function ProjectReportPanel() {
                   />
                 </Col>
               </Row>
-              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No department data' }} />
+              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No department data' }} />
             </>
           )}
 
@@ -354,7 +354,7 @@ export default function ProjectReportPanel() {
                   <Radio.Button value="OVER">Overloaded ({workloadReport.overloadedCount})</Radio.Button>
                 </Radio.Group>
               </Space>
-              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 440 }} sticky locale={{ emptyText: 'No employees in this bucket' }} />
+              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No employees in this bucket' }} />
             </>
           )}
 

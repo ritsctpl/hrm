@@ -1,10 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Checkbox, Input, Modal, Select, Space, Tag, Tooltip, Typography, message } from 'antd';
+import { AutoComplete, Button, Checkbox, Modal, Select, Space, Tag, Tooltip, Typography, message } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import Holidays from 'date-holidays';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
+import { getCustomHolidays, addCustomHoliday } from '../../utils/customHolidayStore';
+import { useCan } from '../../../hrmAccess/hooks/useCan';
 import type { Holiday, HolidayCategoryConfig } from '../../types/domain.types';
 import styles from '../../styles/HolidayYearCalendar.module.css';
 
@@ -24,6 +27,77 @@ const CATEGORY_OPTIONS = [
   { value: 'LOCAL', label: 'Local' },
   { value: 'COMPENSATORY', label: 'Compensatory' },
 ];
+
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  public: 'NATIONAL',
+  bank: 'NATIONAL',
+  optional: 'FESTIVAL',
+  observance: 'LOCAL',
+  school: 'LOCAL',
+};
+
+/** Holidays that fall on a specific date = library defaults + saved customs. */
+function computeDateSuggestions(
+  date: string,
+  country: string,
+  year: number
+): { name: string; category: string; optional: boolean }[] {
+  if (!date || !country) return [];
+  const md = date.slice(5); // MM-DD
+  const out: { name: string; category: string; optional: boolean }[] = [];
+  try {
+    const hd = new Holidays(country);
+    ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string; type: string }>)
+      .filter((h) => String(h.date).slice(0, 10) === date)
+      .forEach((h) =>
+        out.push({ name: h.name, category: TYPE_TO_CATEGORY[h.type] ?? 'NATIONAL', optional: h.type === 'optional' })
+      );
+  } catch {
+    /* ignore */
+  }
+  getCustomHolidays(country)
+    .filter((e) => e.md === md)
+    .forEach((e) => {
+      if (!out.some((o) => o.name.toLowerCase() === e.name.toLowerCase())) {
+        out.push({ name: e.name, category: e.category, optional: e.optional });
+      }
+    });
+  return out;
+}
+
+/**
+ * The full year's holidays for a country (library + saved customs), each with
+ * its date. Moving festivals (Diwali, Eid, Easter…) are computed per year by
+ * date-holidays, so the user can pick the festival by name and get the correct
+ * date for that year.
+ */
+function computeYearSuggestions(
+  country: string,
+  year: number
+): { name: string; date: string; category: string; optional: boolean }[] {
+  if (!country) return [];
+  const out: { name: string; date: string; category: string; optional: boolean }[] = [];
+  try {
+    const hd = new Holidays(country);
+    ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string; type: string }>).forEach((h) =>
+      out.push({
+        name: h.name,
+        date: String(h.date).slice(0, 10),
+        category: TYPE_TO_CATEGORY[h.type] ?? 'NATIONAL',
+        optional: h.type === 'optional',
+      })
+    );
+  } catch {
+    /* ignore */
+  }
+  getCustomHolidays(country).forEach((e) => {
+    const date = `${year}-${e.md}`;
+    if (!out.some((o) => o.name.toLowerCase() === e.name.toLowerCase() && o.date === date)) {
+      out.push({ name: e.name, date, category: e.category, optional: e.optional });
+    }
+  });
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
 
 function pad(n: number) {
   return `${n}`.padStart(2, '0');
@@ -47,6 +121,8 @@ interface Props {
   organizationId: string;
   groupHandle: string;
   groupStatus: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
+  /** Region of the group — drives holiday suggestions (date-holidays). */
+  groupCountry?: string;
   canEdit: boolean;
   createdBy: string;
   createdByRole?: string;
@@ -60,12 +136,18 @@ export default function HolidayYearCalendar({
   organizationId,
   groupHandle,
   groupStatus,
+  groupCountry,
   canEdit,
   createdBy,
   createdByRole,
   onChanged,
 }: Props) {
-  const editable = canEdit && groupStatus !== 'LOCKED';
+  // Gate on the real RBAC permissions (same source as the toolbar's <Can>),
+  // not just the role-string `canEdit` prop — that prop resolves to false for
+  // roles outside the hardcoded manager list, silently disabling the calendar.
+  const rbac = useCan();
+  const editable = (canEdit || rbac.canAdd) && groupStatus !== 'LOCKED';
+  const canDeleteH = (canEdit || rbac.canDelete) && groupStatus !== 'LOCKED';
   const todayStr = dayjs().format('YYYY-MM-DD');
 
   const byDate = useMemo(() => {
@@ -103,15 +185,54 @@ export default function HolidayYearCalendar({
   const [category, setCategory] = useState('NATIONAL');
   const [optional, setOptional] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Suggestions follow the group's region (date-holidays); default to IN.
+  const country = groupCountry || 'IN';
+  // Bumped after saving a custom holiday so suggestions re-read the catalog.
+  const [customVersion, setCustomVersion] = useState(0);
+
+  // Library default holiday names that fall on the clicked date (for the country).
+  const libNamesForDate = useMemo(() => {
+    if (!dayDate || !country) return new Set<string>();
+    try {
+      const hd = new Holidays(country);
+      return new Set(
+        ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string }>)
+          .filter((h) => String(h.date).slice(0, 10) === dayDate)
+          .map((h) => h.name.toLowerCase())
+      );
+    } catch {
+      return new Set<string>();
+    }
+  }, [dayDate, country, year]);
+
+  // Suggestions for the clicked date = library defaults + saved custom entries.
+  // customVersion forces a re-read after a save.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Full-year list so moving festivals (Diwali, Eid…) can be picked by name —
+  // selecting one sets the correct date for the year.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const yearSuggestions = useMemo(
+    () => computeYearSuggestions(country, year),
+    [country, year, customVersion]
+  );
 
   const dayHolidays = dayDate ? byDate.get(dayDate) ?? [] : [];
 
   function openDay(date: string, hasHolidays: boolean) {
     if (!editable && !hasHolidays) return; // nothing to show or do
     setDayDate(date);
-    setName('');
-    setCategory('NATIONAL');
-    setOptional(false);
+    // Pre-fill the form from the date's holiday (library default or saved custom),
+    // so the suggestion is driven by the clicked date. Empty when the date has none.
+    const sugg = computeDateSuggestions(date, country, year);
+    if (sugg.length > 0) {
+      setName(sugg[0].name);
+      setCategory(sugg[0].category);
+      setOptional(sugg[0].optional);
+    } else {
+      setName('');
+      setCategory('NATIONAL');
+      setOptional(false);
+    }
   }
 
   async function handleAdd() {
@@ -131,9 +252,21 @@ export default function HolidayYearCalendar({
         createdBy,
         createdByRole,
       });
+      // HL-BE-4: editing a PUBLISHED group stages the change for approval.
+      if (res && (res as { messageCode?: string }).messageCode === 'EDIT_PENDING') {
+        message.info((res as { message?: string }).message || 'Change submitted for approval');
+        onChanged();
+        return;
+      }
       if (res && (res as { success?: boolean }).success === false) {
         message.error((res as { message?: string }).message || 'Failed to add holiday');
         return;
+      }
+      // Not a built-in default for this date → remember it as a custom
+      // suggestion for this country so it appears next time.
+      if (!libNamesForDate.has(name.trim().toLowerCase())) {
+        addCustomHoliday(country, { md: dayDate.slice(5), name: name.trim(), category, optional });
+        setCustomVersion((v) => v + 1);
       }
       message.success('Holiday added');
       setName('');
@@ -148,12 +281,17 @@ export default function HolidayYearCalendar({
   async function handleDelete(h: Holiday) {
     setSaving(true);
     try {
-      await HrmHolidayService.deleteHoliday({
+      const res = await HrmHolidayService.deleteHoliday({
         organizationId,
         handle: h.handle,
         deletedBy: createdBy,
         deletedByRole: createdByRole,
       });
+      if (res && (res as { messageCode?: string }).messageCode === 'EDIT_PENDING') {
+        message.info((res as { message?: string }).message || 'Removal submitted for approval');
+        onChanged();
+        return;
+      }
       message.success('Holiday removed');
       onChanged();
     } catch {
@@ -253,7 +391,7 @@ export default function HolidayYearCalendar({
                   <Tag>{h.categoryDisplayName || h.category}</Tag>
                   {h.optional && <Tag color="gold">optional</Tag>}
                 </Space>
-                {editable && (
+                {canDeleteH && (
                   <Button
                     size="small"
                     danger
@@ -273,15 +411,33 @@ export default function HolidayYearCalendar({
         {editable && (
           <Space.Compact style={{ width: '100%' }} direction="vertical">
             <Text type="secondary" style={{ fontSize: 12, marginBottom: 4 }}>
-              Add holiday
+              Pick a holiday from the list (its date is set automatically — handles moving festivals
+              like Diwali), or type a custom name for {dayjs(dayDate ?? undefined).format('DD MMM')}.
             </Text>
             <Space.Compact style={{ width: '100%' }}>
-              <Input
-                placeholder="Holiday name"
+              <AutoComplete
+                style={{ flex: 1 }}
                 value={name}
-                maxLength={120}
-                onChange={(e) => setName(e.target.value)}
-                onPressEnter={handleAdd}
+                options={yearSuggestions.map((s) => ({
+                  value: s.name,
+                  label: `${s.name} — ${dayjs(s.date).format('DD MMM')}`,
+                  date: s.date,
+                  category: s.category,
+                  optional: s.optional,
+                }))}
+                onChange={(v) => setName(v)}
+                onSelect={(v: string, opt: { date?: string; category?: string; optional?: boolean }) => {
+                  setName(v);
+                  if (opt?.category) setCategory(opt.category);
+                  setOptional(!!opt?.optional);
+                  // Jump the entry to the festival's actual date for this year.
+                  if (opt?.date) setDayDate(opt.date);
+                }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                filterOption={(input, option: any) =>
+                  String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                placeholder="Search a holiday (e.g. Diwali) or type a custom name"
               />
               <Select
                 style={{ width: 150 }}

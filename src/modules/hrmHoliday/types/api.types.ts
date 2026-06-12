@@ -25,6 +25,11 @@ export interface CreateHolidayGroupRequest {
    */
   year?: number;
   description?: string;
+  /** Region the group applies to — drives holiday suggestions + duplicate scope. */
+  country?: string;
+  state?: string;
+  /** A General group is the fallback when an employee's location has no region group. Max one per year. */
+  isGeneral?: boolean;
   colorScheme?: Record<string, string>;
   createdBy: string;
   /** Role of the user performing the action — for audit-log `performedByRole`. */
@@ -36,6 +41,9 @@ export interface UpdateHolidayGroupRequest {
   handle: string;
   groupName?: string;
   description?: string;
+  country?: string;
+  state?: string;
+  isGeneral?: boolean;
   status?: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
   colorScheme?: Record<string, string>;
   modifiedBy: string;
@@ -274,6 +282,9 @@ export interface HolidayGroupResponse {
   groupName: string;
   year: number;
   description?: string;
+  country?: string;
+  state?: string;
+  isGeneral?: boolean;
   status: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
   colorScheme?: Record<string, string>;
   totalHolidays: number;
