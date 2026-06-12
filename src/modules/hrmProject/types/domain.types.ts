@@ -66,6 +66,7 @@ export interface Project {
   attachments: ProjectAttachment[];
   totalAllocatedHours: number;
   totalActualHours: number;
+  committedWorkHours?: number;
   utilizationPercentage: number;
   scheduleVariance: number;
   active: number;

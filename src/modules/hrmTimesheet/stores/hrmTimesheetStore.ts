@@ -60,6 +60,8 @@ interface TimesheetUIState {
 
   // Manager "Employee Timesheets" dashboard
   managerViewMode: 'dashboard' | 'detail';
+  /** Dashboard period granularity — defaults to month; user can switch to week. */
+  managerPeriod: 'month' | 'week';
   managerScope: ManagerScope;
   managerSearch: string;
   managerStatusFilter: ManagerStatusFilter;
@@ -114,6 +116,7 @@ interface TimesheetActions {
   setReportPeriodEnd: (d: string) => void;
   setReportDept: (v: string) => void;
 
+  setManagerPeriod: (p: 'month' | 'week') => void;
   setManagerScope: (s: ManagerScope) => void;
   setManagerSearch: (v: string) => void;
   setManagerStatusFilter: (f: ManagerStatusFilter) => void;
@@ -173,6 +176,7 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       reportPeriodEnd: today,
       reportDept: '',
       managerViewMode: 'dashboard',
+      managerPeriod: 'month',
       managerScope: 'direct',
       managerSearch: '',
       managerStatusFilter: 'ALL',
@@ -222,19 +226,28 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       setReportPeriodEnd: (d) => set({ reportPeriodEnd: d }),
       setReportDept: (v) => set({ reportDept: v }),
 
+      setManagerPeriod: (p) => set({ managerPeriod: p }),
       setManagerScope: (s) => set({ managerScope: s }),
       setManagerSearch: (v) => set({ managerSearch: v }),
       setManagerStatusFilter: (f) => set({ managerStatusFilter: f }),
       openEmployeeReview: (emp) =>
-        set((state) => ({
-          managerViewMode: 'detail',
-          targetEmployee: emp,
-          targetEmployeeTimesheets: [],
-          // Align the drill-down period to the week the manager was viewing, so
-          // the monthly grid loads/renders the month that actually has data.
-          selectedDate: state.selectedWeekStart,
-          selectedMonth: firstDayOfMonth(new Date(state.selectedWeekStart)),
-        })),
+        set((state) => {
+          // Align the drill-down to whatever period the manager was viewing so
+          // the grid loads/renders the month that actually has data.
+          const aligned =
+            state.managerPeriod === 'week'
+              ? {
+                  selectedDate: state.selectedWeekStart,
+                  selectedMonth: firstDayOfMonth(new Date(`${state.selectedWeekStart}T00:00:00`)),
+                }
+              : { selectedDate: state.selectedMonth, selectedMonth: state.selectedMonth };
+          return {
+            managerViewMode: 'detail',
+            targetEmployee: emp,
+            targetEmployeeTimesheets: [],
+            ...aligned,
+          };
+        }),
       backToDashboard: () => set({ managerViewMode: 'dashboard', targetEmployee: null }),
       setTargetEmployeeTimesheets: (ts) => set({ targetEmployeeTimesheets: ts }),
 

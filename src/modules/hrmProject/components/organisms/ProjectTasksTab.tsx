@@ -37,6 +37,11 @@ export default function ProjectTasksTab() {
   const canEditTasks = !blockedStatuses.has(selectedProject.status);
   const blockedReason = `Tasks cannot be changed on ${selectedProject.status.replace('_', ' ')} projects`;
 
+  // Reconciliation: total task estimated hours should match the project estimate
+  const taskEstTotal = tasks.reduce((s, t) => s + (t.estimatedHours || 0), 0);
+  const projectEst = selectedProject.estimateHours || 0;
+  const estDiff = projectEst - taskEstTotal;
+
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
@@ -60,6 +65,13 @@ export default function ProjectTasksTab() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      // Hard rule: total task estimated hours must not exceed the project estimate
+      const newEst = values.estimatedHours || 0;
+      const othersEst = taskEstTotal - (editing ? (editing.estimatedHours || 0) : 0);
+      if (projectEst > 0 && othersEst + newEst > projectEst) {
+        message.error(`Task estimates would total ${othersEst + newEst} h, exceeding the project estimate of ${projectEst} h. Reduce hours or raise the project estimate.`);
+        return;
+      }
       if (editing) await updateTask(selectedProject.handle, editing.handle, values);
       else await createTask(selectedProject.handle, values);
       setModalOpen(false);
@@ -145,6 +157,15 @@ export default function ProjectTasksTab() {
     <div style={{ padding: 16 }}>
       {!canEditTasks && (
         <Alert type="info" showIcon message={blockedReason} style={{ marginBottom: 12 }} />
+      )}
+      {projectEst > 0 && (
+        estDiff === 0 ? (
+          <Alert type="success" showIcon message={`Tasks cover the full estimate — ${taskEstTotal} h of ${projectEst} h`} style={{ marginBottom: 12 }} />
+        ) : estDiff > 0 ? (
+          <Alert type="warning" showIcon message={`${estDiff} h unplanned — task estimates total ${taskEstTotal} h of the ${projectEst} h project estimate`} style={{ marginBottom: 12 }} />
+        ) : (
+          <Alert type="error" showIcon message={`Over-planned by ${Math.abs(estDiff)} h — task estimates total ${taskEstTotal} h, exceeding the ${projectEst} h project estimate`} style={{ marginBottom: 12 }} />
+        )
       )}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
         <Can I="add">

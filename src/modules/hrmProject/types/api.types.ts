@@ -79,6 +79,7 @@ export interface ProjectResponse {
   attachments: ProjectAttachmentResponse[];
   totalAllocatedHours: number;
   totalActualHours: number;
+  committedWorkHours?: number;
   utilizationPercentage: number;
   scheduleVariance: number;
   active: number;
@@ -100,6 +101,7 @@ export interface ProjectListResponse {
   estimateHours: number;
   totalAllocatedHours: number;
   totalActualHours: number;
+  committedWorkHours?: number;
   utilizationPercentage: number;
   startDate: string;
   endDate: string;
@@ -261,6 +263,36 @@ export interface CapacityDemandReport {
     demandHours: number;
     gapHours: number;
   }[];
+}
+
+export interface ResourceWorkloadEmployee {
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  onBillable: boolean;
+  onNonBillable: boolean;
+  assignedProjects: { projectCode: string; projectName: string; projectType: string }[];
+  unassigned: boolean;
+  capacityHours: number;
+  allocatedHours: number;
+  actualHours: number;
+  utilizationPercentage: number;
+  utilizationStatus: 'UNDER' | 'OPTIMAL' | 'OVER' | string;
+}
+
+export interface ResourceWorkloadReport {
+  periodStart: string;
+  periodEnd: string;
+  underThreshold: number;
+  overThreshold: number;
+  totalEmployees: number;
+  billableCount: number;
+  nonBillableCount: number;
+  unassignedCount: number;
+  underUtilizedCount: number;
+  optimalCount: number;
+  overloadedCount: number;
+  employees: ResourceWorkloadEmployee[];
 }
 
 export interface ProjectKpiResponse {

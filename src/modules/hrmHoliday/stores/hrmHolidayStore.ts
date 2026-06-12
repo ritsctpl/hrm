@@ -47,7 +47,7 @@ interface HrmHolidayState {
   importResult: ImportResult | null;
   importLoading: boolean;
 
-  activeTab: 'list' | 'calendar' | 'audit';
+  activeTab: 'year' | 'list' | 'calendar' | 'audit';
   showHolidayForm: boolean;
   showBuMapping: boolean;
   showImport: boolean;
@@ -105,7 +105,7 @@ interface HrmHolidayState {
   setImportLoading: (loading: boolean) => void;
 
   // Actions — UI
-  setActiveTab: (tab: 'list' | 'calendar' | 'audit') => void;
+  setActiveTab: (tab: 'year' | 'list' | 'calendar' | 'audit') => void;
   openHolidayForm: (holiday?: Holiday) => void;
   closeHolidayForm: () => void;
   openBuMapping: () => void;
@@ -156,7 +156,7 @@ const defaultState = {
   auditLogsLoading: false,
   importResult: null as ImportResult | null,
   importLoading: false,
-  activeTab: 'list' as const,
+  activeTab: 'year' as const,
   showHolidayForm: false,
   showBuMapping: false,
   showImport: false,

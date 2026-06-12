@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Empty, Input, Modal, Segmented, Select, Space, Spin, Typography } from 'antd';
-import { CheckOutlined, CloseOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EyeOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
@@ -67,12 +67,15 @@ export default function EmployeeTimesheetsDashboard() {
   const {
     teamTimesheets,
     loadingTeam,
+    managerPeriod,
     managerScope,
     managerSearch,
     managerStatusFilter,
     selectedMonth,
     selectedWeekStart,
     approvingTimesheet,
+    setManagerPeriod,
+    setSelectedMonth,
     setManagerScope,
     setManagerSearch,
     setManagerStatusFilter,
@@ -86,7 +89,11 @@ export default function EmployeeTimesheetsDashboard() {
 
   useEffect(() => {
     void loadTeamTimesheets();
-  }, [selectedWeekStart, managerScope, loadTeamTimesheets]);
+  }, [managerPeriod, selectedMonth, selectedWeekStart, managerScope, loadTeamTimesheets]);
+
+  const prevMonth = () => setSelectedMonth(dayjs(selectedMonth).subtract(1, 'month').format('YYYY-MM-01'));
+  const nextMonth = () => setSelectedMonth(dayjs(selectedMonth).add(1, 'month').format('YYYY-MM-01'));
+  const atCurrentMonth = dayjs(selectedMonth).isSame(dayjs(), 'month');
 
   const cards = useMemo(() => {
     const search = managerSearch.trim().toLowerCase();
@@ -122,11 +129,26 @@ export default function EmployeeTimesheetsDashboard() {
   return (
     <div className={styles.mgrRoot}>
       <div className={styles.mgrFilters}>
-        <Space>
-          <Text strong>Weekly View</Text>
-          <Text type="secondary">{dayjs(selectedMonth).format('MMMM YYYY')}</Text>
-        </Space>
-        <WeekNavigator />
+        <Segmented
+          size="small"
+          value={managerPeriod}
+          onChange={(v) => setManagerPeriod(v as 'month' | 'week')}
+          options={[
+            { label: 'Monthly', value: 'month' },
+            { label: 'Weekly', value: 'week' },
+          ]}
+        />
+        {managerPeriod === 'week' ? (
+          <WeekNavigator />
+        ) : (
+          <Space>
+            <Button size="small" icon={<LeftOutlined />} onClick={prevMonth} />
+            <Text strong style={{ minWidth: 120, textAlign: 'center', display: 'inline-block' }}>
+              {dayjs(selectedMonth).format('MMMM YYYY')}
+            </Text>
+            <Button size="small" icon={<RightOutlined />} onClick={nextMonth} disabled={atCurrentMonth} />
+          </Space>
+        )}
         <Input
           allowClear
           size="small"
