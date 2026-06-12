@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
 import { useHrmTimesheetUI } from '../../hooks/useHrmTimesheetUI';
+import { useTimesheetHolidays } from '../../hooks/useTimesheetHolidays';
 import {
   weekDates,
   isToday,
@@ -65,6 +66,7 @@ export default function WeeklyMatrixGrid() {
   } = useHrmTimesheetStore();
   const { loadMonthlyTimesheets, loadAssignedAllocations } = useHrmTimesheetData();
   const { saveMatrixDays, submitMatrixDays } = useHrmTimesheetUI();
+  const { isHoliday, getHolidayName } = useTimesheetHolidays(dayjs(selectedMonth).year());
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
 
@@ -101,6 +103,7 @@ export default function WeeklyMatrixGrid() {
 
   function dayEditable(date: string): boolean {
     if (!isInCurrentMonth(date) || isFutureDate(date)) return false;
+    if (isHoliday(date)) return false; // holidays are locked from time entry
     const ts = byDate.get(date);
     return !(ts && (ts.status === 'SUBMITTED' || ts.status === 'APPROVED'));
   }
@@ -368,14 +371,20 @@ export default function WeeklyMatrixGrid() {
           <thead>
             <tr>
               <th className="projCol">Project / Task</th>
-              {dates.map((d) => (
-                <th key={d}>
-                  <div className={`${styles.matrixDayHead} ${isToday(d) ? styles.matrixDayHeadToday : ''}`}>
-                    {dayjs(d).format('ddd')}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#8c8c8c' }}>{dayjs(d).format('DD')}</div>
-                </th>
-              ))}
+              {dates.map((d) => {
+                const hol = isHoliday(d);
+                return (
+                  <th key={d} className={hol ? styles.matrixColHoliday : undefined} title={hol ? getHolidayName(d) : undefined}>
+                    <div
+                      className={`${styles.matrixDayHead} ${isToday(d) ? styles.matrixDayHeadToday : ''} ${hol ? styles.matrixDayHoliday : ''}`}
+                    >
+                      {dayjs(d).format('ddd')}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#8c8c8c' }}>{dayjs(d).format('DD')}</div>
+                    {hol && <div className={styles.matrixDayHoliday} style={{ fontSize: 10 }}>Holiday</div>}
+                  </th>
+                );
+              })}
               <th>Total</th>
             </tr>
           </thead>
