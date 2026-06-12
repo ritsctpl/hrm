@@ -41,14 +41,12 @@ export function useExpenseData() {
     setListLoading(true);
     setError(null);
     try {
-      const data = await HrmExpenseService.getMyExpenses({ organizationId,
-        employeeId,
-        status: statusFilter as never,
-        expenseType: typeFilter as never,
-        searchTerm: searchTerm || undefined,
-        fromDate: normalizeDateToISO(dateRange?.[0]),
-        toDate: normalizeDateToISO(dateRange?.[1]),
-      });
+      // Fetch the full list for this employee and let the table filter
+      // client-side (search / status / type / date). The /my-expenses
+      // endpoint does not reliably honour the filter params, so sending them
+      // here left the screen's filter fields doing nothing. This mirrors the
+      // Travel module, where filtering was likewise moved to the client.
+      const data = await HrmExpenseService.getMyExpenses({ organizationId, employeeId });
       setMyExpenses(data);
     } catch {
       message.error("Failed to load expense reports.");
@@ -56,7 +54,7 @@ export function useExpenseData() {
     } finally {
       setListLoading(false);
     }
-  }, [organizationId, employeeId, isReady, statusFilter, typeFilter, searchTerm, dateRange]);
+  }, [organizationId, employeeId, isReady]);
 
   const loadSupervisorInbox = useCallback(async () => {
     if (!isReady) return;

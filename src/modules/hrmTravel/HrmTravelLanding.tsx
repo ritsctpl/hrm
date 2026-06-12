@@ -60,6 +60,7 @@ const HrmTravelLanding: React.FC = () => {
     statusFilter,
     typeFilter,
     dateRange,
+    setMyRequests,
     setSelectedRequest,
     setScreenMode,
     resetFormState,
@@ -86,22 +87,21 @@ const HrmTravelLanding: React.FC = () => {
     ? travelPerms.canViewHistory || travelPerms.canViewApproval
     : isSupervisor || isAdmin;
 
-  // Load data on mount
+  // Load the list once the signed-in employee is resolved. Filtering
+  // (search / status / type / date) is done entirely client-side in the
+  // table, so we deliberately do NOT re-fetch on every filter change — that
+  // was spamming the my-requests API and made the screen feel slow.
+  //
+  // While identity is not ready (e.g. right after login, before the profile
+  // resolves), clear any list left over from a previous user so it can't
+  // flash on screen.
   useEffect(() => {
-    loadMyRequests();
-  }, [loadMyRequests]);
-
-  // Load data when filters change - use a timer to debounce rapid changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (screenMode === "list") {
-        loadMyRequests();
-      }
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, typeFilter, dateRange, searchTerm]);
+    if (identity.isReady) {
+      loadMyRequests();
+    } else {
+      setMyRequests([]);
+    }
+  }, [identity.isReady, employeeId, loadMyRequests, setMyRequests]);
 
   useEffect(() => {
     if (canSeeApprovals) {
@@ -223,11 +223,14 @@ const HrmTravelLanding: React.FC = () => {
         listPanel={
           <TravelListTable
             requests={myRequests}
-            loading={listLoading}
+            loading={listLoading || !identity.isReady}
             selectedHandle={selectedRequest?.handle}
             onRowClick={handleRowClick}
             onNewRequest={handleNewRequest}
             searchTerm={searchTerm}
+            statusFilter={statusFilter}
+            typeFilter={typeFilter}
+            dateRange={dateRange}
           />
         }
         detailPanel={buildDetailPanel(false)}

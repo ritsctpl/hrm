@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback, useState } from "react";
-import { Alert, Button, Tabs, Typography, Space } from "antd";
+import { Alert, Button, Tabs, Typography, Space, Spin } from "antd";
 import { PlusOutlined, DownloadOutlined, WarningOutlined } from "@ant-design/icons";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import CommonAppBar from "@/components/CommonAppBar";
@@ -57,8 +57,10 @@ const HrmExpenseLanding: React.FC = () => {
     typeFilter,
     dateRange,
     searchTerm,
+    detailLoading,
     setSelectedExpense,
     setScreenMode,
+    setDetailLoading,
     resetFormState,
     resetDraftItems,
   } = useHrmExpenseStore();
@@ -105,10 +107,9 @@ const HrmExpenseLanding: React.FC = () => {
     }
   }, [organizationId, canViewFinance, loadFinanceInbox]);
 
-  // Auto-trigger search when filters or debounced search term change
-  useEffect(() => {
-    loadMyExpenses();
-  }, [statusFilter, typeFilter, dateRange, debouncedSearchTerm, loadMyExpenses]);
+  // Filters (status / type / date / search) are applied client-side in
+  // ExpenseListTable against the full list, so no refetch is needed when they
+  // change — the store values flow straight through as props.
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -151,13 +152,28 @@ const HrmExpenseLanding: React.FC = () => {
     setScreenMode("create");
   };
 
-  const handleRowClick = useCallback((expense: typeof myExpenses[0]) => {
+  const handleRowClick = useCallback(async (row: typeof myExpenses[0]) => {
     // Clear previous form state and draft items first
     resetFormState();
     resetDraftItems();
-    
+
+    // Retrieve the full expense record before rendering the right panel.
+    // The list row is only a summary — the authoritative line items,
+    // receipt attachments, approval history and finance fields come from
+    // /expense/get. Fall back to the row data if the retrieve fails so the
+    // panel still opens. (Mirrors the Travel module's row-click behaviour.)
+    setDetailLoading(true);
+    let expense = row;
+    try {
+      expense = await HrmExpenseService.getExpenseByHandle({ handle: row.handle });
+    } catch (err) {
+      console.error("[Expense] Failed to retrieve expense detail:", err);
+    } finally {
+      setDetailLoading(false);
+    }
+
     setSelectedExpense(expense);
-    
+
     // Allow editing for DRAFT and RECALLED expenses, view-only for others
     const editableStatuses = ["DRAFT", "RECALLED"];
     const isEditable = editableStatuses.includes(expense.status);
@@ -202,7 +218,7 @@ const HrmExpenseLanding: React.FC = () => {
     } else {
       setScreenMode("view");
     }
-  }, [resetFormState, resetDraftItems]);
+  }, [resetFormState, resetDraftItems, setSelectedExpense, setScreenMode, setDetailLoading]);
 
   const handleBack = () => {
     setScreenMode("list");
@@ -225,6 +241,16 @@ const HrmExpenseLanding: React.FC = () => {
 
   // Build detail panel with role awareness
   const buildDetailPanel = (isApproverContext = false, isFinanceContext = false) => {
+    // Retrieve-in-flight: the row was clicked but /expense/get hasn't
+    // resolved yet. Show a spinner instead of the stale empty state so the
+    // panel doesn't flash "Select a report" between click and load.
+    if (detailLoading && screenMode === "list") {
+      return (
+        <div className={styles.emptyState}>
+          <Spin tip="Loading report…" />
+        </div>
+      );
+    }
     if (screenMode === "create" || (screenMode !== "list" && selectedExpense)) {
       return (
         <HrmExpenseScreen
@@ -289,6 +315,10 @@ const HrmExpenseLanding: React.FC = () => {
             onRowClick={handleRowClick}
             onNewExpense={handleNewExpense}
             onDeleteDraft={handleDeleteDraft}
+            searchTerm={searchTerm}
+            statusFilter={statusFilter}
+            typeFilter={typeFilter}
+            dateRange={dateRange}
           />
         }
         detailPanel={buildDetailPanel(false, false)}

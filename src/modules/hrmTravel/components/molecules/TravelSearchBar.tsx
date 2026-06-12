@@ -31,7 +31,7 @@ interface Props {
 }
 
 const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
-  const { searchTerm, statusFilter, typeFilter, setSearchTerm, setStatusFilter, setTypeFilter, setDateRange } =
+  const { searchTerm, statusFilter, typeFilter, dateRange, setSearchTerm, setStatusFilter, setTypeFilter, setDateRange } =
     useHrmTravelStore();
 
   const handleSearchChange = useCallback((value: string) => {
@@ -87,6 +87,9 @@ const TravelSearchBar: React.FC<Props> = ({ onSearch }) => {
       <RangePicker
         style={{ width: 230 }}
         format="DD/MM/YYYY"
+        // Controlled so the picker reflects the store (dateRange is stored as
+        // YYYY-MM-DD) and visibly clears when filters reset on tab change.
+        value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
         onChange={handleDateRangeChange}
       />
       <div style={{ marginLeft: "auto" }}>

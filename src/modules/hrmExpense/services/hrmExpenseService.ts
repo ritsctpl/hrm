@@ -198,13 +198,35 @@ export class HrmExpenseService {
     return match?.[1] ?? raw;
   }
 
+  /**
+   * Pull the base64 payload out of the download response. The BE has
+   * shipped it under a few different keys (`base64Data`, `base64`,
+   * `fileContent`, `content`) and — in at least one observed response —
+   * under a malformed empty key (`"": "<base64>"`). Probe each so a
+   * key-name change on the BE doesn't silently break the preview.
+   */
+  private static pickBase64(obj: Record<string, any>): string | undefined {
+    if (!obj || typeof obj !== 'object') return undefined;
+    const candidates = [
+      obj.base64Data,
+      obj.base64,
+      obj.fileContent,
+      obj.content,
+      obj.data,
+      obj[''], // BE has serialized the base64 under an empty key
+    ];
+    return candidates.find(
+      (v) => typeof v === 'string' && v.length > 0,
+    ) as string | undefined;
+  }
+
   static async downloadReceipt(payload: {
     organizationId: string;
     expenseId?: string;
     lineIndex?: number;
     attachmentRef: string;
     attachmentId?: string;
-  }): Promise<Blob> {
+  }): Promise<{ blob: Blob; fileName?: string }> {
     const normalizedRef = this.normalizeAttachmentRef(payload.attachmentRef);
     // Mirror delete's field name as a safety net — different BE handlers
     // have used `attachmentRef` and `attachmentId` interchangeably.
@@ -214,61 +236,74 @@ export class HrmExpenseService {
       attachmentId:
         this.normalizeAttachmentRef(payload.attachmentId ?? '') || normalizedRef,
     };
-    
+
     try {
-      // Try to get JSON response first (new API format)
+      // JSON response (current API format). NOTE: the global response
+      // interceptor (services/api.ts) already unwraps the BE envelope
+      // `{ handle, message_details, response }` down to its inner
+      // `response` object for /hrm-service/ URLs — so `response.data`
+      // here is ALREADY `{ attachmentId, fileName, contentType,
+      // base64Data, ... }`, NOT the envelope. Guard for both shapes in
+      // case the interceptor contract changes.
       const response = await api.post(`${this.BASE}/receipt/download`, body);
       const data = response.data;
-      
-      // Check if it's a JSON response with base64 data
-      if (data && typeof data === 'object' && data.response && data.response.base64Data) {
-        const { base64Data, contentType } = data.response;
+      const inner =
+        data && typeof data === 'object' && 'response' in data && data.response
+          ? data.response
+          : data;
 
-        // BE sometimes returns no contentType, or sets it to a generic
-        // octet-stream. The browser then renders the bytes as text inside
-        // an iframe, which is the bug surfaced in the screenshot. Sniff
-        // the real MIME from base64 magic bytes when the BE value is
-        // missing or unhelpful.
-        const sniffed = detectMimeFromBase64(base64Data);
-        const effectiveType =
-          !contentType || contentType === 'application/octet-stream'
-            ? sniffed ?? contentType ?? 'application/octet-stream'
-            : contentType;
+      if (inner && typeof inner === 'object' && !(inner instanceof Blob)) {
+        const base64Data = this.pickBase64(inner);
+        if (base64Data) {
+          const contentType: string | undefined = inner.contentType;
+          const fileName: string | undefined = inner.fileName;
 
-        try {
-          return base64ToBlob(base64Data, effectiveType);
-        } catch (base64Error) {
-          console.error('Base64 conversion error:', base64Error);
-          throw new Error('Failed to convert base64 data to blob');
+          // BE sometimes returns no contentType, or a generic
+          // octet-stream. The browser then renders image bytes as text
+          // inside an iframe — the original "image not opening" bug.
+          // Sniff the real MIME from base64 magic bytes when the BE
+          // value is missing or unhelpful.
+          const sniffed = detectMimeFromBase64(base64Data);
+          const effectiveType =
+            !contentType || contentType === 'application/octet-stream'
+              ? sniffed ?? contentType ?? 'application/octet-stream'
+              : contentType;
+
+          try {
+            return { blob: base64ToBlob(base64Data, effectiveType), fileName };
+          } catch (base64Error) {
+            console.error('Base64 conversion error:', base64Error);
+            throw new Error('Failed to convert base64 data to blob');
+          }
         }
       }
-      
+
       // If it's already a blob, return as is
       if (data instanceof Blob) {
-        return data;
+        return { blob: data };
       }
-      
+
       // If it's binary data as ArrayBuffer
-      if (data instanceof ArrayBuffer || data.constructor === ArrayBuffer) {
-        return new Blob([data]);
+      if (data instanceof ArrayBuffer || data?.constructor === ArrayBuffer) {
+        return { blob: new Blob([data]) };
       }
-      
+
       // Fallback: try to get as blob (old API format)
       const blobResponse = await api.post(`${this.BASE}/receipt/download`, body, {
         responseType: "blob",
       });
-      return blobResponse.data;
-      
+      return { blob: blobResponse.data };
+
     } catch (error) {
       console.error('Download receipt error:', error);
       console.error('Request payload:', body);
-      
+
       // Last resort: try the old blob method
       try {
         const blobResponse = await api.post(`${this.BASE}/receipt/download`, body, {
           responseType: "blob",
         });
-        return blobResponse.data;
+        return { blob: blobResponse.data };
       } catch (blobError) {
         console.error('Blob download also failed:', blobError);
         throw error; // throw the original error

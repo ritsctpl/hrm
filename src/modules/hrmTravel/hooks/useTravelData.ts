@@ -28,18 +28,20 @@ export function useTravelData() {
   } = useHrmTravelStore();
 
   const loadMyRequests = useCallback(async () => {
-    if (!employeeId) return;  // Only return if employeeId is empty
+    // Gate strictly on `isReady`: until currentEmployeeStore resolves, the
+    // `employeeCode` here can be a stale 30-day cookie left over from a
+    // PREVIOUS user's session, which would fetch the wrong person's list
+    // (the "before-login user data" bug). isReady is true only once the
+    // signed-in employee record is authoritatively resolved.
+    if (!identity.isReady || !employeeId) return;
     setListLoading(true);
     setError(null);
     try {
-      const data = await HrmTravelService.getMyRequests({ organizationId,
-        employeeId,
-        status: statusFilter as never,
-        travelType: typeFilter as never,
-        searchTerm: searchTerm || undefined,
-        fromDate: dateRange?.[0],
-        toDate: dateRange?.[1],
-      });
+      // Fetch the full list for this employee and let the table filter
+      // client-side (search / status / type / date). Sending the filters to
+      // the API caused redundant per-keystroke calls and an inconsistent UI
+      // where the server-filtered response was then re-filtered on the client.
+      const data = await HrmTravelService.getMyRequests({ organizationId, employeeId });
       setMyRequests(data);
     } catch {
       message.error("Failed to load travel requests.");
@@ -47,10 +49,12 @@ export function useTravelData() {
     } finally {
       setListLoading(false);
     }
-  }, [organizationId, employeeId, statusFilter, typeFilter, searchTerm, dateRange, setListLoading, setError, setMyRequests]);
+  }, [organizationId, employeeId, identity.isReady, setListLoading, setError, setMyRequests]);
 
   const loadApproverInbox = useCallback(async () => {
-    if (!employeeId) return;  // Only return if employeeId is empty
+    // Same stale-cookie guard as loadMyRequests — don't query the inbox with a
+    // previous user's employeeCode before the current identity resolves.
+    if (!identity.isReady || !employeeId) return;
     setInboxLoading(true);
     try {
       const data = await HrmTravelService.getApproverInbox({ organizationId,
@@ -63,7 +67,7 @@ export function useTravelData() {
     } finally {
       setInboxLoading(false);
     }
-  }, [organizationId, employeeId, activeInboxTab, setInboxLoading, setApproverInbox]);
+  }, [organizationId, employeeId, identity.isReady, activeInboxTab, setInboxLoading, setApproverInbox]);
 
   const loadPolicies = useCallback(async () => {
     try {

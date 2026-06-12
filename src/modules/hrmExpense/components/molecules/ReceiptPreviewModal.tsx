@@ -29,6 +29,7 @@ const ReceiptPreviewModal: React.FC<Props> = ({
   const [index, setIndex] = useState(initialIndex);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [blobType, setBlobType] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -41,10 +42,15 @@ const ReceiptPreviewModal: React.FC<Props> = ({
       setBlobUrl(null);
       return;
     }
-    
+
     let revoked = false;
     let url: string | null = null;
-    
+
+    // Clear stale preview/name so the prior receipt can't flash or be
+    // downloaded while the next one loads.
+    setBlobUrl(null);
+    setBlobType("");
+    setFileName("");
     setLoading(true);
     
     HrmExpenseService.downloadReceipt({
@@ -53,11 +59,12 @@ const ReceiptPreviewModal: React.FC<Props> = ({
       lineIndex,
       attachmentRef: attachmentIds[index],
     })
-      .then((blob) => {
+      .then(({ blob, fileName: name }) => {
         if (revoked) return;
         url = URL.createObjectURL(blob);
         setBlobUrl(url);
         setBlobType(blob.type || "");
+        setFileName(name || "");
       })
       .catch((error) => {
         if (!revoked) {
@@ -81,11 +88,16 @@ const ReceiptPreviewModal: React.FC<Props> = ({
 
   const handleDownload = () => {
     if (!blobUrl) return;
-    
+
     try {
+      // Prefer the BE-provided file name (keeps the real extension so the
+      // OS opens it correctly). Fall back to a name derived from the MIME
+      // type when the BE didn't send one.
+      const extFromType = blobType.includes("/") ? blobType.split("/")[1] : "";
+      const fallback = `receipt-${index + 1}${extFromType ? `.${extFromType}` : ""}`;
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = `receipt-${index + 1}`;
+      a.download = fileName || fallback;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -105,8 +117,9 @@ const ReceiptPreviewModal: React.FC<Props> = ({
       bodyStyle={{ padding: 0, height: "82vh", display: "flex", flexDirection: "column" }}
       title={
         <Space style={{ width: "100%", justifyContent: "space-between" }}>
-          <Text>
-            Receipt {total > 1 ? `${index + 1} of ${total}` : ""}
+          <Text ellipsis style={{ maxWidth: "50vw" }}>
+            {fileName || `Receipt${total > 1 ? ` ${index + 1} of ${total}` : ""}`}
+            {fileName && total > 1 ? ` (${index + 1} of ${total})` : ""}
           </Text>
           <Space>
             {total > 1 && (

@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Empty, Button, Tooltip, Tag, Spin, Popconfirm } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import type { ExpenseReport } from "../../types/domain.types";
 import ExpenseStatusChip from "../atoms/ExpenseStatusChip";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import { formatExpenseDateRange } from "../../utils/expenseTransformations";
+import { parseFlexibleDate } from "../../utils/dateHelpers";
 import { EXPENSE_TYPE_LABELS } from "../../utils/expenseConstants";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseList.module.css";
@@ -22,6 +23,16 @@ interface Props {
    * fired only after the user confirms the popconfirm.
    */
   onDeleteDraft?: (expense: ExpenseReport) => void;
+  /**
+   * Filter inputs from the search bar. Filtering is applied client-side here
+   * (the landing fetches the full list once), so the controls work uniformly
+   * and instantly without depending on server-side filter support.
+   * dateRange is [from, to] in DD/MM/YYYY (the picker's display format).
+   */
+  searchTerm?: string;
+  statusFilter?: string | null;
+  typeFilter?: string | null;
+  dateRange?: [string, string] | null;
 }
 
 const ExpenseListTable: React.FC<Props> = ({
@@ -31,8 +42,52 @@ const ExpenseListTable: React.FC<Props> = ({
   onRowClick,
   onNewExpense,
   onDeleteDraft,
+  searchTerm = "",
+  statusFilter = null,
+  typeFilter = null,
+  dateRange = null,
 }) => {
-  if (loading && expenses.length === 0) {
+  // All filtering happens client-side against the full list the store holds.
+  // Mirrors TravelListTable so the "My Expenses" filters behave like every
+  // other screen. An expense matches the date range when ANY of its line
+  // items falls within [from, to].
+  const filteredExpenses = useMemo(() => {
+    let rows = expenses;
+
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      rows = rows.filter(
+        (r) =>
+          r.requestId?.toLowerCase().includes(term) ||
+          r.purpose?.toLowerCase().includes(term),
+      );
+    }
+
+    if (statusFilter) {
+      rows = rows.filter((r) => r.status === statusFilter);
+    }
+
+    if (typeFilter) {
+      rows = rows.filter((r) => r.expenseType === typeFilter);
+    }
+
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const from = parseFlexibleDate(dateRange[0])?.startOf("day");
+      const to = parseFlexibleDate(dateRange[1])?.endOf("day");
+      if (from && to) {
+        rows = rows.filter((r) =>
+          (r.items ?? []).some((item) => {
+            const d = parseFlexibleDate(item.expenseDate);
+            return d && !d.isBefore(from) && !d.isAfter(to);
+          }),
+        );
+      }
+    }
+
+    return rows;
+  }, [expenses, searchTerm, statusFilter, typeFilter, dateRange]);
+
+  if (loading && filteredExpenses.length === 0) {
     return (
       <div className={styles.tableWrapper} style={{ textAlign: "center", padding: "32px 0" }}>
         <Spin />
@@ -40,18 +95,23 @@ const ExpenseListTable: React.FC<Props> = ({
     );
   }
 
-  if (!loading && expenses.length === 0) {
+  if (!loading && filteredExpenses.length === 0) {
+    // Distinguish "no expenses at all" (offer the create CTA) from "filters
+    // excluded everything" (the list has rows, just none match).
+    const noneAtAll = expenses.length === 0;
     return (
       <div className={styles.tableWrapper}>
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           imageStyle={{ height: 40 }}
           description={
-            <span style={{ color: "#8c8c8c", fontSize: 13 }}>No expense reports yet</span>
+            <span style={{ color: "#8c8c8c", fontSize: 13 }}>
+              {noneAtAll ? "No expense reports yet" : "No expense reports match your filters"}
+            </span>
           }
           style={{ padding: "32px 0" }}
         >
-          {onNewExpense && (
+          {noneAtAll && onNewExpense && (
             <Can I="add">
               <Button type="primary" size="small" onClick={onNewExpense}>
                 + New Expense
@@ -66,7 +126,7 @@ const ExpenseListTable: React.FC<Props> = ({
   return (
     <div className={styles.tableWrapper}>
       <div className={styles.cardList}>
-        {expenses.map((r) => {
+        {filteredExpenses.map((r) => {
           const isSelected = r.handle === selectedHandle;
           return (
             <div
@@ -153,7 +213,7 @@ const ExpenseListTable: React.FC<Props> = ({
         })}
       </div>
       <div className={styles.recordCount}>
-        Showing {expenses.length} record{expenses.length !== 1 ? "s" : ""}
+        Showing {filteredExpenses.length} record{filteredExpenses.length !== 1 ? "s" : ""}
       </div>
     </div>
   );

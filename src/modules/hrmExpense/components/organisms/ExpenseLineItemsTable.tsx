@@ -12,10 +12,10 @@ import OutOfPolicyBanner from "../molecules/OutOfPolicyBanner";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseLineItems.module.css";
 import dayjs from "dayjs";
-// Side-effect import: extends dayjs with the plugins AntD DatePicker needs
-// for calendar cell rendering. Without this the picker shows "Invalid Date"
-// in every cell.
-import "../../utils/dateHelpers";
+// parseFlexibleDate also (via this module) extends dayjs with the plugins
+// AntD DatePicker needs for calendar cell rendering. Without that side effect
+// the picker shows "Invalid Date" in every cell.
+import { parseFlexibleDate } from "../../utils/dateHelpers";
 
 const { Text } = Typography;
 
@@ -180,13 +180,13 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
               format={dateFormat}
               size="small"
               style={{ width: "100%" }}
-              value={editRow.expenseDate ? dayjs(editRow.expenseDate, dateFormat) : null}
+              value={parseFlexibleDate(editRow.expenseDate)}
               disabledDate={isDateDisabled}
               onChange={(_, s) => setEditRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
             />
           </Tooltip>
         ) : (
-          dayjs(d).format("DD MMM")
+          parseFlexibleDate(d)?.format("DD MMM") ?? "—"
         ),
     },
     {
@@ -422,7 +422,7 @@ const ExpenseLineItemsTable: React.FC<Props> = ({
                     format={dateFormat}
                     placeholder="Date"
                     style={{ width: 120 }}
-                    value={newRow.expenseDate ? dayjs(newRow.expenseDate, dateFormat) : null}
+                    value={parseFlexibleDate(newRow.expenseDate)}
                     disabledDate={isDateDisabled}
                     onChange={(_, s) => setNewRow((p) => ({ ...p, expenseDate: (Array.isArray(s) ? s[0] : s) || null }))}
                   />

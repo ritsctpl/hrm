@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Form, Input, DatePicker, Button, Tag, Typography } from "antd";
+import React from "react";
+import { Form, Input, DatePicker, Tag, Typography } from "antd";
 import {
   DollarOutlined,
   CarOutlined,
@@ -78,10 +78,6 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, err
   // items already carry their own per-item dates.
   const needsDateRange =
     formState.expenseType === "TRAVEL" || formState.expenseType === "ADVANCE";
-  // Project / WBS are hidden by default. They auto-reveal when the user already has values.
-  const [showProjectFields, setShowProjectFields] = useState(
-    !!formState.projectCode || !!formState.wbsCode,
-  );
 
   const disabledFromDate = (current: dayjs.Dayjs) => {
     if (!current) return false;
@@ -323,38 +319,29 @@ const ExpenseHeaderForm: React.FC<Props> = ({ formState, onChange, readonly, err
           </Form.Item>
         </div>
 
-        {/* Project + WBS are hidden by default — most users only need cost center. */}
-        {!readonly && !showProjectFields && (
-          <Button
-            type="link"
-            size="small"
-            style={{ padding: 0, fontSize: 12 }}
-            onClick={() => setShowProjectFields(true)}
-          >
-            Need to charge a project? ↓
-          </Button>
-        )}
-        {(showProjectFields || readonly) && (
-          <div className={styles.fieldRow}>
-            <Form.Item label="Project" style={{ marginBottom: 8 }}>
-              <ProjectPicker
-                organizationId={organizationId}
-                employeeId={employeeId}
-                value={formState.projectCode || null}
-                disabled={readonly}
-                onChange={handleProjectSelect}
-              />
-            </Form.Item>
-            <Form.Item label="WBS Code" tooltip="Work Breakdown Structure code" style={{ marginBottom: 8 }}>
-              <Input
-                placeholder="WBS-001"
-                value={formState.wbsCode}
-                onChange={(e) => onChange({ wbsCode: e.target.value })}
-                disabled={readonly}
-              />
-            </Form.Item>
-          </div>
-        )}
+        {/* Project is always visible so it can be charged at create time —
+            mirrors the always-shown Project section on the Travel request form.
+            The picked project's code flows into formState.projectCode and is
+            sent on create/update (see useExpenseMutations.saveDraft). */}
+        <div className={styles.fieldRow}>
+          <Form.Item label="Project" style={{ marginBottom: 8 }}>
+            <ProjectPicker
+              organizationId={organizationId}
+              employeeId={employeeId}
+              value={formState.projectCode || null}
+              disabled={readonly}
+              onChange={handleProjectSelect}
+            />
+          </Form.Item>
+          <Form.Item label="WBS Code" tooltip="Work Breakdown Structure code" style={{ marginBottom: 8 }}>
+            <Input
+              placeholder="WBS-001"
+              value={formState.wbsCode}
+              onChange={(e) => onChange({ wbsCode: e.target.value })}
+              disabled={readonly}
+            />
+          </Form.Item>
+        </div>
 
         <CurrencyFxRow
           currency={formState.currency}

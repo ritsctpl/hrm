@@ -41,3 +41,25 @@ export function parseDateForPicker(
   const parsed = dayjs(dateStr, format, true);
   return parsed.isValid() ? parsed : null;
 }
+
+/**
+ * Parse an expense date that may be in EITHER `DD/MM/YYYY` (picker output)
+ * or `YYYY-MM-DD` (server payload) into a dayjs object.
+ *
+ * Line items round-trip through both shapes: a freshly picked date is stored
+ * as `DD/MM/YYYY`, while items loaded from `/expense/get` carry the server's
+ * `YYYY-MM-DD`. Parsing strictly with a single format makes the other shape
+ * render as "Invalid Date" in the picker / cell. Try both strict formats,
+ * then fall back to lenient parsing so neither representation breaks.
+ */
+export function parseFlexibleDate(
+  dateStr: string | null | undefined
+): dayjs.Dayjs | null {
+  if (!dateStr) return null;
+  const display = dayjs(dateStr, DATE_DISPLAY_FORMAT, true);
+  if (display.isValid()) return display;
+  const iso = dayjs(dateStr, DATE_API_FORMAT, true);
+  if (iso.isValid()) return iso;
+  const lenient = dayjs(dateStr);
+  return lenient.isValid() ? lenient : null;
+}

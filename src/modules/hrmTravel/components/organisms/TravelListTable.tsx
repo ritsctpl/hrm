@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Table, Empty, Button, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import type { TravelRequest } from "../../types/domain.types";
 import TravelStatusChip from "../atoms/TravelStatusChip";
@@ -19,6 +20,9 @@ interface Props {
   onRowClick: (request: TravelRequest) => void;
   onNewRequest?: () => void;
   searchTerm?: string;
+  statusFilter?: string | null;
+  typeFilter?: string | null;
+  dateRange?: [string, string] | null;
 }
 
 const TravelListTable: React.FC<Props> = ({
@@ -28,17 +32,56 @@ const TravelListTable: React.FC<Props> = ({
   onRowClick,
   onNewRequest,
   searchTerm = "",
+  statusFilter = null,
+  typeFilter = null,
+  dateRange = null,
 }) => {
-  // Filter requests based on search term (Req ID and Purpose only)
-  const filteredRequests = searchTerm.trim()
-    ? requests.filter((r) => {
-        const searchLower = searchTerm.toLowerCase();
+  // All filtering happens client-side against the full list the store holds.
+  // The landing fetches every request for the employee once (no per-filter
+  // API calls), so search / status / type / date are applied here uniformly
+  // and instantly. dateRange is [from, to] in YYYY-MM-DD.
+  const filteredRequests = useMemo(() => {
+    let rows = requests;
+
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      rows = rows.filter(
+        (r) =>
+          r.requestId.toLowerCase().includes(term) ||
+          r.purpose.toLowerCase().includes(term),
+      );
+    }
+
+    if (statusFilter) {
+      rows = rows.filter((r) => r.status === statusFilter);
+    }
+
+    if (typeFilter) {
+      rows = rows.filter((r) => r.travelType === typeFilter);
+    }
+
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const from = dayjs(dateRange[0], "YYYY-MM-DD").startOf("day");
+      const to = dayjs(dateRange[1], "YYYY-MM-DD").endOf("day");
+      rows = rows.filter((r) => {
+        // LOCAL travel carries a single travelDate; multi-day travel uses
+        // startDate. Fall back across both so every row has a date to test.
+        const raw =
+          r.travelType === "LOCAL"
+            ? r.travelDate || r.startDate
+            : r.startDate || r.travelDate;
+        if (!raw) return false;
+        const d = dayjs(raw);
         return (
-          r.requestId.toLowerCase().includes(searchLower) ||
-          r.purpose.toLowerCase().includes(searchLower)
+          d.isValid() &&
+          !d.isBefore(from) &&
+          !d.isAfter(to)
         );
-      })
-    : requests;
+      });
+    }
+
+    return rows;
+  }, [requests, searchTerm, statusFilter, typeFilter, dateRange]);
   const columns: ColumnsType<TravelRequest> = [
     {
       title: "Req ID",

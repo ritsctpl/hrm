@@ -226,6 +226,7 @@ const HrmTravelScreen: React.FC<Props> = ({
         endDate: formState.endDate,
         startHour: formState.startHour,
         endHour: formState.endHour,
+        projectCode: formState.projectCode || undefined,
         remarks: formState.remarks,
         coTravellerEmpIds: formState.coTravellerIds,
         base64Docu: formState.attachmentRefs,

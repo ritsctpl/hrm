@@ -81,7 +81,10 @@ const defaultState = {
   selectedRequest: null,
   eligibleCoTravellers: [],
   policies: [],
-  listLoading: false,
+  // Start true so the list shows a spinner from the very first paint until the
+  // first successful fetch completes — avoids a flash of the empty state (or
+  // stale data) before the signed-in employee is resolved and data arrives.
+  listLoading: true,
   inboxLoading: false,
   detailLoading: false,
   saving: false,
