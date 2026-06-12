@@ -3,10 +3,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
-import { LockOutlined, UnlockOutlined, ApartmentOutlined, DownloadOutlined, CalendarOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, ApartmentOutlined, DownloadOutlined, CalendarOutlined, BulbOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
 import HolidayCalendarView from './components/organisms/HolidayCalendarView';
+import HolidayYearCalendar from './components/organisms/HolidayYearCalendar';
+import SuggestHolidaysModal from './components/organisms/SuggestHolidaysModal';
 import AuditLogDrawer from './components/organisms/AuditLogDrawer';
 import HolidayFormPanel from './components/organisms/HolidayFormPanel';
 import BuMappingPanel from './components/organisms/BuMappingPanel';
@@ -64,6 +66,19 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
   const [statsFilter, setStatsFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingIcal, setExportingIcal] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
+
+  const existingDates = useMemo(
+    () => new Set(holidays.map((h) => String(h.date).slice(0, 10))),
+    [holidays]
+  );
+
+  const reloadHolidays = () =>
+    loadHolidays({
+      groupHandle: group.handle,
+      category: categoryFilter ?? undefined,
+      month: monthFilter ?? undefined,
+    });
 
   // Filter holidays based on stats filter
   const filteredHolidays = useMemo(() => {
@@ -181,6 +196,24 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   const tabItems = [
     {
+      key: 'year',
+      label: 'Year',
+      children: (
+        <HolidayYearCalendar
+          year={group.year}
+          holidays={holidays}
+          categories={categories}
+          organizationId={organizationId}
+          groupHandle={group.handle}
+          groupStatus={group.status}
+          canEdit={permissions.canEdit}
+          createdBy={userId}
+          createdByRole={userRole}
+          onChanged={reloadHolidays}
+        />
+      ),
+    },
+    {
       key: 'list',
       label: 'List',
       children: (
@@ -262,6 +295,17 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
                 onClick={openUnlockModal}
               >
                 Unlock
+              </Button>
+            </Can>
+          )}
+          {permissions.canEdit && group.status !== 'LOCKED' && (
+            <Can I="add">
+              <Button
+                size="small"
+                icon={<BulbOutlined />}
+                onClick={() => setShowSuggest(true)}
+              >
+                Suggest Holidays
               </Button>
             </Can>
           )}
@@ -351,6 +395,21 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
         onImported={() => {
           loadHolidays({ groupHandle: group.handle });
           closeImport();
+        }}
+      />
+
+      <SuggestHolidaysModal
+        open={showSuggest}
+        organizationId={organizationId}
+        groupHandle={group.handle}
+        groupYear={group.year}
+        existingDates={existingDates}
+        createdBy={userId}
+        createdByRole={userRole}
+        onClose={() => setShowSuggest(false)}
+        onAdded={async () => {
+          setShowSuggest(false);
+          await reloadHolidays();
         }}
       />
 
