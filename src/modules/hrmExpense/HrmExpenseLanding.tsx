@@ -8,7 +8,6 @@ import CommonAppBar from "@/components/CommonAppBar";
 import { useHrmExpenseStore } from "./stores/hrmExpenseStore";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useExpenseMutations } from "./hooks/useExpenseMutations";
-import { useDebounce } from "./hooks/useDebounce";
 import ExpenseSearchBar from "./components/molecules/ExpenseSearchBar";
 import ExpenseListTable from "./components/organisms/ExpenseListTable";
 import SupervisorInboxTable from "./components/organisms/SupervisorInboxTable";
@@ -65,7 +64,6 @@ const HrmExpenseLanding: React.FC = () => {
     resetDraftItems,
   } = useHrmExpenseStore();
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [exporting, setExporting] = useState(false);
 
   const {
