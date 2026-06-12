@@ -13,6 +13,9 @@ export interface HolidayGroup {
   groupName: string;
   year: number;
   description?: string;
+  country?: string;
+  state?: string;
+  isGeneral?: boolean;
   status: HolidayGroupStatus;
   colorScheme?: Record<string, string>;
   totalHolidays: number;

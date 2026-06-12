@@ -1,21 +1,37 @@
 'use client';
 
-import { useState } from 'react';
-import { Modal, Form, Input, Select, DatePicker, message, Button } from 'antd';
+import { useMemo, useState } from 'react';
+import { Modal, Form, Select, DatePicker, AutoComplete, Typography, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
+import Holidays from 'date-holidays';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import type { HolidayGroup } from '../../types/domain.types';
-import type { HolidayResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
 import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
+
+const { Text } = Typography;
 
 interface HolidayCreateModalProps {
   open: boolean;
   groups: HolidayGroup[];
   onClose: () => void;
   onCreated: () => void;
+}
+
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  public: 'NATIONAL',
+  bank: 'NATIONAL',
+  optional: 'FESTIVAL',
+  observance: 'LOCAL',
+  school: 'LOCAL',
+};
+
+function toOptions(map: Record<string, string> | undefined) {
+  return Object.entries(map ?? {})
+    .map(([value, label]) => ({ value, label: `${label} (${value})` }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export default function HolidayCreateModal({ open, groups, onClose, onCreated }: HolidayCreateModalProps) {
@@ -27,33 +43,85 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
   const userRole = cookies.userRole ?? '';
   const userId = employeeCode;
 
+  // Country for suggestions (date-holidays).
+  const [country, setCountry] = useState<string>('IN');
+
+  const selectedGroups = Form.useWatch('groupHandle', form);
+  const watchedDate = Form.useWatch('date', form);
+
+  const base = useMemo(() => new Holidays(), []);
+  const countryOptions = useMemo(() => toOptions(base.getCountries() as Record<string, string>), [base]);
+
+  // Suggestions follow the selected group's year (fallback: picked date / current year).
+  const suggestionYear = useMemo(() => {
+    const handles = Array.isArray(selectedGroups) ? selectedGroups : selectedGroups ? [selectedGroups] : [];
+    const g = groups.find((gr) => handles.includes(gr.handle));
+    if (g?.year) return g.year;
+    if (watchedDate) return dayjs(watchedDate).year();
+    return new Date().getFullYear();
+  }, [selectedGroups, watchedDate, groups]);
+
+  const suggestions = useMemo(() => {
+    if (!country) return [] as { name: string; date: string; type: string }[];
+    try {
+      const hd = new Holidays(country);
+      return ((hd.getHolidays(suggestionYear) ?? []) as Array<{ name: string; date: string; type: string }>).map((h) => ({
+        name: h.name,
+        date: String(h.date).slice(0, 10),
+        type: h.type,
+      }));
+    } catch {
+      return [];
+    }
+  }, [country, suggestionYear]);
+
+  const nameOptions = useMemo(
+    () =>
+      suggestions.map((s) => ({
+        value: s.name,
+        label: `${s.name} — ${dayjs(s.date).format('DD MMM')}`,
+        date: s.date,
+        category: TYPE_TO_CATEGORY[s.type] ?? 'NATIONAL',
+        optional: s.type === 'optional',
+      })),
+    [suggestions]
+  );
+
+  const handlePickSuggestion = (_value: string, option: { date?: string; category?: string }) => {
+    if (option?.date) {
+      form.setFieldsValue({ date: dayjs(option.date), category: option.category ?? 'NATIONAL' });
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filterByValue = (input: string, option?: any) =>
+    String(option?.value ?? '').toLowerCase().includes(input.toLowerCase());
+
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      
+
       const dateStr = values.date ? dayjs(values.date).format('YYYY-MM-DD') : '';
       const groupHandles = Array.isArray(values.groupHandle) ? values.groupHandle : [values.groupHandle];
-      
-      // Create holiday for each selected group
+
       const results = await Promise.allSettled(
-        groupHandles.map(groupHandle =>
-          HrmHolidayService.createHoliday({ organizationId,
+        groupHandles.map((groupHandle) =>
+          HrmHolidayService.createHoliday({
+            organizationId,
             groupHandle,
             name: values.name,
             date: dateStr,
             category: values.category || 'NATIONAL',
-            reason: values.description,
             createdBy: userId,
             createdByRole: userRole,
           })
         )
       );
-      
-      // Count successes and failures
-      const successes = results.filter(r => r.status === 'fulfilled').length;
-      const failures = results.filter(r => r.status === 'rejected').length;
-      
+
+      const successes = results.filter((r) => r.status === 'fulfilled').length;
+      const failures = results.filter((r) => r.status === 'rejected').length;
+
       if (successes > 0) {
         if (failures === 0) {
           message.success(`Holiday created successfully in ${successes} group${successes > 1 ? 's' : ''}`);
@@ -65,7 +133,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       } else {
         message.error('Failed to create holiday in all selected groups');
       }
-    } catch (error) {
+    } catch {
       message.error('Failed to create holiday');
     } finally {
       setSaving(false);
@@ -78,7 +146,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       title="Create Holiday"
       onCancel={onClose}
       destroyOnHidden
-      width={500}
+      width={520}
       footer={[
         <Button key="cancel" onClick={onClose}>
           Cancel
@@ -99,35 +167,42 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
           <Select
             mode="multiple"
             placeholder="Select holiday group(s)"
-            options={groups.map(g => ({
-              value: g.handle,
-              label: `${g.groupName} (${g.year})`,
-            }))}
+            options={groups.map((g) => ({ value: g.handle, label: `${g.groupName} (${g.year})` }))}
             maxTagCount="responsive"
           />
         </Form.Item>
-        
+
+        {/* Country drives the holiday-name suggestions below. */}
+        <div style={{ marginBottom: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>Country</Text>
+          <Select
+            showSearch
+            style={{ width: '100%' }}
+            value={country}
+            options={countryOptions}
+            optionFilterProp="label"
+            onChange={setCountry}
+          />
+        </div>
+
         <Form.Item
-          label="Holiday Name"
+          label={`Holiday Name (suggestions for ${suggestionYear})`}
           name="name"
           rules={[{ required: true, message: 'Holiday name is required' }]}
         >
-          <Input placeholder="e.g. Republic Day" maxLength={120} />
+          <AutoComplete
+            options={nameOptions}
+            onSelect={handlePickSuggestion}
+            filterOption={filterByValue}
+            placeholder="Pick a suggested holiday or type your own"
+          />
         </Form.Item>
-        
-        <Form.Item
-          label="Date"
-          name="date"
-          rules={[{ required: true, message: 'Date is required' }]}
-        >
+
+        <Form.Item label="Date" name="date" rules={[{ required: true, message: 'Date is required' }]}>
           <DatePicker style={{ width: '100%' }} format="DD-MMM-YYYY" />
         </Form.Item>
-        
-        <Form.Item
-          label="Category"
-          name="category"
-          initialValue="NATIONAL"
-        >
+
+        <Form.Item label="Category" name="category" initialValue="NATIONAL">
           <Select
             options={[
               { value: 'NATIONAL', label: 'National' },
@@ -136,10 +211,6 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
               { value: 'COMPENSATORY', label: 'Compensatory' },
             ]}
           />
-        </Form.Item>
-        
-        <Form.Item label="Description" name="description">
-          <Input.TextArea rows={2} maxLength={512} placeholder="Optional description" />
         </Form.Item>
       </Form>
     </Modal>

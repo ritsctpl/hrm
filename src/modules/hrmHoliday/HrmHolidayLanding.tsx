@@ -63,15 +63,12 @@ export default function HrmHolidayLanding() {
     setGroupsLoading(true);
     setGroupsError(null);
     try {
-      // Non-manager employees only see PUBLISHED groups — DRAFT and LOCKED
-      // states are admin/manager surface area. Force the filter regardless
-      // of whatever the (disabled) status dropdown currently holds.
-      const effectiveStatus = permissions.seeDraftGroups
-        ? searchParams.status
-        : 'PUBLISHED';
+      // Show ALL statuses (DRAFT/PUBLISHED/LOCKED). Who can open the module and
+      // what they can do is governed by RBAC (ModuleAccessGate + <Can>), so we
+      // don't force a PUBLISHED-only view by role here.
       const res = await HrmHolidayService.listGroups({ organizationId,
         year: searchParams.year,
-        status: effectiveStatus,
+        status: searchParams.status,
         requestingUserRole: userRole,
         buHandle: searchParams.buHandle,
         search: searchParams.search?.trim() || undefined,
@@ -191,7 +188,7 @@ export default function HrmHolidayLanding() {
         onDuplicateYear={selectedGroup ? openDuplicateModal : undefined}
         canManageSettings={permissions.canManageSettings}
         hasSelectedGroup={!!selectedGroup}
-        canSeeDraftGroups={permissions.seeDraftGroups}
+        canSeeDraftGroups={true}
       />
 
       <HolidaysMasterDetail>

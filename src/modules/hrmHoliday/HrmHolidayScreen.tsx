@@ -27,6 +27,26 @@ import Can from '../hrmAccess/components/Can';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
 import styles from './styles/HolidayDetail.module.css';
 
+// Friendly text for the backend approval-authority codes (publish lifecycle).
+const HOLIDAY_CODE_MESSAGES: Record<string, string> = {
+  NOT_AUTHORIZED_TO_PUBLISH:
+    'You are not authorized to publish this group. Only the designated primary approver or a delegate can publish.',
+  NOT_PRIMARY_APPROVER: 'Only the primary approver can delegate publishing authority.',
+  ALREADY_DELEGATED: 'This user already has delegated publishing authority.',
+  APPROVAL_DELEGATED: 'Publishing authority delegated.',
+  APPROVAL_REVOKED: 'Publishing authority revoked.',
+};
+
+/** Pull the backend message/code off a response payload or an axios error. */
+function holidayBackendMsg(payload: unknown, fallback: string): string {
+  const p = payload as { message?: string; messageCode?: string } | undefined;
+  return (
+    p?.message ||
+    (p?.messageCode ? HOLIDAY_CODE_MESSAGES[p.messageCode] : undefined) ||
+    fallback
+  );
+}
+
 export default function HrmHolidayScreen({ group, organizationId, permissions }: HrmHolidayScreenProps) {
   const {
     holidays,
@@ -112,12 +132,18 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   const handlePublish = async (comment?: string) => {
     try {
-      await HrmHolidayService.publishGroup({ organizationId, groupHandle: group.handle, comment, publishedBy: userId, publishedByRole: userRole });
+      const res = await HrmHolidayService.publishGroup({ organizationId, groupHandle: group.handle, comment, publishedBy: userId, publishedByRole: userRole });
+      // Backend may return 200 with { success:false, messageCode } when the
+      // user isn't an authorized approver — treat that as a failure.
+      if (res && (res as { success?: boolean }).success === false) {
+        message.error(holidayBackendMsg(res, 'Failed to publish group'));
+        return;
+      }
       updateGroupStatus(group.handle, 'PUBLISHED');
       closePublishModal();
       message.success('Holiday group published');
-    } catch {
-      message.error('Failed to publish group');
+    } catch (err) {
+      message.error(holidayBackendMsg((err as { response?: { data?: unknown } })?.response?.data, 'Failed to publish group'));
     }
   };
 
@@ -137,8 +163,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
       updateGroupStatus(group.handle, 'LOCKED');
       closeLockModal();
       message.success('Holiday group locked');
-    } catch {
-      message.error('Failed to lock group');
+    } catch (err) {
+      message.error(holidayBackendMsg((err as { response?: { data?: unknown } })?.response?.data, 'Failed to lock group'));
     }
   };
 
@@ -148,8 +174,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
       updateGroupStatus(group.handle, 'PUBLISHED');
       closeUnlockModal();
       message.success('Holiday group unlocked');
-    } catch {
-      message.error('Failed to unlock group');
+    } catch (err) {
+      message.error(holidayBackendMsg((err as { response?: { data?: unknown } })?.response?.data, 'Failed to unlock group'));
     }
   };
 
@@ -206,6 +232,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
           organizationId={organizationId}
           groupHandle={group.handle}
           groupStatus={group.status}
+          groupCountry={group.country}
           canEdit={permissions.canEdit}
           createdBy={userId}
           createdByRole={userRole}
@@ -298,7 +325,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
               </Button>
             </Can>
           )}
-          {permissions.canEdit && group.status !== 'LOCKED' && (
+          {group.status !== 'LOCKED' && (
             <Can I="add">
               <Button
                 size="small"

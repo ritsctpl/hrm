@@ -66,27 +66,17 @@ export default function SuggestHolidaysModal({
   onAdded,
 }: Props) {
   const [country, setCountry] = useState<string>('IN');
-  const [stateCode, setStateCode] = useState<string | undefined>();
-  const [region, setRegion] = useState<string | undefined>();
   const [types, setTypes] = useState<string[]>(['public', 'optional']);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const base = useMemo(() => new Holidays(), []);
   const countryOptions = useMemo(() => toOptions(base.getCountries() as Record<string, string>), [base]);
-  const stateOptions = useMemo(
-    () => (country ? toOptions(base.getStates(country) as Record<string, string>) : []),
-    [base, country]
-  );
-  const regionOptions = useMemo(
-    () => (country && stateCode ? toOptions(base.getRegions(country, stateCode) as Record<string, string>) : []),
-    [base, country, stateCode]
-  );
 
   const rows = useMemo<SuggestedRow[]>(() => {
     if (!country) return [];
     try {
-      const hd = new Holidays(country, stateCode as string, region as string);
+      const hd = new Holidays(country);
       const list = (hd.getHolidays(groupYear) ?? []) as Array<{ date: string; name: string; type: string }>;
       const seen = new Set<string>();
       return list
@@ -108,7 +98,7 @@ export default function SuggestHolidaysModal({
     } catch {
       return [];
     }
-  }, [country, stateCode, region, groupYear, types, existingDates]);
+  }, [country, groupYear, types, existingDates]);
 
   // Pre-select everything not already in the group whenever the list changes.
   useEffect(() => {
@@ -168,45 +158,16 @@ export default function SuggestHolidaysModal({
       <Space wrap style={{ marginBottom: 12 }}>
         <Select
           showSearch
-          style={{ width: 220 }}
+          style={{ width: 240 }}
           placeholder="Country"
           value={country}
           options={countryOptions}
           optionFilterProp="label"
-          onChange={(v) => {
-            setCountry(v);
-            setStateCode(undefined);
-            setRegion(undefined);
-          }}
-        />
-        <Select
-          showSearch
-          allowClear
-          style={{ width: 200 }}
-          placeholder="State / Province (all)"
-          value={stateCode}
-          options={stateOptions}
-          optionFilterProp="label"
-          disabled={stateOptions.length === 0}
-          onChange={(v) => {
-            setStateCode(v);
-            setRegion(undefined);
-          }}
-        />
-        <Select
-          showSearch
-          allowClear
-          style={{ width: 180 }}
-          placeholder="Region (all)"
-          value={region}
-          options={regionOptions}
-          optionFilterProp="label"
-          disabled={regionOptions.length === 0}
-          onChange={setRegion}
+          onChange={setCountry}
         />
         <Select
           mode="multiple"
-          style={{ minWidth: 200 }}
+          style={{ minWidth: 220 }}
           placeholder="Types"
           value={types}
           options={TYPE_OPTIONS}

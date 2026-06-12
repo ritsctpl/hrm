@@ -386,6 +386,17 @@ export class HrmHolidayService {
     return data;
   }
 
+  /**
+   * HL-BE-3: resolves the employee's effective holidays — region group for the
+   * employee's location, else the General group. `groupType` tells which path.
+   */
+  static async getHolidaysForEmployee(
+    payload: { organizationId: string; employeeId: string; year: number }
+  ): Promise<HolidayApiResponse<{ groupType?: 'REGION' | 'GENERAL'; groupHandle?: string; holidays: HolidayResponse[] }>> {
+    const { data } = await api.post(`${this.BASE}/holiday/integration/for-employee`, payload);
+    return data;
+  }
+
   // ── Statistics ───────────────────────────────────────────────────────
 
   static async getStatistics(
