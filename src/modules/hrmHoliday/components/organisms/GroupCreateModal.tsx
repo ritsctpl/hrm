@@ -50,11 +50,12 @@ export default function GroupCreateModal({ open, onClose, onCreated }: GroupCrea
     try {
       const values = await form.validateFields();
       setSaving(true);
+      // "General" is implicit on the backend: country == null && state == null.
+      // No isGeneral flag is sent — the checkbox just clears country/state.
       const res = await HrmHolidayService.createGroup({ organizationId,
         groupName: values.groupName,
         year: values.year,
         description: values.description,
-        isGeneral,
         country: isGeneral ? undefined : country,
         state: isGeneral ? undefined : stateCode,
         createdBy: employeeCode,
