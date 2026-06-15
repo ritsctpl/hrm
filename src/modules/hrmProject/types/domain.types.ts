@@ -101,7 +101,7 @@ export interface ResourceAllocation {
   role?: string;
   recurring: boolean;
   recurrencePattern?: RecurrencePattern | null;
-  recurrenceDays?: number[] | null;
+  recurrenceDays?: string[] | null;
   status: AllocationStatus;
   approvalRemarks?: string;
   totalAllocatedHours: number;

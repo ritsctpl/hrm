@@ -78,15 +78,15 @@ export const RECURRENCE_PATTERNS = [
   { value: 'MONTHLY', label: 'Monthly' },
 ];
 
-/** ISO day-of-week values per backend contract (1=Mon … 7=Sun). */
+/** Uppercase day-name values per backend contract (MONDAY … SUNDAY). */
 export const WEEKDAYS = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 7, label: 'Sun' },
+  { value: 'MONDAY', label: 'Mon' },
+  { value: 'TUESDAY', label: 'Tue' },
+  { value: 'WEDNESDAY', label: 'Wed' },
+  { value: 'THURSDAY', label: 'Thu' },
+  { value: 'FRIDAY', label: 'Fri' },
+  { value: 'SATURDAY', label: 'Sat' },
+  { value: 'SUNDAY', label: 'Sun' },
 ];
 
 export const BOOKING_TYPES = [

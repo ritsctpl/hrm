@@ -140,7 +140,7 @@ export interface AllocationRequest {
   endDate: string;
   recurring: boolean;
   recurrencePattern?: 'WEEKLY' | 'MONTHLY' | null;
-  recurrenceDays?: number[] | null;
+  recurrenceDays?: string[] | null;
   createdBy: string;
 }
 
@@ -163,7 +163,7 @@ export interface AllocationResponse {
   role?: string;
   recurring: boolean;
   recurrencePattern?: string | null;
-  recurrenceDays?: number[] | null;
+  recurrenceDays?: string[] | null;
   status: string;
   approvalRemarks?: string;
   totalAllocatedHours: number;

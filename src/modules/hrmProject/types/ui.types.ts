@@ -61,7 +61,7 @@ export interface AllocationFormValues {
   endDate: string;
   recurring: boolean;
   recurrencePattern: 'WEEKLY' | 'MONTHLY' | null;
-  recurrenceDays: number[];
+  recurrenceDays: string[];
 }
 
 export interface ProjectKpis {
