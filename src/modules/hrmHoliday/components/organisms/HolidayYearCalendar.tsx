@@ -40,13 +40,14 @@ const TYPE_TO_CATEGORY: Record<string, string> = {
 function computeDateSuggestions(
   date: string,
   country: string,
+  state: string | undefined,
   year: number
 ): { name: string; category: string; optional: boolean }[] {
   if (!date || !country) return [];
   const md = date.slice(5); // MM-DD
   const out: { name: string; category: string; optional: boolean }[] = [];
   try {
-    const hd = new Holidays(country);
+    const hd = new Holidays(country, state || undefined);
     ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string; type: string }>)
       .filter((h) => String(h.date).slice(0, 10) === date)
       .forEach((h) =>
@@ -73,12 +74,13 @@ function computeDateSuggestions(
  */
 function computeYearSuggestions(
   country: string,
+  state: string | undefined,
   year: number
 ): { name: string; date: string; category: string; optional: boolean }[] {
   if (!country) return [];
   const out: { name: string; date: string; category: string; optional: boolean }[] = [];
   try {
-    const hd = new Holidays(country);
+    const hd = new Holidays(country, state || undefined);
     ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string; type: string }>).forEach((h) =>
       out.push({
         name: h.name,
@@ -123,6 +125,7 @@ interface Props {
   groupStatus: 'DRAFT' | 'PUBLISHED' | 'LOCKED';
   /** Region of the group — drives holiday suggestions (date-holidays). */
   groupCountry?: string;
+  groupState?: string;
   canEdit: boolean;
   createdBy: string;
   createdByRole?: string;
@@ -137,6 +140,7 @@ export default function HolidayYearCalendar({
   groupHandle,
   groupStatus,
   groupCountry,
+  groupState,
   canEdit,
   createdBy,
   createdByRole,
@@ -187,6 +191,7 @@ export default function HolidayYearCalendar({
   const [saving, setSaving] = useState(false);
   // Suggestions follow the group's region (date-holidays); default to IN.
   const country = groupCountry || 'IN';
+  const state = groupState || undefined;
   // Bumped after saving a custom holiday so suggestions re-read the catalog.
   const [customVersion, setCustomVersion] = useState(0);
 
@@ -194,7 +199,7 @@ export default function HolidayYearCalendar({
   const libNamesForDate = useMemo(() => {
     if (!dayDate || !country) return new Set<string>();
     try {
-      const hd = new Holidays(country);
+      const hd = new Holidays(country, state || undefined);
       return new Set(
         ((hd.getHolidays(year) ?? []) as Array<{ date: string; name: string }>)
           .filter((h) => String(h.date).slice(0, 10) === dayDate)
@@ -203,7 +208,7 @@ export default function HolidayYearCalendar({
     } catch {
       return new Set<string>();
     }
-  }, [dayDate, country, year]);
+  }, [dayDate, country, state, year]);
 
   // Suggestions for the clicked date = library defaults + saved custom entries.
   // customVersion forces a re-read after a save.
@@ -212,7 +217,7 @@ export default function HolidayYearCalendar({
   // selecting one sets the correct date for the year.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const yearSuggestions = useMemo(
-    () => computeYearSuggestions(country, year),
+    () => computeYearSuggestions(country, state, year),
     [country, year, customVersion]
   );
 
@@ -223,7 +228,7 @@ export default function HolidayYearCalendar({
     setDayDate(date);
     // Pre-fill the form from the date's holiday (library default or saved custom),
     // so the suggestion is driven by the clicked date. Empty when the date has none.
-    const sugg = computeDateSuggestions(date, country, year);
+    const sugg = computeDateSuggestions(date, country, state, year);
     if (sugg.length > 0) {
       setName(sugg[0].name);
       setCategory(sugg[0].category);

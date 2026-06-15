@@ -13,6 +13,9 @@ interface Props {
   organizationId: string;
   groupHandle: string;
   groupYear: number;
+  /** Region of the group — defaults the suggestion picker (date-holidays). */
+  groupCountry?: string;
+  groupState?: string;
   /** Dates (YYYY-MM-DD) already present in the group — used to skip duplicates. */
   existingDates: Set<string>;
   createdBy: string;
@@ -59,24 +62,42 @@ export default function SuggestHolidaysModal({
   organizationId,
   groupHandle,
   groupYear,
+  groupCountry,
+  groupState,
   existingDates,
   createdBy,
   createdByRole,
   onClose,
   onAdded,
 }: Props) {
-  const [country, setCountry] = useState<string>('IN');
+  const [country, setCountry] = useState<string>(groupCountry || 'IN');
+  const [state, setState] = useState<string | undefined>(groupState);
   const [types, setTypes] = useState<string[]>(['public', 'optional']);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Re-default to the group's region whenever the modal is (re)opened for a group
+  useEffect(() => {
+    if (open) {
+      setCountry(groupCountry || 'IN');
+      setState(groupState);
+    }
+  }, [open, groupCountry, groupState]);
+
   const base = useMemo(() => new Holidays(), []);
   const countryOptions = useMemo(() => toOptions(base.getCountries() as Record<string, string>), [base]);
+  const stateOptions = useMemo(() => {
+    try {
+      return toOptions(new Holidays(country).getStates(country) as Record<string, string> | undefined);
+    } catch {
+      return [];
+    }
+  }, [country]);
 
   const rows = useMemo<SuggestedRow[]>(() => {
     if (!country) return [];
     try {
-      const hd = new Holidays(country);
+      const hd = new Holidays(country, state || undefined);
       const list = (hd.getHolidays(groupYear) ?? []) as Array<{ date: string; name: string; type: string }>;
       const seen = new Set<string>();
       return list
@@ -98,7 +119,7 @@ export default function SuggestHolidaysModal({
     } catch {
       return [];
     }
-  }, [country, groupYear, types, existingDates]);
+  }, [country, state, groupYear, types, existingDates]);
 
   // Pre-select everything not already in the group whenever the list changes.
   useEffect(() => {
@@ -158,13 +179,25 @@ export default function SuggestHolidaysModal({
       <Space wrap style={{ marginBottom: 12 }}>
         <Select
           showSearch
-          style={{ width: 240 }}
+          style={{ width: 220 }}
           placeholder="Country"
           value={country}
           options={countryOptions}
           optionFilterProp="label"
-          onChange={setCountry}
+          onChange={(c) => { setCountry(c); setState(undefined); }}
         />
+        {stateOptions.length > 0 && (
+          <Select
+            showSearch
+            allowClear
+            style={{ width: 200 }}
+            placeholder="State / region (optional)"
+            value={state}
+            options={stateOptions}
+            optionFilterProp="label"
+            onChange={(s) => setState(s)}
+          />
+        )}
         <Select
           mode="multiple"
           style={{ minWidth: 220 }}

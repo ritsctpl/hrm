@@ -233,6 +233,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
           groupHandle={group.handle}
           groupStatus={group.status}
           groupCountry={group.country}
+          groupState={group.state}
           canEdit={permissions.canEdit}
           createdBy={userId}
           createdByRole={userRole}
@@ -430,6 +431,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
         organizationId={organizationId}
         groupHandle={group.handle}
         groupYear={group.year}
+        groupCountry={group.country}
+        groupState={group.state}
         existingDates={existingDates}
         createdBy={userId}
         createdByRole={userRole}

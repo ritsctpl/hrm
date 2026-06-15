@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Form, Select, DatePicker, AutoComplete, Typography, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -43,14 +43,34 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
   const userRole = cookies.userRole ?? '';
   const userId = employeeCode;
 
-  // Country for suggestions (date-holidays).
+  // Region for suggestions (date-holidays) — defaults from the selected group.
   const [country, setCountry] = useState<string>('IN');
+  const [state, setState] = useState<string | undefined>(undefined);
 
   const selectedGroups = Form.useWatch('groupHandle', form);
   const watchedDate = Form.useWatch('date', form);
 
+  // Inherit country/state from the first selected group
+  const groupRegion = useMemo(() => {
+    const handles = Array.isArray(selectedGroups) ? selectedGroups : selectedGroups ? [selectedGroups] : [];
+    const g = groups.find((gr) => handles.includes(gr.handle));
+    return { country: g?.country, state: g?.state };
+  }, [selectedGroups, groups]);
+
+  useEffect(() => {
+    if (groupRegion.country) setCountry(groupRegion.country);
+    setState(groupRegion.state);
+  }, [groupRegion.country, groupRegion.state]);
+
   const base = useMemo(() => new Holidays(), []);
   const countryOptions = useMemo(() => toOptions(base.getCountries() as Record<string, string>), [base]);
+  const stateOptions = useMemo(() => {
+    try {
+      return toOptions(new Holidays(country).getStates(country) as Record<string, string> | undefined);
+    } catch {
+      return [];
+    }
+  }, [country]);
 
   // Suggestions follow the selected group's year (fallback: picked date / current year).
   const suggestionYear = useMemo(() => {
@@ -64,7 +84,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
   const suggestions = useMemo(() => {
     if (!country) return [] as { name: string; date: string; type: string }[];
     try {
-      const hd = new Holidays(country);
+      const hd = new Holidays(country, state || undefined);
       return ((hd.getHolidays(suggestionYear) ?? []) as Array<{ name: string; date: string; type: string }>).map((h) => ({
         name: h.name,
         date: String(h.date).slice(0, 10),
@@ -73,7 +93,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
     } catch {
       return [];
     }
-  }, [country, suggestionYear]);
+  }, [country, state, suggestionYear]);
 
   const nameOptions = useMemo(
     () =>
@@ -172,17 +192,33 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
           />
         </Form.Item>
 
-        {/* Country drives the holiday-name suggestions below. */}
-        <div style={{ marginBottom: 12 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>Country</Text>
-          <Select
-            showSearch
-            style={{ width: '100%' }}
-            value={country}
-            options={countryOptions}
-            optionFilterProp="label"
-            onChange={setCountry}
-          />
+        {/* Region (from the selected group) drives the holiday-name suggestions below. */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Country</Text>
+            <Select
+              showSearch
+              style={{ width: '100%' }}
+              value={country}
+              options={countryOptions}
+              optionFilterProp="label"
+              onChange={(c) => { setCountry(c); setState(undefined); }}
+            />
+          </div>
+          {stateOptions.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>State / region</Text>
+              <Select
+                showSearch
+                allowClear
+                style={{ width: '100%' }}
+                value={state}
+                options={stateOptions}
+                optionFilterProp="label"
+                onChange={(s) => setState(s)}
+              />
+            </div>
+          )}
         </div>
 
         <Form.Item
