@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, message, Button } from 'antd';
+import { Modal, Form, Input, Tag, Typography, message, Button } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
@@ -24,6 +24,12 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
   const cookies = parseCookies();
   const userRole = cookies.userRole ?? '';
 
+  // Region is fixed at creation (backend immutable) — shown read-only.
+  const isGeneral = !group.country && !group.state;
+  const regionLabel = isGeneral
+    ? 'General (org-wide fallback)'
+    : [group.country, group.state].filter(Boolean).join(' / ');
+
   useEffect(() => {
     if (open && group) {
       form.setFieldsValue({
@@ -35,11 +41,12 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
 
   const handleOk = async () => {
     const organizationId = getOrganizationId();
-
     try {
       const values = await form.validateFields();
       setSaving(true);
-      const res = await HrmHolidayService.updateGroup({ organizationId,
+      // Region (country/state) is immutable — do NOT send it on update.
+      await HrmHolidayService.updateGroup({
+        organizationId,
         handle: group.handle,
         groupName: values.groupName,
         description: values.description,
@@ -47,18 +54,12 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
         modifiedByRole: userRole,
       });
 
-      // Response is unwrapped by interceptor
-      // Update endpoint returns a string message, not an object
       message.success('Holiday group updated successfully');
-      const updatedGroup: HolidayGroup = {
-        ...group,
-        groupName: values.groupName,
-        description: values.description,
-      };
-      onUpdated(updatedGroup);
+      onUpdated({ ...group, groupName: values.groupName, description: values.description });
     } catch (error) {
       console.error('Failed to update holiday group:', error);
-      message.error('Failed to update holiday group');
+      const beMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(beMsg || 'Failed to update holiday group');
     } finally {
       setSaving(false);
     }
@@ -85,6 +86,13 @@ export default function GroupUpdateModal({ open, group, onClose, onUpdated }: Gr
         <Form.Item label="Group Name" name="groupName" rules={groupFormRules.groupName}>
           <Input placeholder="e.g. India Holidays 2026" maxLength={120} />
         </Form.Item>
+
+        {/* Region is fixed at creation — read-only */}
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Region (cannot be changed)</Typography.Text>
+          <div><Tag color={isGeneral ? 'gold' : 'blue'}>{regionLabel || '—'}</Tag></div>
+        </div>
+
         <Form.Item label="Description" name="description" rules={groupFormRules.description}>
           <Input.TextArea rows={2} maxLength={512} placeholder="Optional description" />
         </Form.Item>
