@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Breadcrumb, Button, Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonAppBar from '@/components/CommonAppBar';
@@ -29,8 +29,6 @@ export default function HrmTimesheetLanding() {
   const weekEnd = dayjs(selectedWeekStart).add(6, 'day');
   const weekLabel = `${dayjs(selectedWeekStart).format('DD MMM')} – ${weekEnd.format('DD MMM YYYY')}`;
 
-  const crumbLabel = activeTab === 'employees' ? 'Employee TimeSheets' : 'Timesheet';
-
   const mainTabs = [
     {
       key: 'my',
@@ -57,17 +55,16 @@ export default function HrmTimesheetLanding() {
     <ModuleAccessGate moduleCode="HRM_TIMESHEET" appTitle="Timesheets">
       <div className="hrm-module-root">
         <CommonAppBar appTitle={`Timesheets — ${weekLabel}`} />
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 16px',
-            borderBottom: '1px solid #f0f0f0',
-          }}
-        >
-          <Breadcrumb items={[{ title: 'Home' }, { title: 'Time' }, { title: crumbLabel }]} />
-          {activeTab === 'my' && (
+        {activeTab === 'my' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              padding: '8px 16px',
+              borderBottom: '1px solid #f0f0f0',
+            }}
+          >
             <Button
               type="primary"
               icon={<ClockCircleOutlined />}
@@ -76,8 +73,8 @@ export default function HrmTimesheetLanding() {
             >
               Enter Time
             </Button>
-          )}
-        </div>
+          </div>
+        )}
         <Tabs
           activeKey={activeTab}
           onChange={(k) => setActiveTab(k as typeof activeTab)}
