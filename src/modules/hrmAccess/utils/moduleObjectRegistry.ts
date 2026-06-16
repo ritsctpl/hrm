@@ -167,6 +167,10 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "asset_category", label: "Categories" },
     { code: "asset_maintenance", label: "Maintenance" },
     { code: "asset_history", label: "History" },
+    // Supervisor view: assets held across the caller's reporting team. The tab
+    // calls /asset/retrieveAll with { supervisor: true } and is gated on this
+    // object's VIEW grant.
+    { code: "asset_team_history", label: "Team History" },
   ],
 
   // ── Compensation ────────────────────────────────────────────────────

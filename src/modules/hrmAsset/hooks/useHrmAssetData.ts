@@ -65,6 +65,23 @@ export function useHrmAssetData() {
     }
   }, [store]);
 
+  // Team History (supervisor view) — assets held across the caller's reporting
+  // team. Same /asset/retrieveAll endpoint, but with the hardcoded
+  // `supervisor: true` flag and the logged-in user's own employeeCode as
+  // `employeeId` (the supervisor whose team to scope to). Kept in its own store
+  // slice so it doesn't clobber the caller's own `assets` list.
+  const loadTeamHistory = useCallback(async () => {
+    store.setLoadingTeamHistory(true);
+    try {
+      const data = await HrmAssetService.getTeamHistoryAssets(getOrganizationId(), getUserId());
+      store.setTeamHistoryAssets(data as unknown as Parameters<typeof store.setTeamHistoryAssets>[0]);
+    } catch {
+      message.error('Failed to load team history');
+    } finally {
+      store.setLoadingTeamHistory(false);
+    }
+  }, [store]);
+
   const loadMyRequests = useCallback(async () => {
     store.setLoadingRequests(true);
     try {
@@ -163,6 +180,7 @@ export function useHrmAssetData() {
     loadDashboard,
     loadCategories,
     loadAssets,
+    loadTeamHistory,
     loadMyRequests,
     loadPendingApprovals,
     loadRequestDetail,

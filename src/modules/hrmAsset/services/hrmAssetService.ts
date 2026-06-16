@@ -94,6 +94,18 @@ export class HrmAssetService {
     return res.data;
   }
 
+  /**
+   * Team History (supervisor view) — assets held across the caller's reporting
+   * team. Hits the same /asset/retrieveAll endpoint but sends the hardcoded
+   * `supervisor: true` flag plus the supervisor's own `employeeId` so the
+   * backend scopes the result to that supervisor's team instead of the caller's
+   * own assets. Backs the "Team History" tab.
+   */
+  static async getTeamHistoryAssets(organizationId: string, employeeId: string): Promise<AssetListResponse[]> {
+    const res = await api.post(`${this.BASE}/asset/retrieveAll`, { organizationId, supervisor: true, employeeId });
+    return res.data;
+  }
+
   static async getAssetsByCategory(organizationId: string, categoryCode: string): Promise<AssetListResponse[]> {
     const res = await api.post(`${this.BASE}/asset/retrieveByCategory`, { organizationId, categoryCode });
     return res.data;

@@ -23,7 +23,7 @@ interface HrmAssetState {
   requestDetail: AssetRequest | null;
   // The request currently being edited in the edit drawer.
   editingRequest: AssetRequest | null;
-  activeTab: 'assets' | 'requests';
+  activeTab: 'assets' | 'requests' | 'teamHistory';
   activeDetailTab: AssetDetailTab;
   isAssetFormOpen: boolean;
   isRequestFormOpen: boolean;
@@ -37,6 +37,10 @@ interface HrmAssetState {
 
   // Data state
   assets: Asset[];
+  // Supervisor's team-wide asset list, backing the Team History tab. Kept
+  // separate from `assets` (the caller's own list) so the two tabs don't
+  // clobber each other.
+  teamHistoryAssets: Asset[];
   categories: AssetCategory[];
   myRequests: AssetRequest[];
   pendingSupervisorRequests: AssetRequest[];
@@ -49,6 +53,7 @@ interface HrmAssetState {
 
   // Loading state
   loadingAssets: boolean;
+  loadingTeamHistory: boolean;
   loadingCategories: boolean;
   loadingRequests: boolean;
   loadingRequestDetail: boolean;
@@ -67,7 +72,7 @@ interface HrmAssetState {
   setSelectedAsset: (asset: Asset | null) => void;
   setSelectedRequest: (request: AssetRequest | null) => void;
   setRequestDetail: (request: AssetRequest | null) => void;
-  setActiveTab: (tab: 'assets' | 'requests') => void;
+  setActiveTab: (tab: 'assets' | 'requests' | 'teamHistory') => void;
   setActiveDetailTab: (tab: AssetDetailTab) => void;
   openAssetForm: () => void;
   closeAssetForm: () => void;
@@ -87,6 +92,7 @@ interface HrmAssetState {
 
   // Data actions
   setAssets: (assets: Asset[]) => void;
+  setTeamHistoryAssets: (assets: Asset[]) => void;
   updateAssetInList: (assetId: string, changes: Partial<Asset>) => void;
   setCategories: (categories: AssetCategory[]) => void;
   setMyRequests: (requests: AssetRequest[]) => void;
@@ -100,6 +106,7 @@ interface HrmAssetState {
 
   // Loading actions
   setLoadingAssets: (v: boolean) => void;
+  setLoadingTeamHistory: (v: boolean) => void;
   setLoadingCategories: (v: boolean) => void;
   setLoadingRequests: (v: boolean) => void;
   setLoadingRequestDetail: (v: boolean) => void;
@@ -134,6 +141,7 @@ const defaultState = {
   filterStatus: '',
   filterLocation: '',
   assets: [] as Asset[],
+  teamHistoryAssets: [] as Asset[],
   categories: [] as AssetCategory[],
   myRequests: [] as AssetRequest[],
   pendingSupervisorRequests: [] as AssetRequest[],
@@ -144,6 +152,7 @@ const defaultState = {
   maintenanceHistory: [] as AssetMaintenanceEvent[],
   depreciationHistory: [] as AssetDepreciationSnapshot[],
   loadingAssets: false,
+  loadingTeamHistory: false,
   loadingCategories: false,
   loadingRequests: false,
   loadingRequestDetail: false,
@@ -186,6 +195,7 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   clearFilters: () => set({ searchQuery: '', filterCategory: '', filterStatus: '', filterLocation: '' }),
 
   setAssets: (assets) => set({ assets }),
+  setTeamHistoryAssets: (teamHistoryAssets) => set({ teamHistoryAssets }),
   updateAssetInList: (assetId, changes) =>
     set((s) => ({
       assets: s.assets.map((a) => (a.assetId === assetId ? { ...a, ...changes } : a)),
@@ -204,6 +214,7 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   setDepreciationHistory: (depreciationHistory) => set({ depreciationHistory }),
 
   setLoadingAssets: (v) => set({ loadingAssets: v }),
+  setLoadingTeamHistory: (v) => set({ loadingTeamHistory: v }),
   setLoadingCategories: (v) => set({ loadingCategories: v }),
   setLoadingRequests: (v) => set({ loadingRequests: v }),
   setLoadingRequestDetail: (v) => set({ loadingRequestDetail: v }),

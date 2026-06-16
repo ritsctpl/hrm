@@ -18,6 +18,7 @@ import AssetForm from './components/organisms/AssetForm';
 import AssetCategoryForm from './components/organisms/AssetCategoryForm';
 import AssetRequestForm from './components/organisms/AssetRequestForm';
 import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailTemplate';
+import AssetTeamHistoryTab from './components/organisms/AssetTeamHistoryTab';
 import HrmAssetScreen from './HrmAssetScreen';
 import type { Asset, AssetRequest } from './types/domain.types';
 import { useCan } from '../hrmAccess/hooks/useCan';
@@ -53,6 +54,10 @@ const HrmAssetLanding: React.FC = () => {
   const assetPerms = useCan('HRM_ASSET', 'asset_record');
   const approvalPerms = useCan('HRM_ASSET', 'asset_approval');        // reporting manager
   const allApprovalPerms = useCan('HRM_ASSET', 'asset_all_approval'); // admin
+  // Team History — supervisor view of the team's assets. Tab is shown only when
+  // the user holds the asset_team_history VIEW grant.
+  const teamHistoryPerms = useCan('HRM_ASSET', 'asset_team_history');
+  const canViewTeamHistory = teamHistoryPerms.canView;
   const canViewAssets = assetPerms.canView;
   // Signed-in employee — used to load the "My Assets" (allocated-to-me) list
   // for non-admins, who don't have the full-register asset_record grant.
@@ -123,6 +128,16 @@ const HrmAssetLanding: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // Team History is loaded lazily — only when the user opens the tab and only
+  // if they hold the permission (so no forbidden /asset/retrieveAll?supervisor
+  // call fires for users without the grant).
+  useEffect(() => {
+    if (activeTab === 'teamHistory' && canViewTeamHistory) {
+      data.loadTeamHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, canViewTeamHistory]);
 
   // Load asset detail data when selecting an asset
   const selectedAssetId = store.selectedAsset?.assetId;
@@ -369,6 +384,15 @@ const HrmAssetLanding: React.FC = () => {
       ),
       children: requestsTabContent,
     },
+    // Team History — supervisor-only view of the team's assets. Visible solely
+    // when the asset_team_history VIEW grant is present.
+    ...(canViewTeamHistory
+      ? [{
+          key: 'teamHistory',
+          label: 'Team History',
+          children: <AssetTeamHistoryTab onReload={data.loadTeamHistory} />,
+        }]
+      : []),
   ];
 
   // Never point Tabs at a hidden key (e.g. 'assets' for a user without access,
@@ -388,7 +412,7 @@ const HrmAssetLanding: React.FC = () => {
       <div className={`${styles.assetContent} ${styles.tabsWrapper}`}>
         <Tabs
           activeKey={activeTabKey}
-          onChange={(k) => store.setActiveTab(k as 'assets' | 'requests')}
+          onChange={(k) => store.setActiveTab(k as 'assets' | 'requests' | 'teamHistory')}
           items={tabItems}
           size="small"
           tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}

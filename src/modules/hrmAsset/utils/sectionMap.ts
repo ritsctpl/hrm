@@ -9,4 +9,5 @@ export const hrmAssetSectionMap: Record<string, string> = {
   categories: 'asset_category',
   maintenance: 'asset_maintenance',
   history: 'asset_history',
+  teamHistory: 'asset_team_history',
 };
