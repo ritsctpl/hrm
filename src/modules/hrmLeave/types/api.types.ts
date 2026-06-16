@@ -670,13 +670,18 @@ export interface TeamCalendarRequest {
 }
 
 export interface TeamCalendarEntry {
-  employeeId: string;
-  employeeName: string;
   date: string;
-  leaveTypeCode: string;
-  leaveTypeName: string;
-  dayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
-  status: LeaveRequestStatus;
+  // Leave rows carry these; holiday rows (holiday === true) return null for
+  // every employee/leave field and only populate holidayName.
+  employeeId: string | null;
+  employeeName: string | null;
+  leaveTypeCode: string | null;
+  leaveTypeName: string | null;
+  dayType?: "FULL" | "FIRST_HALF" | "SECOND_HALF" | null;
+  status: LeaveRequestStatus | null;
+  requestHandle?: string | null;
+  holidayName?: string | null;
+  holiday?: boolean;
 }
 
 // ── Amend Leave Request ──────────────────────────────────────────────

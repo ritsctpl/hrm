@@ -48,7 +48,9 @@ const LeaveCalendarView: React.FC<LeaveCalendarViewProps> = ({
                   color={getLeaveTypeColor(req.leaveTypeCode)}
                   text={
                     <span style={{ fontSize: 10 }}>
-                      {teamView ? req.employeeName.split(" ")[0] : req.leaveTypeName}
+                      {teamView
+                        ? (req.employeeName || req.employeeId).split(" ")[0]
+                        : req.leaveTypeName}
                     </span>
                   }
                 />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { Calendar, Badge, Spin, Segmented, Tooltip, Tag } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
@@ -81,11 +81,11 @@ const EntryTooltip: React.FC<{ entry: TeamCalendarEntry }> = ({ entry }) => (
     </div>
     <div>
       <span style={{ color: "#ccc" }}>Day: </span>
-      {entry.dayType === "FULL"
-        ? "Full Day"
-        : entry.dayType === "FIRST_HALF"
+      {entry.dayType === "FIRST_HALF"
         ? "First Half (AM)"
-        : "Second Half (PM)"}
+        : entry.dayType === "SECOND_HALF"
+        ? "Second Half (PM)"
+        : "Full Day"}
     </div>
     <div>
       <span style={{ color: "#ccc" }}>Status: </span>
@@ -139,7 +139,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                       color={getLeaveTypeColor(e.leaveTypeCode)}
                       text={
                         <span style={{ fontSize: 10 }}>
-                          {e.employeeName.split(" ")[0]}
+                          {(e.employeeName || e.employeeId || "—").split(" ")[0]}
                         </span>
                       }
                     />
@@ -155,7 +155,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                     <div style={{ fontSize: 12 }}>
                       {dayEntries.slice(2).map((e, idx) => (
                         <div key={`${e.employeeId}-overflow-${idx}`}>
-                          {e.employeeName} — {e.leaveTypeName}
+                          {e.employeeName || e.employeeId || "—"} —{" "}
+                          {e.leaveTypeName}
                         </div>
                       ))}
                     </div>
@@ -228,7 +229,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({
       const dateStr = day.format("YYYY-MM-DD");
       const dayEntries = entriesByDate[dateStr] ?? [];
       dayEntries.forEach((e) => {
-        employeeMap[e.employeeId] = e.employeeName;
+        if (!e.employeeId) return;
+        employeeMap[e.employeeId] = e.employeeName || e.employeeId;
       });
     });
     // Sort alphabetically by name
@@ -416,7 +418,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({
                             }}
                           >
                             {e.leaveTypeCode}
-                            {e.dayType !== "FULL" && (
+                            {e.dayType && e.dayType !== "FULL" && (
                               <span style={{ opacity: 0.85, marginLeft: 2 }}>
                                 {e.dayType === "FIRST_HALF" ? "AM" : "PM"}
                               </span>
@@ -455,7 +457,7 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
   const [entries, setEntries] = useState<TeamCalendarEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { getHolidayName } = useHolidayCalendar(year);
+  const { getHolidayName: getHolidayFromCalendar } = useHolidayCalendar(year);
 
   // Derive the fetch month/year from either the month state (monthly view)
   // or the week start (weekly view — week may span two months, use week's month)
@@ -487,14 +489,39 @@ const TeamCalendarView: React.FC<TeamCalendarViewProps> = () => {
     };
   }, [organizationId, supervisorId, fetchMonth, fetchYear]);
 
+  // The team-calendar response mixes two row kinds: actual leave rows and
+  // holiday rows (holiday === true) where every employee/leave field is null.
+  // Keep only real leave rows for badges/counts so holidays never inflate the
+  // leave count and never reach `.split` on a null employeeName.
+  const leaveEntries = useMemo(
+    () => entries.filter((e) => !e.holiday && !!e.employeeId),
+    [entries],
+  );
+
+  // Holiday names surfaced by the team-calendar response, keyed by date.
+  const apiHolidaysByDate = useMemo(() => {
+    const map: Record<string, string> = {};
+    entries.forEach((e) => {
+      if (e.holiday && e.holidayName) map[e.date] = e.holidayName;
+    });
+    return map;
+  }, [entries]);
+
+  // Prefer a holiday name from the API response, falling back to the static
+  // holiday calendar hook.
+  const getHolidayName = useCallback(
+    (dateStr: string) => apiHolidaysByDate[dateStr] ?? getHolidayFromCalendar(dateStr),
+    [apiHolidaysByDate, getHolidayFromCalendar],
+  );
+
   const entriesByDate = useMemo(() => {
     const map: Record<string, TeamCalendarEntry[]> = {};
-    entries.forEach((e) => {
+    leaveEntries.forEach((e) => {
       if (!map[e.date]) map[e.date] = [];
       map[e.date].push(e);
     });
     return map;
-  }, [entries]);
+  }, [leaveEntries]);
 
   // ── Week navigation ────────────────────────────────────────────────
 
