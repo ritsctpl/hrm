@@ -2,24 +2,32 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Modal, Form, Input, InputNumber, Switch, Space, Tag, Popconfirm,
-  Select, Typography, Tooltip, Alert, message,
+  Select, Typography, Tooltip, Alert, Dropdown, message,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined, StarOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined, StarOutlined, DownOutlined, SwapOutlined, MergeCellsOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { HrmProjectService } from '../../services/hrmProjectService';
-import type { ProjectTask } from '../../types/domain.types';
+import type { ProjectTask, TaskStatus } from '../../types/domain.types';
 import type { ProjectTaskResponse } from '../../types/api.types';
 import type { TaskFormValues } from '../../types/ui.types';
 import Can from '../../../hrmAccess/components/Can';
 
 const { Text } = Typography;
 
+const TASK_STATUS: Record<string, { label: string; color: string }> = {
+  NOT_STARTED: { label: 'Not started', color: 'default' },
+  IN_PROGRESS: { label: 'In progress', color: 'blue' },
+  COMPLETED: { label: 'Completed', color: 'green' },
+  BLOCKED: { label: 'Blocked', color: 'red' },
+};
+const TASK_STATUS_KEYS: TaskStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED'];
+
 export default function ProjectTasksTab() {
   const { selectedProject, projects } = useHrmProjectStore();
-  const { createTask, updateTask, removeTask, importTasks } = useProjectMutations();
+  const { createTask, updateTask, removeTask, importTasks, updateTaskStatus, moveTaskToProject, mergeTasks } = useProjectMutations();
   const [form] = Form.useForm<TaskFormValues>();
   const [editing, setEditing] = useState<ProjectTask | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -28,6 +36,14 @@ export default function ProjectTasksTab() {
   const [loadingDefaults, setLoadingDefaults] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importSource, setImportSource] = useState<string | undefined>();
+  // Move task to another project
+  const [moveTarget, setMoveTarget] = useState<ProjectTask | null>(null);
+  const [moveDest, setMoveDest] = useState<string | undefined>();
+  const [moveAllocations, setMoveAllocations] = useState(true);
+  // Merge tasks
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTargetId, setMergeTargetId] = useState<string | undefined>();
+  const [mergeSourceIds, setMergeSourceIds] = useState<string[]>([]);
 
   if (!selectedProject) return null;
   const tasks = selectedProject.tasks ?? [];
@@ -58,6 +74,7 @@ export default function ProjectTasksTab() {
       billableRate: t.billableRate ?? undefined,
       billable: t.billable,
       isDefault: t.isDefault,
+      milestoneId: t.milestoneId ?? undefined,
     });
     setModalOpen(true);
   };
@@ -110,6 +127,22 @@ export default function ProjectTasksTab() {
     setImportSource(undefined);
   };
 
+  const doMoveTask = async () => {
+    if (!moveTarget || !moveDest) return;
+    await moveTaskToProject(selectedProject.handle, { taskHandle: moveTarget.handle, targetProjectHandle: moveDest, moveAllocations });
+    setMoveTarget(null);
+    setMoveDest(undefined);
+    setMoveAllocations(true);
+  };
+
+  const doMerge = async () => {
+    if (!mergeTargetId || mergeSourceIds.length === 0) return;
+    await mergeTasks(selectedProject.handle, { sourceTaskHandles: mergeSourceIds, targetTaskHandle: mergeTargetId });
+    setMergeOpen(false);
+    setMergeTargetId(undefined);
+    setMergeSourceIds([]);
+  };
+
   const columns: ColumnsType<ProjectTask> = [
     {
       title: 'Task',
@@ -125,6 +158,38 @@ export default function ProjectTasksTab() {
         </div>
       ),
     },
+    {
+      title: 'Status', dataIndex: 'status', key: 'status', width: 140,
+      render: (s: TaskStatus | undefined, t) => {
+        const stored = (s ?? 'NOT_STARTED') as TaskStatus;
+        // A task with logged timesheet hours can't be "Not started" — show it as In progress
+        // until the backend auto-advances it (or someone sets a status manually).
+        const autoProgress = stored === 'NOT_STARTED' && (t.actualHours ?? 0) > 0;
+        const cur = TASK_STATUS[autoProgress ? 'IN_PROGRESS' : stored];
+        const tag = <Tag color={cur.color} style={{ cursor: canEditTasks ? 'pointer' : 'default', margin: 0 }}>{cur.label}{canEditTasks && <DownOutlined style={{ fontSize: 9, marginLeft: 4 }} />}</Tag>;
+        const inner = canEditTasks ? (
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: TASK_STATUS_KEYS.map((k) => ({ key: k, label: TASK_STATUS[k].label })),
+              onClick: ({ key }) => updateTaskStatus(selectedProject.handle, t.handle, key as TaskStatus),
+            }}
+          >
+            {tag}
+          </Dropdown>
+        ) : tag;
+        return autoProgress
+          ? <Tooltip title={`${t.actualHours} h logged — shown as In progress`}>{inner}</Tooltip>
+          : inner;
+      },
+    },
+    {
+      title: 'Milestone', dataIndex: 'milestoneId', key: 'milestoneId', width: 130,
+      render: (id?: string | null) => {
+        const m = (selectedProject.milestones ?? []).find((x) => x.milestoneId === id);
+        return m ? <Text style={{ fontSize: 12 }}>{m.milestoneName}</Text> : <Text type="secondary">—</Text>;
+      },
+    },
     { title: 'Est. Hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 90, align: 'right' },
     { title: 'Actual', dataIndex: 'actualHours', key: 'actualHours', width: 80, align: 'right', render: (v?: number) => v ?? 0 },
     { title: 'Rate/hr', dataIndex: 'billableRate', key: 'billableRate', width: 90, align: 'right', render: (v?: number | null) => (v ? v : <Text type="secondary">—</Text>) },
@@ -133,11 +198,14 @@ export default function ProjectTasksTab() {
       render: (v: boolean) => (v ? <Tag color="green">Billable</Tag> : <Tag>Non-Bill</Tag>),
     },
     {
-      title: 'Actions', key: 'actions', width: 90, align: 'right',
+      title: 'Actions', key: 'actions', width: 120, align: 'right',
       render: (_, t) => (
         <Space size={2}>
           <Can I="edit">
             <Tooltip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} disabled={!canEditTasks} /></Tooltip>
+          </Can>
+          <Can I="edit">
+            <Tooltip title="Move to another project"><Button type="text" size="small" icon={<SwapOutlined />} onClick={() => setMoveTarget(t)} disabled={!canEditTasks} /></Tooltip>
           </Can>
           <Can I="delete">
             {canEditTasks ? (
@@ -171,6 +239,7 @@ export default function ProjectTasksTab() {
         <Can I="add">
           <Button icon={<StarOutlined />} onClick={openDefaults} disabled={!canEditTasks}>Add Default</Button>
           <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)} disabled={!canEditTasks}>Import from Project</Button>
+          <Button icon={<MergeCellsOutlined />} onClick={() => setMergeOpen(true)} disabled={!canEditTasks || tasks.length < 2}>Merge</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canEditTasks}>Add Task</Button>
         </Can>
       </div>
@@ -210,6 +279,14 @@ export default function ProjectTasksTab() {
               <InputNumber min={0} step={1} style={{ width: '100%' }} />
             </Form.Item>
           </Space>
+          <Form.Item name="milestoneId" label="Deliverable / Milestone">
+            <Select
+              allowClear
+              placeholder="Link to a milestone (optional)"
+              options={(selectedProject.milestones ?? []).map((m) => ({ value: m.milestoneId, label: m.milestoneName }))}
+              notFoundContent="No milestones on this project"
+            />
+          </Form.Item>
           <Space size={32}>
             <Form.Item name="billable" label="Billable" valuePropName="checked">
               <Switch />
@@ -219,6 +296,68 @@ export default function ProjectTasksTab() {
             </Form.Item>
           </Space>
         </Form>
+      </Modal>
+
+      {/* Move task to another project */}
+      <Modal
+        title={`Move task: ${moveTarget?.taskName ?? ''}`}
+        open={!!moveTarget}
+        onCancel={() => { setMoveTarget(null); setMoveDest(undefined); setMoveAllocations(true); }}
+        onOk={doMoveTask}
+        okText="Move task"
+        okButtonProps={{ disabled: !moveDest }}
+        destroyOnHidden
+      >
+        <Text type="secondary">Move this task to another project. Its estimate is re-checked against the target project.</Text>
+        <Select
+          style={{ width: '100%', marginTop: 12 }}
+          placeholder="Select target project"
+          showSearch
+          value={moveDest}
+          onChange={setMoveDest}
+          filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          options={projects
+            .filter((p) => p.handle !== selectedProject.handle)
+            .map((p) => ({ value: p.handle, label: `${p.projectCode} - ${p.projectName}` }))}
+        />
+        <div style={{ marginTop: 12 }}>
+          <Switch checked={moveAllocations} onChange={setMoveAllocations} size="small" />{' '}
+          <Text>Move its resource allocations too</Text>
+        </div>
+      </Modal>
+
+      {/* Merge tasks */}
+      <Modal
+        title="Merge tasks"
+        open={mergeOpen}
+        onCancel={() => { setMergeOpen(false); setMergeTargetId(undefined); setMergeSourceIds([]); }}
+        onOk={doMerge}
+        okText="Merge"
+        okButtonProps={{ disabled: !mergeTargetId || mergeSourceIds.length === 0 }}
+        destroyOnHidden
+      >
+        <Text type="secondary">Allocations and timesheet entries from the source tasks move into the target task; the source tasks are removed.</Text>
+        <div style={{ marginTop: 12 }}>
+          <Text strong style={{ fontSize: 12 }}>Keep (target task)</Text>
+          <Select
+            style={{ width: '100%', marginTop: 4 }}
+            placeholder="Task to keep"
+            value={mergeTargetId}
+            onChange={(v) => { setMergeTargetId(v); setMergeSourceIds((ids) => ids.filter((id) => id !== v)); }}
+            options={tasks.map((t) => ({ value: t.handle, label: t.taskName }))}
+          />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Text strong style={{ fontSize: 12 }}>Merge in (source tasks)</Text>
+          <Select
+            mode="multiple"
+            style={{ width: '100%', marginTop: 4 }}
+            placeholder="Tasks to merge into the target"
+            value={mergeSourceIds}
+            onChange={setMergeSourceIds}
+            options={tasks.filter((t) => t.handle !== mergeTargetId).map((t) => ({ value: t.handle, label: t.taskName }))}
+          />
+        </div>
       </Modal>
 
       {/* Add from default tasks */}

@@ -1,12 +1,18 @@
 'use client';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Select, Space, Spin, Tooltip, Alert, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import AllocationRow from '../molecules/AllocationRow';
+import ResourceMoveModal from './ResourceMoveModal';
+import ReviseAllocationModal from './ReviseAllocationModal';
+import TemporaryCoverModal from './TemporaryCoverModal';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { parseCookies } from 'nookies';
 import { ALLOCATION_STATUS_OPTIONS } from '../../utils/projectConstants';
+import type { ResourceAllocation } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
@@ -22,7 +28,13 @@ export default function ProjectAllocationsTab() {
     setFilterStatus,
   } = useHrmProjectStore();
   const { loadAllocations } = useProjectData();
-  const { submitAllocation, cancelAllocation } = useProjectMutations();
+  const { submitAllocation, cancelAllocation, recallAllocation } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
+
+  // Resource lifecycle modals (reassign / replace / release member / revise)
+  const [moveModal, setMoveModal] = useState<{ mode: 'reassign' | 'replace' | 'release'; allocation: ResourceAllocation; taskCount: number } | null>(null);
+  const [reviseTarget, setReviseTarget] = useState<ResourceAllocation | null>(null);
+  const [coverTarget, setCoverTarget] = useState<ResourceAllocation | null>(null);
 
   useEffect(() => {
     if (selectedProject) {
@@ -69,6 +81,22 @@ export default function ProjectAllocationsTab() {
       startDate: a.startDate,
       endDate: a.endDate,
     });
+  };
+
+  const activeTaskCount = (employeeId: string) => {
+    const grp = groups.find((g) => g.employeeId === employeeId);
+    return grp ? grp.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED').length : 0;
+  };
+  const handleReassign = (a: ResourceAllocation) => setMoveModal({ mode: 'reassign', allocation: a, taskCount: 0 });
+  const handleReplace = (a: ResourceAllocation) => setMoveModal({ mode: 'replace', allocation: a, taskCount: activeTaskCount(a.employeeId) });
+  const handleRelease = (a: ResourceAllocation) => setMoveModal({ mode: 'release', allocation: a, taskCount: activeTaskCount(a.employeeId) });
+  const handleRevise = (a: ResourceAllocation) => setReviseTarget(a);
+  const handleCover = (a: ResourceAllocation) => setCoverTarget(a);
+  const handleRecall = (a: ResourceAllocation) => {
+    if (!selectedProject) return;
+    const actor = employeeCode || parseCookies().employeeCode || parseCookies().rl_user_id || parseCookies().user || '';
+    if (!actor) return;
+    recallAllocation(a.handle, selectedProject.handle, actor);
   };
 
   const projectStatus = selectedProject?.status;
@@ -129,6 +157,10 @@ export default function ProjectAllocationsTab() {
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     onAssignTask={handleAssignTask}
+                    onReplace={handleReplace}
+                    onRelease={handleRelease}
+                    onRevise={handleRevise}
+                    onRecall={handleRecall}
                   />
                 ) : (
                   <div style={{ padding: '8px 0' }}><Text strong>{g.employeeName}</Text></div>
@@ -147,6 +179,10 @@ export default function ProjectAllocationsTab() {
                           hideEmployee
                           onSubmit={handleSubmit}
                           onCancel={handleCancel}
+                          onReassign={handleReassign}
+                          onRevise={handleRevise}
+                          onRecall={handleRecall}
+                          onCover={handleCover}
                         />
                       ))}
                     </>
@@ -162,6 +198,27 @@ export default function ProjectAllocationsTab() {
           )}
         </div>
       )}
+
+      <ResourceMoveModal
+        open={!!moveModal}
+        mode={moveModal?.mode ?? 'reassign'}
+        allocation={moveModal?.allocation ?? null}
+        taskCount={moveModal?.taskCount ?? 0}
+        projectHandle={selectedProject?.handle ?? ''}
+        onClose={() => setMoveModal(null)}
+      />
+      <ReviseAllocationModal
+        open={!!reviseTarget}
+        allocation={reviseTarget}
+        projectHandle={selectedProject?.handle ?? ''}
+        onClose={() => setReviseTarget(null)}
+      />
+      <TemporaryCoverModal
+        open={!!coverTarget}
+        allocation={coverTarget}
+        projectHandle={selectedProject?.handle ?? ''}
+        onClose={() => setCoverTarget(null)}
+      />
     </div>
   );
 }

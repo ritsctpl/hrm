@@ -1,13 +1,15 @@
 'use client';
-import React from 'react';
-import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, message } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, InboxOutlined, ExportOutlined } from '@ant-design/icons';
+import { parseCookies } from 'nookies';
 import type { ColumnsType } from 'antd/es/table';
 import type { Project } from '../../types/domain.types';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import ProjectSearchBar from '../molecules/ProjectSearchBar';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectList.module.css';
@@ -20,9 +22,32 @@ interface ProjectTableProps {
   onView: (project: Project) => void;
 }
 
+interface CloneForm { newProjectName: string; includeTasks: boolean; includeMilestones: boolean; includeAllocations: boolean }
+
 const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }) => {
-  const { openProjectForm } = useHrmProjectStore();
-  const { deleteProject } = useProjectMutations();
+  const { openProjectForm, savingProject } = useHrmProjectStore();
+  const { deleteProject, cloneProject, setProjectArchived } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
+  const [cloneSource, setCloneSource] = useState<Project | null>(null);
+  const [cloneForm] = Form.useForm<CloneForm>();
+
+  const actor = () => employeeCode || parseCookies().employeeCode || parseCookies().rl_user_id || parseCookies().user || '';
+
+  const openClone = (p: Project) => {
+    setCloneSource(p);
+    cloneForm.setFieldsValue({ newProjectName: `${p.projectName} (copy)`, includeTasks: true, includeMilestones: true, includeAllocations: false });
+  };
+  const doClone = async () => {
+    const values = await cloneForm.validateFields();
+    if (!cloneSource) return;
+    await cloneProject({ sourceProjectHandle: cloneSource.handle, ...values }, actor());
+    setCloneSource(null);
+  };
+  const doArchive = (p: Project, archived: boolean) => {
+    const a = actor();
+    if (!a) { message.error('Could not identify the signed-in user'); return; }
+    setProjectArchived(p.handle, archived, '', a);
+  };
 
   const columns: ColumnsType<Project> = [
     {
@@ -85,7 +110,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
     {
       title: 'Actions',
       key: 'actions',
-      width: 130,
+      width: 200,
       align: 'right',
       render: (_, p) => (
         <Space size={4} onClick={(e) => e.stopPropagation()}>
@@ -96,6 +121,24 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
             <Tooltip title="Edit">
               <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openProjectForm(p)} />
             </Tooltip>
+          </Can>
+          <Can I="add">
+            <Tooltip title="Clone">
+              <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => openClone(p)} />
+            </Tooltip>
+          </Can>
+          <Can I="edit">
+            {p.archived ? (
+              <Tooltip title="Unarchive">
+                <Button type="text" size="small" icon={<ExportOutlined />} onClick={() => doArchive(p, false)} />
+              </Tooltip>
+            ) : (
+              <Popconfirm title="Archive this project? It hides from the list but keeps history." okText="Archive" onConfirm={() => doArchive(p, true)}>
+                <Tooltip title="Archive">
+                  <Button type="text" size="small" icon={<InboxOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
           </Can>
           <Can I="delete">
             <Popconfirm title="Delete this project?" okText="Delete" okType="danger" onConfirm={() => deleteProject(p.handle)}>
@@ -131,6 +174,31 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
         onRow={(p) => ({ onClick: () => onView(p), style: { cursor: 'pointer' } })}
         locale={{ emptyText: 'No projects found' }}
       />
+
+      <Modal
+        title={`Clone project: ${cloneSource?.projectName ?? ''}`}
+        open={!!cloneSource}
+        onCancel={() => setCloneSource(null)}
+        onOk={doClone}
+        okText="Clone"
+        confirmLoading={savingProject}
+        destroyOnHidden
+      >
+        <Form form={cloneForm} layout="vertical">
+          <Form.Item name="newProjectName" label="New project name" rules={[{ required: true, message: 'Enter a name' }]}>
+            <Input placeholder="New project name" />
+          </Form.Item>
+          <Form.Item name="includeTasks" label="Copy tasks" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="includeMilestones" label="Copy milestones" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="includeAllocations" label="Copy allocations (as draft)" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

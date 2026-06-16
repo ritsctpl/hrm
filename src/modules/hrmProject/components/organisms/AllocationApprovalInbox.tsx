@@ -1,14 +1,19 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Table, Input, Radio, Button, Space, Tag, Modal, Spin, Typography, message } from 'antd';
+import { Table, Input, Radio, Button, Space, Tag, Modal, Spin, Typography, Divider, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { parseCookies } from 'nookies';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
 import type { ResourceAllocation } from '../../types/domain.types';
+import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
+import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
+import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
+import DelegateApprovalModal from './DelegateApprovalModal';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
@@ -17,17 +22,34 @@ const { Text } = Typography;
 export default function AllocationApprovalInbox() {
   const { pendingAllocations, loadingApprovals, approvingAllocation } = useHrmProjectStore();
   const { loadPendingAllocations } = useProjectData();
-  const { approveAllocations } = useProjectMutations();
+  const { approveAllocations, reassignAllocation } = useProjectMutations();
   const { employeeCode, isReady } = useEmployeeIdentity();
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'MEMBERSHIP' | 'TASK'>('ALL');
   const [rejectTarget, setRejectTarget] = useState<ResourceAllocation | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState('');
+  // Bulk selection (§9)
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkRemarks, setBulkRemarks] = useState('');
+  // Reject-and-reassign (§10) — optional new owner when rejecting a single task allocation
+  const [employees, setEmployees] = useState<EmployeeDirectoryRow[]>([]);
+  const [reassignToId, setReassignToId] = useState('');
+  const [reassignToName, setReassignToName] = useState('');
+  const [delegateOpen, setDelegateOpen] = useState(false);
 
   useEffect(() => {
     loadPendingAllocations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const organizationId = getOrganizationId();
+    if (!organizationId) return;
+    HrmEmployeeService.fetchDirectory({ organizationId, isActive: true, size: 500 })
+      .then((res) => setEmployees(res?.employees ?? []))
+      .catch(() => {/* directory is optional here */});
   }, []);
 
   const submitted = useMemo(
@@ -67,13 +89,49 @@ export default function AllocationApprovalInbox() {
     approveAllocations(handlesFor(a), 'APPROVED', '', actor);
   };
 
-  const confirmReject = () => {
+  const closeReject = () => {
+    setRejectTarget(null);
+    setRejectRemarks('');
+    setReassignToId('');
+    setReassignToName('');
+  };
+
+  const confirmReject = async () => {
     if (!rejectTarget) return;
     const actor = resolveActor();
     if (!actor) return;
-    approveAllocations(handlesFor(rejectTarget), 'REJECTED', rejectRemarks, actor);
-    setRejectTarget(null);
-    setRejectRemarks('');
+    await approveAllocations(handlesFor(rejectTarget), 'REJECTED', rejectRemarks, actor);
+    // §10: optionally hand the work straight to another resource
+    if (reassignToId && rejectTarget.taskId) {
+      await reassignAllocation(
+        rejectTarget.projectHandle,
+        { allocationHandle: rejectTarget.handle, newEmployeeId: reassignToId, newEmployeeName: reassignToName, remarks: rejectRemarks },
+        actor,
+      );
+    }
+    closeReject();
+  };
+
+  // §9 — bulk approve / reject across the current selection (cascades membership → tasks)
+  const selectedRows = useMemo(() => rows.filter((r) => selectedKeys.includes(r.handle)), [rows, selectedKeys]);
+  const expandSelection = () => {
+    const set = new Set<string>();
+    selectedRows.forEach((a) => handlesFor(a).forEach((h) => set.add(h)));
+    return Array.from(set);
+  };
+  const bulkApprove = async () => {
+    const actor = resolveActor();
+    if (!actor) return;
+    await approveAllocations(expandSelection(), 'APPROVED', '', actor);
+    setSelectedKeys([]);
+  };
+  const confirmBulkReject = async () => {
+    const actor = resolveActor();
+    if (!actor) return;
+    await approveAllocations(expandSelection(), 'REJECTED', bulkRemarks, actor);
+    setBulkRejectOpen(false);
+    setBulkRemarks('');
+    setSelectedKeys([]);
   };
 
   const columns: ColumnsType<ResourceAllocation> = [
@@ -120,14 +178,29 @@ export default function AllocationApprovalInbox() {
               <Radio.Button value="MEMBERSHIP">Membership</Radio.Button>
               <Radio.Button value="TASK">Tasks</Radio.Button>
             </Radio.Group>
-            <Input.Search placeholder="Search by employee" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
+            <Space>
+              <Input.Search placeholder="Search by employee" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
+              <Can I="edit"><Button size="small" onClick={() => setDelegateOpen(true)}>Delegate approvals</Button></Can>
+            </Space>
           </div>
+
+          {selectedKeys.length > 0 && (
+            <Can I="edit">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <Text strong>{selectedKeys.length} selected</Text>
+                <Button size="small" type="primary" loading={approvingAllocation} onClick={bulkApprove}>Approve selected</Button>
+                <Button size="small" danger loading={approvingAllocation} onClick={() => setBulkRejectOpen(true)}>Reject selected</Button>
+                <Button size="small" type="link" onClick={() => setSelectedKeys([])}>Clear</Button>
+              </div>
+            </Can>
+          )}
 
           <Table<ResourceAllocation>
             rowKey="handle"
             size="middle"
             columns={columns}
             dataSource={rows}
+            rowSelection={{ selectedRowKeys: selectedKeys, onChange: (keys) => setSelectedKeys(keys as string[]) }}
             pagination={{ pageSize: 10, hideOnSinglePage: true }}
             locale={{ emptyText: 'No pending allocations' }}
           />
@@ -137,10 +210,10 @@ export default function AllocationApprovalInbox() {
       <Modal
         title="Reject allocation"
         open={!!rejectTarget}
-        onCancel={() => { setRejectTarget(null); setRejectRemarks(''); }}
+        onCancel={closeReject}
         onOk={confirmReject}
-        okText="Reject"
-        okButtonProps={{ danger: true, disabled: !rejectRemarks.trim(), loading: approvingAllocation }}
+        okText={reassignToId ? 'Reject & reassign' : 'Reject'}
+        okButtonProps={{ danger: !reassignToId, disabled: !rejectRemarks.trim(), loading: approvingAllocation }}
         destroyOnHidden
       >
         {rejectTarget && !rejectTarget.taskId && tasksOf(rejectTarget).length > 0 && (
@@ -153,7 +226,44 @@ export default function AllocationApprovalInbox() {
           value={rejectRemarks}
           onChange={(e) => setRejectRemarks(e.target.value)}
         />
+        {/* §10: a rejected task allocation can be handed straight to the right person */}
+        {rejectTarget?.taskId && (
+          <>
+            <Divider style={{ margin: '12px 0 8px' }} />
+            <Text type="secondary" style={{ fontSize: 12 }}>Reassign this task to (optional)</Text>
+            <div style={{ marginTop: 6 }}>
+              <HrmEmployeePicker
+                value={reassignToId}
+                options={employees
+                  .filter((e) => e.employeeCode !== rejectTarget.employeeId)
+                  .map((e) => ({ handle: e.employeeCode, name: e.fullName, employeeCode: e.employeeCode }))}
+                onSelect={(emp) => { setReassignToId(emp.employeeCode); setReassignToName(emp.name); }}
+              />
+            </div>
+          </>
+        )}
       </Modal>
+
+      <Modal
+        title={`Reject ${selectedKeys.length} selected`}
+        open={bulkRejectOpen}
+        onCancel={() => { setBulkRejectOpen(false); setBulkRemarks(''); }}
+        onOk={confirmBulkReject}
+        okText="Reject selected"
+        okButtonProps={{ danger: true, disabled: !bulkRemarks.trim(), loading: approvingAllocation }}
+        destroyOnHidden
+      >
+        <Text type="secondary">Membership rejections also reject that member&apos;s task allocations.</Text>
+        <Input.TextArea
+          rows={3}
+          style={{ marginTop: 8 }}
+          placeholder="Reason for rejection (required)"
+          value={bulkRemarks}
+          onChange={(e) => setBulkRemarks(e.target.value)}
+        />
+      </Modal>
+
+      <DelegateApprovalModal open={delegateOpen} onClose={() => setDelegateOpen(false)} />
     </div>
   );
 }
