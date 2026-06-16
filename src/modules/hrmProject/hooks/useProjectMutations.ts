@@ -186,6 +186,164 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
+  // Move one allocation (task or membership) to another employee.
+  const reassignAllocation = useCallback(async (
+    projectHandle: string,
+    payload: { allocationHandle: string; newEmployeeId: string; newEmployeeName?: string; effectiveDate?: string; remarks?: string },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      await HrmProjectService.reassignAllocation({ organizationId, reassignedBy: actor, ...payload });
+      message.success('Allocation reassigned (sent for approval)');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to reassign allocation'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
+  // Replace a project member — moves membership + all their task allocations.
+  const replaceMember = useCallback(async (
+    projectHandle: string,
+    payload: { outgoingEmployeeId: string; incomingEmployeeId: string; incomingEmployeeName?: string; effectiveDate?: string; remarks?: string },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      const moved = await HrmProjectService.replaceMember({ organizationId, projectHandle, replacedBy: actor, ...payload });
+      message.success(`Member replaced — ${moved.length} allocation${moved.length === 1 ? '' : 's'} moved (sent for approval)`);
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to replace member'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
+  // Release a member from the project (no replacement) — ends their future allocations.
+  const releaseMember = useCallback(async (
+    projectHandle: string,
+    payload: { employeeId: string; effectiveDate?: string; remarks?: string },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      const affected = await HrmProjectService.releaseMember({ organizationId, projectHandle, releasedBy: actor, ...payload });
+      message.success(`Member released — ${affected.length} allocation${affected.length === 1 ? '' : 's'} ended`);
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to release member'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
+  // Recall a SUBMITTED allocation back to DRAFT.
+  const recallAllocation = useCallback(async (handle: string, projectHandle: string, actor: string) => {
+    try {
+      await HrmProjectService.recallAllocation(organizationId, handle, actor);
+      message.success('Allocation recalled to draft');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to recall allocation'));
+      console.error(error);
+    }
+  }, [organizationId, loadAllocations]);
+
+  // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
+  const reviseAllocation = useCallback(async (
+    projectHandle: string,
+    payload: { allocationHandle: string; hoursPerDay?: number; endDate?: string; billableRate?: number | null; remarks?: string },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      await HrmProjectService.reviseAllocation({ organizationId, revisedBy: actor, ...payload });
+      // BE keeps rate-only edits APPROVED; hours/date edits go back to SUBMITTED. Neutral wording covers both.
+      message.success('Allocation revised');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to revise allocation'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
+  // Hand the project over to a new manager (re-routes pending approvals).
+  const changeProjectManager = useCallback(async (
+    handle: string,
+    payload: { newProjectManagerId: string; newProjectManagerName?: string; reason?: string },
+    actor: string,
+  ) => {
+    store.setSavingProject(true);
+    try {
+      await HrmProjectService.changeProjectManager({ organizationId, handle, modifiedBy: actor, ...payload });
+      message.success('Project manager changed');
+      await loadProjects();
+      if (store.selectedProject?.handle === handle) {
+        await loadProjectDetail(handle);
+      }
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to change project manager'));
+      console.error(error);
+    } finally {
+      store.setSavingProject(false);
+    }
+  }, [organizationId, loadProjects, loadProjectDetail]);
+
+  const cloneProject = useCallback(async (
+    payload: { sourceProjectHandle: string; newProjectName: string; includeTasks: boolean; includeMilestones: boolean; includeAllocations: boolean },
+    actor: string,
+  ) => {
+    store.setSavingProject(true);
+    try {
+      await HrmProjectService.cloneProject({ organizationId, clonedBy: actor, ...payload });
+      message.success('Project cloned');
+      await loadProjects();
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to clone project'));
+      console.error(error);
+    } finally {
+      store.setSavingProject(false);
+    }
+  }, [organizationId, loadProjects]);
+
+  const setProjectArchived = useCallback(async (handle: string, archived: boolean, reason: string, actor: string) => {
+    try {
+      if (archived) await HrmProjectService.archiveProject({ organizationId, handle, archivedBy: actor, reason });
+      else await HrmProjectService.unarchiveProject({ organizationId, handle, archivedBy: actor, reason });
+      message.success(archived ? 'Project archived' : 'Project unarchived');
+      await loadProjects();
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, `Failed to ${archived ? 'archive' : 'unarchive'} project`));
+      console.error(error);
+    }
+  }, [organizationId, loadProjects]);
+
+  const temporaryCover = useCallback(async (
+    projectHandle: string,
+    payload: { allocationHandle: string; coverEmployeeId: string; coverEmployeeName?: string; coverFrom: string; coverTo: string; remarks?: string },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      await HrmProjectService.temporaryCover({ organizationId, coveredBy: actor, ...payload });
+      message.success('Temporary cover created (sent for approval)');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to create temporary cover'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
   const approveAllocation = useCallback(async (
     allocationHandle: string,
     action: 'APPROVED' | 'REJECTED',
@@ -340,6 +498,53 @@ export function useProjectMutations() {
     }
   }, [loadProjectDetail]);
 
+  const updateTaskStatus = useCallback(async (
+    projectHandle: string,
+    taskHandle: string,
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED',
+  ) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.updateTaskStatus({ organizationId, projectHandle, taskHandle, status, modifiedBy: userId });
+      message.success('Task status updated');
+      await loadProjectDetail(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to update task status'));
+      console.error(error);
+    }
+  }, [organizationId, loadProjectDetail]);
+
+  const moveTaskToProject = useCallback(async (
+    projectHandle: string,
+    payload: { taskHandle: string; targetProjectHandle: string; moveAllocations: boolean; remarks?: string },
+  ) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.moveTaskToProject({ organizationId, movedBy: userId, ...payload });
+      message.success('Task moved');
+      await loadProjectDetail(projectHandle);
+      if (store.selectedProject?.handle !== projectHandle) await loadProjectDetail(payload.targetProjectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to move task'));
+      console.error(error);
+    }
+  }, [organizationId, loadProjectDetail]);
+
+  const mergeTasks = useCallback(async (
+    projectHandle: string,
+    payload: { sourceTaskHandles: string[]; targetTaskHandle: string; remarks?: string },
+  ) => {
+    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    try {
+      await HrmProjectService.mergeTasks({ organizationId, projectHandle, mergedBy: userId, ...payload });
+      message.success('Tasks merged');
+      await loadProjectDetail(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to merge tasks'));
+      console.error(error);
+    }
+  }, [organizationId, loadProjectDetail]);
+
   const importTasks = useCallback(async (targetProjectHandle: string, sourceProjectHandle: string, taskHandles?: string[]) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     try {
@@ -358,9 +563,21 @@ export function useProjectMutations() {
     deleteProject,
     updateProjectStatus,
     createAllocations,
+    reassignAllocation,
+    replaceMember,
+    releaseMember,
+    recallAllocation,
+    reviseAllocation,
+    changeProjectManager,
+    cloneProject,
+    setProjectArchived,
+    temporaryCover,
     createTask,
     updateTask,
     removeTask,
+    updateTaskStatus,
+    moveTaskToProject,
+    mergeTasks,
     importTasks,
     submitAllocation,
     cancelAllocation,

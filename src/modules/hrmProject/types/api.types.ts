@@ -82,6 +82,7 @@ export interface ProjectResponse {
   committedWorkHours?: number;
   utilizationPercentage: number;
   scheduleVariance: number;
+  archived?: number;
   active: number;
   createdDateTime: string;
   modifiedDateTime: string;
@@ -105,6 +106,7 @@ export interface ProjectListResponse {
   utilizationPercentage: number;
   startDate: string;
   endDate: string;
+  archived?: number;
 }
 
 export interface MilestoneResponse {
@@ -190,6 +192,123 @@ export interface AllocationApprovalRequest {
   approverEmployeeId: string;
   approverName?: string;
   remarks?: string;
+}
+
+// ─── Resource lifecycle: reassign / replace / revise ─────────────────────────
+
+// Move ONE allocation (typically a task allocation) from its current employee to another.
+// BE closes the outgoing allocation at effectiveDate (keeping past actuals) and opens an
+// equivalent one for the incoming employee for the remaining window.
+export interface AllocationReassignRequest {
+  organizationId: string;
+  allocationHandle: string;          // the allocation being moved
+  newEmployeeId: string;
+  newEmployeeName?: string;
+  effectiveDate?: string;            // first day on the new employee; defaults to today
+  reassignedBy: string;
+  remarks?: string;
+}
+
+// Release a member from the project with NO replacement — end all their future
+// allocations from effectiveDate, keeping past actuals.
+export interface MemberReleaseRequest {
+  organizationId: string;
+  projectHandle: string;
+  employeeId: string;
+  effectiveDate?: string;
+  releasedBy: string;
+  remarks?: string;
+}
+
+// Replace a project member entirely: move their membership + ALL their task allocations
+// on this project to the incoming employee from effectiveDate.
+export interface MemberReplaceRequest {
+  organizationId: string;
+  projectHandle: string;
+  outgoingEmployeeId: string;
+  incomingEmployeeId: string;
+  incomingEmployeeName?: string;
+  effectiveDate?: string;            // first day for the incoming employee; defaults to today
+  replacedBy: string;
+  remarks?: string;
+}
+
+// Edit/extend an existing (typically APPROVED) allocation without cancel+recreate.
+// Changing hours or shortening/extending the window resets the allocation to SUBMITTED
+// for re-approval. End date cannot be moved before days that already have logged actuals.
+export interface AllocationReviseRequest {
+  organizationId: string;
+  allocationHandle: string;
+  hoursPerDay?: number;
+  endDate?: string;
+  billableRate?: number | null;
+  revisedBy: string;
+  remarks?: string;
+}
+
+// ─── Project manager handover ────────────────────────────────────────────────
+// Changing the PM re-routes pending allocation approvals to the new manager.
+export interface ProjectManagerChangeRequest {
+  organizationId: string;
+  handle: string;
+  newProjectManagerId: string;
+  newProjectManagerName?: string;
+  reason?: string;
+  modifiedBy: string;
+}
+
+// ─── Clone / archive ─────────────────────────────────────────────────────────
+export interface ProjectCloneRequest {
+  organizationId: string;
+  sourceProjectHandle: string;
+  newProjectName: string;
+  includeTasks: boolean;
+  includeMilestones: boolean;
+  includeAllocations: boolean;
+  clonedBy: string;
+}
+
+export interface ProjectArchiveRequest {
+  organizationId: string;
+  handle: string;
+  archivedBy: string;
+  reason?: string;
+}
+
+// ─── Temporary cover (leave backfill) ────────────────────────────────────────
+export interface AllocationTemporaryCoverRequest {
+  organizationId: string;
+  allocationHandle: string;
+  coverEmployeeId: string;
+  coverEmployeeName?: string;
+  coverFrom: string;
+  coverTo: string;
+  coveredBy: string;
+  remarks?: string;
+}
+
+// ─── Approval delegation ─────────────────────────────────────────────────────
+export interface ApprovalDelegationRequest {
+  organizationId: string;
+  fromEmployeeId: string;
+  toEmployeeId: string;
+  fromDate: string;
+  toDate: string;
+  delegatedBy: string;
+  remarks?: string;
+}
+
+export interface ApprovalDelegationResponse {
+  id?: string;
+  handle?: string;
+  organizationId: string;
+  fromEmployeeId: string;
+  fromEmployeeName?: string;
+  toEmployeeId: string;
+  toEmployeeName?: string;
+  fromDate: string;
+  toDate: string;
+  active?: number;
 }
 
 export interface CapacityCheckRequest {
@@ -295,6 +414,14 @@ export interface ResourceWorkloadReport {
   employees: ResourceWorkloadEmployee[];
 }
 
+export interface ProjectAuditResponse {
+  action: string;
+  changedBy: string;
+  changedByName?: string;
+  changedAt: string;
+  details?: string;
+}
+
 export interface ProjectKpiResponse {
   total: number;
   active: number;
@@ -330,6 +457,8 @@ export interface ProjectTaskRequest {
   billableRate?: number;
   billable?: boolean;
   isDefault?: boolean;
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  milestoneId?: string | null;
   createdBy?: string;
   modifiedBy?: string;
 }
@@ -344,9 +473,38 @@ export interface ProjectTaskResponse {
   billable: boolean;
   isDefault: boolean;
   actualHours?: number;
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  milestoneId?: string | null;
   active?: number;
   createdDateTime?: string;
   modifiedDateTime?: string;
+}
+
+// Task lifecycle (status / move / merge)
+export interface TaskStatusUpdateRequest {
+  organizationId: string;
+  projectHandle: string;
+  taskHandle: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  modifiedBy: string;
+}
+
+export interface TaskMoveRequest {
+  organizationId: string;
+  taskHandle: string;
+  targetProjectHandle: string;
+  moveAllocations: boolean;
+  movedBy: string;
+  remarks?: string;
+}
+
+export interface TaskMergeRequest {
+  organizationId: string;
+  projectHandle: string;
+  sourceTaskHandles: string[];
+  targetTaskHandle: string;
+  mergedBy: string;
+  remarks?: string;
 }
 
 export interface ImportTasksRequest {

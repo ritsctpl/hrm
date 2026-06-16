@@ -16,6 +16,12 @@ interface AllocationRowProps {
   onSubmit?: (a: ResourceAllocation) => void;
   onCancel?: (a: ResourceAllocation) => void;
   onAssignTask?: (a: ResourceAllocation) => void;
+  onReassign?: (a: ResourceAllocation) => void; // move a task allocation to another person
+  onReplace?: (a: ResourceAllocation) => void;  // replace a project member (membership row)
+  onRelease?: (a: ResourceAllocation) => void;  // release a member, no replacement (membership row)
+  onRevise?: (a: ResourceAllocation) => void;   // edit/extend an approved allocation
+  onRecall?: (a: ResourceAllocation) => void;   // pull a submitted allocation back to draft
+  onCover?: (a: ResourceAllocation) => void;    // temporary cover for a task allocation
   hideEmployee?: boolean;
   hideHours?: boolean;
 }
@@ -27,7 +33,7 @@ const cancelTitle = (a: ResourceAllocation) =>
     ? "Cancel this allocation? This also cancels the employee's task allocations on this project."
     : 'Cancel this allocation?';
 
-const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel, onAssignTask, hideEmployee, hideHours }) => (
+const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onRecall, onCover, hideEmployee, hideHours }) => (
   <div style={{ padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
     <Space size={12} wrap>
       {!hideEmployee && <Text strong style={{ minWidth: 140 }}>{allocation.employeeName}</Text>}
@@ -67,22 +73,44 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSub
         </>
       )}
 
-      {/* SUBMITTED: Cancel only */}
-      {allocation.status === 'SUBMITTED' && onCancel && (
-        <Can I="delete">
-          <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
-            <Button size="small" type="link" danger>Cancel</Button>
-          </Popconfirm>
-        </Can>
+      {/* SUBMITTED: Recall (back to draft) + Cancel */}
+      {allocation.status === 'SUBMITTED' && (
+        <>
+          {onRecall && <Can I="edit"><Button size="small" type="link" onClick={() => onRecall(allocation)}>Recall</Button></Can>}
+          {onCancel && (
+            <Can I="delete">
+              <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
+                <Button size="small" type="link" danger>Cancel</Button>
+              </Popconfirm>
+            </Can>
+          )}
+        </>
       )}
 
-      {/* APPROVED: Cancel (reverses hours) */}
-      {allocation.status === 'APPROVED' && onCancel && (
-        <Can I="delete">
-          <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
-            <Button size="small" type="link" danger>Cancel</Button>
-          </Popconfirm>
-        </Can>
+      {/* APPROVED: edit/extend, reassign/replace, then Cancel (reverses hours) */}
+      {allocation.status === 'APPROVED' && (
+        <>
+          {onRevise && <Can I="edit"><Button size="small" type="link" onClick={() => onRevise(allocation)}>Edit</Button></Can>}
+          {onReassign && !!allocation.taskId && (
+            <Can I="edit"><Button size="small" type="link" onClick={() => onReassign(allocation)}>Reassign</Button></Can>
+          )}
+          {onCover && !!allocation.taskId && (
+            <Can I="edit"><Button size="small" type="link" onClick={() => onCover(allocation)}>Cover</Button></Can>
+          )}
+          {onReplace && isProjectLevel(allocation) && (
+            <Can I="edit"><Button size="small" type="link" onClick={() => onReplace(allocation)}>Replace</Button></Can>
+          )}
+          {onRelease && isProjectLevel(allocation) && (
+            <Can I="delete"><Button size="small" type="link" onClick={() => onRelease(allocation)}>Release</Button></Can>
+          )}
+          {onCancel && (
+            <Can I="delete">
+              <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
+                <Button size="small" type="link" danger>Cancel</Button>
+              </Popconfirm>
+            </Can>
+          )}
+        </>
       )}
 
       {/* REJECTED: Edit + Resubmit */}

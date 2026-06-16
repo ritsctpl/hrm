@@ -9,6 +9,16 @@ import type {
   AllocationRequest,
   AllocationResponse,
   AllocationApprovalRequest,
+  AllocationReassignRequest,
+  MemberReplaceRequest,
+  MemberReleaseRequest,
+  AllocationReviseRequest,
+  ProjectManagerChangeRequest,
+  ProjectCloneRequest,
+  ProjectArchiveRequest,
+  AllocationTemporaryCoverRequest,
+  ApprovalDelegationRequest,
+  ApprovalDelegationResponse,
   CapacityCheckRequest,
   CapacityCheckResponse,
   ProjectAllocationVsActualReport,
@@ -23,6 +33,10 @@ import type {
   ProjectTaskRequest,
   ProjectTaskResponse,
   ImportTasksRequest,
+  TaskStatusUpdateRequest,
+  TaskMoveRequest,
+  TaskMergeRequest,
+  ProjectAuditResponse,
 } from '../types/api.types';
 
 const BASE = '/hrm-service/project';
@@ -119,6 +133,79 @@ export class HrmProjectService {
 
   static async cancelAllocation(organizationId: string, handle: string, cancelledBy: string): Promise<void> {
     await api.post(`${BASE}/allocation/cancel`, { organizationId, handle, cancelledBy });
+  }
+
+  // Move one allocation (task or membership) to another employee.
+  static async reassignAllocation(payload: AllocationReassignRequest): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/reassign`, payload);
+    return res.data;
+  }
+
+  // Replace a project member — moves membership + all their task allocations.
+  static async replaceMember(payload: MemberReplaceRequest): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/replaceMember`, payload);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  // Release a member (no replacement) — ends their future allocations from a date.
+  static async releaseMember(payload: MemberReleaseRequest): Promise<AllocationResponse[]> {
+    const res = await api.post(`${BASE}/allocation/releaseMember`, payload);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  // Recall a SUBMITTED allocation back to DRAFT before the PM decides.
+  static async recallAllocation(organizationId: string, handle: string, recalledBy: string): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/recall`, { organizationId, handle, recalledBy });
+    return res.data;
+  }
+
+  // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
+  static async reviseAllocation(payload: AllocationReviseRequest): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/revise`, payload);
+    return res.data;
+  }
+
+  // Hand the project over to a new manager (re-routes pending approvals).
+  static async changeProjectManager(payload: ProjectManagerChangeRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/changeManager`, payload);
+    return res.data;
+  }
+
+  // Clone / archive a project.
+  static async cloneProject(payload: ProjectCloneRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/clone`, payload);
+    return res.data;
+  }
+
+  static async archiveProject(payload: ProjectArchiveRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/archive`, payload);
+    return res.data;
+  }
+
+  static async unarchiveProject(payload: ProjectArchiveRequest): Promise<ProjectResponse> {
+    const res = await api.post(`${BASE}/unarchive`, payload);
+    return res.data;
+  }
+
+  // Time-boxed cover for someone on leave.
+  static async temporaryCover(payload: AllocationTemporaryCoverRequest): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/temporaryCover`, payload);
+    return res.data;
+  }
+
+  // Approval delegation (PM on leave → delegate).
+  static async createDelegation(payload: ApprovalDelegationRequest): Promise<ApprovalDelegationResponse> {
+    const res = await api.post(`${BASE}/approval/delegate`, payload);
+    return res.data;
+  }
+
+  static async listDelegations(organizationId: string, employeeId: string): Promise<ApprovalDelegationResponse[]> {
+    const res = await api.post(`${BASE}/approval/delegate/list`, { organizationId, employeeId });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async cancelDelegation(organizationId: string, delegationId: string, cancelledBy: string): Promise<void> {
+    await api.post(`${BASE}/approval/delegate/cancel`, { organizationId, delegationId, cancelledBy });
   }
 
   static async checkCapacity(payload: CapacityCheckRequest): Promise<CapacityCheckResponse> {
@@ -252,6 +339,28 @@ export class HrmProjectService {
 
   static async importTasksFromProject(payload: ImportTasksRequest): Promise<ProjectTaskResponse[]> {
     const res = await api.post(`${BASE}/task/importFromProject`, payload);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  static async updateTaskStatus(payload: TaskStatusUpdateRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/updateStatus`, payload);
+    return res.data;
+  }
+
+  static async moveTaskToProject(payload: TaskMoveRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/moveToProject`, payload);
+    return res.data;
+  }
+
+  static async mergeTasks(payload: TaskMergeRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/merge`, payload);
+    return res.data;
+  }
+
+  // ─── History / audit ─────────────────────────────────────────────────────────
+
+  static async getProjectHistory(organizationId: string, projectHandle: string): Promise<ProjectAuditResponse[]> {
+    const res = await api.post(`${BASE}/history`, { organizationId, projectHandle });
     return Array.isArray(res.data) ? res.data : [];
   }
 

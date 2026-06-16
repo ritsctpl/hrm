@@ -46,6 +46,8 @@ export interface TaskFormValues {
   billableRate?: number;
   billable?: boolean;
   isDefault?: boolean;
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  milestoneId?: string | null;
 }
 
 export interface AllocationFormValues {

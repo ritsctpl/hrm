@@ -5,7 +5,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
-import type { Project, ResourceAllocation } from '../types/domain.types';
+import type { Project, ResourceAllocation, ProjectTask } from '../types/domain.types';
 import type {
   ProjectResponse,
   AllocationResponse,
@@ -50,6 +50,8 @@ function mapProjectResponse(r: ProjectResponse): Project {
       billable: t.billable,
       isDefault: t.isDefault,
       actualHours: t.actualHours,
+      status: (t.status as ProjectTask['status']) ?? 'NOT_STARTED',
+      milestoneId: t.milestoneId,
       active: t.active,
     })),
     attachments: r.attachments.map((a) => ({
@@ -66,6 +68,7 @@ function mapProjectResponse(r: ProjectResponse): Project {
     committedWorkHours: r.committedWorkHours,
     utilizationPercentage: r.utilizationPercentage,
     scheduleVariance: r.scheduleVariance,
+    archived: r.archived,
     active: r.active,
     createdDateTime: r.createdDateTime,
     modifiedDateTime: r.modifiedDateTime,
@@ -144,6 +147,7 @@ export function useProjectData() {
           committedWorkHours: p.committedWorkHours,
           utilizationPercentage: p.utilizationPercentage,
           scheduleVariance: 0,
+          archived: p.archived,
           startDate: p.startDate,
           endDate: p.endDate,
           active: 1,

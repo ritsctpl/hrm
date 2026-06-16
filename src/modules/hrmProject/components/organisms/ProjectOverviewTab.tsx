@@ -1,6 +1,6 @@
 'use client';
-import React from 'react';
-import { Descriptions, Progress, Card, Button, Dropdown, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Descriptions, Progress, Card, Button, Dropdown, Tag, Space } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import type { Project, ProjectStatus } from '../../types/domain.types';
 import { parseCookies } from 'nookies';
@@ -9,6 +9,7 @@ import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdenti
 import { formatDate } from '../../utils/projectHelpers';
 import { ALLOCATION_OVER_THRESHOLD_PCT } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
+import ChangeManagerModal from './ChangeManagerModal';
 import styles from '../../styles/ProjectDetail.module.css';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -29,13 +30,18 @@ const STATUS_TRANSITIONS: Record<string, ProjectStatus[]> = {
   DRAFT: ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['ON_HOLD', 'COMPLETED', 'CANCELLED'],
   ON_HOLD: ['IN_PROGRESS', 'CANCELLED'],
-  COMPLETED: [],
-  CANCELLED: [],
+  // Re-open: a wrongly closed project can be brought back.
+  COMPLETED: ['IN_PROGRESS'],
+  CANCELLED: ['DRAFT'],
 };
+
+// Terminal states get a "Re-open" label instead of "Move to next stage".
+const TERMINAL_STATUSES = new Set<string>(['COMPLETED', 'CANCELLED']);
 
 const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const { updateProjectStatus } = useProjectMutations();
   const { employeeCode } = useEmployeeIdentity();
+  const [changeManagerOpen, setChangeManagerOpen] = useState(false);
 
   const estimate = project.estimateHours || 0;
   // committed work = approved task allocations (excludes membership); fall back to total if absent
@@ -120,24 +126,33 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
           </div>
         </Card>
 
-        {isPM && nextStages.length > 0 && (
-          <Card size="small" title="Status">
-            <Dropdown
-              trigger={['click']}
-              menu={{
-                items: nextStages.map((s) => ({
-                  key: s,
-                  label: STATUS_LABELS[s] ?? s,
-                  danger: s === 'CANCELLED',
-                })),
-                onClick: ({ key }) => handleStatusChange(key as ProjectStatus),
-              }}
-            >
-              <Button size="small">Move to next stage <DownOutlined /></Button>
-            </Dropdown>
+        {isPM && (
+          <Card size="small" title="Project Actions">
+            <Space wrap>
+              {nextStages.length > 0 && (
+                <Dropdown
+                  trigger={['click']}
+                  menu={{
+                    items: nextStages.map((s) => ({
+                      key: s,
+                      label: STATUS_LABELS[s] ?? s,
+                      danger: s === 'CANCELLED',
+                    })),
+                    onClick: ({ key }) => handleStatusChange(key as ProjectStatus),
+                  }}
+                >
+                  <Button size="small">
+                    {TERMINAL_STATUSES.has(project.status) ? 'Re-open' : 'Move to next stage'} <DownOutlined />
+                  </Button>
+                </Dropdown>
+              )}
+              <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
+            </Space>
           </Card>
         )}
       </div>
+
+      <ChangeManagerModal open={changeManagerOpen} project={project} onClose={() => setChangeManagerOpen(false)} />
     </div>
   );
 };

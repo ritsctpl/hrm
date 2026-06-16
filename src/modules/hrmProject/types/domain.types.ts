@@ -4,6 +4,7 @@ export type ProjectStatus = 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 
 export type ProjectType = 'BILLABLE' | 'NON_BILLABLE' | 'REVENUE_GENERATION';
 export type AllocationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type MilestoneStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
+export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
 export type RecurrencePattern = 'WEEKLY' | 'MONTHLY';
 export type BookingType = 'FIRM' | 'TENTATIVE';
 export type CapacityStatus = 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
@@ -27,6 +28,8 @@ export interface ProjectTask {
   billable: boolean;
   isDefault: boolean;
   actualHours?: number;
+  status?: TaskStatus;
+  milestoneId?: string | null;
   active?: number;
 }
 
@@ -69,6 +72,7 @@ export interface Project {
   committedWorkHours?: number;
   utilizationPercentage: number;
   scheduleVariance: number;
+  archived?: number;
   active: number;
   createdDateTime: string;
   modifiedDateTime: string;
