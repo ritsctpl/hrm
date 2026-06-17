@@ -297,10 +297,18 @@ export default function HolidayYearCalendar({
         onChanged();
         return;
       }
-      message.success('Holiday removed');
+      if (res && (res as { success?: boolean }).success === false) {
+        message.error((res as { message?: string }).message || 'Failed to remove holiday');
+        return;
+      }
+      // Show API response message for success case
+      const successMessage = (res as { message?: string })?.message || 'Holiday removed';
+      message.success(successMessage);
       onChanged();
-    } catch {
-      message.error('Failed to remove holiday');
+    } catch (error: unknown) {
+      // Handle 400 bad request errors and show the API response message
+      const errorMessage = (error as { message?: string })?.message || 'Failed to remove holiday';
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
