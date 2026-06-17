@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Radio, Select, DatePicker, Button, Table, Space, Descriptions, Statistic, Row, Col, Spin, Empty, Typography, Tag, message } from 'antd';
+import { Radio, Select, DatePicker, Button, Table, Space, Descriptions, Statistic, Row, Col, Spin, Empty, Typography, Tag, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -22,6 +22,9 @@ const HEALTH_COLOR: Record<string, string> = {
   'On Track': 'green', 'At Risk': 'orange', 'Off Track': 'red', Completed: 'blue', Cancelled: 'default',
 };
 
+// Fit to screen vertically; let wide tables scroll horizontally instead of squishing.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 320px)' };
+
 function computeHealth(p: Project): { pct: number; health: string } {
   const est = p.estimateHours || 0;
   const act = p.totalActualHours || 0;
@@ -39,6 +42,9 @@ function computeHealth(p: Project): { pct: number; health: string } {
 export default function ProjectReportPanel() {
   const { projects, loadingReport, setLoadingReport } = useHrmProjectStore();
   const organizationId = getOrganizationId();
+  // Client lookups so every report can show client even when its API row omits it.
+  const clientByHandle = new Map(projects.map((p) => [p.handle, p.clientName]));
+  const clientByCode = new Map(projects.map((p) => [p.projectCode, p.clientName]));
   const [reportType, setReportType] = useState<ReportType>('projectHealth');
   const [selectedProject, setSelectedProject] = useState('');
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
@@ -144,6 +150,12 @@ export default function ProjectReportPanel() {
       onFilter: (v, p) => p.projectType === v,
       render: (t: string) => (t === 'BILLABLE' ? 'Billable' : t === 'NON_BILLABLE' ? 'Non-Billable' : 'Revenue Gen'),
     },
+    {
+      title: 'Client', dataIndex: 'clientName', key: 'client', width: 140,
+      filters: uniq(projects.map((p) => p.clientName).filter(Boolean) as string[]).map((c) => ({ text: c, value: c })),
+      onFilter: (v, p) => p.clientName === v,
+      render: (c?: string) => c || <Text type="secondary">—</Text>,
+    },
     { title: 'Est (h)', dataIndex: 'estimateHours', key: 'est', width: 80, align: 'right', sorter: (a, b) => (a.estimateHours || 0) - (b.estimateHours || 0) },
     { title: 'Actual (h)', dataIndex: 'totalActualHours', key: 'act', width: 90, align: 'right', sorter: (a, b) => (a.totalActualHours || 0) - (b.totalActualHours || 0), render: (v?: number) => (v ?? 0).toFixed(1) },
     { title: 'Progress', key: 'pct', width: 100, align: 'right', sorter: (a, b) => computeHealth(a).pct - computeHealth(b).pct, render: (_, p) => `${computeHealth(p).pct}%` },
@@ -167,9 +179,14 @@ export default function ProjectReportPanel() {
       title: 'Projects', key: 'projects',
       render: (_, e) => (e.unassigned ? <Tag>Unassigned</Tag> : (
         <Space size={4} wrap>
-          {e.assignedProjects.map((p) => (
-            <Tag key={p.projectCode} color={p.projectType === 'BILLABLE' ? 'green' : p.projectType === 'NON_BILLABLE' ? 'default' : 'gold'}>{p.projectCode}</Tag>
-          ))}
+          {e.assignedProjects.map((p) => {
+            const cl = clientByCode.get(p.projectCode);
+            return (
+              <Tooltip key={p.projectCode} title={`${p.projectName}${cl ? ` · ${cl}` : ''}`}>
+                <Tag color={p.projectType === 'BILLABLE' ? 'green' : p.projectType === 'NON_BILLABLE' ? 'default' : 'gold'}>{p.projectCode}</Tag>
+              </Tooltip>
+            );
+          })}
         </Space>
       )),
     },
@@ -202,10 +219,10 @@ export default function ProjectReportPanel() {
     if (reportType === 'projectHealth') {
       return {
         title: 'Project Health',
-        headers: ['Code', 'Project', 'Status', 'Type', 'Est (h)', 'Actual (h)', 'Progress %', 'End', 'Health'],
+        headers: ['Code', 'Project', 'Client', 'Status', 'Type', 'Est (h)', 'Actual (h)', 'Progress %', 'End', 'Health'],
         rows: projects.map((p) => {
           const { pct, health } = computeHealth(p);
-          return [p.projectCode, p.projectName, p.status, p.projectType, p.estimateHours || 0, (p.totalActualHours || 0).toFixed(1), pct, p.endDate ? dayjs(p.endDate).format('YYYY-MM-DD') : '', health];
+          return [p.projectCode, p.projectName, p.clientName || '', p.status, p.projectType, p.estimateHours || 0, (p.totalActualHours || 0).toFixed(1), pct, p.endDate ? dayjs(p.endDate).format('YYYY-MM-DD') : '', health];
         }),
       };
     }
@@ -274,7 +291,7 @@ export default function ProjectReportPanel() {
               return n > 0 ? <Tag key={h} color={HEALTH_COLOR[h]}>{h}: {n}</Tag> : null;
             })}
           </Space>
-          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No projects' }} />
+          <Table columns={healthColumns} dataSource={projects} rowKey="handle" size="small" pagination={false} scroll={TABLE_SCROLL} sticky locale={{ emptyText: 'No projects' }} />
         </>
       )}
 
@@ -310,6 +327,7 @@ export default function ProjectReportPanel() {
           {allocationReport && reportType === 'allocationVsActual' && (
             <>
               <Descriptions bordered size="small" column={3} style={{ marginBottom: 16 }} title={`${allocationReport.projectCode} — ${allocationReport.projectName}`}>
+                <Descriptions.Item label="Client">{clientByHandle.get(allocationReport.projectHandle) || clientByCode.get(allocationReport.projectCode) || '—'}</Descriptions.Item>
                 <Descriptions.Item label="Estimate">{allocationReport.estimateHours.toFixed(1)} h</Descriptions.Item>
                 <Descriptions.Item label="Allocated">{allocationReport.allocatedHours.toFixed(1)} h</Descriptions.Item>
                 <Descriptions.Item label="Actual">{allocationReport.actualHours.toFixed(1)} h</Descriptions.Item>
@@ -317,12 +335,12 @@ export default function ProjectReportPanel() {
                 <Descriptions.Item label="Adherence">{allocationReport.allocationAdherence.toFixed(1)}%</Descriptions.Item>
                 <Descriptions.Item label="Forecast Accuracy">{allocationReport.forecastAccuracy.toFixed(1)}%</Descriptions.Item>
               </Descriptions>
-              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No employee data' }} />
+              <Table columns={breakdownColumns} dataSource={allocationReport.employeeBreakdown} rowKey="employeeId" size="small" pagination={false} scroll={TABLE_SCROLL} sticky locale={{ emptyText: 'No employee data' }} />
             </>
           )}
 
           {utilizationReport && reportType === 'utilization' && (
-            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No utilization data' }} />
+            <Table columns={utilColumns} dataSource={utilizationReport.employees} rowKey="employeeId" size="small" pagination={false} scroll={TABLE_SCROLL} sticky locale={{ emptyText: 'No utilization data' }} />
           )}
 
           {capacityReport && reportType === 'capacityDemand' && (
@@ -338,7 +356,7 @@ export default function ProjectReportPanel() {
                   />
                 </Col>
               </Row>
-              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No department data' }} />
+              <Table columns={capacityColumns} dataSource={capacityReport.byDepartment} rowKey="department" size="small" pagination={false} scroll={TABLE_SCROLL} sticky locale={{ emptyText: 'No department data' }} />
             </>
           )}
 
@@ -354,7 +372,7 @@ export default function ProjectReportPanel() {
                   <Radio.Button value="OVER">Overloaded ({workloadReport.overloadedCount})</Radio.Button>
                 </Radio.Group>
               </Space>
-              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={false} scroll={{ y: 'calc(100vh - 300px)' }} sticky locale={{ emptyText: 'No employees in this bucket' }} />
+              <Table columns={workloadColumns} dataSource={workloadRows} rowKey="employeeId" size="small" pagination={false} scroll={TABLE_SCROLL} sticky locale={{ emptyText: 'No employees in this bucket' }} />
             </>
           )}
 

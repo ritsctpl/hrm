@@ -52,6 +52,7 @@ function mapProjectResponse(r: ProjectResponse): Project {
       actualHours: t.actualHours,
       status: (t.status as ProjectTask['status']) ?? 'NOT_STARTED',
       milestoneId: t.milestoneId,
+      extensions: t.extensions,
       active: t.active,
     })),
     attachments: r.attachments.map((a) => ({
@@ -135,6 +136,7 @@ export function useProjectData() {
           projectType: p.projectType as Project['projectType'],
           baseProjectHandle: p.baseProjectHandle,
           buCode: p.buCode,
+          clientName: p.clientName,
           status: p.status as Project['status'],
           projectManagerId: '',
           projectManagerName: p.projectManagerName,

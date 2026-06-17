@@ -545,6 +545,21 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadProjectDetail]);
 
+  const extendTask = useCallback(async (
+    projectHandle: string,
+    payload: { taskHandle: string; additionalHours: number; newProjectEndDate?: string; reason?: string },
+    actor: string,
+  ) => {
+    try {
+      await HrmProjectService.extendTask({ organizationId, projectHandle, extendedBy: actor, ...payload });
+      message.success(`Task extended by ${payload.additionalHours} h`);
+      await loadProjectDetail(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to extend task'));
+      console.error(error);
+    }
+  }, [organizationId, loadProjectDetail]);
+
   const importTasks = useCallback(async (targetProjectHandle: string, sourceProjectHandle: string, taskHandles?: string[]) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
     try {
@@ -578,6 +593,7 @@ export function useProjectMutations() {
     updateTaskStatus,
     moveTaskToProject,
     mergeTasks,
+    extendTask,
     importTasks,
     submitAllocation,
     cancelAllocation,

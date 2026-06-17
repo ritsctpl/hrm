@@ -179,8 +179,13 @@ export default function ProjectForm() {
       />
 
       <div style={{ display: step === 0 ? 'block' : 'none' }}>
-      <Form.Item name="projectName" label="Project Name" rules={[{ required: true }]}>
-        <Input placeholder="e.g. Customer Portal V2" />
+      <Form.Item
+        name="projectName"
+        label="Project Name"
+        rules={[{ required: true }]}
+        extra={editingProject ? 'Project name cannot be changed after creation' : undefined}
+      >
+        <Input placeholder="e.g. Customer Portal V2" disabled={!!editingProject} />
       </Form.Item>
       <Form.Item name="projectType" label="Type" rules={[{ required: true }]}>
         <Radio.Group>

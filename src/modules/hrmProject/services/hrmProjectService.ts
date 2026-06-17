@@ -36,6 +36,7 @@ import type {
   TaskStatusUpdateRequest,
   TaskMoveRequest,
   TaskMergeRequest,
+  TaskExtensionRequest,
   ProjectAuditResponse,
 } from '../types/api.types';
 
@@ -354,6 +355,12 @@ export class HrmProjectService {
 
   static async mergeTasks(payload: TaskMergeRequest): Promise<ProjectTaskResponse> {
     const res = await api.post(`${BASE}/task/merge`, payload);
+    return res.data;
+  }
+
+  // Extend an over-running task (rolls into project estimate/timeline, records history).
+  static async extendTask(payload: TaskExtensionRequest): Promise<ProjectTaskResponse> {
+    const res = await api.post(`${BASE}/task/extend`, payload);
     return res.data;
   }
 

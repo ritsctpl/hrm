@@ -83,16 +83,21 @@ export default function ProjectMilestonesTab() {
           <span>Description</span>
           <span>Actions</span>
         </div>
-        {selectedProject.milestones.map((m) => (
-          <MilestoneRow
-            key={m.milestoneId}
-            milestone={m}
-            isEditing={false}
-            onStatusChange={handleStatusChange}
-            onEdit={handleEdit}
-            onRemove={handleRemove}
-          />
-        ))}
+        {selectedProject.milestones.map((m) => {
+          const linked = (selectedProject.tasks ?? []).filter((t) => t.milestoneId === m.milestoneId);
+          const done = linked.filter((t) => t.status === 'COMPLETED').length;
+          return (
+            <MilestoneRow
+              key={m.milestoneId}
+              milestone={m}
+              isEditing={false}
+              taskRollup={{ done, total: linked.length }}
+              onStatusChange={handleStatusChange}
+              onEdit={handleEdit}
+              onRemove={handleRemove}
+            />
+          );
+        })}
         {selectedProject.milestones.length === 0 && (
           <div className={styles.emptyList}>No milestones defined</div>
         )}

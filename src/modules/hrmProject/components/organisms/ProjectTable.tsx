@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, message } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, InboxOutlined, ExportOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, Select, message } from 'antd';
+import { EyeOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, InboxOutlined, ExportOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import type { ColumnsType } from 'antd/es/table';
 import type { Project } from '../../types/domain.types';
@@ -10,6 +10,7 @@ import ProjectSearchBar from '../molecules/ProjectSearchBar';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { PROJECT_STATUS_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import { formatDate } from '../../utils/projectHelpers';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectList.module.css';
@@ -25,7 +26,9 @@ interface ProjectTableProps {
 interface CloneForm { newProjectName: string; includeTasks: boolean; includeMilestones: boolean; includeAllocations: boolean }
 
 const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }) => {
-  const { openProjectForm, savingProject } = useHrmProjectStore();
+  const { openProjectForm, savingProject, filterStatus, filterType, filterClient, setFilterStatus, setFilterType, setFilterClient } = useHrmProjectStore();
+  // Client options derived from the projects actually in the list.
+  const clientOptions = Array.from(new Set(projects.map((p) => p.clientName).filter(Boolean))).map((c) => ({ value: c as string, label: c as string }));
   const { deleteProject, cloneProject, setProjectArchived } = useProjectMutations();
   const { employeeCode } = useEmployeeIdentity();
   const [cloneSource, setCloneSource] = useState<Project | null>(null);
@@ -76,6 +79,13 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       },
     },
     {
+      title: 'Client',
+      dataIndex: 'clientName',
+      key: 'clientName',
+      width: 150,
+      render: (c?: string) => c || <Text type="secondary">—</Text>,
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -117,11 +127,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
           <Tooltip title="View">
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => onView(p)} />
           </Tooltip>
-          <Can I="edit">
-            <Tooltip title="Edit">
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openProjectForm(p)} />
-            </Tooltip>
-          </Can>
           <Can I="add">
             <Tooltip title="Clone">
               <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => openClone(p)} />
@@ -158,11 +163,39 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
         <div className={styles.tableSearch}>
           <ProjectSearchBar />
         </div>
-        <Can I="add">
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
-            New Project
-          </Button>
-        </Can>
+        <Space>
+          <Select
+            placeholder="Status"
+            value={filterStatus || undefined}
+            onChange={(v) => setFilterStatus(v ?? '')}
+            allowClear
+            style={{ width: 150 }}
+            options={PROJECT_STATUS_OPTIONS}
+          />
+          <Select
+            placeholder="Type"
+            value={filterType || undefined}
+            onChange={(v) => setFilterType(v ?? '')}
+            allowClear
+            style={{ width: 160 }}
+            options={PROJECT_TYPES}
+          />
+          <Select
+            placeholder="Client"
+            value={filterClient || undefined}
+            onChange={(v) => setFilterClient(v ?? '')}
+            allowClear
+            showSearch
+            style={{ width: 170 }}
+            options={clientOptions}
+            filterOption={(i, o) => String(o?.label ?? '').toLowerCase().includes(i.toLowerCase())}
+          />
+          <Can I="add">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
+              New Project
+            </Button>
+          </Can>
+        </Space>
       </div>
       <Table<Project>
         rowKey="handle"

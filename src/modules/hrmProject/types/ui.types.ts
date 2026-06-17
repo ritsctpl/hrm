@@ -113,6 +113,7 @@ export interface AllocationRowProps {
 export interface MilestoneRowProps {
   milestone: Milestone;
   isEditing?: boolean;
+  taskRollup?: { done: number; total: number };
   onStatusChange?: (milestoneId: string, status: MilestoneStatus) => void;
   onEdit?: (milestone: Milestone) => void;
   onRemove?: (milestoneId: string) => void;

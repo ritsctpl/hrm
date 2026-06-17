@@ -53,9 +53,16 @@
 
 .overviewGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.3fr);
   gap: 16px;
-  padding: 16px 0;
+  padding: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .progressCard {
@@ -64,7 +71,7 @@
 
 /* Allocations */
 .allocationsTab {
-  padding: 16px 0;
+  padding: 16px;
 }
 
 .allocationsHeader,
@@ -97,7 +104,7 @@
 
 /* Milestones */
 .milestonesTab {
-  padding: 16px 0;
+  padding: 16px;
 }
 
 .tabHeader {
@@ -138,7 +145,7 @@
 
 /* Attachments */
 .attachmentsTab {
-  padding: 16px 0;
+  padding: 16px;
 }
 
 /* Approval Inbox */

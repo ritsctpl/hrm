@@ -4,12 +4,14 @@ import {
   Table, Button, Modal, Form, Input, InputNumber, Switch, Space, Tag, Popconfirm,
   Select, Typography, Tooltip, Alert, Dropdown, message,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined, StarOutlined, DownOutlined, SwapOutlined, MergeCellsOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ImportOutlined, StarOutlined, DownOutlined, SwapOutlined, MergeCellsOutlined, FieldTimeOutlined, WarningOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { HrmProjectService } from '../../services/hrmProjectService';
+import ExtendTaskModal from './ExtendTaskModal';
 import type { ProjectTask, TaskStatus } from '../../types/domain.types';
 import type { ProjectTaskResponse } from '../../types/api.types';
 import type { TaskFormValues } from '../../types/ui.types';
@@ -28,6 +30,8 @@ const TASK_STATUS_KEYS: TaskStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED
 export default function ProjectTasksTab() {
   const { selectedProject, projects } = useHrmProjectStore();
   const { createTask, updateTask, removeTask, importTasks, updateTaskStatus, moveTaskToProject, mergeTasks } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
+  const [extendTarget, setExtendTarget] = useState<ProjectTask | null>(null);
   const [form] = Form.useForm<TaskFormValues>();
   const [editing, setEditing] = useState<ProjectTask | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -57,6 +61,12 @@ export default function ProjectTasksTab() {
   const taskEstTotal = tasks.reduce((s, t) => s + (t.estimatedHours || 0), 0);
   const projectEst = selectedProject.estimateHours || 0;
   const estDiff = projectEst - taskEstTotal;
+
+  // Over-budget: actuals reached the estimate and the task isn't complete → needs a PM decision.
+  const isPM = !!employeeCode && employeeCode === selectedProject.projectManagerId;
+  const isOverBudget = (t: ProjectTask) =>
+    (t.estimatedHours ?? 0) > 0 && (t.actualHours ?? 0) >= (t.estimatedHours ?? 0) && t.status !== 'COMPLETED';
+  const overBudgetTasks = tasks.filter(isOverBudget);
 
   const openCreate = () => {
     setEditing(null);
@@ -190,8 +200,32 @@ export default function ProjectTasksTab() {
         return m ? <Text style={{ fontSize: 12 }}>{m.milestoneName}</Text> : <Text type="secondary">—</Text>;
       },
     },
-    { title: 'Est. Hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 90, align: 'right' },
-    { title: 'Actual', dataIndex: 'actualHours', key: 'actualHours', width: 80, align: 'right', render: (v?: number) => v ?? 0 },
+    {
+      title: 'Est. Hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 110, align: 'right',
+      render: (v: number, t) => {
+        const exts = t.extensions ?? [];
+        const added = exts.reduce((s, e) => s + (e.additionalHours || 0), 0);
+        return (
+          <span>
+            {v}
+            {added > 0 && (
+              <Tooltip title={exts.map((e) => `+${e.additionalHours}h · ${e.extendedByName || e.extendedBy}${e.reason ? ` · ${e.reason}` : ''}`).join('\n')}>
+                <Tag color="gold" style={{ marginLeft: 6 }}>+{added}h</Tag>
+              </Tooltip>
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      title: 'Actual', dataIndex: 'actualHours', key: 'actualHours', width: 90, align: 'right',
+      render: (v: number | undefined, t) => {
+        const actual = v ?? 0;
+        return isOverBudget(t)
+          ? <Tooltip title="Reached the estimate — needs complete or extend"><Text type="danger" strong>{actual} <WarningOutlined /></Text></Tooltip>
+          : actual;
+      },
+    },
     { title: 'Rate/hr', dataIndex: 'billableRate', key: 'billableRate', width: 90, align: 'right', render: (v?: number | null) => (v ? v : <Text type="secondary">—</Text>) },
     {
       title: 'Billable', dataIndex: 'billable', key: 'billable', width: 100,
@@ -204,6 +238,9 @@ export default function ProjectTasksTab() {
           <Can I="edit">
             <Tooltip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} disabled={!canEditTasks} /></Tooltip>
           </Can>
+          {isOverBudget(t) && isPM && (
+            <Tooltip title="Extend task time"><Button type="text" size="small" icon={<FieldTimeOutlined />} style={{ color: '#fa8c16' }} onClick={() => setExtendTarget(t)} /></Tooltip>
+          )}
           <Can I="edit">
             <Tooltip title="Move to another project"><Button type="text" size="small" icon={<SwapOutlined />} onClick={() => setMoveTarget(t)} disabled={!canEditTasks} /></Tooltip>
           </Can>
@@ -225,6 +262,17 @@ export default function ProjectTasksTab() {
     <div style={{ padding: 16 }}>
       {!canEditTasks && (
         <Alert type="info" showIcon message={blockedReason} style={{ marginBottom: 12 }} />
+      )}
+      {overBudgetTasks.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={`${overBudgetTasks.length} task${overBudgetTasks.length > 1 ? 's' : ''} reached the estimate: ${overBudgetTasks.map((t) => t.taskName).join(', ')}`}
+          description={isPM
+            ? 'Time logging on these is blocked until you mark them Complete or Extend the time.'
+            : "These are blocked for time logging until the project manager completes or extends them."}
+        />
       )}
       {projectEst > 0 && (
         estDiff === 0 ? (
@@ -359,6 +407,13 @@ export default function ProjectTasksTab() {
           />
         </div>
       </Modal>
+
+      <ExtendTaskModal
+        open={!!extendTarget}
+        task={extendTarget}
+        project={selectedProject}
+        onClose={() => setExtendTarget(null)}
+      />
 
       {/* Add from default tasks */}
       <Modal

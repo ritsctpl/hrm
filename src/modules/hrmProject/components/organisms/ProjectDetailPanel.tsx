@@ -24,12 +24,17 @@ export default function ProjectDetailPanel() {
     return <Skeleton active />;
   }
 
+  const count = (n: number) => (n > 0 ? ` (${n})` : '');
+  const taskCount = selectedProject.tasks?.length ?? 0;
+  const msCount = selectedProject.milestones?.length ?? 0;
+  const fileCount = selectedProject.attachments?.length ?? 0;
+
   const items = [
     { key: 'overview', label: 'Overview', children: <ProjectOverviewTab project={selectedProject} /> },
-    { key: 'tasks', label: 'Tasks', children: <ProjectTasksTab /> },
+    { key: 'tasks', label: `Tasks${count(taskCount)}`, children: <ProjectTasksTab /> },
     { key: 'allocations', label: 'Team', children: <ProjectAllocationsTab /> },
-    { key: 'milestones', label: 'Milestones', children: <ProjectMilestonesTab /> },
-    { key: 'attachments', label: 'Files', children: <ProjectAttachmentsTab /> },
+    { key: 'milestones', label: `Milestones${count(msCount)}`, children: <ProjectMilestonesTab /> },
+    { key: 'attachments', label: `Files${count(fileCount)}`, children: <ProjectAttachmentsTab /> },
     { key: 'audit', label: 'History', children: <ProjectAuditTab /> },
   ];
 

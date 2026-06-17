@@ -119,6 +119,7 @@ export default function ProjectAllocationsTab() {
       )}
       <div className={styles.allocationsHeader}>
         <Space>
+          <Text strong>{groups.length} member{groups.length === 1 ? '' : 's'}</Text>
           <Select
             placeholder="Status filter"
             value={filterStatus || undefined}

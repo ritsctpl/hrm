@@ -19,6 +19,7 @@ interface ProjectUIState {
   activeTab: 'projects' | 'approvals' | 'calendar' | 'reports';
   activeDetailTab: 'overview' | 'tasks' | 'allocations' | 'milestones' | 'attachments' | 'audit';
   isProjectFormOpen: boolean;
+  isOverviewEditing: boolean;
   isAllocationFormOpen: boolean;
   allocationPrefill: { employeeId: string; employeeName: string; role?: string; bookingType?: string; startDate?: string; endDate?: string } | null;
   isClientDrawerOpen: boolean;
@@ -28,6 +29,7 @@ interface ProjectUIState {
   filterType: string;
   filterStatus: string;
   filterPM: string;
+  filterClient: string;
   calendarWeekStart: string;
   calendarBU: string;
   calendarDept: string;
@@ -65,6 +67,7 @@ interface ProjectActions {
   setActiveDetailTab: (tab: ProjectUIState['activeDetailTab']) => void;
   openProjectForm: (project?: Project) => void;
   closeProjectForm: () => void;
+  setOverviewEditing: (v: boolean) => void;
   openAllocationForm: (prefill?: { employeeId: string; employeeName: string; role?: string; bookingType?: string; startDate?: string; endDate?: string }) => void;
   closeAllocationForm: () => void;
   openClientDrawer: () => void;
@@ -75,6 +78,7 @@ interface ProjectActions {
   setFilterType: (v: string) => void;
   setFilterStatus: (v: string) => void;
   setFilterPM: (v: string) => void;
+  setFilterClient: (v: string) => void;
   setCalendarWeekStart: (d: string) => void;
   setCalendarBU: (v: string) => void;
   setCalendarDept: (v: string) => void;
@@ -113,6 +117,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       activeTab: 'projects',
       activeDetailTab: 'overview',
       isProjectFormOpen: false,
+      isOverviewEditing: false,
       isAllocationFormOpen: false,
       allocationPrefill: null,
       isClientDrawerOpen: false,
@@ -122,6 +127,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       filterType: '',
       filterStatus: '',
       filterPM: '',
+      filterClient: '',
       calendarWeekStart: new Date().toISOString().slice(0, 10),
       calendarBU: '',
       calendarDept: '',
@@ -151,6 +157,8 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
         // keep the current tab when refreshing the same project; reset to overview only
         // when opening a different project (or clearing the selection)
         activeDetailTab: p && state.selectedProject?.handle === p.handle ? state.activeDetailTab : 'overview',
+        // leave inline edit mode when switching to a different project / closing
+        isOverviewEditing: p && state.selectedProject?.handle === p.handle ? state.isOverviewEditing : false,
       })),
       setEditingProject: (p) => set({ editingProject: p }),
       setSelectedAllocation: (a) => set({ selectedAllocation: a }),
@@ -158,6 +166,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
       openProjectForm: (project) => set({ isProjectFormOpen: true, editingProject: project ?? null }),
       closeProjectForm: () => set({ isProjectFormOpen: false, editingProject: null }),
+      setOverviewEditing: (v) => set({ isOverviewEditing: v }),
       openAllocationForm: (prefill) => set({ isAllocationFormOpen: true, capacityCheck: null, allocationPrefill: prefill ?? null }),
       closeAllocationForm: () => set({ isAllocationFormOpen: false, capacityCheck: null, allocationPrefill: null }),
       openClientDrawer: () => set({ isClientDrawerOpen: true }),
@@ -168,6 +177,7 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       setFilterType: (v) => set({ filterType: v }),
       setFilterStatus: (v) => set({ filterStatus: v }),
       setFilterPM: (v) => set({ filterPM: v }),
+      setFilterClient: (v) => set({ filterClient: v }),
       setCalendarWeekStart: (d) => set({ calendarWeekStart: d }),
       setCalendarBU: (v) => set({ calendarBU: v }),
       setCalendarDept: (v) => set({ calendarDept: v }),

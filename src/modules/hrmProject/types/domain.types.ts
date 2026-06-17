@@ -17,6 +17,16 @@ export interface Milestone {
   description?: string;
 }
 
+export interface TaskExtension {
+  additionalHours: number;
+  previousEstimate: number;
+  newEstimate: number;
+  extendedBy: string;
+  extendedByName?: string;
+  extendedAt: string;
+  reason?: string;
+}
+
 // NOTE: field names mirror the agreed spec — reconcile with ProjectTaskResponse before Stage B UI.
 export interface ProjectTask {
   handle: string; // task identifier
@@ -30,6 +40,7 @@ export interface ProjectTask {
   actualHours?: number;
   status?: TaskStatus;
   milestoneId?: string | null;
+  extensions?: TaskExtension[];
   active?: number;
 }
 

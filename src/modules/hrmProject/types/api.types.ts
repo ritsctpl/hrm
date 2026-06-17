@@ -98,6 +98,7 @@ export interface ProjectListResponse {
   baseProjectHandle?: string;
   buCode: string;
   status: string;
+  clientName?: string;
   projectManagerName: string;
   estimateHours: number;
   totalAllocatedHours: number;
@@ -475,9 +476,32 @@ export interface ProjectTaskResponse {
   actualHours?: number;
   status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
   milestoneId?: string | null;
+  extensions?: TaskExtensionResponse[];
   active?: number;
   createdDateTime?: string;
   modifiedDateTime?: string;
+}
+
+export interface TaskExtensionResponse {
+  additionalHours: number;
+  previousEstimate: number;
+  newEstimate: number;
+  extendedBy: string;
+  extendedByName?: string;
+  extendedAt: string;
+  reason?: string;
+}
+
+// Extend an over-running task: adds hours to the task estimate and rolls the increase
+// into the project estimate (+ project end date if provided). Records an extension entry.
+export interface TaskExtensionRequest {
+  organizationId: string;
+  projectHandle: string;
+  taskHandle: string;
+  additionalHours: number;
+  newProjectEndDate?: string;
+  reason?: string;
+  extendedBy: string;
 }
 
 // Task lifecycle (status / move / merge)

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Select, Button, Typography, Popconfirm, Tooltip } from 'antd';
+import { Select, Button, Typography, Popconfirm, Tooltip, Tag } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { MilestoneRowProps } from '../../types/ui.types';
 import type { MilestoneStatus } from '../../types/domain.types';
@@ -12,9 +12,18 @@ const { Text } = Typography;
 
 const MILESTONE_STATUSES: MilestoneStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED'];
 
-const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, onStatusChange, onEdit, onRemove }) => (
+const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, taskRollup, onStatusChange, onEdit, onRemove }) => (
   <div className={styles.milestoneRow}>
-    <Text ellipsis={{ tooltip: milestone.milestoneName }}>{milestone.milestoneName}</Text>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+      <Text ellipsis={{ tooltip: milestone.milestoneName }}>{milestone.milestoneName}</Text>
+      {taskRollup && taskRollup.total > 0 && (
+        <Tooltip title={`${taskRollup.done} of ${taskRollup.total} linked tasks complete`}>
+          <Tag color={taskRollup.done === taskRollup.total ? 'green' : 'blue'} style={{ flexShrink: 0 }}>
+            {taskRollup.done}/{taskRollup.total}
+          </Tag>
+        </Tooltip>
+      )}
+    </span>
     <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(milestone.targetDate)}</Text>
     {onStatusChange ? (
       <Select

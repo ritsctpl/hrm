@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useCallback } from 'react';
 import { Tabs, Button, Modal, Badge, Drawer, Table, Input, Form, Empty, Popconfirm, message } from 'antd';
-import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { PlusOutlined, TeamOutlined, ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
@@ -10,6 +10,7 @@ import { useProjectData } from './hooks/useProjectData';
 import { HrmProjectService } from './services/hrmProjectService';
 import ProjectTable from './components/organisms/ProjectTable';
 import ProjectDetailPanel from './components/organisms/ProjectDetailPanel';
+import ProjectStatusBadge from './components/atoms/ProjectStatusBadge';
 import AllocationApprovalInbox from './components/organisms/AllocationApprovalInbox';
 import ProjectReportPanel from './components/organisms/ProjectReportPanel';
 import ProjectForm from './components/organisms/ProjectForm';
@@ -181,6 +182,8 @@ export default function HrmProjectLanding() {
     setActiveTab,
     isProjectFormOpen,
     closeProjectForm,
+    setActiveDetailTab,
+    setOverviewEditing,
     isAllocationFormOpen,
     allocationPrefill,
     closeAllocationForm,
@@ -194,6 +197,7 @@ export default function HrmProjectLanding() {
     filterBU,
     filterType,
     filterStatus,
+    filterClient,
     searchQuery,
     setSelectedProject,
   } = useHrmProjectStore();
@@ -220,9 +224,10 @@ export default function HrmProjectLanding() {
           !p.projectCode.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (filterStatus && p.status !== filterStatus) return false;
       if (filterType && p.projectType !== filterType) return false;
+      if (filterClient && p.clientName !== filterClient) return false;
       return true;
     });
-  }, [projects, searchQuery, filterStatus, filterType]);
+  }, [projects, searchQuery, filterStatus, filterType, filterClient]);
 
   const handleSelectProject = (project: typeof projects[number]) => {
     setSelectedProject(project);
@@ -278,19 +283,46 @@ export default function HrmProjectLanding() {
     <div className={`hrm-module-root ${styles.hrmProjectLanding}`}>
       <CommonAppBar appTitle="Projects & Resource Allocation" />
       <div className={styles.content}>
-        <Tabs
-          className={styles.mainTabs}
-          activeKey={resolvedActiveTab}
-          onChange={(k) => setActiveTab(k as typeof activeTab)}
-          items={tabItems}
-          size="small"
-          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-          tabBarExtraContent={
-            <Button size="small" icon={<TeamOutlined />} onClick={openClientDrawer}>
-              Clients
-            </Button>
-          }
-        />
+        {selectedProject ? (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', borderBottom: '1px solid #e8e8e8' }}>
+              <Button size="small" icon={<ArrowLeftOutlined />} onClick={() => setSelectedProject(null)}>
+                Back to projects
+              </Button>
+              <span style={{ fontWeight: 600 }}>
+                {selectedProject.projectCode} — {selectedProject.projectName}
+              </span>
+              <ProjectStatusBadge status={selectedProject.status} />
+              <Can I="edit">
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => { setActiveDetailTab('overview'); setOverviewEditing(true); }}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  Edit
+                </Button>
+              </Can>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <ProjectDetailPanel />
+            </div>
+          </div>
+        ) : (
+          <Tabs
+            className={styles.mainTabs}
+            activeKey={resolvedActiveTab}
+            onChange={(k) => setActiveTab(k as typeof activeTab)}
+            items={tabItems}
+            size="small"
+            tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+            tabBarExtraContent={
+              <Button size="small" icon={<TeamOutlined />} onClick={openClientDrawer}>
+                Clients
+              </Button>
+            }
+          />
+        )}
       </div>
 
       <Modal
@@ -318,17 +350,6 @@ export default function HrmProjectLanding() {
       >
         {selectedProject && <AllocationForm projectHandle={selectedProject.handle} />}
       </Modal>
-
-      <Drawer
-        title={selectedProject ? `${selectedProject.projectCode} — ${selectedProject.projectName}` : ''}
-        open={!!selectedProject}
-        onClose={() => setSelectedProject(null)}
-        width="72%"
-        destroyOnHidden
-        styles={{ body: { padding: 0 } }}
-      >
-        <ProjectDetailPanel />
-      </Drawer>
 
       <ClientManagementDrawer open={isClientDrawerOpen} onClose={closeClientDrawer} />
     </div>
