@@ -24,6 +24,7 @@ import {
   ListTodo,
   KeyRound,
   Blocks,
+  Layers,
 } from 'lucide-react';
 
 const MODULE_ICON_MAP: Record<string, LucideIcon> = {
@@ -34,6 +35,7 @@ const MODULE_ICON_MAP: Record<string, LucideIcon> = {
   '/rits/hrm_payslip_app':       FileSpreadsheet,
   '/rits/hrm_holiday_app':       CalendarDays,
   '/rits/hrm_compensation_app':  HandCoins,
+  '/rits/hrm_grade_app':         Layers,
   '/rits/hrm_appraisal_app':     ClipboardCheck,
   '/rits/hrm_asset_app':         Package,
   '/rits/hrm_organization_app':  Building2,

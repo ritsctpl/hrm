@@ -49,6 +49,7 @@ export const BREADCRUMB_GROUP_MAP: Record<string, string> = {
   activity_app: 'Administration',
   activityGroup_app: 'Administration',
   userCredential_app: 'Administration',
+  hrm_grade_app: 'Administration',
   hrm_leave_app: 'Self-Service',
   hrm_travel_app: 'Self-Service',
   hrm_expense_app: 'Self-Service',

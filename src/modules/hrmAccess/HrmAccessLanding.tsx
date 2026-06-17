@@ -5,6 +5,8 @@ import { Tabs } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
+import ModuleAccessGate from './components/ModuleAccessGate';
+import { useCan } from './hooks/useCan';
 import ModuleRegistryTemplate from './components/templates/ModuleRegistryTemplate';
 import RoleManagementTemplate from './components/templates/RoleManagementTemplate';
 import PermissionMatrixTemplate from './components/templates/PermissionMatrixTemplate';
@@ -30,8 +32,13 @@ const HrmAccessLanding: React.FC = () => {
   const { activeMainTab, setActiveMainTab, setRoles, setRoleLoading, setAllModules, setAllPermissions } =
     useHrmAccessStore();
 
+  // Don't fetch sensitive RBAC data until the user is confirmed to have view
+  // access. Without this, the data-load effect fires on mount regardless of
+  // the gate (hooks run before the gated JSX renders).
+  const { canView } = useCan('HRM_ACCESS');
+
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId || !canView) return;
 
     setRoleLoading(true);
     Promise.all([
@@ -46,7 +53,7 @@ const HrmAccessLanding: React.FC = () => {
       })
       .catch(() => setRoleLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId]);
+  }, [organizationId, canView]);
 
   const tabItems = [
     {
@@ -87,20 +94,22 @@ const HrmAccessLanding: React.FC = () => {
   ];
 
   return (
-    <div className={`hrm-module-root ${styles.rbacLanding}`}>
-      <CommonAppBar appTitle="Access Control (RBAC)" />
-      <div className={styles.tabsWrapper}>
-        <Tabs
-          activeKey={activeMainTab}
-          onChange={(key) => setActiveMainTab(key as typeof activeMainTab)}
-          items={tabItems}
-          className={styles.mainTabs}
-          size="small"
-          tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-          destroyOnHidden={false}
-        />
+    <ModuleAccessGate moduleCode="HRM_ACCESS" appTitle="Access Control (RBAC)">
+      <div className={`hrm-module-root ${styles.rbacLanding}`}>
+        <CommonAppBar appTitle="Access Control (RBAC)" />
+        <div className={styles.tabsWrapper}>
+          <Tabs
+            activeKey={activeMainTab}
+            onChange={(key) => setActiveMainTab(key as typeof activeMainTab)}
+            items={tabItems}
+            className={styles.mainTabs}
+            size="small"
+            tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
+            destroyOnHidden={false}
+          />
+        </div>
       </div>
-    </div>
+    </ModuleAccessGate>
   );
 };
 

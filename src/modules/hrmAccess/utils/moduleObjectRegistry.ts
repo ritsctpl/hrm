@@ -57,6 +57,7 @@ export const APP_URL_TO_MODULE: Record<string, string> = {
   "/rits/hrm_dashboard_app": "HRM_DASHBOARD",
   "/rits/hrm_employee_app": "HRM_EMPLOYEE",
   "/rits/hrm_expense_app": "HRM_EXPENSE",
+  "/rits/hrm_grade_app": "HRM_GRADE",
   "/rits/hrm_holiday_app": "HRM_HOLIDAY",
   "/rits/hrm_leave_app": "HRM_LEAVE",
   "/rits/hrm_notification_app": "HRM_NOTIFICATION",
@@ -190,6 +191,15 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "dashboard_hr", label: "HR Widgets" },
     { code: "dashboard_manager", label: "Manager Widgets" },
     { code: "dashboard_employee", label: "Employee Widgets" },
+  ],
+
+  // ── Grade ───────────────────────────────────────────────────────────
+  HRM_GRADE: [
+    { code: "grade_module", label: "Module Access" },
+    { code: "grade_master", label: "Grade Master" },
+    { code: "grade_salary_band", label: "Salary Band" },
+    { code: "grade_appraisal_config", label: "Appraisal Configuration" },
+    { code: "grade_progression", label: "Progression & Opportunities" },
   ],
 
   // ── Employee ────────────────────────────────────────────────────────
