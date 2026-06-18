@@ -69,7 +69,7 @@ export default function HrmTimesheetLanding() {
               type="primary"
               icon={<ClockCircleOutlined />}
               onClick={() => openWeekForDate(today)}
-              style={{ background: '#fadb14', borderColor: '#fadb14', color: '#262626', fontWeight: 600 }}
+              style={{ background: '#fadb14', borderColor: '#fadb14', color: '#ffffffff', fontWeight: 600 }}
             >
               Enter Time
             </Button>

@@ -14,6 +14,10 @@ import styles from '../../styles/HrmTimesheet.module.css';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+type ComplianceRow = SubmissionComplianceReport['employeeCompliance'][number];
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 360px)' };
+
 export default function ComplianceReportPanel() {
   const {
     reportPeriodStart, reportPeriodEnd,
@@ -37,25 +41,28 @@ export default function ComplianceReportPanel() {
   }
 
   const columns = [
-    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName' },
-    { title: 'Working Days', dataIndex: 'workingDays', key: 'workingDays', width: 110, align: 'center' as const },
-    { title: 'Submitted', dataIndex: 'submittedDays', key: 'submittedDays', width: 90, align: 'center' as const },
-    { title: 'Approved', dataIndex: 'approvedDays', key: 'approvedDays', width: 90, align: 'center' as const },
+    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName', sorter: (a: ComplianceRow, b: ComplianceRow) => (a.employeeName || '').localeCompare(b.employeeName || '') },
+    { title: 'Working Days', dataIndex: 'workingDays', key: 'workingDays', width: 110, align: 'center' as const, sorter: (a: ComplianceRow, b: ComplianceRow) => a.workingDays - b.workingDays },
+    { title: 'Submitted', dataIndex: 'submittedDays', key: 'submittedDays', width: 90, align: 'center' as const, sorter: (a: ComplianceRow, b: ComplianceRow) => a.submittedDays - b.submittedDays },
+    { title: 'Approved', dataIndex: 'approvedDays', key: 'approvedDays', width: 90, align: 'center' as const, sorter: (a: ComplianceRow, b: ComplianceRow) => a.approvedDays - b.approvedDays },
     {
       title: 'Full Days', key: 'green', width: 90, align: 'center' as const,
-      render: (_: unknown, r: SubmissionComplianceReport['employeeCompliance'][number]) => (
+      sorter: (a: ComplianceRow, b: ComplianceRow) => a.greenDays - b.greenDays,
+      render: (_: unknown, r: ComplianceRow) => (
         <Text style={{ color: '#52c41a' }}>{r.greenDays}</Text>
       ),
     },
     {
       title: 'Partial', key: 'yellow', width: 80, align: 'center' as const,
-      render: (_: unknown, r: SubmissionComplianceReport['employeeCompliance'][number]) => (
+      sorter: (a: ComplianceRow, b: ComplianceRow) => a.yellowDays - b.yellowDays,
+      render: (_: unknown, r: ComplianceRow) => (
         <Text style={{ color: '#faad14' }}>{r.yellowDays}</Text>
       ),
     },
     {
       title: 'Low', key: 'red', width: 70, align: 'center' as const,
-      render: (_: unknown, r: SubmissionComplianceReport['employeeCompliance'][number]) => (
+      sorter: (a: ComplianceRow, b: ComplianceRow) => a.redDays - b.redDays,
+      render: (_: unknown, r: ComplianceRow) => (
         <Text style={{ color: '#ff4d4f' }}>{r.redDays}</Text>
       ),
     },
@@ -63,7 +70,9 @@ export default function ComplianceReportPanel() {
       title: 'Compliance',
       key: 'compliance',
       width: 160,
-      render: (_: unknown, r: SubmissionComplianceReport['employeeCompliance'][number]) => (
+      defaultSortOrder: 'ascend' as const,
+      sorter: (a: ComplianceRow, b: ComplianceRow) => a.compliancePercent - b.compliancePercent,
+      render: (_: unknown, r: ComplianceRow) => (
         <Progress
           percent={Math.round(r.compliancePercent)}
           size="small"
@@ -127,7 +136,9 @@ export default function ComplianceReportPanel() {
           dataSource={report?.employeeCompliance ?? []}
           rowKey="employeeId"
           columns={columns}
-          pagination={{ pageSize: 20 }}
+          pagination={false}
+          scroll={TABLE_SCROLL}
+          sticky
           loading={loadingReport}
         />
       </div>

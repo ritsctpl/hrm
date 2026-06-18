@@ -14,6 +14,11 @@ import styles from '../../styles/HrmTimesheet.module.css';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+type HolidayRow = HolidayWorkingSummary['entries'][number];
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 360px)' };
+const uniq = <T,>(arr: T[]): T[] => Array.from(new Set(arr));
+
 export default function HolidayWorkingReportPanel() {
   const {
     reportPeriodStart, reportPeriodEnd,
@@ -37,15 +42,20 @@ export default function HolidayWorkingReportPanel() {
   }
 
   const columns = [
-    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName' },
-    { title: 'Date', dataIndex: 'date', key: 'date', width: 110 },
-    { title: 'Holiday', dataIndex: 'holidayName', key: 'holidayName' },
+    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName', sorter: (a: HolidayRow, b: HolidayRow) => (a.employeeName || '').localeCompare(b.employeeName || '') },
+    { title: 'Date', dataIndex: 'date', key: 'date', width: 110, sorter: (a: HolidayRow, b: HolidayRow) => (a.date || '').localeCompare(b.date || '') },
+    {
+      title: 'Holiday', dataIndex: 'holidayName', key: 'holidayName',
+      filters: uniq((report?.entries ?? []).map((e) => e.holidayName).filter(Boolean) as string[]).map((h) => ({ text: h, value: h })),
+      onFilter: (v: string | number | boolean, r: HolidayRow) => r.holidayName === v,
+    },
     {
       title: 'Hours Worked',
       dataIndex: 'hoursWorked',
       key: 'hoursWorked',
       width: 120,
       align: 'right' as const,
+      sorter: (a: HolidayRow, b: HolidayRow) => a.hoursWorked - b.hoursWorked,
       render: (v: number) => v.toFixed(1),
     },
     {
@@ -53,6 +63,8 @@ export default function HolidayWorkingReportPanel() {
       dataIndex: 'projectCode',
       key: 'projectCode',
       width: 130,
+      filters: uniq((report?.entries ?? []).map((e) => e.projectCode).filter(Boolean) as string[]).map((p) => ({ text: p, value: p })),
+      onFilter: (v: string | number | boolean, r: HolidayRow) => r.projectCode === v,
       render: (v: string) => v ?? '—',
     },
   ];
@@ -92,14 +104,16 @@ export default function HolidayWorkingReportPanel() {
           dataSource={report?.entries ?? []}
           rowKey={(r) => `${r.employeeId}-${r.date}`}
           columns={columns}
-          pagination={{ pageSize: 20 }}
+          pagination={false}
+          scroll={TABLE_SCROLL}
+          sticky
           loading={loadingReport}
           summary={(pageData) => {
             const sum = pageData.reduce((s, r) => s + r.hoursWorked, 0);
             return (
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={3}>
-                  <Text strong>Page Total</Text>
+                  <Text strong>Total</Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <Text strong>{sum.toFixed(1)}</Text>

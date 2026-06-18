@@ -196,6 +196,12 @@ h4:where(.css-dev-only-do-not-override-5wsri9).ant-typography {
 .anticon {
   color: var(--icon-color) !important;
 }
+/* Primary buttons have a colored background, so their icon (and text) must stay
+   white — override the global .anticon color above. Disabled buttons keep their
+   default greyed styling. */
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled) .anticon {
+  color: #fff !important;
+}
 .MuiSvgIcon-root {
   fill: var(--icon-color) !important;
 }

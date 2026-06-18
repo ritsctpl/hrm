@@ -13,6 +13,9 @@ import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Title } = Typography;
 
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 320px)' };
+
 interface CategoryFormValues {
   label: string;
   description?: string;
@@ -99,9 +102,9 @@ export default function UnplannedCategoryManager() {
   }
 
   const columns = [
-    { title: 'Label', dataIndex: 'label', key: 'label' },
+    { title: 'Label', dataIndex: 'label', key: 'label', sorter: (a: UnplannedCategory, b: UnplannedCategory) => (a.label || '').localeCompare(b.label || '') },
     { title: 'Description', dataIndex: 'description', key: 'description', render: (v: string) => v ?? '—' },
-    { title: 'Order', dataIndex: 'displayOrder', key: 'displayOrder', width: 80, align: 'center' as const },
+    { title: 'Order', dataIndex: 'displayOrder', key: 'displayOrder', width: 80, align: 'center' as const, defaultSortOrder: 'ascend' as const, sorter: (a: UnplannedCategory, b: UnplannedCategory) => a.displayOrder - b.displayOrder },
     {
       title: 'Actions',
       key: 'actions',
@@ -138,6 +141,8 @@ export default function UnplannedCategoryManager() {
         rowKey="handle"
         columns={columns}
         pagination={false}
+        scroll={TABLE_SCROLL}
+        sticky
       />
 
       <Modal

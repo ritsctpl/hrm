@@ -14,6 +14,10 @@ import styles from '../../styles/HrmTimesheet.module.css';
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 360px)' };
+const uniq = <T,>(arr: T[]): T[] => Array.from(new Set(arr));
+
 export default function PayrollExportPanel() {
   const {
     reportPeriodStart, reportPeriodEnd,
@@ -38,15 +42,19 @@ export default function PayrollExportPanel() {
   }
 
   const columns = [
-    { title: 'Employee ID', dataIndex: 'employeeId', key: 'employeeId', width: 120 },
-    { title: 'Employee Name', dataIndex: 'employeeName', key: 'employeeName' },
-    { title: 'Department', dataIndex: 'department', key: 'department' },
-    { title: 'Date', dataIndex: 'date', key: 'date', width: 110 },
-    { title: 'Total Hours', dataIndex: 'totalHours', key: 'totalHours', width: 110, align: 'right' as const, render: (v: number) => v.toFixed(1) },
-    { title: 'Allocated', dataIndex: 'allocatedHours', key: 'allocatedHours', width: 100, align: 'right' as const, render: (v: number) => v?.toFixed(1) ?? '—' },
-    { title: 'Unplanned', dataIndex: 'unplannedHours', key: 'unplannedHours', width: 100, align: 'right' as const, render: (v: number) => v?.toFixed(1) ?? '—' },
-    { title: 'Leave', dataIndex: 'leaveHours', key: 'leaveHours', width: 80, align: 'right' as const, render: (v: number) => v?.toFixed(1) ?? '—' },
-    { title: 'Holiday Working', dataIndex: 'holidayWorkingHours', key: 'holidayWorkingHours', width: 130, align: 'right' as const, render: (v: number) => v?.toFixed(1) ?? '—' },
+    { title: 'Employee ID', dataIndex: 'employeeId', key: 'employeeId', width: 120, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.employeeId || '').localeCompare(b.employeeId || '') },
+    { title: 'Employee Name', dataIndex: 'employeeName', key: 'employeeName', sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.employeeName || '').localeCompare(b.employeeName || '') },
+    {
+      title: 'Department', dataIndex: 'department', key: 'department',
+      filters: uniq(rows.map((r) => r.department).filter(Boolean) as string[]).map((d) => ({ text: d, value: d })),
+      onFilter: (v: string | number | boolean, r: PayrollExportRow) => r.department === v,
+    },
+    { title: 'Date', dataIndex: 'date', key: 'date', width: 110, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.date || '').localeCompare(b.date || '') },
+    { title: 'Total Hours', dataIndex: 'totalHours', key: 'totalHours', width: 110, align: 'right' as const, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.totalHours || 0) - (b.totalHours || 0), render: (v: number) => v.toFixed(1) },
+    { title: 'Allocated', dataIndex: 'allocatedHours', key: 'allocatedHours', width: 100, align: 'right' as const, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.allocatedHours || 0) - (b.allocatedHours || 0), render: (v: number) => v?.toFixed(1) ?? '—' },
+    { title: 'Unplanned', dataIndex: 'unplannedHours', key: 'unplannedHours', width: 100, align: 'right' as const, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.unplannedHours || 0) - (b.unplannedHours || 0), render: (v: number) => v?.toFixed(1) ?? '—' },
+    { title: 'Leave', dataIndex: 'leaveHours', key: 'leaveHours', width: 80, align: 'right' as const, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.leaveHours || 0) - (b.leaveHours || 0), render: (v: number) => v?.toFixed(1) ?? '—' },
+    { title: 'Holiday Working', dataIndex: 'holidayWorkingHours', key: 'holidayWorkingHours', width: 130, align: 'right' as const, sorter: (a: PayrollExportRow, b: PayrollExportRow) => (a.holidayWorkingHours || 0) - (b.holidayWorkingHours || 0), render: (v: number) => v?.toFixed(1) ?? '—' },
   ];
 
   return (
@@ -113,7 +121,9 @@ export default function PayrollExportPanel() {
           dataSource={rows}
           rowKey={(r) => `${r.employeeId}-${r.date}`}
           columns={columns}
-          pagination={{ pageSize: 20 }}
+          pagination={false}
+          scroll={TABLE_SCROLL}
+          sticky
           loading={loadingReport}
           summary={(pageData) => {
             const total = pageData.reduce((s, r) => s + r.totalHours, 0);

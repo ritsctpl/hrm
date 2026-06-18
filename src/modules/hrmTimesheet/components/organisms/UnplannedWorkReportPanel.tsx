@@ -14,6 +14,11 @@ import styles from '../../styles/HrmTimesheet.module.css';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+type CategoryRow = UnplannedWorkReport['byCategory'][number];
+type EmployeeRow = UnplannedWorkReport['byEmployee'][number];
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { y: 'calc(100vh - 380px)' };
+
 export default function UnplannedWorkReportPanel() {
   const {
     reportPeriodStart, reportPeriodEnd,
@@ -37,16 +42,16 @@ export default function UnplannedWorkReportPanel() {
   }
 
   const categoryColumns = [
-    { title: 'Category', dataIndex: 'categoryLabel', key: 'categoryLabel' },
-    { title: 'Hours', dataIndex: 'hours', key: 'hours', width: 100, align: 'right' as const, render: (v: number) => v.toFixed(1) },
-    { title: '% of Unplanned', dataIndex: 'percent', key: 'percent', width: 130, align: 'right' as const, render: (v: number) => `${v.toFixed(1)}%` },
+    { title: 'Category', dataIndex: 'categoryLabel', key: 'categoryLabel', sorter: (a: CategoryRow, b: CategoryRow) => (a.categoryLabel || '').localeCompare(b.categoryLabel || '') },
+    { title: 'Hours', dataIndex: 'hours', key: 'hours', width: 100, align: 'right' as const, sorter: (a: CategoryRow, b: CategoryRow) => a.hours - b.hours, render: (v: number) => v.toFixed(1) },
+    { title: '% of Unplanned', dataIndex: 'percent', key: 'percent', width: 130, align: 'right' as const, sorter: (a: CategoryRow, b: CategoryRow) => a.percent - b.percent, render: (v: number) => `${v.toFixed(1)}%` },
   ];
 
   const employeeColumns = [
-    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName' },
-    { title: 'Total Hours', dataIndex: 'totalHours', key: 'totalHours', width: 110, align: 'right' as const, render: (v: number) => v.toFixed(1) },
-    { title: 'Unplanned Hours', dataIndex: 'unplannedHours', key: 'unplannedHours', width: 130, align: 'right' as const, render: (v: number) => v.toFixed(1) },
-    { title: 'Unplanned %', dataIndex: 'unplannedPercent', key: 'unplannedPercent', width: 120, align: 'right' as const, render: (v: number) => `${v.toFixed(1)}%` },
+    { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName', sorter: (a: EmployeeRow, b: EmployeeRow) => (a.employeeName || '').localeCompare(b.employeeName || '') },
+    { title: 'Total Hours', dataIndex: 'totalHours', key: 'totalHours', width: 110, align: 'right' as const, sorter: (a: EmployeeRow, b: EmployeeRow) => a.totalHours - b.totalHours, render: (v: number) => v.toFixed(1) },
+    { title: 'Unplanned Hours', dataIndex: 'unplannedHours', key: 'unplannedHours', width: 130, align: 'right' as const, sorter: (a: EmployeeRow, b: EmployeeRow) => a.unplannedHours - b.unplannedHours, render: (v: number) => v.toFixed(1) },
+    { title: 'Unplanned %', dataIndex: 'unplannedPercent', key: 'unplannedPercent', width: 120, align: 'right' as const, defaultSortOrder: 'descend' as const, sorter: (a: EmployeeRow, b: EmployeeRow) => a.unplannedPercent - b.unplannedPercent, render: (v: number) => `${v.toFixed(1)}%` },
   ];
 
   return (
@@ -104,6 +109,8 @@ export default function UnplannedWorkReportPanel() {
             rowKey="categoryId"
             columns={categoryColumns}
             pagination={false}
+            scroll={TABLE_SCROLL}
+            sticky
             loading={loadingReport}
             style={{ marginTop: 8 }}
           />
@@ -115,7 +122,9 @@ export default function UnplannedWorkReportPanel() {
             dataSource={report?.byEmployee ?? []}
             rowKey="employeeId"
             columns={employeeColumns}
-            pagination={{ pageSize: 10 }}
+            pagination={false}
+            scroll={TABLE_SCROLL}
+            sticky
             loading={loadingReport}
             style={{ marginTop: 8 }}
           />

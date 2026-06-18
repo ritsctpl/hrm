@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useCallback, useState } from 'react';
 import { Tabs, Table, Button, DatePicker, Popconfirm, Empty, message } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
+import { GoPlus } from 'react-icons/go';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
@@ -14,6 +15,9 @@ import HolidayWorkingReportPanel from '../organisms/HolidayWorkingReportPanel';
 import UnplannedCategoryManager from '../organisms/UnplannedCategoryManager';
 import Can from '../../../hrmAccess/components/Can';
 import type { ReportTab } from '../../types/ui.types';
+
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 320px)' };
 
 /* ── Lock Period Manager (inline) ────────────────────────────── */
 interface LockPeriodRecord {
@@ -75,12 +79,13 @@ function LockPeriodManager() {
   };
 
   const columns = [
-    { title: 'Lock Date', dataIndex: 'lockDate', key: 'lockDate', width: 160 },
-    { title: 'Created By', dataIndex: 'createdBy', key: 'createdBy' },
+    { title: 'Lock Date', dataIndex: 'lockDate', key: 'lockDate', width: 160, defaultSortOrder: 'descend' as const, sorter: (a: LockPeriodRecord, b: LockPeriodRecord) => (a.lockDate || '').localeCompare(b.lockDate || '') },
+    { title: 'Created By', dataIndex: 'createdBy', key: 'createdBy', sorter: (a: LockPeriodRecord, b: LockPeriodRecord) => (a.createdBy || '').localeCompare(b.createdBy || '') },
     {
       title: 'Created At',
       dataIndex: 'createdDateTime',
       key: 'createdDateTime',
+      sorter: (a: LockPeriodRecord, b: LockPeriodRecord) => (a.createdDateTime || '').localeCompare(b.createdDateTime || ''),
       render: (v: string) => v ? dayjs(v).format('DD MMM YYYY HH:mm') : '\u2014',
     },
     {
@@ -104,7 +109,7 @@ function LockPeriodManager() {
         <div style={{ display: 'flex', gap: 8 }}>
           <DatePicker value={newDate} onChange={setNewDate} />
           <Can I="add">
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} disabled={!newDate}>
+            <Button type="primary" icon={<GoPlus />} onClick={handleAdd} disabled={!newDate} style={{ color: '#fff' }}>
               New Lock
             </Button>
           </Can>
@@ -116,6 +121,9 @@ function LockPeriodManager() {
         rowKey={(r) => r.handle ?? r.lockDate}
         loading={loading}
         size="small"
+        pagination={false}
+        scroll={TABLE_SCROLL}
+        sticky
         locale={{ emptyText: <Empty description="No lock periods defined" /> }}
       />
     </div>
