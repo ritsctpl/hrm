@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, Select, message } from 'antd';
+import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, message } from 'antd';
 import { EyeOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, InboxOutlined, ExportOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import type { ColumnsType } from 'antd/es/table';
@@ -10,12 +10,20 @@ import ProjectSearchBar from '../molecules/ProjectSearchBar';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
-import { PROJECT_STATUS_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import { formatDate } from '../../utils/projectHelpers';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectList.module.css';
 
 const { Text } = Typography;
+
+// Fit to screen vertically; let wide tables scroll horizontally instead of squishing.
+// Mirrors the Reports tab smart-table behaviour (pagination off, sticky header, body scrolls).
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 280px)' };
+
+// Default render is capped to this many rows; searching/filtering lifts the cap.
+const DEFAULT_ROW_CAP = 50;
+
+const uniq = <T,>(arr: T[]): T[] => Array.from(new Set(arr));
 
 interface ProjectTableProps {
   projects: Project[];
@@ -26,9 +34,13 @@ interface ProjectTableProps {
 interface CloneForm { newProjectName: string; includeTasks: boolean; includeMilestones: boolean; includeAllocations: boolean }
 
 const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }) => {
-  const { openProjectForm, savingProject, filterStatus, filterType, filterClient, setFilterStatus, setFilterType, setFilterClient } = useHrmProjectStore();
-  // Client options derived from the projects actually in the list.
-  const clientOptions = Array.from(new Set(projects.map((p) => p.clientName).filter(Boolean))).map((c) => ({ value: c as string, label: c as string }));
+  const { openProjectForm, savingProject, searchQuery, filterBU, filterStatus, filterType, filterClient } = useHrmProjectStore();
+
+  // Show the first 50 by default; once the user searches or picks any toolbar
+  // filter, lift the cap so they're searching across the full in-memory list.
+  const isFiltering = Boolean(searchQuery || filterBU || filterStatus || filterType || filterClient);
+  const visibleProjects = isFiltering ? projects : projects.slice(0, DEFAULT_ROW_CAP);
+  const isCapped = !isFiltering && projects.length > DEFAULT_ROW_CAP;
   const { deleteProject, cloneProject, setProjectArchived } = useProjectMutations();
   const { employeeCode } = useEmployeeIdentity();
   const [cloneSource, setCloneSource] = useState<Project | null>(null);
@@ -56,6 +68,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
     {
       title: 'Project',
       key: 'project',
+      sorter: (a, b) => a.projectName.localeCompare(b.projectName),
       render: (_, p) => (
         <div className={styles.cellProject}>
           <Text strong>{p.projectName}</Text>
@@ -68,6 +81,12 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       dataIndex: 'projectType',
       key: 'projectType',
       width: 150,
+      filters: [
+        { text: 'Billable', value: 'BILLABLE' },
+        { text: 'Non-Billable', value: 'NON_BILLABLE' },
+        { text: 'Revenue Gen', value: 'REVENUE_GENERATION' },
+      ],
+      onFilter: (v, p) => p.projectType === v,
       render: (t: string) => {
         const map: Record<string, { color: string; label: string }> = {
           BILLABLE: { color: 'green', label: 'Billable' },
@@ -83,6 +102,8 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       dataIndex: 'clientName',
       key: 'clientName',
       width: 150,
+      filters: uniq(projects.map((p) => p.clientName).filter(Boolean) as string[]).map((c) => ({ text: c, value: c })),
+      onFilter: (v, p) => p.clientName === v,
       render: (c?: string) => c || <Text type="secondary">—</Text>,
     },
     {
@@ -90,6 +111,8 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       dataIndex: 'status',
       key: 'status',
       width: 120,
+      filters: uniq(projects.map((p) => p.status)).map((s) => ({ text: s, value: s })),
+      onFilter: (v, p) => p.status === v,
       render: (_, p) => <ProjectStatusBadge status={p.status} />,
     },
     {
@@ -103,6 +126,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       title: 'Progress',
       key: 'progress',
       width: 140,
+      sorter: (a, b) => (a.utilizationPercentage ?? 0) - (b.utilizationPercentage ?? 0),
       render: (_, p) => (
         <Progress percent={Math.min(p.utilizationPercentage ?? 0, 100)} size="small" />
       ),
@@ -164,32 +188,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
           <ProjectSearchBar />
         </div>
         <Space>
-          <Select
-            placeholder="Status"
-            value={filterStatus || undefined}
-            onChange={(v) => setFilterStatus(v ?? '')}
-            allowClear
-            style={{ width: 150 }}
-            options={PROJECT_STATUS_OPTIONS}
-          />
-          <Select
-            placeholder="Type"
-            value={filterType || undefined}
-            onChange={(v) => setFilterType(v ?? '')}
-            allowClear
-            style={{ width: 160 }}
-            options={PROJECT_TYPES}
-          />
-          <Select
-            placeholder="Client"
-            value={filterClient || undefined}
-            onChange={(v) => setFilterClient(v ?? '')}
-            allowClear
-            showSearch
-            style={{ width: 170 }}
-            options={clientOptions}
-            filterOption={(i, o) => String(o?.label ?? '').toLowerCase().includes(i.toLowerCase())}
-          />
           <Can I="add">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => openProjectForm()}>
               New Project
@@ -197,13 +195,20 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
           </Can>
         </Space>
       </div>
+      {isCapped && (
+        <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
+          Showing first {DEFAULT_ROW_CAP} of {projects.length} — search or filter to see all.
+        </Text>
+      )}
       <Table<Project>
         rowKey="handle"
         columns={columns}
-        dataSource={projects}
+        dataSource={visibleProjects}
         loading={loading}
         size="middle"
-        pagination={{ pageSize: 10, hideOnSinglePage: true, showSizeChanger: false }}
+        pagination={false}
+        scroll={TABLE_SCROLL}
+        sticky
         onRow={(p) => ({ onClick: () => onView(p), style: { cursor: 'pointer' } })}
         locale={{ emptyText: 'No projects found' }}
       />

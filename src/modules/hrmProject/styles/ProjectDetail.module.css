@@ -8,6 +8,23 @@
   overflow: hidden;
 }
 
+/* The detail panel is a fixed-height flex column, so the Ant Design Tabs inside
+   it must fill that height and let only the tab CONTENT scroll — otherwise long
+   Overview content (the "Project Identity" card, etc.) gets clipped by the
+   panel's overflow:hidden instead of scrolling. The tab bar stays pinned. */
+.detailPanel :global(.ant-tabs) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.detailPanel :global(.ant-tabs-content-holder) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .detailTitle {
   padding: 12px 16px;
   border-bottom: 1px solid #f0f0f0;

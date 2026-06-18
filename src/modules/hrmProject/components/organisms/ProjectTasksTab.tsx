@@ -27,6 +27,9 @@ const TASK_STATUS: Record<string, { label: string; color: string }> = {
 };
 const TASK_STATUS_KEYS: TaskStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED'];
 
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 360px)' };
+
 export default function ProjectTasksTab() {
   const { selectedProject, projects } = useHrmProjectStore();
   const { createTask, updateTask, removeTask, importTasks, updateTaskStatus, moveTaskToProject, mergeTasks } = useProjectMutations();
@@ -170,6 +173,8 @@ export default function ProjectTasksTab() {
     },
     {
       title: 'Status', dataIndex: 'status', key: 'status', width: 140,
+      filters: TASK_STATUS_KEYS.map((k) => ({ text: TASK_STATUS[k].label, value: k })),
+      onFilter: (v, t) => (t.status ?? 'NOT_STARTED') === v,
       render: (s: TaskStatus | undefined, t) => {
         const stored = (s ?? 'NOT_STARTED') as TaskStatus;
         // A task with logged timesheet hours can't be "Not started" — show it as In progress
@@ -195,6 +200,8 @@ export default function ProjectTasksTab() {
     },
     {
       title: 'Milestone', dataIndex: 'milestoneId', key: 'milestoneId', width: 130,
+      filters: (selectedProject.milestones ?? []).map((m) => ({ text: m.milestoneName, value: m.milestoneId })),
+      onFilter: (v, t) => t.milestoneId === v,
       render: (id?: string | null) => {
         const m = (selectedProject.milestones ?? []).find((x) => x.milestoneId === id);
         return m ? <Text style={{ fontSize: 12 }}>{m.milestoneName}</Text> : <Text type="secondary">—</Text>;
@@ -202,6 +209,7 @@ export default function ProjectTasksTab() {
     },
     {
       title: 'Est. Hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 110, align: 'right',
+      sorter: (a, b) => (a.estimatedHours || 0) - (b.estimatedHours || 0),
       render: (v: number, t) => {
         const exts = t.extensions ?? [];
         const added = exts.reduce((s, e) => s + (e.additionalHours || 0), 0);
@@ -219,6 +227,7 @@ export default function ProjectTasksTab() {
     },
     {
       title: 'Actual', dataIndex: 'actualHours', key: 'actualHours', width: 90, align: 'right',
+      sorter: (a, b) => (a.actualHours || 0) - (b.actualHours || 0),
       render: (v: number | undefined, t) => {
         const actual = v ?? 0;
         return isOverBudget(t)
@@ -229,6 +238,8 @@ export default function ProjectTasksTab() {
     { title: 'Rate/hr', dataIndex: 'billableRate', key: 'billableRate', width: 90, align: 'right', render: (v?: number | null) => (v ? v : <Text type="secondary">—</Text>) },
     {
       title: 'Billable', dataIndex: 'billable', key: 'billable', width: 100,
+      filters: [{ text: 'Billable', value: true }, { text: 'Non-Bill', value: false }],
+      onFilter: (v, t) => Boolean(t.billable) === v,
       render: (v: boolean) => (v ? <Tag color="green">Billable</Tag> : <Tag>Non-Bill</Tag>),
     },
     {
@@ -298,6 +309,8 @@ export default function ProjectTasksTab() {
         dataSource={tasks}
         size="small"
         pagination={false}
+        scroll={TABLE_SCROLL}
+        sticky
         locale={{ emptyText: 'No tasks yet' }}
       />
 

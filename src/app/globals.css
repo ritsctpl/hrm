@@ -304,6 +304,48 @@ h4:where(.css-dev-only-do-not-override-5wsri9).ant-typography {
 .ant-radio-wrapper:hover {
   box-shadow: none !important;
 }
+/* Make Modal bodies scroll internally when content exceeds the viewport height.
+   Applies to every module that renders an Ant Design <Modal> (project editor,
+   asset/leave/holiday/employee forms, etc.) so tall forms never overflow off-screen.
+   The title and footer stay pinned; only the body scrolls. */
+.ant-modal .ant-modal-body {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Re-show a slim scrollbar here — the global `::-webkit-scrollbar { display:none }`
+     above otherwise hides it and the scroll affordance is invisible. */
+  scrollbar-width: thin;
+  scrollbar-color: #868888 transparent;
+}
+.ant-modal .ant-modal-body::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+.ant-modal .ant-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background-color: #868888;
+  border-radius: 4px;
+}
+
+/* Drawer bodies already scroll by default; just restore the visible scrollbar. */
+.ant-drawer .ant-drawer-body {
+  scrollbar-width: thin;
+  scrollbar-color: #868888 transparent;
+}
+.ant-drawer .ant-drawer-body::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+.ant-drawer .ant-drawer-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-drawer .ant-drawer-body::-webkit-scrollbar-thumb {
+  background-color: #868888;
+  border-radius: 4px;
+}
+
 /* and t model */
 /* Apply global theme to all Ant Design confirm modals */
 .ant-modal-confirm .ant-btn-primary {

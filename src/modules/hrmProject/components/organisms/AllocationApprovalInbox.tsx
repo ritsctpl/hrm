@@ -19,6 +19,10 @@ import styles from '../../styles/ProjectDetail.module.css';
 
 const { Text } = Typography;
 
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 300px)' };
+const uniq = <T,>(arr: T[]): T[] => Array.from(new Set(arr));
+
 export default function AllocationApprovalInbox() {
   const { pendingAllocations, loadingApprovals, approvingAllocation } = useHrmProjectStore();
   const { loadPendingAllocations } = useProjectData();
@@ -138,6 +142,8 @@ export default function AllocationApprovalInbox() {
     { title: 'Employee', dataIndex: 'employeeName', key: 'employeeName', render: (n: string) => <Text strong>{n}</Text> },
     {
       title: 'Item', key: 'item',
+      filters: [{ text: 'Membership', value: 'MEMBERSHIP' }, { text: 'Task', value: 'TASK' }],
+      onFilter: (v, a) => (a.taskId ? 'TASK' : 'MEMBERSHIP') === v,
       render: (_, a) => (a.taskName
         ? <Tag color="blue">{a.taskName}</Tag>
         : (
@@ -147,8 +153,12 @@ export default function AllocationApprovalInbox() {
           </Space>
         )),
     },
-    { title: 'Hours/Day', dataIndex: 'hoursPerDay', key: 'hoursPerDay', width: 90, align: 'right' },
-    { title: 'Project', dataIndex: 'projectCode', key: 'projectCode', width: 160 },
+    { title: 'Hours/Day', dataIndex: 'hoursPerDay', key: 'hoursPerDay', width: 90, align: 'right', sorter: (a, b) => (a.hoursPerDay || 0) - (b.hoursPerDay || 0) },
+    {
+      title: 'Project', dataIndex: 'projectCode', key: 'projectCode', width: 160,
+      filters: uniq(submitted.map((a) => a.projectCode).filter(Boolean) as string[]).map((c) => ({ text: c, value: c })),
+      onFilter: (v, a) => a.projectCode === v,
+    },
     {
       title: 'Period', key: 'period', width: 200,
       render: (_, a) => <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(a.startDate)} – {formatDate(a.endDate)}</Text>,
@@ -201,7 +211,9 @@ export default function AllocationApprovalInbox() {
             columns={columns}
             dataSource={rows}
             rowSelection={{ selectedRowKeys: selectedKeys, onChange: (keys) => setSelectedKeys(keys as string[]) }}
-            pagination={{ pageSize: 10, hideOnSinglePage: true }}
+            pagination={false}
+            scroll={TABLE_SCROLL}
+            sticky
             locale={{ emptyText: 'No pending allocations' }}
           />
         </>

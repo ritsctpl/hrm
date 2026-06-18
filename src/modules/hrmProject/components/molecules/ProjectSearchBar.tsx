@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Input, Select, Button, message } from 'antd';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
@@ -10,12 +10,19 @@ import styles from '../../styles/ProjectList.module.css';
 
 const ProjectSearchBar: React.FC = () => {
   const {
-    searchQuery, filterBU, filterType, filterStatus,
-    setSearchQuery, setFilterBU, setFilterType, setFilterStatus,
+    searchQuery, filterBU, filterType, filterStatus, filterClient,
+    setSearchQuery, setFilterBU, setFilterType, setFilterStatus, setFilterClient,
+    projects,
   } = useHrmProjectStore();
 
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
   const [loadingBUs, setLoadingBUs] = useState(false);
+
+  // Derive client options from the projects in the store
+  const clientOptions = useMemo(() => {
+    const uniqueClients = Array.from(new Set(projects.map((p) => p.clientName).filter(Boolean)));
+    return uniqueClients.map((c) => ({ value: c as string, label: c as string }));
+  }, [projects]);
 
   useEffect(() => {
     const organizationId = getOrganizationId();
@@ -32,6 +39,7 @@ const ProjectSearchBar: React.FC = () => {
     setFilterBU('');
     setFilterType('');
     setFilterStatus('');
+    setFilterClient('');
   };
 
   return (
@@ -74,6 +82,16 @@ const ProjectSearchBar: React.FC = () => {
         allowClear
         style={{ width: 130 }}
         options={PROJECT_STATUS_OPTIONS}
+      />
+      <Select
+        placeholder="Client"
+        value={filterClient || undefined}
+        onChange={(v) => setFilterClient(v ?? '')}
+        allowClear
+        showSearch
+        style={{ width: 170 }}
+        options={clientOptions}
+        filterOption={(i, o) => String(o?.label ?? '').toLowerCase().includes(i.toLowerCase())}
       />
       <Button onClick={clearFilters} size="small">Clear</Button>
     </div>

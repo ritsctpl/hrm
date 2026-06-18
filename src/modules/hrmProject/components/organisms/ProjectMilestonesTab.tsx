@@ -1,15 +1,22 @@
 'use client';
 import React, { useState } from 'react';
-import { Button, Modal, Form, Input, DatePicker } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Modal, Form, Input, DatePicker, Table, Select, Space, Tag, Tooltip, Popconfirm, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
-import MilestoneRow from '../molecules/MilestoneRow';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { formatDate } from '../../utils/projectHelpers';
 import type { Milestone, MilestoneStatus } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
+
+const { Text } = Typography;
+
+const MILESTONE_STATUSES: MilestoneStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED'];
+// Match the Reports smart-table: sticky header, body scrolls, no pagination.
+const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 320px)' };
 
 export default function ProjectMilestonesTab() {
   const { selectedProject } = useHrmProjectStore();
@@ -66,6 +73,65 @@ export default function ProjectMilestonesTab() {
     }
   };
 
+  const columns: ColumnsType<Milestone> = [
+    {
+      title: 'Milestone Name', dataIndex: 'milestoneName', key: 'milestoneName',
+      sorter: (a, b) => a.milestoneName.localeCompare(b.milestoneName),
+      render: (name: string, m) => {
+        const linked = (selectedProject.tasks ?? []).filter((t) => t.milestoneId === m.milestoneId);
+        const done = linked.filter((t) => t.status === 'COMPLETED').length;
+        return (
+          <Space size={6}>
+            <Text ellipsis={{ tooltip: name }}>{name}</Text>
+            {linked.length > 0 && (
+              <Tooltip title={`${done} of ${linked.length} linked tasks complete`}>
+                <Tag color={done === linked.length ? 'green' : 'blue'} style={{ flexShrink: 0 }}>{done}/{linked.length}</Tag>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: 'Target Date', dataIndex: 'targetDate', key: 'targetDate', width: 140,
+      sorter: (a, b) => dayjs(a.targetDate).valueOf() - dayjs(b.targetDate).valueOf(),
+      render: (d?: string) => <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(d)}</Text>,
+    },
+    {
+      title: 'Status', dataIndex: 'status', key: 'status', width: 160,
+      filters: MILESTONE_STATUSES.map((s) => ({ text: s.replace('_', ' '), value: s })),
+      onFilter: (v, m) => m.status === v,
+      render: (_, m) => (
+        <Select
+          value={m.status}
+          onChange={(v) => handleStatusChange(m.milestoneId, v as MilestoneStatus)}
+          style={{ width: '100%' }}
+          size="small"
+          options={MILESTONE_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+        />
+      ),
+    },
+    {
+      title: 'Description', dataIndex: 'description', key: 'description',
+      render: (d?: string) => <Text type="secondary" style={{ fontSize: 12 }} ellipsis={{ tooltip: d }}>{d || '—'}</Text>,
+    },
+    {
+      title: 'Actions', key: 'actions', width: 110, align: 'right',
+      render: (_, m) => (
+        <Space size={2}>
+          <Can I="edit">
+            <Tooltip title="Edit"><Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(m)} /></Tooltip>
+          </Can>
+          <Can I="delete">
+            <Popconfirm title="Remove this milestone?" onConfirm={() => handleRemove(m.milestoneId)}>
+              <Tooltip title="Remove"><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Tooltip>
+            </Popconfirm>
+          </Can>
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <div className={styles.milestonesTab}>
       <div className={styles.tabHeader}>
@@ -75,33 +141,16 @@ export default function ProjectMilestonesTab() {
           </Button>
         </Can>
       </div>
-      <div className={styles.milestonesList}>
-        <div className={styles.milestoneHeader}>
-          <span>Milestone Name</span>
-          <span>Target Date</span>
-          <span>Status</span>
-          <span>Description</span>
-          <span>Actions</span>
-        </div>
-        {selectedProject.milestones.map((m) => {
-          const linked = (selectedProject.tasks ?? []).filter((t) => t.milestoneId === m.milestoneId);
-          const done = linked.filter((t) => t.status === 'COMPLETED').length;
-          return (
-            <MilestoneRow
-              key={m.milestoneId}
-              milestone={m}
-              isEditing={false}
-              taskRollup={{ done, total: linked.length }}
-              onStatusChange={handleStatusChange}
-              onEdit={handleEdit}
-              onRemove={handleRemove}
-            />
-          );
-        })}
-        {selectedProject.milestones.length === 0 && (
-          <div className={styles.emptyList}>No milestones defined</div>
-        )}
-      </div>
+      <Table<Milestone>
+        rowKey="milestoneId"
+        columns={columns}
+        dataSource={selectedProject.milestones}
+        size="small"
+        pagination={false}
+        scroll={TABLE_SCROLL}
+        sticky
+        locale={{ emptyText: 'No milestones defined' }}
+      />
 
       <Modal
         title={editing ? 'Edit Milestone' : 'Add Milestone'}

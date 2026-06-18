@@ -111,8 +111,8 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
   };
 
   const columns = [
-    { title: 'Code', dataIndex: 'code', key: 'code', width: 120 },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Code', dataIndex: 'code', key: 'code', width: 120, sorter: (a: ClientRecord, b: ClientRecord) => (a.code || '').localeCompare(b.code || '') },
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a: ClientRecord, b: ClientRecord) => (a.name || '').localeCompare(b.name || '') },
     { title: 'Contact', dataIndex: 'contactPerson', key: 'contactPerson' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     {
@@ -144,6 +144,9 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
         rowKey={(r) => r.id ?? r.code}
         loading={loading}
         size="small"
+        pagination={false}
+        scroll={{ x: 'max-content', y: 'calc(100vh - 180px)' }}
+        sticky
         locale={{ emptyText: <Empty description="No clients found" /> }}
       />
       <Modal
