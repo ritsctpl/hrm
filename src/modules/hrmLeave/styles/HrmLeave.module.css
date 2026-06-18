@@ -17,40 +17,20 @@
   max-width: 100%;
 }
 
-/* Tab heading row: stays within the container and scrolls horizontally on
-   its own (native overflow-x: auto). AntD's transform-based arrow scroll
-   is disabled so native scroll alone drives what is visible, and the
-   "more" overflow dropdown is hidden because the arrows can no longer
-   function with the transform mechanism off. */
+/* Tab heading row: keep it bounded to the container width so AntD's built-in
+   overflow handling kicks in — excess tabs collapse into the native "more"
+   (…) dropdown with arrow navigation instead of forcing a raw horizontal
+   scrollbar. `min-width: 0` lets the nav shrink inside the flex column. */
 .landing > :global(.ant-tabs) > :global(.ant-tabs-nav) {
   min-width: 0;
   max-width: 100%;
 }
 
-.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap) {
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  scrollbar-width: thin;
-}
-
-.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap)::-webkit-scrollbar {
-  height: 4px;
-}
-
-.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-wrap) > :global(.ant-tabs-nav-list) {
-  transform: none !important;
-  /* Belt + braces: nowrap on the list AND no shrinking on each tab so the
-     row never wraps to a second line and tabs can't be compressed. */
-  white-space: nowrap;
-  flex-wrap: nowrap;
-}
-
-.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) :global(.ant-tabs-tab) {
-  flex-shrink: 0;
-}
-
-.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) > :global(.ant-tabs-nav-operations) {
-  display: none !important;
+/* Give the final tab a little breathing room so its label isn't clipped by
+   the nav-wrap's hidden overflow against the right-side "more" / extra
+   content area. */
+.landing > :global(.ant-tabs) > :global(.ant-tabs-nav) :global(.ant-tabs-nav-list) {
+  padding-right: 12px;
 }
 
 .landing > :global(.ant-tabs) > :global(.ant-tabs-content-holder) {

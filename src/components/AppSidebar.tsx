@@ -12,8 +12,8 @@ import {
 import type { SidebarFixedItem } from '@/config/dashboardConfig';
 import { useHrmRbacStore } from '@/modules/hrmAccess/stores/hrmRbacStore';
 import { useCurrentEmployeeStore } from '@/modules/hrmAccess/stores/currentEmployeeStore';
-import { Blocks } from 'lucide-react';
 import type { EnrichedModule } from '@modules/hrmAccess/types/rbac.types';
+import { getModuleIcon } from '@utils/moduleIconMap';
 import SidebarFlyout from './SidebarFlyout';
 import styles from './AppSidebar.module.css';
 
@@ -157,7 +157,10 @@ const AppSidebar: React.FC = () => {
 
   /* ─── Render a category flyout icon ─── */
   const renderCategoryFlyout = (group: CategoryGroup) => {
-    const Icon = CATEGORY_ICON_MAP[group.key] || Blocks;
+    // Prefer the semantic category icon; otherwise derive a distinct icon
+    // dynamically from the category's first module so unmapped categories
+    // don't all collapse onto the same generic fallback.
+    const Icon = CATEGORY_ICON_MAP[group.key] || getModuleIcon(group.modules[0]?.appUrl);
     const active = isCategoryActive(group);
     const iconClassName = [styles.sidebarIcon, active ? styles.sidebarIconActive : ''].filter(Boolean).join(' ');
 
