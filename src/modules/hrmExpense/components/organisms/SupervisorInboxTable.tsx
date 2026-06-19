@@ -10,6 +10,7 @@ import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import { computeExpenseSlaInfo } from "../../utils/expenseTransformations";
 import styles from "../../styles/ExpenseList.module.css";
 import dayjs from "dayjs";
+import { textSearchFilter, categoryFilter } from "@/components/tableColumnFilters";
 
 interface Props {
   expenses: ExpenseReport[];
@@ -24,17 +25,20 @@ const SupervisorInboxTable: React.FC<Props> = ({ expenses, loading, selectedHand
       title: "Report ID",
       dataIndex: "requestId",
       width: 110,
+      ...textSearchFilter<ExpenseReport>('requestId'),
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },
     {
       title: "Employee",
       dataIndex: "employeeName",
+      ...textSearchFilter<ExpenseReport>('employeeName'),
       render: (n) => <span style={{ fontSize: 13 }}>{n}</span>,
     },
     {
       title: "Type",
       key: "type",
       width: 180,
+      ...categoryFilter<ExpenseReport>('expenseType', expenses, { getValue: (r) => r.expenseType }),
       render: (_, r) => (
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <ExpenseTypeTag expenseType={r.expenseType} />

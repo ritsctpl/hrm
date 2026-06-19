@@ -1,7 +1,9 @@
 import React from 'react';
 import { Table, Button, Space, Tag, Popconfirm, Empty } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import type { UserRoleAssignment } from '../../types/domain.types';
+import { textSearchFilter, categoryFilter, dateRangeFilter } from '@/components/tableColumnFilters';
 import styles from '../../styles/UserRoleAssignment.module.css';
 
 interface UserAssignmentTableProps {
@@ -25,12 +27,13 @@ const UserAssignmentTable: React.FC<UserAssignmentTableProps> = ({
     return <Empty description="No role assignments" style={{ marginTop: 20 }} />;
   }
 
-  const columns = [
+  const columns: ColumnsType<UserRoleAssignment> = [
     {
       title: 'Role Code',
       dataIndex: 'roleCode',
       key: 'roleCode',
       width: '20%',
+      ...textSearchFilter<UserRoleAssignment>('roleCode'),
       render: (text: string) => <strong>{text}</strong>,
     },
     {
@@ -38,12 +41,14 @@ const UserAssignmentTable: React.FC<UserAssignmentTableProps> = ({
       dataIndex: 'roleName',
       key: 'roleName',
       width: '25%',
+      ...textSearchFilter<UserRoleAssignment>('roleName'),
     },
     {
       title: 'Effective From',
       dataIndex: 'effectiveFrom',
       key: 'effectiveFrom',
       width: '15%',
+      ...dateRangeFilter<UserRoleAssignment>('effectiveFrom'),
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
@@ -51,6 +56,7 @@ const UserAssignmentTable: React.FC<UserAssignmentTableProps> = ({
       dataIndex: 'effectiveTo',
       key: 'effectiveTo',
       width: '15%',
+      ...dateRangeFilter<UserRoleAssignment>('effectiveTo'),
       render: (date: string | null) => (date ? new Date(date).toLocaleDateString() : 'Active'),
     },
     {
@@ -58,6 +64,7 @@ const UserAssignmentTable: React.FC<UserAssignmentTableProps> = ({
       dataIndex: 'assignmentStatus',
       key: 'assignmentStatus',
       width: '12%',
+      ...categoryFilter<UserRoleAssignment>('assignmentStatus', assignments),
       render: (status: string) => {
         const colorMap: Record<string, string> = {
           ACTIVE: 'green',

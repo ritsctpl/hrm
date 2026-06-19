@@ -11,6 +11,7 @@ import TravelTypeTag from "../atoms/TravelTypeTag";
 import SlaIndicator from "../atoms/SlaIndicator";
 import { formatDateRange, formatDestination, computeSlaInfo } from "../../utils/travelTransformations";
 import Can from "../../../hrmAccess/components/Can";
+import { textSearchFilter, categoryFilter } from "@/components/tableColumnFilters";
 import styles from "../../styles/TravelList.module.css";
 
 interface Props {
@@ -88,6 +89,7 @@ const TravelListTable: React.FC<Props> = ({
       dataIndex: "requestId",
       key: "requestId",
       width: 120,
+      ...textSearchFilter<TravelRequest>('requestId'),
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },
     {
@@ -96,18 +98,21 @@ const TravelListTable: React.FC<Props> = ({
       key: "purpose",
       width: 150,
       ellipsis: true,
+      ...textSearchFilter<TravelRequest>('purpose'),
       render: (text) => <span style={{ fontSize: 13 }}>{text}</span>,
     },
     {
       title: "Destination",
       key: "destination",
       width: 140,
+      ...textSearchFilter<TravelRequest>('destinationCity', { getText: (r) => formatDestination(r) }),
       render: (_, r) => <span style={{ fontSize: 12 }}>{formatDestination(r)}</span>,
     },
     {
       title: "Type",
       key: "type",
       width: 120,
+      ...categoryFilter<TravelRequest>('travelType', filteredRequests, { getValue: (r) => r.travelType }),
       render: (_, r) => <TravelTypeTag travelType={r.travelType} />,
     },
     {
@@ -133,6 +138,7 @@ const TravelListTable: React.FC<Props> = ({
       title: "Status",
       key: "status",
       width: 180,
+      ...categoryFilter<TravelRequest>('status', filteredRequests, { getValue: (r) => r.status }),
       render: (_, r) => (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <TravelStatusChip status={r.status} size="sm" />

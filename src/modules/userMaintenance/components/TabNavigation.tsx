@@ -194,7 +194,7 @@ const Home: React.FC<HomeProps> = ({ onCancel, username }) => {
 
       const finalSelectedSites = selectedSites.length > 0
         ? selectedSites
-        : ["RITS", "*"];
+        : ["RITS", "*", "VERMILLION"];
       // debugger
       await handleKeycloakUserOperation(formData, isUpdate);
 

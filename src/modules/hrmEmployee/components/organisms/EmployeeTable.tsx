@@ -12,6 +12,7 @@ import EmpAvatar from '../atoms/EmpAvatar';
 import EmpStatusBadge from '../atoms/EmpStatusBadge';
 import type { EmployeeSummary } from '../../types/domain.types';
 import { PAGE_SIZE_OPTIONS } from '../../utils/constants';
+import { textSearchFilter, categoryFilter } from '@/components/tableColumnFilters';
 import styles from '../../styles/HrmEmployeeTable.module.css';
 
 interface EmployeeTableProps {
@@ -46,6 +47,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'fullName',
         key: 'fullName',
         width: 260,
+        ...textSearchFilter<EmployeeSummary>('fullName', { getText: (r) => r.fullName }),
         render: (_: string, record: EmployeeSummary) => (
           <div className={styles.nameCell}>
             <EmpAvatar name={record.fullName} photoUrl={record.photoUrl} photoBase64={record.photoBase64} size={32} />
@@ -61,24 +63,31 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'employeeCode',
         key: 'employeeCode',
         width: 120,
+        ...textSearchFilter<EmployeeSummary>('employeeCode'),
       },
       {
         title: 'Department',
         dataIndex: 'department',
         key: 'department',
         width: 160,
+        ...categoryFilter<EmployeeSummary>('department', data),
       },
       {
         title: 'Designation',
         dataIndex: 'designation',
         key: 'designation',
         width: 180,
+        ...categoryFilter<EmployeeSummary>('designation', data),
       },
       {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
         width: 100,
+        ...categoryFilter<EmployeeSummary>('status', data, {
+          getValue: (r) =>
+            r.isActive !== undefined ? (r.isActive ? 'ACTIVE' : 'INACTIVE') : r.status,
+        }),
         render: (_: EmployeeSummary['status'], record: EmployeeSummary) => {
           const displayStatus = record.isActive !== undefined
             ? (record.isActive ? 'ACTIVE' : 'INACTIVE')
@@ -161,11 +170,14 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         ),
       },
     ],
-    [onRowClick, canView, canEdit, canDelete]
+    [data, onRowClick, canView, canEdit, canDelete]
   );
 
   return (
     <div className={styles.tableWrapper}>
+      <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 8 }}>
+        Column filters apply to the loaded page.
+      </div>
       <Table<EmployeeSummary>
         columns={columns}
         dataSource={data}

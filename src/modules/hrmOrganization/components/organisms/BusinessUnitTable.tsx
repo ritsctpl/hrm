@@ -11,6 +11,7 @@ import { useHrmOrganizationStore } from '../../stores/hrmOrganizationStore';
 import { useOrganizationPermissions } from '../../hooks/useOrganizationPermissions';
 import type { BusinessUnit } from '../../types/domain.types';
 import type { BusinessUnitTableProps } from '../../types/ui.types';
+import { textSearchFilter, categoryFilter } from '@/components/tableColumnFilters';
 import mainStyles from '../../styles/HrmOrganization.module.css';
 
 const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit, onAdd }) => {
@@ -68,6 +69,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit,
           title: 'BU Code',
           dataIndex: 'buCode',
           key: 'buCode',
+          ...textSearchFilter<BusinessUnit>('buCode'),
           sorter: (a, b) => a.buCode.localeCompare(b.buCode),
         },
         {
@@ -75,6 +77,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit,
           dataIndex: 'buName',
           key: 'buName',
           ellipsis: true,
+          ...textSearchFilter<BusinessUnit>('buName'),
           sorter: (a, b) => a.buName.localeCompare(b.buName),
         },
         {
@@ -87,11 +90,13 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit,
           dataIndex: 'primaryContact',
           key: 'primaryContact',
           ellipsis: true,
+          ...textSearchFilter<BusinessUnit>('primaryContact'),
         },
         {
           title: 'State',
           dataIndex: 'state',
           key: 'state',
+          ...categoryFilter<BusinessUnit>('state', list),
         },
       ];
 
@@ -146,7 +151,7 @@ const BusinessUnitTable: React.FC<BusinessUnitTableProps> = ({ onSelect, onEdit,
 
       return baseColumns;
     },
-    [handleDelete, onEdit, permissions.canDeleteBusinessUnit, permissions.canEditBusinessUnit]
+    [handleDelete, list, onEdit, permissions.canDeleteBusinessUnit, permissions.canEditBusinessUnit]
   );
 
   if (isLoading) {

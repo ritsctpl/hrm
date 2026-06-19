@@ -40,6 +40,7 @@ import {
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
 import Can from "../../../hrmAccess/components/Can";
+import { textSearchFilter, categoryFilter } from "@/components/tableColumnFilters";
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
@@ -300,8 +301,8 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   };
 
   const typeColumns: ColumnsType<LeaveType> = [
-    { title: "Code", dataIndex: "code", key: "code", width: 60 },
-    { title: "Name", dataIndex: "name", key: "name" },
+    { title: "Code", dataIndex: "code", key: "code", width: 60, ...textSearchFilter<LeaveType>('code') },
+    { title: "Name", dataIndex: "name", key: "name", ...textSearchFilter<LeaveType>('name') },
     { title: "Alias", dataIndex: "alias", key: "alias", width: 70 },
     {
       title: "Half Day",
@@ -315,6 +316,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       dataIndex: "category",
       key: "category",
       width: 90,
+      ...categoryFilter<LeaveType>('category', leaveTypes),
       render: (v: string) => <Tag>{v}</Tag>,
     },
     {

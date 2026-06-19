@@ -7,6 +7,7 @@ import type { TravelRequest } from "../../types/domain.types";
 import TravelStatusChip from "../atoms/TravelStatusChip";
 import TravelTypeTag from "../atoms/TravelTypeTag";
 import { formatDateRange } from "../../utils/travelTransformations";
+import { textSearchFilter, categoryFilter } from "@/components/tableColumnFilters";
 import styles from "../../styles/TravelList.module.css";
 
 interface Props {
@@ -28,6 +29,7 @@ const ApproverInboxTable: React.FC<Props> = ({
       dataIndex: "requestId",
       key: "requestId",
       width: 110,
+      ...textSearchFilter<TravelRequest>('requestId'),
       render: (id) => <span style={{ fontFamily: "monospace", fontSize: 12 }}>{id}</span>,
     },
     {
@@ -35,6 +37,7 @@ const ApproverInboxTable: React.FC<Props> = ({
       dataIndex: "purpose",
       key: "purpose",
       width: 130,
+      ...textSearchFilter<TravelRequest>('purpose'),
       render: (purpose) => <span style={{ fontSize: 12 }}>{purpose}</span>,
     },
     {
@@ -42,18 +45,21 @@ const ApproverInboxTable: React.FC<Props> = ({
       dataIndex: "employeeName",
       key: "employee",
       width: 130,
+      ...textSearchFilter<TravelRequest>('employeeName'),
       render: (name) => <span style={{ fontSize: 12 }}>{name}</span>,
     },
     {
       title: "Destination",
       key: "destination",
       width: 120,
+      ...textSearchFilter<TravelRequest>('destinationCity'),
       render: (_, r) => <span style={{ fontSize: 12 }}>{r.destinationCity}</span>,
     },
     {
       title: "Travel Type",
       key: "travelType",
       width: 120,
+      ...categoryFilter<TravelRequest>('travelType', requests, { getValue: (r) => r.travelType }),
       render: (_, r) => <TravelTypeTag travelType={r.travelType} />,
     },
     {
@@ -61,6 +67,7 @@ const ApproverInboxTable: React.FC<Props> = ({
       dataIndex: "travelMode",
       key: "travelMode",
       width: 100,
+      ...categoryFilter<TravelRequest>('travelMode', requests),
       render: (mode) => (
         <Tag color="blue" style={{ fontSize: 11 }}>
           {mode || "—"}
@@ -77,6 +84,7 @@ const ApproverInboxTable: React.FC<Props> = ({
       title: "Status",
       key: "status",
       width: 160,
+      ...categoryFilter<TravelRequest>('status', requests, { getValue: (r) => r.status }),
       render: (_, r) => (
         <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           <TravelStatusChip status={r.status} />

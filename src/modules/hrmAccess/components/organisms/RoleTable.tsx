@@ -8,6 +8,7 @@ import type { Role } from '../../types/domain.types';
 import type { RoleTableProps } from '../../types/ui.types';
 import RbacStatusBadge from '../atoms/RbacStatusBadge';
 import RbacScopeTag from '../atoms/RbacScopeTag';
+import { textSearchFilter, categoryFilter, dateRangeFilter } from '@/components/tableColumnFilters';
 import styles from '../../styles/RoleManagement.module.css';
 
 const RoleTable: React.FC<RoleTableProps> = ({
@@ -24,12 +25,14 @@ const RoleTable: React.FC<RoleTableProps> = ({
       key: 'roleCode',
       width: 140,
       ellipsis: true,
+      ...textSearchFilter<Role>('roleCode'),
     },
     {
       title: 'Name',
       dataIndex: 'roleName',
       key: 'roleName',
       ellipsis: true,
+      ...textSearchFilter<Role>('roleName'),
     },
     {
       title: 'Description',
@@ -37,6 +40,7 @@ const RoleTable: React.FC<RoleTableProps> = ({
       key: 'description',
       width: 200,
       ellipsis: true,
+      ...textSearchFilter<Role>('description'),
       render: (text: string | null) => text || '-',
     },
     {
@@ -44,6 +48,7 @@ const RoleTable: React.FC<RoleTableProps> = ({
       dataIndex: 'roleScope',
       key: 'roleScope',
       width: 110,
+      ...categoryFilter<Role>('roleScope', data),
       render: (scope: string) => <RbacScopeTag scope={scope} />,
     },
     {
@@ -69,6 +74,7 @@ const RoleTable: React.FC<RoleTableProps> = ({
       dataIndex: 'createdDateTime',
       key: 'createdDateTime',
       width: 110,
+      ...dateRangeFilter<Role>('createdDateTime'),
       render: (date: string) => {
         if (!date) return '-';
         const d = new Date(date);
