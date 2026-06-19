@@ -148,7 +148,9 @@ export default function ProjectAllocationsTab() {
       ) : (
         <div className={styles.allocationsList}>
           {groups.map((g) => {
-            const totalTaskHours = g.tasks.reduce((s, t) => s + (t.hoursPerDay || 0), 0);
+            // Summary counts only active task allocations — exclude cancelled / rejected.
+            const activeTasks = g.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED');
+            const totalTaskHours = activeTasks.reduce((s, t) => s + (t.hoursPerDay || 0), 0);
             return (
               <div key={g.employeeId} className={styles.memberGroup}>
                 {g.membership ? (
@@ -171,7 +173,7 @@ export default function ProjectAllocationsTab() {
                   {g.tasks.length > 0 ? (
                     <>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {g.tasks.length} task{g.tasks.length > 1 ? 's' : ''} · {totalTaskHours}h/day total
+                        {activeTasks.length} active task{activeTasks.length === 1 ? '' : 's'} · {totalTaskHours}h/day total
                       </Text>
                       {g.tasks.map((t) => (
                         <AllocationRow
