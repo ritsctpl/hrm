@@ -128,12 +128,16 @@ export default function AllocationForm({ projectHandle }: Props) {
     }
 
     const recurring = isTaskMode ? false : !!values.recurring;
+    // Task mode: each task's estimate is the TOTAL effort; spread it over the working days
+    // of the assignment window to get hours/day. (FE-side split — calendar days inclusive.)
+    const windowDays = Math.max(s1.isValid() && e1.isValid() ? e1.diff(s1, 'day') + 1 : 1, 1);
     const prepared: AllocationFormValues = {
       ...values,
       employeeId,
       employeeName: selectedEmployeeName,
       role: isTaskMode ? (allocationPrefill?.role || 'Member') : values.role,
       bookingType: isTaskMode ? ((allocationPrefill?.bookingType as 'FIRM' | 'TENTATIVE') || 'FIRM') : values.bookingType,
+      hoursPerDay: isTaskMode ? 0 : values.hoursPerDay, // per-task hours set on each assignment in task mode
       startDate: startStr,
       endDate: endStr,
       recurring,
@@ -141,7 +145,12 @@ export default function AllocationForm({ projectHandle }: Props) {
       recurrenceDays: recurring ? (values.recurrenceDays ?? []) : [],
     };
     const assignments = taskIds.length
-      ? taskIds.map((id) => ({ taskId: id, billableRate: selectedProject?.tasks?.find((t) => t.handle === id)?.billableRate ?? values.billableRate }))
+      ? taskIds.map((id) => {
+          const task = selectedProject?.tasks?.find((t) => t.handle === id);
+          const est = task?.estimatedHours ?? 0;
+          const hoursPerDay = isTaskMode && windowDays > 0 ? Math.round((est / windowDays) * 100) / 100 : undefined;
+          return { taskId: id, billableRate: task?.billableRate ?? values.billableRate, hoursPerDay };
+        })
       : [{ taskId: null as string | null, billableRate: values.billableRate }];
 
     await createAllocations(projectHandle, prepared, assignments, actor);
@@ -149,6 +158,12 @@ export default function AllocationForm({ projectHandle }: Props) {
 
   // Opened via "Assign Task" on a team member → focused, task-only layout.
   const isTaskMode = !!allocationPrefill;
+  // Working-day span of the member's window — used to spread each task's total estimate into hours/day.
+  const windowDays = (() => {
+    const s = dayjs(allocationPrefill?.startDate);
+    const e = dayjs(allocationPrefill?.endDate);
+    return allocationPrefill && s.isValid() && e.isValid() ? Math.max(e.diff(s, 'day') + 1, 1) : 1;
+  })();
 
   // Resource meta + task matrix data for assign-task mode
   const empRow = employees.find((e) => e.employeeCode === allocationPrefill?.employeeId);
@@ -248,7 +263,11 @@ export default function AllocationForm({ projectHandle }: Props) {
                   <span>{n}{assignedTaskIds.has(t.handle) && <Text type="secondary" style={{ fontSize: 11 }}> · assigned</Text>}</span>
                 ),
               },
-              { title: 'Estimated hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 110, align: 'right' },
+              { title: 'Total hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 90, align: 'right' },
+              {
+                title: `Hrs/day (÷${windowDays}d)`, key: 'perDay', width: 110, align: 'right',
+                render: (_: unknown, t) => <Text type="secondary">{((t.estimatedHours || 0) / windowDays).toFixed(2)}</Text>,
+              },
             ]}
             locale={{ emptyText: 'No tasks' }}
           />
@@ -282,21 +301,28 @@ export default function AllocationForm({ projectHandle }: Props) {
           <InputNumber min={0} style={{ width: '100%' }} />
         </Form.Item>
       </Space>
-      <Form.Item
-        name="hoursPerDay"
-        label="Hours / Day"
-        rules={[
-          { required: true, type: 'number', min: HOURS_STEP, max: MAX_HOURS_PER_DAY },
-          {
-            validator: (_, v) =>
-              v == null || (Number(v) * 10) % 5 === 0
-                ? Promise.resolve()
-                : Promise.reject(new Error('Must be a multiple of 0.5')),
-          },
-        ]}
-      >
-        <InputNumber min={HOURS_STEP} max={MAX_HOURS_PER_DAY} step={HOURS_STEP} style={{ width: '100%' }} />
-      </Form.Item>
+      {isTaskMode ? (
+        <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
+          Each task&apos;s <strong>total estimate</strong> is spread across the {windowDays}-day window
+          to set its hours/day (see the table). The 9h/day cap still applies to the combined total.
+        </div>
+      ) : (
+        <Form.Item
+          name="hoursPerDay"
+          label="Hours / Day"
+          rules={[
+            { required: true, type: 'number', min: HOURS_STEP, max: MAX_HOURS_PER_DAY },
+            {
+              validator: (_, v) =>
+                v == null || (Number(v) * 10) % 5 === 0
+                  ? Promise.resolve()
+                  : Promise.reject(new Error('Must be a multiple of 0.5')),
+            },
+          ]}
+        >
+          <InputNumber min={HOURS_STEP} max={MAX_HOURS_PER_DAY} step={HOURS_STEP} style={{ width: '100%' }} />
+        </Form.Item>
+      )}
       {!isTaskMode && (
         <Space style={{ display: 'flex' }}>
           <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]} style={{ flex: 1 }}>

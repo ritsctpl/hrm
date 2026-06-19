@@ -2,6 +2,7 @@
 // src/modules/hrmProject/hooks/useProjectMutations.ts
 import { useCallback } from 'react';
 import { message } from 'antd';
+import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
@@ -25,6 +26,31 @@ export function useProjectMutations() {
   const store = useHrmProjectStore();
   const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
   const organizationId = getOrganizationId();
+
+  // Business rule: a COMPLETED project whose end date is pushed out is no longer finished —
+  // reopen it to IN_PROGRESS so work/timesheets can resume. `existing` must be a snapshot taken
+  // BEFORE the write, since the store picks up the new end date once the detail reloads.
+  const reopenIfExtended = useCallback(async (
+    existing: { handle: string; status: string; endDate?: string } | null | undefined,
+    newEndDate: string | undefined,
+    actor: string,
+  ) => {
+    if (!existing || existing.status !== 'COMPLETED' || !newEndDate) return;
+    // Only reopen when the end date actually moves later than the recorded one.
+    if (existing.endDate && !dayjs(newEndDate).isAfter(dayjs(existing.endDate), 'day')) return;
+    try {
+      await HrmProjectService.updateProjectStatus({
+        organizationId,
+        handle: existing.handle,
+        status: 'IN_PROGRESS',
+        reason: 'Auto-reopened: project end date extended',
+        modifiedBy: actor,
+      });
+      message.info('Project re-opened to In Progress — end date was extended');
+    } catch (error) {
+      console.error('Failed to auto-reopen extended project', error);
+    }
+  }, [organizationId]);
 
   const createProject = useCallback(async (values: ProjectFormValues, createdBy: string) => {
     store.setSavingProject(true);
@@ -64,9 +90,14 @@ export function useProjectMutations() {
 
   const updateProject = useCallback(async (handle: string, values: Partial<ProjectFormValues>, modifiedBy: string) => {
     store.setSavingProject(true);
+    // Snapshot status + end date before the write — needed to detect a completed-project extension.
+    const existing = store.selectedProject?.handle === handle
+      ? store.selectedProject
+      : store.projects.find((p) => p.handle === handle);
     try {
       await HrmProjectService.updateProject(handle, { ...values, organizationId, modifiedBy } as any);
       message.success('Project updated successfully');
+      await reopenIfExtended(existing, (values as any).endDate, modifiedBy);
       store.closeProjectForm();
       await loadProjects();
       // Refresh detail if viewing same project
@@ -79,7 +110,7 @@ export function useProjectMutations() {
     } finally {
       store.setSavingProject(false);
     }
-  }, [organizationId, loadProjects]);
+  }, [organizationId, loadProjects, reopenIfExtended]);
 
   const deleteProject = useCallback(async (handle: string) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
@@ -119,7 +150,7 @@ export function useProjectMutations() {
   const createAllocations = useCallback(async (
     projectHandle: string,
     values: AllocationFormValues,
-    assignments: Array<{ taskId: string | null; billableRate?: number | null }>,
+    assignments: Array<{ taskId: string | null; billableRate?: number | null; hoursPerDay?: number }>,
     createdBy: string
   ) => {
     store.setSavingAllocation(true);
@@ -138,7 +169,7 @@ export function useProjectMutations() {
           costRate: values.costRate,
           role: values.role,
           bookingType: values.bookingType,
-          hoursPerDay: values.hoursPerDay,
+          hoursPerDay: a.hoursPerDay ?? values.hoursPerDay,
           startDate: values.startDate,
           endDate: values.endDate,
           recurring: values.recurring,
@@ -550,15 +581,20 @@ export function useProjectMutations() {
     payload: { taskHandle: string; additionalHours: number; newProjectEndDate?: string; reason?: string },
     actor: string,
   ) => {
+    // Snapshot before the write so we can tell a completed project was extended.
+    const existing = store.selectedProject?.handle === projectHandle
+      ? store.selectedProject
+      : store.projects.find((p) => p.handle === projectHandle);
     try {
       await HrmProjectService.extendTask({ organizationId, projectHandle, extendedBy: actor, ...payload });
       message.success(`Task extended by ${payload.additionalHours} h`);
+      await reopenIfExtended(existing, payload.newProjectEndDate, actor);
       await loadProjectDetail(projectHandle);
     } catch (error: any) {
       message.error(extractBackendMsg(error, 'Failed to extend task'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, reopenIfExtended]);
 
   const importTasks = useCallback(async (targetProjectHandle: string, sourceProjectHandle: string, taskHandles?: string[]) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
