@@ -293,8 +293,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
       <div className={styles.actionBar}>
         <Space wrap>
-          {permissions.canPublish && group.status === 'DRAFT' && (
-            <Can I="edit">
+          {group.status === 'DRAFT' && (
+            <Can I="edit" object="holiday_approval">
               <Button
                 size="small"
                 type="primary"
@@ -304,8 +304,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
               </Button>
             </Can>
           )}
-          {permissions.canLock && group.status === 'PUBLISHED' && (
-            <Can I="edit">
+          {group.status === 'PUBLISHED' && (
+            <Can I="edit" object="holiday_approval">
               <Button
                 size="small"
                 icon={<LockOutlined />}
@@ -315,8 +315,8 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
               </Button>
             </Can>
           )}
-          {permissions.canUnlock && group.status === 'LOCKED' && (
-            <Can I="edit">
+          {group.status === 'LOCKED' && (
+            <Can I="edit" object="holiday_approval">
               <Button
                 size="small"
                 icon={<UnlockOutlined />}

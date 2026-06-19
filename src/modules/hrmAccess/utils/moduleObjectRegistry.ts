@@ -249,6 +249,9 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "holiday_record", label: "Holidays" },
     { code: "holiday_calendar", label: "Calendar" },
     { code: "holiday_policy", label: "Policy" },
+    // Approval tier: when this object's grant is enabled the holder can act on
+    // the approval step that publishes a holiday (approve → publish).
+    { code: "holiday_approval", label: "Approval" },
   ],
 
   // ── Leave ───────────────────────────────────────────────────────────
