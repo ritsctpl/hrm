@@ -39,7 +39,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleApproveSupervisor = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }
@@ -65,7 +65,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleRejectSupervisor = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }
@@ -91,7 +91,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleApproveAdmin = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }
@@ -117,7 +117,7 @@ export default function ApprovalInbox({ isSupervisor, isAdmin, loading }: Approv
 
   const handleRejectAdmin = async (requestId: string, remarks: string) => {
     const organizationId = getOrganizationId();
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }

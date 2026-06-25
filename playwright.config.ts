@@ -11,7 +11,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://49.206.228.110:18687',
+    baseURL: 'http://124.123.88.19:18687',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',

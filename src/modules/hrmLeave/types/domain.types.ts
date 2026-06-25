@@ -179,6 +179,9 @@ export interface LeavePolicy {
   leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
+  /** Human-readable department name, persisted alongside `deptId` so the
+   *  policy can be displayed without a separate directory lookup. */
+  deptName?: string;
   /** Policy applicability — restricts this policy to a gender. 'ALL' (or
    *  unset) applies to everyone. */
   applicableGender?: string;

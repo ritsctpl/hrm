@@ -126,7 +126,7 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
       const groupHandles = Array.isArray(values.groupHandle) ? values.groupHandle : [values.groupHandle];
 
       const results = await Promise.allSettled(
-        groupHandles.map((groupHandle) =>
+        groupHandles.map((groupHandle: string) =>
           HrmHolidayService.createHoliday({
             organizationId,
             groupHandle,
@@ -139,19 +139,40 @@ export default function HolidayCreateModal({ open, groups, onClose, onCreated }:
         )
       );
 
-      const successes = results.filter((r) => r.status === 'fulfilled').length;
-      const failures = results.filter((r) => r.status === 'rejected').length;
+      // Check the actual API response success field, not just Promise status
+      const successes = results.filter(
+        (r) => r.status === 'fulfilled' && r.value.success === true
+      );
+      const failures = results.filter(
+        (r) => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.success === false)
+      );
 
-      if (successes > 0) {
-        if (failures === 0) {
-          message.success(`Holiday created successfully in ${successes} group${successes > 1 ? 's' : ''}`);
+      if (successes.length > 0) {
+        if (failures.length === 0) {
+          message.success(`Holiday created successfully in ${successes.length} group${successes.length > 1 ? 's' : ''}`);
         } else {
-          message.warning(`Holiday created in ${successes} group${successes > 1 ? 's' : ''}, failed in ${failures}`);
+          // Show first error message if available
+          const firstError = failures.find(
+            (f) => f.status === 'fulfilled' && f.value.success === false
+          );
+          const errorMsg = firstError && firstError.status === 'fulfilled' 
+            ? firstError.value.message 
+            : 'Unknown error';
+          message.warning(
+            `Holiday created in ${successes.length} group${successes.length > 1 ? 's' : ''}, failed in ${failures.length}: ${errorMsg}`
+          );
         }
         form.resetFields();
         onCreated();
       } else {
-        message.error('Failed to create holiday in all selected groups');
+        // All failed - show the error message from the API
+        const firstError = failures.find(
+          (f) => f.status === 'fulfilled' && f.value.success === false
+        );
+        const errorMsg = firstError && firstError.status === 'fulfilled' 
+          ? firstError.value.message 
+          : 'Failed to create holiday in all selected groups';
+        message.error(errorMsg);
       }
     } catch {
       message.error('Failed to create holiday');

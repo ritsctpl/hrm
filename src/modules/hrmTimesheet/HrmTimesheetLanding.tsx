@@ -11,9 +11,20 @@ import TimesheetEmployeeTemplate from './components/templates/TimesheetEmployeeT
 import TimesheetManagerTemplate from './components/templates/TimesheetManagerTemplate';
 import TimesheetReportsTemplate from './components/templates/TimesheetReportsTemplate';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
+import { useCan } from '../hrmAccess/hooks/useCan';
 
 export default function HrmTimesheetLanding() {
   const { activeTab, selectedWeekStart, setActiveTab, openWeekForDate } = useHrmTimesheetStore();
+
+  // Tab visibility is RBAC-driven (object-level VIEW grants, resolved from the
+  // section cache loaded by ModuleAccessGate):
+  //   timesheet_approval VIEW → "Employee Timesheets" (the approval queue tab)
+  //   timesheet_report   VIEW → "Reports & Admin"
+  // "My Timesheets" is always available to anyone with module access. Before the
+  // section cache loads, useCan returns canView=false, so the gated tabs appear
+  // only once their grant resolves.
+  const canViewApprovals = useCan('HRM_TIMESHEET', 'timesheet_approval').canView;
+  const canViewReports = useCan('HRM_TIMESHEET', 'timesheet_report').canView;
 
   const today = dayjs().format('YYYY-MM-DD');
 
@@ -35,27 +46,39 @@ export default function HrmTimesheetLanding() {
       label: 'My Timesheets',
       children: <TimesheetEmployeeTemplate />,
     },
-    {
-      key: 'employees',
-      label: 'Employee Timesheets',
-      children: <TimesheetManagerTemplate />,
-    },
-    {
-      key: 'reports',
-      label: 'Reports & Admin',
-      children: (
-        <div style={{ padding: '12px 16px' }}>
-          <TimesheetReportsTemplate />
-        </div>
-      ),
-    },
+    // Employee Timesheets (approval queue) — only for users with the
+    // timesheet_approval VIEW grant.
+    ...(canViewApprovals
+      ? [{
+          key: 'employees',
+          label: 'Employee Timesheets',
+          children: <TimesheetManagerTemplate />,
+        }]
+      : []),
+    // Reports & Admin — only for users with the timesheet_report VIEW grant.
+    ...(canViewReports
+      ? [{
+          key: 'reports',
+          label: 'Reports & Admin',
+          children: (
+            <div style={{ padding: '12px 16px' }}>
+              <TimesheetReportsTemplate />
+            </div>
+          ),
+        }]
+      : []),
   ];
+
+  // Never point Tabs at a hidden key (e.g. 'reports' before its grant resolves,
+  // or for a user who lacks it) — fall back to the first visible tab.
+  const visibleTabKeys = mainTabs.map((t) => t.key);
+  const activeTabKey = visibleTabKeys.includes(activeTab) ? activeTab : visibleTabKeys[0];
 
   return (
     <ModuleAccessGate moduleCode="HRM_TIMESHEET" appTitle="Timesheets">
       <div className="hrm-module-root">
         <CommonAppBar appTitle={`Timesheets — ${weekLabel}`} />
-        {activeTab === 'my' && (
+        {activeTabKey === 'my' && (
           <div
             style={{
               display: 'flex',
@@ -76,7 +99,7 @@ export default function HrmTimesheetLanding() {
           </div>
         )}
         <Tabs
-          activeKey={activeTab}
+          activeKey={activeTabKey}
           onChange={(k) => setActiveTab(k as typeof activeTab)}
           items={mainTabs}
           size="small"

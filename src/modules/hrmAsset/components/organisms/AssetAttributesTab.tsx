@@ -65,7 +65,7 @@ export default function AssetAttributesTab({ asset, category, canEdit }: AssetAt
   };
 
   const handleSave = async () => {
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }

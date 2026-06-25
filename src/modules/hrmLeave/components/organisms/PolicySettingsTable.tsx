@@ -234,6 +234,15 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       effectiveTo: policy.effectiveTo ? dayjs(policy.effectiveTo) : null,
       lapseDate: policy.lapseDate ? dayjs(policy.lapseDate) : null,
     });
+    // Restore the BU so its departments load, and seed the saved department
+    // option so the Department field shows the stored name immediately
+    // (the dept fetch will replace this list once it resolves).
+    setSelectedBu(policy.buId);
+    if (policy.deptId) {
+      setDeptOptions([
+        { value: policy.deptId, label: policy.deptName || policy.deptId },
+      ]);
+    }
     setTiers(policy.entitlementTiers ?? []);
     setPolicyModalOpen(true);
   };
@@ -249,6 +258,11 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         leaveTypeCode: policyDrawerType.code,
         buId: values.buId,
         deptId: values.deptId,
+        // Persist the department label alongside the id so it can be shown
+        // directly on retrieve without re-resolving against the directory.
+        deptName: values.deptId
+          ? deptOptions.find((o) => o.value === values.deptId)?.label
+          : undefined,
         applicableGender: values.applicableGender,
         applicableMaritalStatus: values.applicableMaritalStatus,
         employeeType: values.employeeType,

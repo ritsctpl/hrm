@@ -65,7 +65,7 @@ export default function AssetRequestDetail({
       message.warning('Please provide a reason for cancellation');
       return;
     }
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }

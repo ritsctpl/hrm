@@ -61,7 +61,7 @@ export default function AssetRequestApprovalPanel({
     : 'REJECT_ADMIN';
 
   const ensureIdentity = (): boolean => {
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return false;
     }

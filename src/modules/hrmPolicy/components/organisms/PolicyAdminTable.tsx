@@ -9,6 +9,7 @@ import { PolicyAdminTableProps } from "../../types/ui.types";
 import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
 import PolicyStatusTag from "../atoms/PolicyStatusTag";
 import Can from "../../../hrmAccess/components/Can";
+import { textSearchFilter, categoryFilter, dateRangeFilter } from "@/components/tableColumnFilters";
 
 const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   policies,
@@ -25,11 +26,13 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       dataIndex: "policyCode",
       key: "policyCode",
       width: 120,
+      ...textSearchFilter<PolicyDocument>("policyCode"),
     },
     {
       title: "Title",
       dataIndex: "title",
       key: "title",
+      ...textSearchFilter<PolicyDocument>("title"),
       render: (title, record) => (
         <Button type="link" onClick={() => onViewDetail(record)} style={{ padding: 0 }}>
           {title}
@@ -41,6 +44,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       dataIndex: "documentType",
       key: "documentType",
       width: 110,
+      ...categoryFilter<PolicyDocument>("documentType", policies),
       render: (docType) => <PolicyTypeBadge docType={docType} />,
     },
     {
@@ -48,6 +52,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       dataIndex: "status",
       key: "status",
       width: 110,
+      ...categoryFilter<PolicyDocument>("status", policies),
       render: (status) => <PolicyStatusTag status={status} />,
     },
     {
@@ -55,6 +60,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       dataIndex: "categoryName",
       key: "categoryName",
       width: 140,
+      ...categoryFilter<PolicyDocument>("categoryName", policies),
     },
     {
       title: "Version",
@@ -68,6 +74,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       dataIndex: "effectiveFrom",
       key: "effectiveFrom",
       width: 110,
+      ...dateRangeFilter<PolicyDocument>("effectiveFrom"),
       render: (date) =>
         date
           ? new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
@@ -79,6 +86,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
       key: "publishedDateTime",
       width: 110,
       defaultSortOrder: "descend",
+      ...dateRangeFilter<PolicyDocument>("publishedDateTime"),
       render: (date) =>
         date
           ? new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })

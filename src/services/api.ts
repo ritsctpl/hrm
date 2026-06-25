@@ -195,6 +195,15 @@ api.interceptors.response.use(
       }
       // Backend wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }
       else if ('data' in data && 'success' in data && 'messageCode' in data) {
+        // A success:false body can arrive on HTTP 200 (or be normalised to 2xx
+        // by a gateway). Treat it as an error so the backend's message surfaces
+        // instead of being stripped and re-wrapped as a generic success.
+        if (data.success === false) {
+          const err = new Error(data.message || 'Request failed');
+          (err as any).response = response;
+          (err as any).messageCode = data.messageCode;
+          return Promise.reject(err);
+        }
         response.data = data.data ?? [];
       }
     }
@@ -225,6 +234,15 @@ api.interceptors.response.use(
         const err = new Error(data.message_details.msg);
         (err as any).response = error.response;
         (err as any).errorCode = data.errorCode;
+        return Promise.reject(err);
+      }
+
+      // Wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }
+      // Surface the backend's message on 4xx/5xx so callers show it dynamically.
+      if (data && typeof data === 'object' && 'success' in data && 'messageCode' in data) {
+        const err = new Error(data.message || 'Request failed');
+        (err as any).response = error.response;
+        (err as any).messageCode = data.messageCode;
         return Promise.reject(err);
       }
     } else if (error.request) {

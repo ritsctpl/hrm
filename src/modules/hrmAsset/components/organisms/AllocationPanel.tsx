@@ -56,7 +56,7 @@ export default function AllocationPanel({ onAllocated }: AllocationPanelProps = 
 
   const handleAllocate = async () => {
     const organizationId = getOrganizationId();
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }

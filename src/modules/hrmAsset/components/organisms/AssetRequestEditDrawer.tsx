@@ -55,7 +55,7 @@ export default function AssetRequestEditDrawer({ onSaved }: AssetRequestEditDraw
 
   const handleSubmit = async () => {
     if (!editingRequest) return;
-    if (!identity.isReady) {
+    if (!identity.employeeCode) {
       message.error('Your employee profile is still loading — please try again in a moment');
       return;
     }

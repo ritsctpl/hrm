@@ -54,6 +54,9 @@ export interface LeavePolicy {
   leaveTypeCode?: string;
   buId?: string;
   deptId?: string;
+  /** Human-readable department name, persisted alongside `deptId` so the
+   *  policy can be displayed without a separate directory lookup. */
+  deptName?: string;
   /** Policy applicability — round-tripped from LeavePolicyRequest. */
   applicableGender?: string;
   /** Policy applicability — round-tripped from LeavePolicyRequest. */
@@ -98,6 +101,9 @@ export interface LeavePolicyRequest {
   leaveTypeCode: string;
   buId?: string;
   deptId?: string;
+  /** Human-readable department name, sent alongside `deptId` so the backend
+   *  can persist and round-trip the label for display. */
+  deptName?: string;
   /** Policy applicability — gender ('ALL' | 'MALE' | 'FEMALE' | 'OTHER'). */
   applicableGender?: string;
   /** Policy applicability — marital status ('ALL' | 'SINGLE' | 'MARRIED' |
