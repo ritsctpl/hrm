@@ -1,38 +1,36 @@
 'use client';
-// Holiday overlay for the timesheet — resolves the employee's effective
-// holidays (their location's region group, else the General group) so holiday
-// days can be coloured green and locked from time entry.
+// Holiday overlay for the timesheet — resolves company holidays from
+// /holiday/retrieve-all (via HrmHolidayService.getAllHolidayDates) so holiday
+// days can be coloured and locked from time entry. Scoped to the employee's BU
+// when the buHandle cookie is present, otherwise all groups.
 import { useCallback, useEffect, useState } from 'react';
+import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmHolidayService } from '../../hrmHoliday/services/hrmHolidayService';
-import { useEmployeeIdentity } from '../../hrmAccess/hooks/useEmployeeIdentity';
 
 export function useTimesheetHolidays(year: number) {
   const [map, setMap] = useState<Map<string, string>>(new Map());
-  const { employeeCode, isReady } = useEmployeeIdentity();
 
   const fetchHolidays = useCallback(async () => {
     const organizationId = getOrganizationId();
-    if (!organizationId || !year || !employeeCode) return;
+    if (!organizationId || !year) return;
+    const cookies = parseCookies();
     try {
-      // HL-BE-3: region group for the employee's location, else General.
-      const res = await HrmHolidayService.getHolidaysForEmployee({
+      const result = await HrmHolidayService.getAllHolidayDates({
         organizationId,
-        employeeId: employeeCode,
         year,
+        requestingUserRole: cookies.userRole ?? 'EMPLOYEE',
+        buHandle: cookies.buHandle || undefined,
       });
-      const data = (res as { data?: unknown })?.data ?? res;
-      const holidays = (data as { holidays?: Array<{ date: string; name: string }> })?.holidays
-        ?? (Array.isArray(data) ? (data as Array<{ date: string; name: string }>) : []);
-      setMap(new Map(holidays.map((h) => [String(h.date).slice(0, 10), h.name])));
+      setMap(result);
     } catch (err) {
       console.error('Failed to load holidays for timesheet:', err);
     }
-  }, [year, employeeCode]);
+  }, [year]);
 
   useEffect(() => {
-    if (isReady) void fetchHolidays();
-  }, [fetchHolidays, isReady]);
+    void fetchHolidays();
+  }, [fetchHolidays]);
 
   const isHoliday = useCallback((date: string) => map.has(date), [map]);
   const getHolidayName = useCallback((date: string) => map.get(date), [map]);

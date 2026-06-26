@@ -397,6 +397,61 @@ export class HrmHolidayService {
     return data;
   }
 
+  /**
+   * Resolve all company holiday dates for a year as a Map of
+   * `YYYY-MM-DD -> holiday name`, sourced from `/holiday/retrieve-all`.
+   *
+   * Lists the holiday groups for the year (scoped to the BU when a handle is
+   * given, else all groups) and unions every group's holidays. Used by the
+   * Leave (comp-off) and Timesheet modules to decide which dates are holidays.
+   * Resilient: any per-call failure yields an empty contribution rather than
+   * throwing, and a BU-scoped lookup that finds no groups falls back to all.
+   */
+  static async getAllHolidayDates(payload: {
+    organizationId: string;
+    year: number;
+    requestingUserRole?: string;
+    buHandle?: string;
+  }): Promise<Map<string, string>> {
+    const { organizationId, year, requestingUserRole = 'EMPLOYEE', buHandle } = payload;
+    const map = new Map<string, string>();
+    const unwrap = <T>(res: unknown): T[] => {
+      const d = (res as { data?: unknown })?.data ?? res;
+      return (Array.isArray(d) ? d : []) as T[];
+    };
+    try {
+      let groups = unwrap<HolidayGroupResponse>(
+        await this.listGroups({
+          organizationId,
+          year,
+          requestingUserRole,
+          ...(buHandle ? { buHandle } : {}),
+        }),
+      );
+      // BU scoping returned nothing → retry across all groups so holidays
+      // still load when the buHandle cookie is stale/absent.
+      if (groups.length === 0 && buHandle) {
+        groups = unwrap<HolidayGroupResponse>(
+          await this.listGroups({ organizationId, year, requestingUserRole }),
+        );
+      }
+      const lists = await Promise.all(
+        groups.map((g) =>
+          this.listHolidays({ organizationId, groupHandle: g.handle })
+            .then((r) => unwrap<HolidayResponse>(r))
+            .catch(() => [] as HolidayResponse[]),
+        ),
+      );
+      lists.flat().forEach((h) => {
+        if (h?.date) map.set(String(h.date).slice(0, 10), h.name);
+      });
+    } catch {
+      // Swallow — an empty map means "no holidays known"; callers degrade
+      // gracefully (no holiday lock / only weekends qualify for comp-off).
+    }
+    return map;
+  }
+
   // ── Statistics ───────────────────────────────────────────────────────
 
   static async getStatistics(

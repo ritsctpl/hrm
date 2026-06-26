@@ -803,19 +803,20 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // Non-blocking warning: balance goes negative but the policy allows it.
   const negativeWarning = goesNegative && !exceedsBalance;
 
-  // ── Backdated / current-month handling (item 16) ───────────────────
-  // Past-dated leave is allowed, but non-HR users may only backdate within
-  // the current month; earlier dates must be routed through HR.
+  // ── Backdated handling (item 16) ───────────────────────────────────
+  // Past-dated leave is allowed, but non-HR users may only backdate up to 30
+  // days from today; earlier dates must be routed through HR.
   const isBackdated =
     !!leaveFormState.startDate &&
     dayjs(leaveFormState.startDate).isBefore(dayjs(), "day");
   const daysBackdated = isBackdated
     ? dayjs().diff(dayjs(leaveFormState.startDate), "day")
     : 0;
-  const beforeCurrentMonth =
+  const earliestAllowed = dayjs().subtract(30, "day");
+  const tooOld =
     !!leaveFormState.startDate &&
-    dayjs(leaveFormState.startDate).isBefore(dayjs().startOf("month"), "day");
-  const backdatedBlocked = beforeCurrentMonth && !isHrUser;
+    dayjs(leaveFormState.startDate).isBefore(earliestAllowed, "day");
+  const backdatedBlocked = tooOld && !isHrUser;
 
   // ── Duplicate handling (item 22) ───────────────────────────────────
   // Cancelled / rejected (and deleted) requests must not block re-applying
@@ -835,7 +836,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     !exceedsBalance &&
     !hasBlockingDuplicate &&
     requestPerms.canAdd &&
-    // Block non-HR users from backdating before the current month
+    // Block non-HR users from backdating more than 30 days in the past
     !backdatedBlocked &&
     // Block non-HR users from submitting during a blackout period
     !(overlappingBlackout && !isHrUser) &&
@@ -1079,7 +1080,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                     // : hasBlockingDuplicate
                     //   ? "Duplicate Request Exists"
                       : backdatedBlocked
-                        ? "Backdated Not Allowed"
+                        ? "Older Than 30 Days"
                         : overlappingBlackout && !isHrUser
                           ? "Blackout Period"
                           : "Submit Request"}
@@ -1193,27 +1194,26 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
             />
 
             {/* Backdated leave warnings (item 16).
-                Per the May-2026 requirements doc the "within-current-month →
-                routed to HR" notice was confusing users; the request still
-                submits normally and the HR-approval routing happens in the
-                backend silently. Only the hard error (before current month,
-                non-HR) and the HR-override notice remain. */}
-            {beforeCurrentMonth && !isHrUser && (
+                Non-HR users may backdate up to 30 days; earlier dates are
+                blocked and must be routed through HR. HR users get an override
+                notice but can still submit. Requests within the window submit
+                normally and any HR-approval routing happens in the backend. */}
+            {tooOld && !isHrUser && (
               <Alert
                 type="error"
                 showIcon
                 message="Backdated Request Not Allowed"
-                description="Backdated leave is only allowed within the current month. Please contact HR for earlier dates."
+                description="Backdated leave is only allowed up to 30 days in the past. Please contact HR for earlier dates."
                 style={{ marginTop: 8 }}
               />
             )}
 
-            {beforeCurrentMonth && isHrUser && (
+            {tooOld && isHrUser && (
               <Alert
                 type="warning"
                 showIcon
                 message="Backdated Leave Request (HR Override)"
-                description={`This request is ${daysBackdated} day(s) in the past, before the current month. Submitting as HR.`}
+                description={`This request is ${daysBackdated} day(s) in the past, more than 30 days back. Submitting as HR.`}
                 style={{ marginTop: 8 }}
               />
             )}

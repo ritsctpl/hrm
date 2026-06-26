@@ -15,7 +15,6 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
   request,
   isSelected,
   onClick,
-  onAmend,
   onEditDraft,
   onDelete,
 }) => {
@@ -92,43 +91,30 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
           </div>
         </div>
       )}
-      {isPending && onAmend && (
+      {isPending && canDelete && onDelete && (
         <div style={{ marginTop: 6, textAlign: "right" }}>
           <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-            <Button
-              size="small"
-              type="link"
-              icon={<EditOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onAmend(request);
+            <Popconfirm
+              title="Delete Leave Request"
+              description="Are you sure you want to delete this pending leave request?"
+              onConfirm={(e) => {
+                e?.stopPropagation();
+                onDelete(request);
               }}
+              okText="Yes"
+              cancelText="No"
+              placement="topRight"
             >
-              Amend
-            </Button>
-            {canDelete && onDelete && (
-              <Popconfirm
-                title="Delete Leave Request"
-                description="Are you sure you want to delete this pending leave request?"
-                onConfirm={(e) => {
-                  e?.stopPropagation();
-                  onDelete(request);
-                }}
-                okText="Yes"
-                cancelText="No"
-                placement="topRight"
+              <Button
+                size="small"
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  size="small"
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Delete
-                </Button>
-              </Popconfirm>
-            )}
+                Delete
+              </Button>
+            </Popconfirm>
           </div>
         </div>
       )}

@@ -6,12 +6,14 @@ import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
 import { useTimesheetHolidays } from '../../hooks/useTimesheetHolidays';
+import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
 import {
   buildMonthMatrix,
   decimalToHHMM,
   isToday,
   isFutureDate,
   isInCurrentMonth,
+  isWithinTimesheetWindow,
   weekOfMonthIndex,
 } from '../../utils/timesheetHelpers';
 import type { TimesheetHeader } from '../../types/domain.types';
@@ -24,6 +26,7 @@ export default function MonthlyCalendarView() {
     useHrmTimesheetStore();
   const { loadMonthlyTimesheets } = useHrmTimesheetData();
   const { isHoliday, getHolidayName } = useTimesheetHolidays(dayjs(selectedMonth).year());
+  const { isTravelDay, getTravelLabel } = useTimesheetTravel(dayjs(selectedMonth).year());
 
   useEffect(() => {
     void loadMonthlyTimesheets();
@@ -76,7 +79,7 @@ export default function MonthlyCalendarView() {
             icon={<RightOutlined />}
             onClick={nextMonth}
             disabled={atCurrentMonth}
-            title={atCurrentMonth ? 'Future months are not available' : undefined}
+            title={atCurrentMonth ? 'Future months are not available' : 'Next month'}
           />
         </div>
         <div className={styles.calTotal}>
@@ -122,17 +125,25 @@ export default function MonthlyCalendarView() {
               {week.map((cell) => {
                 const ts = byDate.get(cell.date);
                 const future = isFutureDate(cell.date);
+                // Editable only within the rolling window AND not in the future.
+                const editable = isWithinTimesheetWindow(cell.date) && !future;
                 const today = isToday(cell.date);
                 const hours = ts?.totalHours ?? 0;
                 const holiday = cell.inMonth && (isHoliday(cell.date) || !!ts?.holiday);
                 const holidayName = getHolidayName(cell.date);
-                // Holiday days are locked from entry, so not clickable into the week.
-                const clickable = cell.inMonth && !future && !holiday;
+                const leave = cell.inMonth && !!ts?.leaveDay && !holiday;
+                const travel = cell.inMonth && isTravelDay(cell.date);
+                const travelLabel = getTravelLabel(cell.date);
+                const weekend = cell.inMonth && [0, 6].includes(dayjs(cell.date).day());
+                // Holiday, approved-leave, future, and out-of-window days are
+                // all locked from entry.
+                const clickable = cell.inMonth && editable && !holiday && !leave;
                 const cellClass = [
                   styles.calCell,
                   !cell.inMonth ? styles.calCellOutMonth : '',
-                  cell.inMonth && future ? styles.calCellFuture : '',
+                  cell.inMonth && !editable ? styles.calCellFuture : '',
                   holiday ? styles.calHolidayCell : '',
+                  leave ? styles.calLeaveCell : '',
                 ]
                   .filter(Boolean)
                   .join(' ');
@@ -140,21 +151,33 @@ export default function MonthlyCalendarView() {
                   <div
                     key={cell.date}
                     className={cellClass}
-                    title={holiday ? holidayName : undefined}
+                    title={holiday ? holidayName : travel ? travelLabel : undefined}
                     onClick={() => clickable && openWeekForDate(cell.date)}
                   >
                     <div className={styles.calCellTop}>
                       <span className={`${styles.calDateNum} ${today ? styles.calDateToday : ''}`}>
                         {dayjs(cell.date).format('D')}
                       </span>
-                      {holiday && <Tag color="green" style={{ margin: 0 }}>Hol</Tag>}
-                      {ts?.leaveDay && !holiday && <Tag color="orange" style={{ margin: 0 }}>Lve</Tag>}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {travel && (
+                          <span className={styles.travelIcon} title={travelLabel}>✈️</span>
+                        )}
+                        {holiday && <span title={holidayName}>🎉</span>}
+                        {leave && <Tag color="orange" style={{ margin: 0 }}>Lve</Tag>}
+                        {weekend && !holiday && !leave && (
+                          <span className={styles.weekOffBadge}>W/O</span>
+                        )}
+                      </span>
                     </div>
                     {cell.inMonth && (
                       <>
                         {holiday ? (
                           <span className={styles.calHolidayLabel} title={holidayName}>
                             {holidayName || 'Holiday'}
+                          </span>
+                        ) : leave ? (
+                          <span className={styles.calLeaveLabel}>
+                            Leave{ts?.leaveType ? `: ${ts.leaveType}` : ''}
                           </span>
                         ) : (
                           <>

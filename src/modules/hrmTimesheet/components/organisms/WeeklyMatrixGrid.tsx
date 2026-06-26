@@ -13,11 +13,13 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
 import { useHrmTimesheetUI } from '../../hooks/useHrmTimesheetUI';
 import { useTimesheetHolidays } from '../../hooks/useTimesheetHolidays';
+import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
+import { useTimesheetCompOff } from '../../hooks/useTimesheetCompOff';
 import {
   weekDates,
   isToday,
-  isInCurrentMonth,
   isFutureDate,
+  isWithinTimesheetWindow,
   weekOfMonthIndex,
   buildMonthMatrix,
 } from '../../utils/timesheetHelpers';
@@ -67,6 +69,8 @@ export default function WeeklyMatrixGrid() {
   const { loadMonthlyTimesheets, loadAssignedAllocations } = useHrmTimesheetData();
   const { saveMatrixDays, submitMatrixDays } = useHrmTimesheetUI();
   const { isHoliday, getHolidayName } = useTimesheetHolidays(dayjs(selectedMonth).year());
+  const { isTravelDay, getTravelLabel } = useTimesheetTravel(dayjs(selectedMonth).year());
+  const { isCompOffDay, getCompOffLabel } = useTimesheetCompOff(dayjs(selectedMonth).year());
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
 
@@ -102,11 +106,38 @@ export default function WeeklyMatrixGrid() {
   }, [dates, byDate]);
 
   function dayEditable(date: string): boolean {
-    if (!isInCurrentMonth(date) || isFutureDate(date)) return false;
-    if (isHoliday(date)) return false; // holidays are locked from time entry
+    // Future dates are never editable.
+    if (isFutureDate(date)) return false;
+    // Rolling submission window: a date's month stays editable through the 7th
+    // of the following month, then locks.
+    if (!isWithinTimesheetWindow(date)) return false;
     const ts = byDate.get(date);
+    // Holidays are locked from time entry — UNLESS the employee worked that
+    // holiday and earned an APPROVED/CREDITED comp-off for it, in which case
+    // they may log the hours actually worked on that one date.
+    if ((isHoliday(date) || ts?.holiday) && !isCompOffDay(date)) return false;
+    if (ts?.leaveDay) return false; // approved-leave days are locked from time entry
     return !(ts && (ts.status === 'SUBMITTED' || ts.status === 'APPROVED'));
   }
+
+  // A project/task row may only be logged on days the allocation actually
+  // covers. An allocation that starts mid-week (e.g. Wednesday) must not be
+  // enterable on the earlier days of that same week — entry begins on the
+  // allocation start date and ends on its end date. Non-project rows
+  // (unplanned, etc.) are not allocation-bound, so they stay open.
+  function allocationCoversDate(row: MatrixRow, date: string): boolean {
+    if (row.lineType !== 'PROJECT' && row.lineType !== 'ALLOCATED') return true;
+    if (!row.allocationHandle) return true;
+    const alloc = allocByHandle.get(row.allocationHandle);
+    if (!alloc) return true;
+    return alloc.startDate <= date && date <= alloc.endDate;
+  }
+
+  // Leave days present in the visible week — surfaced as a validation notice.
+  const weekLeaveDays = useMemo(
+    () => dates.filter((d) => byDate.get(d)?.leaveDay),
+    [dates, byDate]
+  );
 
   // Allocation lookup so saved lines (which only carry allocationHandle) can
   // recover their task/project labels from hrm-project.
@@ -313,9 +344,29 @@ export default function WeeklyMatrixGrid() {
   const anyEditable = dates.some(dayEditable);
 
   const renderCell = (row: MatrixRow, date: string) => {
-    const editable = dayEditable(date);
+    const withinAllocation = allocationCoversDate(row, date);
+    const editable = dayEditable(date) && withinAllocation;
     const val = cellHours(row.key, date);
     if (!editable) {
+      if (byDate.get(date)?.leaveDay) {
+        return (
+          <span className={styles.matrixDayLeave} title="Approved leave — no time entry allowed">
+            Leave
+          </span>
+        );
+      }
+      // Day falls outside this allocation's start–end range: not loggable here.
+      if (!withinAllocation && val === 0) {
+        const alloc = row.allocationHandle ? allocByHandle.get(row.allocationHandle) : undefined;
+        const title = alloc
+          ? `Outside allocation period (${dayjs(alloc.startDate).format('DD MMM')} – ${dayjs(alloc.endDate).format('DD MMM')})`
+          : 'Outside allocation period';
+        return (
+          <span className={styles.matrixNoEntry} title={title}>
+            —
+          </span>
+        );
+      }
       return val > 0 ? `${val.toFixed(1)}` : <span className={styles.matrixNoEntry}>—</span>;
     }
     return (
@@ -357,11 +408,26 @@ export default function WeeklyMatrixGrid() {
         </span>
       </div>
 
-      {!isInCurrentMonth(selectedDate) && (
+      {!dates.some(isWithinTimesheetWindow) && (
         <Alert
           type="warning"
           showIcon
-          message="This week is outside the current month — entries are read-only."
+          message="This week is outside the editable window — entries are read-only."
+          style={{ marginBottom: 12 }}
+        />
+      )}
+
+      {weekLeaveDays.length > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          closable
+          message="Approved leave on this week"
+          description={`Time entry is disabled on ${weekLeaveDays
+            .map((d) => dayjs(d).format('ddd, DD MMM'))
+            .join(', ')} because approved leave covers ${
+            weekLeaveDays.length > 1 ? 'those days' : 'that day'
+          }.`}
           style={{ marginBottom: 12 }}
         />
       )}
@@ -372,16 +438,53 @@ export default function WeeklyMatrixGrid() {
             <tr>
               <th className="projCol">Project / Task</th>
               {dates.map((d) => {
-                const hol = isHoliday(d);
+                const compOff = isCompOffDay(d);
+                // A worked holiday with an approved comp-off is unlocked, so it
+                // no longer reads as a locked Holiday — the comp-off badge wins.
+                const hol = (isHoliday(d) || !!byDate.get(d)?.holiday) && !compOff;
+                const leave = !!byDate.get(d)?.leaveDay;
+                const travel = isTravelDay(d);
+                const weekend = [0, 6].includes(dayjs(d).day());
+                const colClass = hol
+                  ? styles.matrixColHoliday
+                  : leave
+                    ? styles.matrixColLeave
+                    : undefined;
                 return (
-                  <th key={d} className={hol ? styles.matrixColHoliday : undefined} title={hol ? getHolidayName(d) : undefined}>
+                  <th
+                    key={d}
+                    className={colClass}
+                    title={
+                      compOff
+                        ? getCompOffLabel(d)
+                        : hol
+                          ? getHolidayName(d)
+                          : travel
+                            ? getTravelLabel(d)
+                            : undefined
+                    }
+                  >
                     <div
-                      className={`${styles.matrixDayHead} ${isToday(d) ? styles.matrixDayHeadToday : ''} ${hol ? styles.matrixDayHoliday : ''}`}
+                      className={`${styles.matrixDayHead} ${isToday(d) ? styles.matrixDayHeadToday : ''} ${hol ? styles.matrixDayHoliday : ''} ${leave ? styles.matrixDayLeave : ''}`}
                     >
                       {dayjs(d).format('ddd')}
+                      {travel && (
+                        <span className={styles.travelIcon} title={getTravelLabel(d)}>✈️</span>
+                      )}
+                      {compOff && <span title={getCompOffLabel(d)}> 🔄</span>}
+                      {hol && <span title={getHolidayName(d)}> 🎉</span>}
                     </div>
                     <div style={{ fontSize: 11, color: '#8c8c8c' }}>{dayjs(d).format('DD')}</div>
+                    {compOff && (
+                      <div className={styles.matrixDayCompOff} style={{ fontSize: 10 }} title={getCompOffLabel(d)}>
+                        Comp-off
+                      </div>
+                    )}
                     {hol && <div className={styles.matrixDayHoliday} style={{ fontSize: 10 }}>Holiday</div>}
+                    {leave && !hol && <div className={styles.matrixDayLeave} style={{ fontSize: 10 }}>Leave</div>}
+                    {weekend && !hol && !leave && !compOff && (
+                      <div className={styles.weekOffBadge}>W/O</div>
+                    )}
                   </th>
                 );
               })}

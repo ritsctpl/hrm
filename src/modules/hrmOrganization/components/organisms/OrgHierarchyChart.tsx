@@ -24,6 +24,20 @@ import mainStyles from '../../styles/HrmOrganization.module.css';
 import styles from '../../styles/OrgChart.module.css';
 
 /* ------------------------------------------------------------------ */
+/*  Pan canvas constants                                               */
+/* ------------------------------------------------------------------ */
+// Empty margin (px) rendered around the tree inside the scroll canvas. This
+// gives the chart a Miro / whiteboard "movable" feel: there's always room to
+// drag/pan the tree in every direction even when it would otherwise fit the
+// viewport, and it guarantees the canvas always has something to scroll so
+// the drag-to-pan gesture and the X/Y scrollbars work consistently.
+const STAGE_PAD = 200;
+// Scroll offset that parks the tree's top-left just inside the viewport (a
+// small visible margin in from the padding edge). Used as the "home" position
+// on first load and after Fit / 100%.
+const STAGE_HOME = STAGE_PAD - 24;
+
+/* ------------------------------------------------------------------ */
 /*  Reporting tree — pure data layer                                   */
 /* ------------------------------------------------------------------ */
 
@@ -39,6 +53,22 @@ interface ReportingTree {
 
 const norm = (s: string | undefined | null): string =>
   (s || '').toLowerCase().trim();
+
+/**
+ * Resolve a usable <img> src for an employee photo. Prefers a base64 payload
+ * (wrapping bare base64 in a data: URL) and falls back to a plain photoUrl.
+ * Returns undefined when neither is present so the caller can render the
+ * empty placeholder icon.
+ */
+const resolvePhotoSrc = (
+  emp: { photoBase64?: string | null; photoUrl?: string | null },
+): string | undefined => {
+  const b64 = emp.photoBase64;
+  if (b64) {
+    return b64.startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`;
+  }
+  return emp.photoUrl || undefined;
+};
 
 /**
  * Build a reporting tree rooted at the dept head from a flat list of
@@ -129,21 +159,26 @@ const EmployeeCardBody: React.FC<{
   emp: EmployeeDirectoryRow;
   isHead?: boolean;
 }> = ({ emp, isHead = false }) => {
-  const photo = emp.photoUrl;
+  const photo = resolvePhotoSrc(emp);
   return (
     <div className={`${styles.chartCard} ${styles.employeeCard}`}>
+      {/* Header row — employee name */}
       <div
-        className={`${styles.empRoleHeader} ${isHead ? styles.empRoleHeaderHead : ''}`}
+        className={`${styles.empNameHeader} ${isHead ? styles.empNameHeaderHead : ''}`}
       >
-        {emp.role || 'EMPLOYEE'}
+        {emp.fullName}
       </div>
+      {/* Second row — photo on the left, role + department on the right */}
       <div className={styles.empBody}>
         {photo ? (
-          <Avatar src={photo} size={48} />
+          <Avatar src={photo} size={48} shape="square" />
         ) : (
-          <Avatar size={48} icon={<UserOutlined />} />
+          <Avatar size={48} shape="square" icon={<UserOutlined />} />
         )}
-        <div className={styles.empName}>{emp.fullName}</div>
+        <div className={styles.empMeta}>
+          <div className={styles.empRole}>{emp.role || 'EMPLOYEE'}</div>
+          <div className={styles.empDept}>{emp.department || '—'}</div>
+        </div>
       </div>
     </div>
   );
@@ -501,7 +536,8 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   const photoByHandle = useMemo(() => {
     const map: Record<string, string | undefined> = {};
     for (const emp of employees) {
-      if (emp.photoUrl) map[emp.handle] = emp.photoUrl;
+      const src = resolvePhotoSrc(emp);
+      if (src) map[emp.handle] = src;
     }
     return map;
   }, [employees]);
@@ -510,30 +546,21 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.4));
   const handleZoomReset = () => setZoom(1);
 
-  // Transform-based pan. We track an (x, y) offset and apply it via CSS
-  // `translate()` on the inner content. This is Miro / Figma / Google Maps
-  // style panning — decoupled from overflow/scrollbar behaviour entirely.
-  // The outer canvas keeps `overflow: hidden` so content outside the
-  // viewport is clipped; dragging slides the inner content under it.
+  // Native scroll panning. The canvas uses `overflow: auto`, so the scaled
+  // content overflows and produces real X *and* Y scrollbars. On top of that
+  // we keep Miro / Figma style drag-to-pan — but instead of a CSS translate
+  // (which is invisible to the scroll area) the drag drives the canvas's
+  // scrollLeft/scrollTop, so dragging and the scrollbars stay in sync.
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  // Pan is also per-view so each view keeps its own scroll position.
-  const [panByView, setPanByView] = useState<Record<ViewMode, { x: number; y: number }>>({
-    org: { x: 0, y: 0 },
-    tree: { x: 0, y: 0 },
+  // Per-view saved scroll offset so toggling Org Structure / Reporting Tree
+  // restores where the user left each view. Defaults to the "home" position
+  // so the tree is in view (not lost in the surrounding canvas padding).
+  const scrollByView = useRef<Record<ViewMode, { left: number; top: number }>>({
+    org: { left: STAGE_HOME, top: STAGE_HOME },
+    tree: { left: STAGE_HOME, top: STAGE_HOME },
   });
-  const pan = panByView[viewMode];
-  const setPan = useCallback(
-    (updater: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
-      setPanByView((prev) => {
-        const cur = prev[viewMode];
-        const next = typeof updater === 'function' ? (updater as (p: { x: number; y: number }) => { x: number; y: number })(cur) : updater;
-        return { ...prev, [viewMode]: next };
-      });
-    },
-    [viewMode],
-  );
-  const dragState = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  const dragState = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -544,22 +571,24 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     dragState.current = {
       startX: e.clientX,
       startY: e.clientY,
-      startPanX: pan.x,
-      startPanY: pan.y,
+      startLeft: el.scrollLeft,
+      startTop: el.scrollTop,
     };
     setIsDragging(true);
     el.setPointerCapture(e.pointerId);
-  }, [pan.x, pan.y]);
+  }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragState.current) return;
+    const el = canvasRef.current;
+    if (!el) return;
     const dx = e.clientX - dragState.current.startX;
     const dy = e.clientY - dragState.current.startY;
-    setPan({
-      x: dragState.current.startPanX + dx,
-      y: dragState.current.startPanY + dy,
-    });
-  }, [setPan]);
+    // Drag content to the right → reveal content on the left → scrollLeft
+    // decreases (and likewise for the vertical axis).
+    el.scrollLeft = dragState.current.startLeft - dx;
+    el.scrollTop = dragState.current.startTop - dy;
+  }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     dragState.current = null;
@@ -568,9 +597,37 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     if (el && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
   }, []);
 
-  // Reset pan when switching view mode or resetting zoom so the chart
-  // re-centers. Otherwise you can end up "lost" after zooming out.
-  const resetPan = useCallback(() => setPan({ x: 0, y: 0 }), [setPan]);
+  // Remember the active view's scroll position on every scroll (drag,
+  // scrollbar, wheel or trackpad) so it can be restored after a view switch.
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    scrollByView.current[viewMode] = { left: el.scrollLeft, top: el.scrollTop };
+  }, [viewMode]);
+
+  // Restore the saved scroll offset whenever the view changes — and re-apply
+  // once the content lands (employee/dept counts go from 0 → N), since at
+  // mount the canvas is empty and the scroll set would clamp to 0. We key the
+  // re-apply on the counts (not the array identities) so it doesn't fire on
+  // every render and fight the user's scrolling; `saved` already tracks the
+  // user's live position via onScroll, so re-applying is a no-op after load.
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const saved = scrollByView.current[viewMode];
+    el.scrollLeft = saved.left;
+    el.scrollTop = saved.top;
+  }, [viewMode, employees.length, empHierarchy.length]);
+
+  // Reset scroll to the home position when fitting / resetting zoom so the
+  // chart re-centers. Otherwise you can end up "lost" after zooming out.
+  const resetScroll = useCallback(() => {
+    const el = canvasRef.current;
+    if (el) {
+      el.scrollLeft = STAGE_HOME;
+      el.scrollTop = STAGE_HOME;
+    }
+    scrollByView.current[viewMode] = { left: STAGE_HOME, top: STAGE_HOME };
+  }, [viewMode]);
 
   // Fit-to-screen: compute a zoom factor that scales the tree to fit inside
   // the visible canvas width AND reset pan so everything is centered.
@@ -587,21 +644,21 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
     const ratioH = availableH / naturalH;
     const next = Math.max(0.3, Math.min(1, Math.min(ratioW, ratioH)));
     setZoom(Number(next.toFixed(2)));
-    setPan({ x: 0, y: 0 });
-    // setZoom/setPan are per-view useCallbacks whose closures bake in
+    resetScroll();
+    // setZoom/resetScroll are per-view useCallbacks whose closures bake in
     // the current viewMode. If we depend on `zoom` only, switching to
     // a view with the same zoom value (e.g. both at 100%) won't trigger
     // recreation, and we'd keep the previous view's setters — Fit would
     // silently update the wrong view's slot. Including the setters in
     // the dep array forces the callback to refresh whenever viewMode
     // changes, regardless of zoom.
-  }, [zoom, setZoom, setPan]);
+  }, [zoom, setZoom, resetScroll]);
 
   // Re-center on zoom reset for consistency with Fit button.
   const handleZoomResetFull = useCallback(() => {
     setZoom(1);
-    resetPan();
-  }, [resetPan, setZoom]);
+    resetScroll();
+  }, [resetScroll, setZoom]);
 
   if (isLoading) {
     return (
@@ -711,9 +768,10 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
         <Button size="small" onClick={handleZoomResetFull}>100%</Button>
       </div>
 
-      {/* Chart Viewport — clip-only container. The inner content is panned
-          by CSS transform, so we don't need overflow:auto scrollbars at all.
-          This avoids every CSS cascade / ancestor-overflow pitfall. */}
+      {/* Chart Viewport — scrollable container. `overflow: auto` gives real
+          X and Y scrollbars once the (zoom-scaled) content overflows; on top
+          of that, drag-to-pan moves scrollLeft/scrollTop so grabbing and the
+          scrollbars stay in sync. */}
       <div
         ref={canvasRef}
         className={styles.chartCanvas}
@@ -721,34 +779,59 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onScroll={handleScroll}
         style={{
           flex: '1 1 auto',
           minHeight: 0,
           minWidth: 0,
           width: '100%',
           maxWidth: '100%',
-          overflow: 'hidden',
+          // `scroll` (not `auto`) so both the bottom (X) and right (Y)
+          // scrollbars are always visible, not just while actively scrolling.
+          overflow: 'scroll',
           boxSizing: 'border-box',
           cursor: isDragging ? 'grabbing' : 'grab',
           userSelect: isDragging ? 'none' : 'auto',
+          // Our pointer handler drives panning for both mouse and touch (by
+          // setting scrollLeft/scrollTop), so disable the browser's own touch
+          // panning to avoid double-scrolling. Wheel + scrollbar dragging are
+          // unaffected and keep working natively.
           touchAction: 'none',
           position: 'relative',
         }}
       >
+        {/* Stage — an oversized surface (tree + empty margin all around) so the
+            tree can always be dragged/panned in every direction and the canvas
+            reliably overflows on both axes (driving the X/Y scrollbars). */}
         <div
-          ref={contentRef}
-          className={styles.chartScroll}
+          className={styles.chartStage}
           style={{
-            display: 'inline-block',
-            // Pan = translate; zoom = CSS scale (keeps layout math simple).
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'top left',
-            transition: isDragging ? 'none' : 'transform 0.2s ease',
-            // Unset width constraint — inline-block sizes to content.
-            width: 'auto',
-            minWidth: '100%',
+            display: 'block',
+            // content-box so the STAGE_PAD margin is added *around* the tree
+            // rather than eating into it; width sizes to the tree.
+            boxSizing: 'content-box',
+            width: 'max-content',
+            padding: STAGE_PAD,
           }}
         >
+          <div
+            ref={contentRef}
+            className={styles.chartScroll}
+            style={{
+              // `block` + `width: max-content` makes this child as wide as its
+              // content so the canvas's overflow-x reliably produces a
+              // horizontal scrollbar for wide trees. (inline-block left the
+              // layout ambiguous inside the tab pane and the X scrollbar never
+              // showed — see OrgChart.module.css .chartScroll.)
+              display: 'block',
+              width: 'max-content',
+              // Zoom = CSS scale; panning is handled by the canvas's native
+              // scroll, so no translate() here.
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top left',
+              transition: isDragging ? 'none' : 'transform 0.2s ease',
+            }}
+          >
           {viewMode === 'org' ? (
             /* Root: Company → BUs → Depts → Employees (dept-scoped) */
             <ul className={styles.chartTree}>
@@ -820,6 +903,7 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
               )}
             </ul>
           )}
+          </div>
         </div>
       </div>
     </div>

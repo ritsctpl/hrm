@@ -4,6 +4,9 @@ import { CopyOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
+import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
+import { useTimesheetCompOff } from '../../hooks/useTimesheetCompOff';
+import { isFutureDate } from '../../utils/timesheetHelpers';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import Can from '../../../hrmAccess/components/Can';
@@ -32,12 +35,24 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
     updateLineInCurrentDay,
   } = useHrmTimesheetStore();
 
+  const { isTravelDay, getTravelLabel } = useTimesheetTravel(dayjs(selectedDate).year());
+  const { isCompOffDay, getCompOffLabel } = useTimesheetCompOff(dayjs(selectedDate).year());
+  const onTravel = selectedDate ? isTravelDay(selectedDate) : false;
+  // A holiday the employee worked (APPROVED/CREDITED comp-off) is unlocked for
+  // time entry on that one date — the holiday block no longer applies to it.
+  const onCompOff = selectedDate ? isCompOffDay(selectedDate) : false;
+  const isFuture = selectedDate ? isFutureDate(selectedDate) : false;
+  const isWeekend = selectedDate ? [0, 6].includes(dayjs(selectedDate).day()) : false;
+
   const isReadOnly =
     currentDayTimesheet?.status === 'SUBMITTED' ||
     currentDayTimesheet?.status === 'APPROVED';
 
   const isHolidayOrLeave =
-    currentDayTimesheet?.holiday || currentDayTimesheet?.leaveDay;
+    (currentDayTimesheet?.holiday && !onCompOff) || currentDayTimesheet?.leaveDay;
+  // Entry is blocked for holidays, approved leave, and future dates — but a
+  // worked holiday with an approved comp-off stays open.
+  const entryBlocked = isHolidayOrLeave || isFuture;
 
   const lines = currentDayTimesheet?.lines ?? [];
 
@@ -65,11 +80,24 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
           {currentDayTimesheet?.status && (
             <TimesheetStatusBadge status={currentDayTimesheet.status} />
           )}
-          {currentDayTimesheet?.holiday && <Tag color="blue">Holiday</Tag>}
+          {currentDayTimesheet?.holiday && !onCompOff && <Tag color="green">🎉 Holiday</Tag>}
+          {onCompOff && (
+            <Tooltip title={getCompOffLabel(selectedDate)}>
+              <Tag color="blue">🔄 Comp-off</Tag>
+            </Tooltip>
+          )}
           {currentDayTimesheet?.leaveDay && <Tag color="orange">Leave{currentDayTimesheet.leaveType ? `: ${currentDayTimesheet.leaveType}` : ''}</Tag>}
+          {onTravel && (
+            <Tooltip title={getTravelLabel(selectedDate)}>
+              <Tag color="blue">✈️ Travel</Tag>
+            </Tooltip>
+          )}
+          {isWeekend && !currentDayTimesheet?.holiday && !currentDayTimesheet?.leaveDay && (
+            <Tag>W/O</Tag>
+          )}
         </Space>
 
-        {!isReadOnly && !isHolidayOrLeave && (
+        {!isReadOnly && !entryBlocked && (
           <div className={styles.dayEditorActions}>
             <Can I="add">
               <Tooltip title="Copy lines from previous working day">
@@ -110,10 +138,14 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
         )}
       </div>
 
-      {isHolidayOrLeave ? (
+      {entryBlocked ? (
         <div className={styles.emptyState}>
           <Text type="secondary">
-            {currentDayTimesheet?.holiday ? 'Holiday — no timesheet required' : 'Leave day — no timesheet required'}
+            {currentDayTimesheet?.holiday
+              ? 'Holiday — no timesheet required'
+              : currentDayTimesheet?.leaveDay
+                ? 'Leave day — no timesheet required'
+                : 'Future date — timesheet entry is not allowed yet'}
           </Text>
         </div>
       ) : (
@@ -128,7 +160,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
         />
       )}
 
-      {!isReadOnly && !isHolidayOrLeave && (
+      {!isReadOnly && !entryBlocked && (
         <div>
           <Text type="secondary" style={{ fontSize: 12 }}>Notes (optional)</Text>
           <Input.TextArea

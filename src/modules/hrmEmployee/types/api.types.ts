@@ -47,6 +47,9 @@ export interface EmployeeDirectoryRow {
   workEmail: string;
   phone?: string;
   photoUrl?: string;
+  /** Raw base64-encoded photo (with or without a data: URL prefix). Backend
+      may return the photo as base64 instead of a URL. */
+  photoBase64?: string;
   status: EmployeeStatus;
   isActive?: boolean;
   department: string;

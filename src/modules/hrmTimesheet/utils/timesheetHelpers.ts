@@ -88,6 +88,20 @@ export function isInCurrentMonth(dateStr: string): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
 }
 
+/**
+ * Submission window (rolling "month + 7"): a date stays editable through the
+ * 7th day of the month AFTER the date's own month. e.g. June dates lock after
+ * 07-Jul; July dates lock after 07-Aug. Future dates are allowed (the lock
+ * only ever closes the trailing edge once a month has fully elapsed + 7 days).
+ */
+export function isWithinTimesheetWindow(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  // 7th of the month following the date's month (end of day so the 7th itself
+  // is still inclusive).
+  const lockBoundary = new Date(d.getFullYear(), d.getMonth() + 1, 7, 23, 59, 59, 999);
+  return new Date() <= lockBoundary;
+}
+
 /** Formats decimal hours as "HH:MM" (e.g. 8.5 -> "08:30"). */
 export function decimalToHHMM(hours: number): string {
   const safe = Number.isFinite(hours) ? hours : 0;

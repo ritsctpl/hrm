@@ -152,6 +152,62 @@
   background: #f6ffed;
 }
 
+/* Leave day (orange) — locked from time entry, like holidays */
+.matrixColLeave {
+  background: #fff7e6;
+}
+
+.matrixDayLeave {
+  color: #fa8c16;
+  font-weight: 700;
+}
+
+/* Worked holiday with an approved comp-off (blue) — UNLOCKED for time entry */
+.matrixDayCompOff {
+  color: #1677ff;
+  font-weight: 700;
+}
+
+.calLeaveCell {
+  background: #fff7e6;
+  border-color: #ffd591;
+  cursor: default;
+}
+
+.calLeaveCell:hover {
+  border-color: #ffd591;
+  box-shadow: none;
+}
+
+.calLeaveLabel {
+  font-size: 11px;
+  color: #fa8c16;
+  font-weight: 600;
+}
+
+/* Travel indicator (icon only — never locks entry) */
+.travelIcon {
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.matrixDayTravel {
+  color: #1677ff;
+  font-size: 11px;
+}
+
+/* Weekly-off badge (Sat/Sun) — visual marker only */
+.weekOffBadge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8c8c8c;
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 0 4px;
+  line-height: 14px;
+}
+
 .calCellTop {
   display: flex;
   align-items: center;
