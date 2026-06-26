@@ -124,7 +124,18 @@ export const AuthProvider: React.FC<AuthContextProps> = ({ children }) => {
   const logout = async () => {
     try {
       const keycloak = await getKeycloakInstance();
-      keycloak.logout();
+      // Always return to the /hrm root after logout. The login redirectUri is
+      // window.location.href, so without this the post-logout URL would be
+      // whatever screen was open (e.g. an employee detail page) and the next
+      // user logging in would land there. Forcing the root guarantees every
+      // fresh login starts on the /hrm home page.
+      const postLogoutRedirectUri =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/hrm`
+          : undefined;
+      keycloak.logout(
+        postLogoutRedirectUri ? { redirectUri: postLogoutRedirectUri } : undefined,
+      );
       setIsAuthenticated(false);
       setToken(null);
       destroyCookie(null, 'token');
