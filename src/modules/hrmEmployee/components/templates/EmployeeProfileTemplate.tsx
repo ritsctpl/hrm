@@ -13,7 +13,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Tabs, Button, Spin, Typography } from 'antd';
+import { Tabs, Button, Spin, Typography, Modal, message } from 'antd';
+import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
 import EmpAvatar from '../atoms/EmpAvatar';
@@ -536,6 +537,39 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             )}
           </div>
         </div>
+        <Button
+          danger
+          style={{ marginLeft: 'auto' }}
+          onClick={() => {
+            const email = basicDetails.workEmail;
+            if (!email) {
+              message.error('No work email on file for this employee.');
+              return;
+            }
+            Modal.confirm({
+              title: 'Reset password?',
+              content: `A temporary password will be emailed to ${email}. The employee must change it at next login.`,
+              okText: 'Reset & email',
+              cancelText: 'Cancel',
+              onOk: async () => {
+                try {
+                  const res = await HrmEmployeeService.resetPassword({ email, sendEmail: true });
+                  if (res.success) {
+                    message.success(
+                      res.emailedTo ? `Temporary password emailed to ${res.emailedTo}` : 'Password has been reset.'
+                    );
+                  } else {
+                    message.error(res.message || 'Password reset failed.');
+                  }
+                } catch (e: any) {
+                  message.error(e?.response?.data?.message || 'Password reset failed.');
+                }
+              },
+            });
+          }}
+        >
+          Reset Password
+        </Button>
       </div>
 
       {/* Tabs */}

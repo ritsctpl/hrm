@@ -4,6 +4,7 @@
  */
 
 import { CreateKeycloakUser, UpdateKeycloakUser, DeleteKeycloakUser } from '@/app/api/auth/keycloakCredentials';
+import api from '@/services/api';
 
 interface EmployeeKeycloakData {
   workEmail: string;
@@ -14,20 +15,28 @@ interface EmployeeKeycloakData {
 
 export class EmployeeKeycloakService {
   /**
-   * Create Keycloak user for employee
+   * Create Keycloak user for employee — SERVER-SIDE via hrm-service
+   * (POST /account/create-user), replacing the previous browser-side Keycloak
+   * Admin API call. Returns { succes, error } to match the onboarding wizard.
    */
-  static async createUserForEmployee(employeeData: EmployeeKeycloakData) {
-    const keycloakPayload = {
-      data: {
-        user: employeeData.workEmail,
+  static async createUserForEmployee(
+    employeeData: EmployeeKeycloakData
+  ): Promise<{ succes: boolean; error?: string }> {
+    try {
+      const res = await api.post('/hrm-service/account/create-user', {
+        username: employeeData.workEmail,
+        email: employeeData.workEmail,
         firstName: employeeData.firstName,
         lastName: employeeData.lastName,
-        emailAddress: employeeData.workEmail,
         password: employeeData.password || this.generateTemporaryPassword(),
-      }
-    };
-    
-    return await CreateKeycloakUser(keycloakPayload);
+      });
+      return { succes: !!res.data?.success, error: res.data?.error };
+    } catch (e: any) {
+      return {
+        succes: false,
+        error: e?.response?.data?.error || e?.response?.data?.message || 'Failed to create Keycloak user',
+      };
+    }
   }
   
   /**

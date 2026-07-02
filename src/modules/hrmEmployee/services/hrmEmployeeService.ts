@@ -146,7 +146,8 @@ export class HrmEmployeeService {
    *   POST /hrm-service/account/reset-password
    */
   static async resetPassword(params: {
-    username: string;
+    username?: string;
+    email?: string;
     sendEmail?: boolean;
     newPassword?: string;
   }): Promise<{ success: boolean; message?: string; emailedTo?: string; password?: string }> {
@@ -155,6 +156,17 @@ export class HrmEmployeeService {
       { sendEmail: true, ...params },
       { headers: { 'Content-Type': 'application/json' } }
     );
+    return response.data;
+  }
+
+  /**
+   * Create an employee together with a Keycloak login (server-side).
+   *   POST /hrm-service/employee/createWithUser
+   */
+  static async createEmployeeWithUser(payload: Record<string, unknown>): Promise<any> {
+    const response = await api.post(`${this.BASE}/createWithUser`, payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
     return response.data;
   }
 
