@@ -537,7 +537,9 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
             )}
           </div>
         </div>
-        <Can I="edit" object="employee_official" passIf={isAdmin}>
+        {/* Reset Password is an admin-only action (module-level add/delete), stricter
+            than section edit — so a regular employee role cannot see it. */}
+        {isAdmin && (
           <Button
             danger
             style={{ marginLeft: 'auto' }}
@@ -571,7 +573,7 @@ const EmployeeProfileTemplate: React.FC<EmployeeProfileTemplateProps> = ({
           >
             Reset Password
           </Button>
-        </Can>
+        )}
       </div>
 
       {/* Tabs */}
