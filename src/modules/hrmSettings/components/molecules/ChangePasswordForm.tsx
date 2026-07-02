@@ -20,8 +20,22 @@ const ChangePasswordForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const resolveUsername = (): string => {
+    const c = parseCookies();
+    let username = c.preferred_username || c.userId || c.email || '';
+    if (!username && c.token) {
+      try {
+        const payload = JSON.parse(atob(c.token.split('.')[1]));
+        username = payload.preferred_username || payload.email || '';
+      } catch {
+        /* ignore */
+      }
+    }
+    return username;
+  };
+
   const handleSubmit = async () => {
-    const username = parseCookies().userId || '';
+    const username = resolveUsername();
     if (!username) {
       message.error('Could not determine the current user. Please re-login.');
       return;
