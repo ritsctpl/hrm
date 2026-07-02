@@ -211,7 +211,7 @@ const OfficialStep: React.FC<{
   <div className={formStyles.wizardStepBody}>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
-        <label className={formStyles.formFieldLabel}>Title</label>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>Title</label>
         <Select
           showSearch
           allowClear
