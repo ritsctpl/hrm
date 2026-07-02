@@ -1069,6 +1069,8 @@ const OnboardingWizard: React.FC = () => {
         }
       }
 
+      let createdCreds: { username: string; password: string } | null = null;
+
       // Step 1: Create Keycloak user if requested
       if (keycloakSettings.createKeycloakUser) {
         const username = keycloakSettings.username || draft.workEmail || '';
@@ -1113,6 +1115,7 @@ const OnboardingWizard: React.FC = () => {
           }
         } else {
           // Store credentials to display after successful employee creation
+          createdCreds = { username, password };
           setGeneratedCredentials({
             username: username,
             password: password,
@@ -1123,6 +1126,20 @@ const OnboardingWizard: React.FC = () => {
       // Step 2: Create employee
       const created = await submitOnboarding();
       const newEmployeeHandle = created?.handle;
+
+      // Step 2b: email credentials to the new employee if requested (no-op when SMTP off).
+      // Kept as a post-create call so the existing create flow is untouched.
+      if (keycloakSettings.sendCredentialsEmail && createdCreds && draft.workEmail) {
+        try {
+          await HrmEmployeeService.sendCredentialsEmail({
+            email: draft.workEmail,
+            username: createdCreds.username,
+            password: createdCreds.password,
+          });
+        } catch (err) {
+          console.warn('Failed to email credentials:', err);
+        }
+      }
 
       // Step 2a: Persist joiningDate via /update-official.
       // Backend's /employee/create currently drops joiningDate from the

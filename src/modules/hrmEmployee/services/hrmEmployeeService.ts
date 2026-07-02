@@ -139,6 +139,43 @@ export class HrmEmployeeService {
     return response.data;
   }
 
+  /**
+   * Admin: reset a user's password. Backend sets a temporary password
+   * (force-change on next login) and, when sendEmail=true, emails it to the
+   * employee's work email. Returns { success, emailedTo?, password? }.
+   *   POST /hrm-service/account/reset-password
+   */
+  static async resetPassword(params: {
+    username: string;
+    sendEmail?: boolean;
+    newPassword?: string;
+  }): Promise<{ success: boolean; message?: string; emailedTo?: string; password?: string }> {
+    const response = await api.post(
+      `/hrm-service/account/reset-password`,
+      { sendEmail: true, ...params },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  /**
+   * Email login credentials to a newly-created employee.
+   *   POST /hrm-service/account/send-credentials-email
+   */
+  static async sendCredentialsEmail(params: {
+    email: string;
+    username: string;
+    password: string;
+    orgName?: string;
+  }): Promise<{ success: boolean; emailedTo?: string }> {
+    const response = await api.post(
+      `/hrm-service/account/send-credentials-email`,
+      params,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   /** Update basic details */
   static async updateBasicDetails(
     payload: UpdateBasicRequest
