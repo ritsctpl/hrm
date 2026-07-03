@@ -294,8 +294,10 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
       if (site) {
         try {
           const responseSite = await fetchSiteAll(site);
-          setSiteDetails(responseSite);
-          localStorage.setItem("theme", JSON.stringify(responseSite.theme));
+          if (responseSite?.theme) {
+            setSiteDetails(responseSite);
+            localStorage.setItem("theme", JSON.stringify(responseSite.theme));
+          }
         } catch (error) {
           console.error("Error fetching site details:", error);
         }
@@ -385,13 +387,15 @@ const CommonAppBar: React.FC<CommonAppBarProps> = ({
         return;
       }
 
-      // Fetch new site details immediately
+      // Fetch new site details immediately (no-op in standalone HRM — theme stays default)
       const newSiteDetails = await fetchSiteAll(newSite);
-      setSiteDetails(newSiteDetails);
-      localStorage.setItem("theme", JSON.stringify(newSiteDetails.theme));
+      if (newSiteDetails?.theme) {
+        setSiteDetails(newSiteDetails);
+        localStorage.setItem("theme", JSON.stringify(newSiteDetails.theme));
 
-      // Update theme and store in cookie
-      await updateThemeFromSite(newSiteDetails);
+        // Update theme and store in cookie
+        await updateThemeFromSite(newSiteDetails);
+      }
 
       // Set the site cookie
       setCookie(null, "site", newSite, {

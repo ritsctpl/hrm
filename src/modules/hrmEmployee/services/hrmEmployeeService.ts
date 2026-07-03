@@ -829,7 +829,9 @@ export class HrmEmployeeService {
     payload: BulkImportRequest
   ): Promise<BulkImportResponse> {
     const response = await api.post(`${this.BASE}/bulk-import`, payload);
-    return response.data;
+    // Backend wraps the result in HrmResponse<BulkImportResponse> ({success,message,data}); unwrap it.
+    const body = response.data;
+    return (body && typeof body === 'object' && 'data' in body ? body.data : body) as BulkImportResponse;
   }
 
   /** Fetch remuneration details */

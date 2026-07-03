@@ -15,7 +15,8 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     employeeCode: row.employeeCode,
     fullName: row.fullName,
     department: row.department,
-    designation: row.role || '', // Backend returns 'role', map to 'designation' for UI
+    // Show the real designation on the tile; fall back to role only if unset.
+    designation: (row as unknown as { designation?: string }).designation || row.role || '',
     status: row.status,
     isActive: row.isActive,
     photoUrl: row.photoUrl,

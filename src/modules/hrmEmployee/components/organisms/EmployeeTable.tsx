@@ -47,6 +47,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'fullName',
         key: 'fullName',
         width: 260,
+        sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
         ...textSearchFilter<EmployeeSummary>('fullName', { getText: (r) => r.fullName }),
         render: (_: string, record: EmployeeSummary) => (
           <div className={styles.nameCell}>
@@ -63,6 +64,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'employeeCode',
         key: 'employeeCode',
         width: 120,
+        sorter: (a, b) => (a.employeeCode || '').localeCompare(b.employeeCode || '', undefined, { numeric: true }),
         ...textSearchFilter<EmployeeSummary>('employeeCode'),
       },
       {
@@ -70,6 +72,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'department',
         key: 'department',
         width: 160,
+        sorter: (a, b) => (a.department || '').localeCompare(b.department || ''),
         ...categoryFilter<EmployeeSummary>('department', data),
       },
       {
@@ -77,6 +80,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'designation',
         key: 'designation',
         width: 180,
+        sorter: (a, b) => (a.designation || '').localeCompare(b.designation || ''),
         ...categoryFilter<EmployeeSummary>('designation', data),
       },
       {
@@ -84,6 +88,11 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         dataIndex: 'status',
         key: 'status',
         width: 100,
+        sorter: (a, b) => {
+          const s = (r: EmployeeSummary) =>
+            r.isActive !== undefined ? (r.isActive ? 'ACTIVE' : 'INACTIVE') : (r.status || '');
+          return s(a).localeCompare(s(b));
+        },
         ...categoryFilter<EmployeeSummary>('status', data, {
           getValue: (r) =>
             r.isActive !== undefined ? (r.isActive ? 'ACTIVE' : 'INACTIVE') : r.status,

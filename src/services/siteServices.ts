@@ -20,14 +20,12 @@ export const fetchSiteTop50= async (user: string) => {
   return response.data.retrieveTop50List;
 };
 
-export const fetchSiteAll= async (site: string) => {
-  try {
-    const response = await api.post('/site-service/retrieveBySite/', { site});
-    // console.log(response.data +'Response')
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching site details:', error);
-  }
+// Standalone HRM has no manufacturing `site-service`. This used to fetch per-site
+// theme/logo via /site-service/retrieveBySite; that endpoint doesn't exist here, so the
+// call always failed. Made a no-op so HRM never calls site-service — theme/logo fall back
+// to defaults. Callers tolerate an undefined result.
+export const fetchSiteAll = async (_site?: string) => {
+  return undefined;
 };
 export const fetchAllEventTypes= async (site: string) => {
   try {

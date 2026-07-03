@@ -17,6 +17,7 @@ import { EmployeeKeycloakService } from '../../services/keycloakService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { HrmLeaveService } from '@/modules/hrmLeave/services/hrmLeaveService';
+import { HrmAccessService } from '@/modules/hrmAccess/services/hrmAccessService';
 import { COUNTRY_OPTIONS, COUNTRY_STATES } from '@/modules/hrmOrganization/utils/constants';
 import { STATE_CITIES } from '@/modules/hrmOrganization/utils/locationSearch';
 import dayjs from 'dayjs';
@@ -185,6 +186,7 @@ const OfficialStep: React.FC<{
   departments: Array<{ label: string; value: string }>;
   businessUnits: Array<{ label: string; value: string }>;
   employees: Array<{ label: string; value: string }>;
+  roles: Array<{ label: string; value: string }>;
   loadingOptions: boolean;
   selectedCompany: string | undefined;
   selectedBU: string | undefined;
@@ -201,6 +203,7 @@ const OfficialStep: React.FC<{
   departments,
   businessUnits,
   employees,
+  roles,
   loadingOptions,
   selectedCompany,
   selectedBU,
@@ -310,23 +313,19 @@ const OfficialStep: React.FC<{
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
-          Role
+          Access Role
         </label>
         <Select
           showSearch
           allowClear
+          loading={loadingOptions}
           value={draft.role || undefined}
           onChange={(value) => onChange({ role: value })}
           status={errors.role ? 'error' : undefined}
-          placeholder="Select role"
+          placeholder="Select access role"
           style={{ width: '100%' }}
-          options={[
-            { label: 'EMPLOYEE', value: 'EMPLOYEE' },
-            { label: 'MANAGER', value: 'MANAGER' },
-            { label: 'ADMIN', value: 'ADMIN' },
-            { label: 'HR', value: 'HR' },
-            { label: 'DIRECTOR', value: 'DIRECTOR' },
-          ]}
+          options={roles}
+          notFoundContent={loadingOptions ? 'Loading roles…' : 'No roles found'}
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
@@ -826,6 +825,7 @@ const OnboardingWizard: React.FC = () => {
   const [departments, setDepartments] = useState<Array<{ label: string; value: string }>>([]);
   const [businessUnits, setBusinessUnits] = useState<Array<{ label: string; value: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ label: string; value: string }>>([]);
+  const [roles, setRoles] = useState<Array<{ label: string; value: string }>>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   // Existing employee codes within the org — used to block duplicates at
   // the wizard level since there's no /employee/check-code endpoint.
@@ -926,6 +926,21 @@ const OnboardingWizard: React.FC = () => {
         setCompanies(companyOptions);
       } catch (error) {
         console.error('Failed to fetch companies:', error);
+      }
+
+      // Fetch active RBAC access roles for the Role dropdown (replaces the
+      // old hardcoded list). The chosen role is assigned to the new user on
+      // create, so the hire has access immediately — no Access Control trip.
+      try {
+        const roleData = await HrmAccessService.fetchActiveRoles(organizationId);
+        setRoles(
+          (roleData || []).map((r) => ({
+            label: r.roleName ? `${r.roleName} (${r.roleCode})` : r.roleCode,
+            value: r.roleCode,
+          })),
+        );
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
       }
 
       // Fetch employees for reporting manager dropdown + capture the set
@@ -1141,6 +1156,30 @@ const OnboardingWizard: React.FC = () => {
         }
       }
 
+      // Step 2c: Assign the chosen RBAC access role to the new login so the hire
+      // has access immediately — no separate trip to Access Control. Best-effort:
+      // the employee is already created, so a failure here only warns.
+      const roleUsername = createdCreds?.username || keycloakSettings.username || draft.workEmail;
+      if (roleUsername && draft.role) {
+        try {
+          const organizationId = getOrganizationId();
+          const cookies = parseCookies();
+          await HrmAccessService.assignRoleToUser({
+            organizationId,
+            userId: roleUsername,
+            roleCode: draft.role,
+            effectiveFrom: new Date().toISOString(),
+            assignedBy: cookies.username || 'system',
+            assignmentNotes: 'Assigned during employee onboarding',
+          });
+        } catch (err) {
+          console.warn('Failed to assign access role:', err);
+          message.warning(
+            'Employee created, but the access role could not be assigned automatically — assign it from Access Control.'
+          );
+        }
+      }
+
       // Step 2a: Persist joiningDate via /update-official.
       // Backend's /employee/create currently drops joiningDate from the
       // payload (the field reaches the server but isn't saved on the
@@ -1281,6 +1320,7 @@ const OnboardingWizard: React.FC = () => {
             departments={departments}
             businessUnits={businessUnits}
             employees={employees}
+            roles={roles}
             loadingOptions={loadingOptions}
             selectedCompany={selectedCompany}
             selectedBU={selectedBU}

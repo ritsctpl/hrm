@@ -286,6 +286,21 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
 
   const editing = localEditing;
 
+  // The reporting-manager dropdown is keyed by employeeCode, but a manager assigned
+  // via Bulk Ops is stored as a UUID handle — that value matches no option, so the
+  // Select would show the raw ID. Inject the current manager (labelled with the
+  // resolved name) so edit mode shows the name instead of the ID. Storage is untouched.
+  const managerOptions = React.useMemo(() => {
+    const mgr = officialDetails.reportingManager;
+    if (mgr && !employees.some((e) => e.value === mgr)) {
+      const label = officialDetails.reportingManagerName
+        ? `${officialDetails.reportingManagerName} (${mgr})`
+        : mgr;
+      return [{ label, value: mgr }, ...employees];
+    }
+    return employees;
+  }, [employees, officialDetails.reportingManager, officialDetails.reportingManagerName]);
+
   if (editing) {
     return (
       <div className={styles.tabContent}>
@@ -454,7 +469,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
                 allowClear
                 placeholder="Select reporting manager"
                 loading={loadingOptions}
-                options={employees}
+                options={managerOptions}
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
