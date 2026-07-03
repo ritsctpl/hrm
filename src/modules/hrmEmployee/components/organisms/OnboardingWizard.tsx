@@ -5,12 +5,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AutoComplete, Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
+import { Modal, Steps, Button, Input, Select, DatePicker, Form, Divider, Checkbox, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { useOnboardingWizard } from '../../hooks/useHrmEmployeeData';
 import Can from '../../../hrmAccess/components/Can';
 import { ONBOARDING_STEPS, DESIGNATION_OPTIONS, GENDER_OPTIONS, MARITAL_STATUS_OPTIONS } from '../../utils/constants';
+import { useEmployeeLookups } from '../../hooks/useEmployeeLookups';
 import type { CreateEmployeeRequest } from '../../types/api.types';
 import formStyles from '../../styles/HrmEmployeeForm.module.css';
 import { EmployeeKeycloakService } from '../../services/keycloakService';
@@ -210,7 +211,13 @@ const OfficialStep: React.FC<{
   onCompanyChange,
   onBUChange,
   onDepartmentChange,
-}) => (
+}) => {
+  // Configurable dropdowns (admin-managed via Employee Settings). Fall back to the
+  // built-in designation list only if the admin has not configured any yet.
+  const { values: gradeOptions } = useEmployeeLookups('GRADE');
+  const { values: designationOptions } = useEmployeeLookups('DESIGNATION');
+  const designationChoices = designationOptions.length > 0 ? designationOptions : [...DESIGNATION_OPTIONS];
+  return (
   <div className={formStyles.wizardStepBody}>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
@@ -336,17 +343,39 @@ const OfficialStep: React.FC<{
       </div>
       <div className={formStyles.formField}>
         <label className={formStyles.formFieldLabel}>Designation</label>
-        <AutoComplete
-          value={draft.designation || ''}
-          onChange={(value) => onChange({ designation: value })}
-          placeholder="Select or type designation"
-          style={{ width: '100%' }}
+        <Select
+          showSearch
           allowClear
-          options={DESIGNATION_OPTIONS.map((d) => ({ value: d }))}
+          value={draft.designation || undefined}
+          onChange={(value) => onChange({ designation: value })}
+          placeholder="Select designation"
+          style={{ width: '100%' }}
+          options={designationChoices.map((d) => ({ label: d, value: d }))}
+          notFoundContent="No designations configured — add them in Employee Settings"
           filterOption={(input, option) =>
-            (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
         />
+      </div>
+      <div className={formStyles.formField}>
+        <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>Grade</label>
+        <Select
+          showSearch
+          allowClear
+          value={draft.grade || undefined}
+          onChange={(value) => onChange({ grade: value })}
+          status={errors.grade ? 'error' : undefined}
+          placeholder="Select grade"
+          style={{ width: '100%' }}
+          options={gradeOptions.map((g) => ({ label: g, value: g }))}
+          notFoundContent="No grades configured — add them in Employee Settings"
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+        />
+        {errors.grade && (
+          <div className={formStyles.formFieldError}>{errors.grade}</div>
+        )}
       </div>
     </div>
     <div className={formStyles.formRow}>
@@ -514,7 +543,8 @@ const OfficialStep: React.FC<{
       </>
     )}
   </div>
-);
+  );
+};
 
 /* Step 2: Contact Info */
 const ContactStep: React.FC<{
@@ -741,6 +771,10 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Designation</span>
         <span className={formStyles.reviewValue}>{draft.designation || '--'}</span>
+      </div>
+      <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Grade</span>
+        <span className={formStyles.reviewValue}>{draft.grade || '--'}</span>
       </div>
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Location</span>

@@ -33,7 +33,11 @@ export function useHrmAssetUI() {
   const isSuperAdmin = useHrmRbacStore((s) => s.isSuperAdmin);
   const currentRole = useCurrentEmployeeStore((s) => s.data?.role ?? '');
   const isAdminRole = ADMIN_ROLES.includes(currentRole.trim().toLowerCase());
-  const seesAllAssets = isSuperAdmin || isAdminRole;
+  // Drive "see all assets" off the RBAC admin permission (isAdmin, above) as well —
+  // the profile-role check only works when the login matches the employee's workEmail,
+  // so a username login (e.g. rits_hrm_admin) whose employee profile can't be resolved
+  // would otherwise be treated as a plain employee and see no unassigned assets.
+  const seesAllAssets = isSuperAdmin || isAdminRole || isAdmin;
   const currentEmployeeCode = (cookies.employeeCode ?? '').trim();
 
   const filteredAssets = useMemo((): Asset[] => {

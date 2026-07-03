@@ -130,6 +130,8 @@ export class HrmPolicyService {
     file?: File
   ): Promise<PolicyDocument> {
     const formData = new FormData();
+    // The uploadNewVersion endpoint reads @RequestParam("site") (not organizationId).
+    formData.append("site", organizationId);
     formData.append("organizationId", organizationId);
     formData.append("policyHandle", policyHandle);
     formData.append("newVersionNumber", newVersionNumber);

@@ -176,7 +176,8 @@ const EmployeeCardBody: React.FC<{
           <Avatar size={48} shape="square" icon={<UserOutlined />} />
         )}
         <div className={styles.empMeta}>
-          <div className={styles.empRole}>{emp.role || 'EMPLOYEE'}</div>
+          {/* Show designation (job title) in the reporting tree; fall back to role. */}
+          <div className={styles.empRole}>{emp.designation || emp.role || 'EMPLOYEE'}</div>
           <div className={styles.empDept}>{emp.department || '—'}</div>
         </div>
       </div>
@@ -237,6 +238,8 @@ const HierarchyEmployeeNode: React.FC<{
     status: (node.status as EmployeeDirectoryRow['status']) || 'ACTIVE',
     department: node.department,
     role: node.role || node.designation || '',
+    // Reporting tree shows the employee's designation (job title), not the access role.
+    designation: node.designation || node.role || '',
     photoUrl: photoByHandle[node.handle],
   };
   return (
@@ -489,7 +492,7 @@ const OrgHierarchyChart: React.FC<OrgHierarchyChartProps> = ({ forceViewMode }) 
         status: e.status as unknown as string,
         department: e.department || '',
         role: e.role || '',
-        designation: '',
+        designation: (e as unknown as { designation?: string }).designation || '',
         location: e.location || '',
         reportingManager: e.reportingManager || '',
         level: 0,

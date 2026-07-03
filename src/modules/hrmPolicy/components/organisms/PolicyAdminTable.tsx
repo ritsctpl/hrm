@@ -3,7 +3,7 @@
 import React from "react";
 import { Table, Space, Button, Popconfirm, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, CheckCircleOutlined, StopOutlined, EyeOutlined, DeleteOutlined, FileAddOutlined } from "@ant-design/icons";
 import { PolicyDocument } from "../../types/domain.types";
 import { PolicyAdminTableProps } from "../../types/ui.types";
 import PolicyTypeBadge from "../atoms/PolicyTypeBadge";
@@ -19,6 +19,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   onArchive,
   onDelete,
   onViewDetail,
+  onNewVersion,
 }) => {
   const columns: ColumnsType<PolicyDocument> = [
     {
@@ -101,6 +102,13 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           <Tooltip title="View Details">
             <Button size="small" icon={<EyeOutlined />} onClick={() => onViewDetail(record)} />
           </Tooltip>
+          {record.status === "PUBLISHED" && (
+            <Can I="edit">
+              <Tooltip title="New Version">
+                <Button size="small" icon={<FileAddOutlined />} onClick={() => onNewVersion(record)} />
+              </Tooltip>
+            </Can>
+          )}
           {(record.status === "DRAFT" || record.status === "REVIEW") && (
             <Can I="edit">
               <Tooltip title="Edit Policy">

@@ -43,6 +43,7 @@ const COLUMNS: { header: string; field: keyof CreateEmployeeRequest; required?: 
   { header: 'Role', field: 'role', required: true },
   { header: 'Location', field: 'location', required: true },
   { header: 'Designation', field: 'designation' },
+  { header: 'Grade', field: 'grade', required: true },
   { header: 'Employee Code', field: 'employeeCode' },
   { header: 'Reporting Manager', field: 'reportingManager' },
   { header: 'Joining Date', field: 'joiningDate' },

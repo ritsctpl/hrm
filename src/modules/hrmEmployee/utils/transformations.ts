@@ -17,6 +17,7 @@ export function mapDirectoryRowToSummary(row: EmployeeDirectoryRow): EmployeeSum
     department: row.department,
     // Show the real designation on the tile; fall back to role only if unset.
     designation: (row as unknown as { designation?: string }).designation || row.role || '',
+    grade: (row as unknown as { grade?: string }).grade || '',
     status: row.status,
     isActive: row.isActive,
     photoUrl: row.photoUrl,
@@ -140,6 +141,7 @@ export function buildCreateRequest(
     reportingManager: draft.reportingManager,
     reportingManagerName: draft.reportingManagerName,
     designation: draft.designation,
+    grade: draft.grade,
     gender: draft.gender || undefined,
     maritalStatus: draft.maritalStatus || undefined,
     joiningDate: draft.joiningDate || undefined,
@@ -183,6 +185,7 @@ export function validateOnboardingStep(
   if (step === 1) {
     if (!draft.department?.trim()) errors.department = 'Department is required';
     if (!draft.role?.trim()) errors.role = 'Role is required';
+    if (!draft.grade?.trim()) errors.grade = 'Grade is required';
     if (!draft.location?.trim()) errors.location = 'Location is required';
     if (!draft.businessUnits || draft.businessUnits.length === 0) {
       errors.businessUnits = 'At least one business unit is required';
@@ -276,6 +279,7 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
       role: (official.role as string) || undefined,
       roleName: (official.roleName as string) || undefined,
       designation: (official.designation as string) || (official.role as string) || undefined,
+      grade: (official.grade as string) || undefined,
       reportingManager: (official.reportingManager as string) || undefined,
       reportingManagerName: (official.reportingManagerName as string) || undefined,
       employeeCode: (official.employeeCode as string) || undefined,
@@ -409,6 +413,7 @@ export function buildUpdateOfficialPayload(
     department: officialData.department || undefined,
     role: officialData.role || officialData.designation || undefined,
     designation: officialData.designation || undefined,
+    grade: officialData.grade || undefined,
     reportingManager: officialData.reportingManager || undefined,
     reportingManagerName: officialData.reportingManagerName || undefined,
     location: officialData.location || undefined,

@@ -49,6 +49,7 @@ export interface PolicyAdminTableProps {
   onArchive: (policyId: string) => void;
   onDelete: (policyId: string) => void;
   onViewDetail: (policy: PolicyDocument) => void;
+  onNewVersion: (policy: PolicyDocument) => void;
 }
 
 export interface PolicySearchBarProps {

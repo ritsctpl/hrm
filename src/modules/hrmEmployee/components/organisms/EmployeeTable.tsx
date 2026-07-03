@@ -84,6 +84,14 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         ...categoryFilter<EmployeeSummary>('designation', data),
       },
       {
+        title: 'Grade',
+        dataIndex: 'grade',
+        key: 'grade',
+        width: 100,
+        sorter: (a, b) => (a.grade || '').localeCompare(b.grade || ''),
+        ...categoryFilter<EmployeeSummary>('grade', data),
+      },
+      {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Drawer, Select, Table, Switch, Button, Spin, Empty, message, Tag } from 'antd';
+import { Drawer, Select, Table, Switch, Button, Spin, Empty, message, Tag, Tabs } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import Can from '../../../hrmAccess/components/Can';
+import LookupManager from './LookupManager';
 
 interface Props {
   open: boolean;
@@ -53,6 +54,7 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
   const [selectedGroup, setSelectedGroup] = useState<string>('basic');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('schema');
 
   useEffect(() => {
     if (!open) return;
@@ -121,45 +123,63 @@ const FieldSchemaConfigPanel: React.FC<Props> = ({ open, onClose }) => {
     },
   ];
 
+  const schemaTab = loading ? (
+    <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
+  ) : (
+    <>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <span style={{ fontWeight: 500 }}>Group:</span>
+        <Select
+          value={selectedGroup}
+          onChange={setSelectedGroup}
+          options={GROUP_OPTIONS}
+          style={{ width: 220 }}
+        />
+        <Can I="edit" object="employee_field_schema">
+          <Button type="primary" onClick={handleSave} loading={saving} style={{ marginLeft: 'auto' }}>
+            Save Schema
+          </Button>
+        </Can>
+      </div>
+
+      {currentGroup ? (
+        <Table
+          dataSource={currentGroup.fields}
+          columns={columns}
+          rowKey="key"
+          size="small"
+          pagination={false}
+        />
+      ) : (
+        <Empty description={`No schema configuration found for "${selectedGroup}". The system uses default field settings.`} />
+      )}
+    </>
+  );
+
   return (
     <Drawer
-      title="Field Schema Configuration"
+      title="Employee Settings"
       open={open}
       onClose={onClose}
       width={800}
     >
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
-            <span style={{ fontWeight: 500 }}>Group:</span>
-            <Select
-              value={selectedGroup}
-              onChange={setSelectedGroup}
-              options={GROUP_OPTIONS}
-              style={{ width: 220 }}
-            />
-            <Can I="edit" object="employee_field_schema">
-              <Button type="primary" onClick={handleSave} loading={saving} style={{ marginLeft: 'auto' }}>
-                Save Schema
-              </Button>
-            </Can>
-          </div>
-
-          {currentGroup ? (
-            <Table
-              dataSource={currentGroup.fields}
-              columns={columns}
-              rowKey="key"
-              size="small"
-              pagination={false}
-            />
-          ) : (
-            <Empty description={`No schema configuration found for "${selectedGroup}". The system uses default field settings.`} />
-          )}
-        </>
-      )}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: 'schema', label: 'Field Schema', children: schemaTab },
+          {
+            key: 'grade',
+            label: 'Grade',
+            children: <LookupManager lookupType="GRADE" noun="grade" active={activeTab === 'grade'} />,
+          },
+          {
+            key: 'designation',
+            label: 'Designation',
+            children: <LookupManager lookupType="DESIGNATION" noun="designation" active={activeTab === 'designation'} />,
+          },
+        ]}
+      />
     </Drawer>
   );
 };

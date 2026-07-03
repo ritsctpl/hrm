@@ -146,6 +146,8 @@ export interface EmployeeSummary {
   role?: string;
   /** UI alias - mapped from backend 'role' field for backward compat */
   designation?: string;
+  /** Configurable GRADE lookup value. */
+  grade?: string;
   location?: string;
   businessUnits?: string[];
   reportingManager?: string;
@@ -176,6 +178,8 @@ export interface OfficialDetails {
   roleName?: string;
   /** UI alias - mapped from backend 'role' field for backward compat */
   designation?: string;
+  /** Configurable GRADE lookup value; required going forward. */
+  grade?: string;
   reportingManager?: string;
   reportingManagerName?: string;
   employeeCode?: string;

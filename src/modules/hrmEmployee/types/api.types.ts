@@ -54,6 +54,10 @@ export interface EmployeeDirectoryRow {
   isActive?: boolean;
   department: string;
   role: string;
+  /** Job title / designation (backend EmployeeSummaryResponse). */
+  designation?: string;
+  /** Configurable GRADE lookup value. */
+  grade?: string;
   location?: string;
   businessUnits?: string[];
   reportingManager?: string;
@@ -90,6 +94,8 @@ export interface CreateEmployeeRequest {
   organizationName?: string;
   /** @deprecated UI backward compat - mapped to 'role' by buildCreateRequest */
   designation?: string;
+  /** Configurable GRADE lookup value; required going forward. */
+  grade?: string;
   /** Employee's date of joining (ISO YYYY-MM-DD). */
   joiningDate?: string;
   presentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
@@ -118,6 +124,9 @@ export interface UpdateOfficialRequest {
   title: string;
   department: string;
   role?: string;
+  designation?: string;
+  /** Configurable GRADE lookup value; required going forward. */
+  grade?: string;
   reportingManager?: string;
   /** Display name of the reporting manager — see CreateEmployeeRequest. */
   reportingManagerName?: string;

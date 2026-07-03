@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useImperativeHandle, forwardRef, useEffect } from 'react';
-import { AutoComplete, Button, Input, Form, Select, DatePicker, message } from 'antd';
+import { Button, Input, Form, Select, DatePicker, message } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
@@ -15,6 +15,7 @@ import { formatDate } from '../../utils/transformations';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { HrmEmployeeService } from '../../services/hrmEmployeeService';
 import { DESIGNATION_OPTIONS } from '../../utils/constants';
+import { useEmployeeLookups } from '../../hooks/useEmployeeLookups';
 import type { ProfileTabProps } from '../../types/ui.types';
 import type { EmploymentStatus } from '../../types/domain.types';
 
@@ -49,6 +50,22 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
   const { officialDetails } = profile;
   const [form] = Form.useForm();
   const [localEditing, setLocalEditing] = useState(false);
+  // Admin-configurable dropdowns (Employee Settings). Fall back to the built-in
+  // designation list only when the admin has not configured any yet.
+  const { values: gradeOptions } = useEmployeeLookups('GRADE');
+  const { values: designationOptions } = useEmployeeLookups('DESIGNATION');
+  // Always keep the employee's CURRENT value selectable — production/legacy records
+  // may hold a designation or grade the admin never added to the master list. Without
+  // this, the dropdown would silently drop their existing value on edit.
+  const designationChoices = React.useMemo(() => {
+    const base = designationOptions.length > 0 ? designationOptions : [...DESIGNATION_OPTIONS];
+    const cur = officialDetails.designation;
+    return cur && !base.includes(cur) ? [cur, ...base] : base;
+  }, [designationOptions, officialDetails.designation]);
+  const gradeChoices = React.useMemo(() => {
+    const cur = officialDetails.grade;
+    return cur && !gradeOptions.includes(cur) ? [cur, ...gradeOptions] : gradeOptions;
+  }, [gradeOptions, officialDetails.grade]);
   
   // Dropdown options state
   const [companies, setCompanies] = useState<Array<{ label: string; value: string }>>([]);
@@ -85,11 +102,21 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
     }
   }, [localEditing]);
 
-  // Set organization field value after companies are loaded
+  // Set organization field value after companies are loaded.
+  // Match tolerantly: by stored handle, then by display name; and fall back to the
+  // only company when there is just one. Older/imported employees may have an empty
+  // organizationName/Handle, so a strict name-only match left the field blank and
+  // tripped the "Required" validation on save.
   useEffect(() => {
-    if (companiesLoaded && localEditing && officialDetails.organizationName && companies.length > 0) {
-      // Find the matching company by name (label)
-      const matchingCompany = companies.find(c => c.label === officialDetails.organizationName);
+    if (companiesLoaded && localEditing && companies.length > 0) {
+      const site = getOrganizationId();
+      const matchingCompany =
+        companies.find(c => c.value === officialDetails.organizationHandle) ||
+        companies.find(c => c.label === officialDetails.organizationName) ||
+        // Imported/older employees may have no stored company: default to the
+        // company matching the employee's site, then to the only company.
+        companies.find(c => c.label === site || c.value === site) ||
+        (companies.length === 1 ? companies[0] : undefined);
       if (matchingCompany) {
         form.setFieldsValue({ organization: matchingCompany.value });
         // Also trigger the state update to load business units
@@ -113,10 +140,17 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           }));
           setBusinessUnits(buOptions);
           
-          // If we have existing businessUnits data, find and set the matching BU
-          if (localEditing && officialDetails.businessUnits && officialDetails.businessUnits.length > 0) {
-            const existingBU = officialDetails.businessUnits[0]; // Get first BU from array
-            const matchingBU = buOptions.find(bu => bu.label === existingBU);
+          // Rehydrate the BU. The stored value may be the label ("MES1 - MES1"),
+          // the handle, or the bare name depending on how the record was created
+          // (form vs import). Match tolerantly, and fall back to the only BU.
+          if (localEditing) {
+            const existingBU = (officialDetails.businessUnits && officialDetails.businessUnits.length > 0)
+              ? officialDetails.businessUnits[0] : undefined;
+            const matchingBU =
+              (existingBU && buOptions.find(bu => bu.label === existingBU)) ||
+              (existingBU && buOptions.find(bu => bu.value === existingBU)) ||
+              (existingBU && buOptions.find(bu => bu.name === existingBU)) ||
+              (buOptions.length === 1 ? buOptions[0] : undefined);
             if (matchingBU) {
               setSelectedBU(matchingBU.value);
               setSelectedBUName(matchingBU.label);
@@ -148,9 +182,15 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           }));
           setDepartments(deptOptions);
           
-          // If we have existing department data, find and set the matching department
-          if (localEditing && officialDetails.department) {
-            const matchingDept = deptOptions.find(dept => dept.label === officialDetails.department);
+          // Rehydrate the department tolerantly (label / handle / name), with a
+          // single-option fallback — same reasoning as the BU match above.
+          if (localEditing) {
+            const dept = officialDetails.department;
+            const matchingDept =
+              (dept && deptOptions.find(d => d.label === dept)) ||
+              (dept && deptOptions.find(d => d.value === dept)) ||
+              (dept && deptOptions.find(d => d.name === dept)) ||
+              (deptOptions.length === 1 ? deptOptions[0] : undefined);
             if (matchingDept) {
               setSelectedDepartmentName(matchingDept.label);
               form.setFieldsValue({ department: matchingDept.value });
@@ -252,6 +292,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         department: selectedDepartmentName || '', // Send department with code (e.g., "RITS - RITS")
         role: values.role,
         designation: values.designation,
+        grade: values.grade,
         reportingManager: values.reportingManager,
         reportingManagerName: officialDetails.reportingManagerName, // Preserve existing name
         location: values.location,
@@ -316,6 +357,7 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
             department: officialDetails.department,
             role: officialDetails.role,
             designation: officialDetails.designation,
+            grade: officialDetails.grade,
             reportingManager: officialDetails.reportingManager,
             location: officialDetails.location,
             joiningDate: officialDetails.joiningDate
@@ -454,12 +496,30 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
               label="Designation"
               rules={[{ required: true, message: 'Required' }]}
             >
-              <AutoComplete
-                placeholder="Select or type designation"
+              <Select
+                showSearch
                 allowClear
-                options={DESIGNATION_OPTIONS.map((d) => ({ value: d }))}
+                placeholder="Select designation"
+                options={designationChoices.map((d) => ({ label: d, value: d }))}
+                notFoundContent="No designations configured — add them in Employee Settings"
                 filterOption={(input, option) =>
-                  (option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </Form.Item>
+            <Form.Item
+              name="grade"
+              label="Grade"
+              rules={[{ required: true, message: 'Grade is required' }]}
+            >
+              <Select
+                showSearch
+                allowClear
+                placeholder="Select grade"
+                options={gradeChoices.map((g) => ({ label: g, value: g }))}
+                notFoundContent="No grades configured — add them in Employee Settings"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               />
             </Form.Item>
@@ -565,7 +625,8 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         <EmpFieldLabel label="Department" value={officialDetails.department} />
         <EmpFieldLabel label="Role" value={officialDetails.role} />
         <EmpFieldLabel label="Designation" value={officialDetails.designation} />
-        <EmpFieldLabel 
+        <EmpFieldLabel label="Grade" value={officialDetails.grade} />
+        <EmpFieldLabel
           label="Reporting Manager" 
           value={officialDetails.reportingManagerName || officialDetails.reportingManager || '--'} 
         />

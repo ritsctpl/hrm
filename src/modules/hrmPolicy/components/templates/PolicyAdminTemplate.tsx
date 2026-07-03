@@ -7,6 +7,7 @@ import { PolicyDocument, PolicyCategory } from "../../types/domain.types";
 import PolicyAdminTable from "../organisms/PolicyAdminTable";
 import PolicyFormDrawer from "../organisms/PolicyFormDrawer";
 import CategoryManagementModal from "../organisms/CategoryManagementModal";
+import NewVersionModal from "../organisms/NewVersionModal";
 import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/PolicyAdmin.module.css";
 
@@ -68,6 +69,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   onCategoriesChanged,
 }) => {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newVersionPolicy, setNewVersionPolicy] = useState<PolicyDocument | null>(null);
 
   // Client-side filtering and sorting
   const filteredPolicies = React.useMemo(() => {
@@ -175,6 +177,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       onArchive={onArchive}
       onDelete={onDelete}
       onViewDetail={onViewDetail}
+      onNewVersion={setNewVersionPolicy}
     />
     <PolicyFormDrawer
       open={showFormDrawer}
@@ -190,6 +193,13 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       categories={categories}
       onClose={() => setCategoryModalOpen(false)}
       onChanged={() => onCategoriesChanged?.()}
+    />
+    <NewVersionModal
+      open={!!newVersionPolicy}
+      policy={newVersionPolicy}
+      organizationId={organizationId}
+      onClose={() => setNewVersionPolicy(null)}
+      onSuccess={() => onRefresh?.()}
     />
   </div>
   );

@@ -205,6 +205,20 @@ const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({
             ))}
           </Select>
         </Form.Item>
+        {!editPolicy && (
+          <Form.Item
+            name="versionNumber"
+            label="Version"
+            initialValue="1.0"
+            rules={[
+              { required: true, message: 'Please enter a version (e.g. 1.0)' },
+              { pattern: /^\d+(\.\d+)*$/, message: 'Use a numeric version like 1.0 or 2.1' },
+            ]}
+            tooltip="Starting version for this policy (e.g. 1.0). Later versions are created via 'Upload New Version'."
+          >
+            <Input placeholder="e.g. 1.0" />
+          </Form.Item>
+        )}
         <Form.Item name="description" label="Summary">
           <TextArea rows={2} placeholder="Brief summary of this policy" />
         </Form.Item>
