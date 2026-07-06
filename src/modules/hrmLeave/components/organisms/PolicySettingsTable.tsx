@@ -215,6 +215,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       accrualFrequency: "QUARTERLY",
       accrualQuantity: 0,
       prorateEnabled: true,
+      accrualStartBasis: "JOINING",
       carryForwardAllowed: false,
       carryForwardCap: 0,
       encashmentAllowed: false,
@@ -230,6 +231,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     setEditingPolicy(policy);
     policyForm.setFieldsValue({
       ...policy,
+      accrualStartBasis: policy.accrualStartBasis || "JOINING",
       effectiveFrom: policy.effectiveFrom ? dayjs(policy.effectiveFrom) : null,
       effectiveTo: policy.effectiveTo ? dayjs(policy.effectiveTo) : null,
       lapseDate: policy.lapseDate ? dayjs(policy.lapseDate) : null,
@@ -272,6 +274,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         accrualFrequency: values.accrualFrequency,
         accrualQuantity: Number(values.accrualQuantity),
         prorateEnabled: values.prorateEnabled,
+        accrualStartBasis: values.accrualStartBasis || "JOINING",
         carryForwardAllowed: values.carryForwardAllowed,
         carryForwardCap: Number(values.carryForwardCap ?? 0),
         lapseRule: values.lapseRule,
@@ -687,6 +690,16 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
             </Form.Item>
             <Form.Item name="prorateEnabled" label="Prorate" valuePropName="checked">
               <Switch />
+            </Form.Item>
+            <Form.Item
+              name="accrualStartBasis"
+              label="Prorate from"
+              tooltip="When prorating, accrue from the employee's joining date, or from their confirmation date (probation end)."
+            >
+              <Select style={{ width: 160 }} options={[
+                { label: "Joining date", value: "JOINING" },
+                { label: "Confirmation date", value: "CONFIRMATION" },
+              ]} />
             </Form.Item>
           </Space>
           <Space style={{ width: "100%" }} size="middle">

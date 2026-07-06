@@ -200,6 +200,8 @@ export interface LeavePolicy {
   accrualFrequency?: string;
   accrualQuantity: number;
   prorateEnabled: boolean;
+  /** Proration anchor: "JOINING" (default) or "CONFIRMATION" (probation end). */
+  accrualStartBasis?: string;
   carryForwardAllowed: boolean;
   carryForwardCap: number;
   lapseRule?: string;
