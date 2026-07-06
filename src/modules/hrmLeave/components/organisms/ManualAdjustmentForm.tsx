@@ -78,6 +78,7 @@ const ManualAdjustmentForm: React.FC<ManualAdjustmentFormProps> = ({ organizatio
           const policy = await HrmLeaveService.getEffectivePolicy({
             organizationId,
             leaveTypeId: lt.handle,
+            employeeId: values.employeeId as string,
           });
           if (policy) {
             const allowedGender = (policy.applicableGender ?? "ALL").toUpperCase();

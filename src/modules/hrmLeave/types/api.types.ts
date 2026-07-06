@@ -655,6 +655,8 @@ export interface EffectivePolicyRequest {
   leaveTypeId: string;
   buId?: string;
   deptId?: string;
+  /** Applying employee — so the backend picks the policy matching their gender/marital status. */
+  employeeId?: string;
 }
 
 // ── Balance By Type ──────────────────────────────────────────────────

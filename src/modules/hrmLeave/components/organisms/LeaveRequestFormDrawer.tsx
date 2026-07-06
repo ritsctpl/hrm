@@ -585,6 +585,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       organizationId,
       leaveTypeId: lt.handle,
       buId: buHandle || undefined,
+      employeeId: effectiveEmployeeId || undefined,
     })
       .then((p) => {
         if (!cancelled) setEffectivePolicy(p);

@@ -138,6 +138,7 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
     HrmLeaveService.getEffectivePolicy({
       organizationId,
       leaveTypeId: lt.handle,
+      employeeId: request.employeeId,
     })
       .then((p) => {
         if (!cancelled) setEffectivePolicy(p);
