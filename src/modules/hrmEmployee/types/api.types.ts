@@ -138,6 +138,8 @@ export interface UpdateOfficialRequest {
   employmentStatus?: import('./domain.types').EmploymentStatus;
   /** End of probation (ISO YYYY-MM-DD). */
   probationEndDate?: string;
+  /** Confirmation date — probation cleared (ISO YYYY-MM-DD). */
+  confirmationDate?: string;
   /** Last working day for NOTICE_PERIOD / TERMINATED (ISO YYYY-MM-DD). */
   lastWorkingDay?: string;
   modifiedBy: string;

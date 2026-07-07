@@ -195,6 +195,9 @@ export interface OfficialDetails {
    *  PROBATION — leave engine falls back to joiningDate + policy
    *  probationMonths when absent. */
   probationEndDate?: string;
+  /** Date the employee was confirmed (probation cleared). Separate from
+   *  probationEndDate — drives the leave engine's CONFIRMATION accrual basis. */
+  confirmationDate?: string;
   /** Last working day for NOTICE_PERIOD / TERMINATED employees.
    *  Required for accrual cutoff and separation settlement. */
   lastWorkingDay?: string;

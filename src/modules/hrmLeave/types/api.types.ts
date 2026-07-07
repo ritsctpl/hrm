@@ -138,6 +138,9 @@ export interface LeavePolicyRequest {
   coExpiryDays?: number;
   supervisorSlaDays?: number;
   escalationSlaDays?: number;
+  /** Minimum months of service before this leave becomes available.
+   *  0 (default) means no restriction. Mirrors the field on LeavePolicy. */
+  availableAfterMonths?: number;
   entitlementTiers?: LeaveEntitlementTier[];
   createdBy: string;
 }

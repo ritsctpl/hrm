@@ -292,6 +292,7 @@ export function mapApiProfileToEmployeeProfile(raw: Record<string, unknown>): Em
         | import('../types/domain.types').EmploymentStatus
         | undefined) || undefined,
       probationEndDate: (official.probationEndDate as string) || undefined,
+      confirmationDate: (official.confirmationDate as string) || undefined,
       lastWorkingDay: (official.lastWorkingDay as string) || undefined,
     },
     personalDetails: {
@@ -423,6 +424,7 @@ export function buildUpdateOfficialPayload(
     joiningDate: officialData.joiningDate || undefined,
     employmentStatus: officialData.employmentStatus || undefined,
     probationEndDate: officialData.probationEndDate || undefined,
+    confirmationDate: officialData.confirmationDate || undefined,
     lastWorkingDay: officialData.lastWorkingDay || undefined,
     modifiedBy,
   };

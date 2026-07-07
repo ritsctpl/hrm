@@ -307,6 +307,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         probationEndDate: values.probationEndDate
           ? values.probationEndDate.format('YYYY-MM-DD')
           : undefined,
+        confirmationDate: values.confirmationDate
+          ? values.confirmationDate.format('YYYY-MM-DD')
+          : undefined,
         lastWorkingDay: values.lastWorkingDay
           ? values.lastWorkingDay.format('YYYY-MM-DD')
           : undefined,
@@ -366,6 +369,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
             employmentStatus: officialDetails.employmentStatus,
             probationEndDate: officialDetails.probationEndDate
               ? dayjs(officialDetails.probationEndDate)
+              : undefined,
+            confirmationDate: officialDetails.confirmationDate
+              ? dayjs(officialDetails.confirmationDate)
               : undefined,
             lastWorkingDay: officialDetails.lastWorkingDay
               ? dayjs(officialDetails.lastWorkingDay)
@@ -557,6 +563,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
             <Form.Item name="joiningDate" label="Joining Date">
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
+            <Form.Item name="confirmationDate" label="Confirmation Date">
+              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+            </Form.Item>
             <Form.Item name="employmentStatus" label="Employment Status">
               <Select
                 allowClear
@@ -639,6 +648,10 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
           value={officialDetails.businessUnits?.join(', ') || '--'}
         />
         <EmpFieldLabel label="Joining Date" value={formatDate(officialDetails.joiningDate)} />
+        <EmpFieldLabel
+          label="Confirmation Date"
+          value={formatDate(officialDetails.confirmationDate)}
+        />
         <EmpFieldLabel
           label="Employment Status"
           value={

@@ -220,6 +220,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       carryForwardCap: 0,
       encashmentAllowed: false,
       negativeBalanceAllowed: false,
+      availableAfterMonths: 0,
       supervisorSlaDays: 2,
       escalationSlaDays: 1,
     });
@@ -289,6 +290,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         coExpiryDays: values.coExpiryDays,
         supervisorSlaDays: Number(values.supervisorSlaDays ?? 2),
         escalationSlaDays: Number(values.escalationSlaDays ?? 1),
+        availableAfterMonths: Number(values.availableAfterMonths ?? 0),
         entitlementTiers: tiers.length > 0 ? tiers : undefined,
         createdBy: userId,
       });
@@ -775,6 +777,13 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
             </Form.Item>
             <Form.Item name="escalationSlaDays" label="Escalation SLA (days)">
               <InputNumber min={0} />
+            </Form.Item>
+            <Form.Item
+              name="availableAfterMonths"
+              label="Eligible after (months of service)"
+              tooltip="Minimum months of service before an employee can avail this leave. 0 means no restriction."
+            >
+              <InputNumber min={0} precision={0} style={{ width: 90 }} />
             </Form.Item>
           </Space>
 
