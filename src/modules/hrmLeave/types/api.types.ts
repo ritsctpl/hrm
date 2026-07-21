@@ -37,6 +37,17 @@ export interface LeaveTypeRequest {
   createdBy?: string;
 }
 
+// ── Employment Status ────────────────────────────────────────────────
+
+/** Employment status a leave policy can be scoped to. Distinct from
+ *  `employeeType` (PERMANENT / CONTRACT / INTERN …), which describes the
+ *  contract rather than where the employee sits in the joiner lifecycle. */
+export type EmployeeStatus =
+  | "PROBATION"
+  | "PERMANENT"
+  | "NOTICE_PERIOD"
+  | "TERMINATED";
+
 // ── Leave Entitlement Tier ───────────────────────────────────────────
 
 export interface LeaveEntitlementTier {
@@ -86,8 +97,34 @@ export interface LeavePolicy {
   supervisorSlaDays: number;
   escalationSlaDays: number;
   probationRestricted?: boolean;
+  /** @deprecated Superseded by `eligibilityMonths`, which expresses the same
+   *  waiting period against an explicit anchor. Still returned by the
+   *  backend; the policy form migrates any legacy value on edit and then
+   *  writes 0 here. */
   availableAfterMonths?: number;
   entitlementTiers?: LeaveEntitlementTier[];
+  // ── Earned-Leave configuration ──────────────────────────────────────
+  /** Employment statuses this policy applies to. Empty/absent = all. */
+  applicableEmployeeStatus?: EmployeeStatus[];
+  /** Months of service from the `accrualStartBasis` anchor before the leave
+   *  is earned or may be taken. 0 = no waiting period. */
+  eligibilityMonths?: number;
+  /** Cycle length in months when `accrualFrequency` is "ANNIVERSARY". */
+  creditCycleMonths?: number;
+  /** Balance ceiling after carry-forward; the excess lapses. 0 = no ceiling. */
+  maxAccumulation?: number;
+  /** Sandwich rules — charge non-working days before / between / after the
+   *  leave span. "Between" is the classic sandwich rule. */
+  countWeekOffBefore?: boolean;
+  countWeekOffBetween?: boolean;
+  countWeekOffAfter?: boolean;
+  countHolidayBefore?: boolean;
+  countHolidayBetween?: boolean;
+  countHolidayAfter?: boolean;
+  encashmentAllowedDuringEmployment?: boolean;
+  encashmentAllowedDuringExit?: boolean;
+  /** Divisor in the encashment formula: (Basic / divisor) × days. */
+  encashmentBasicDivisor?: number;
   version: number;
   active: number;
   createdDateTime?: string;
@@ -138,10 +175,26 @@ export interface LeavePolicyRequest {
   coExpiryDays?: number;
   supervisorSlaDays?: number;
   escalationSlaDays?: number;
-  /** Minimum months of service before this leave becomes available.
-   *  0 (default) means no restriction. Mirrors the field on LeavePolicy. */
+  /** @deprecated Superseded by `eligibilityMonths`. The form always sends 0
+   *  so a legacy value stops being enforced once the policy is re-saved. */
   availableAfterMonths?: number;
   entitlementTiers?: LeaveEntitlementTier[];
+  // ── Earned-Leave configuration ──────────────────────────────────────
+  // All optional with backend defaults, so policies saved before the EL
+  // rollout round-trip unchanged.
+  applicableEmployeeStatus?: EmployeeStatus[];
+  eligibilityMonths?: number;
+  creditCycleMonths?: number;
+  maxAccumulation?: number;
+  countWeekOffBefore?: boolean;
+  countWeekOffBetween?: boolean;
+  countWeekOffAfter?: boolean;
+  countHolidayBefore?: boolean;
+  countHolidayBetween?: boolean;
+  countHolidayAfter?: boolean;
+  encashmentAllowedDuringEmployment?: boolean;
+  encashmentAllowedDuringExit?: boolean;
+  encashmentBasicDivisor?: number;
   createdBy: string;
 }
 
@@ -166,6 +219,9 @@ export interface LeaveBalanceResponse {
   availableBalance: number;
   carryForwardAllowed: boolean;
   carryForwardCap: number;
+  /** Balance ceiling from the effective policy; excess above this lapses.
+   *  0 / absent = no ceiling. */
+  maxAccumulation?: number;
   encashmentAllowed: boolean;
   /** Whether the effective policy permits going below zero. Authoritative
    *  for validation — supersedes the same field on the policy when both
@@ -497,7 +553,12 @@ export interface ValidationSummaryResponse {
     | "gender_restricted"
     | "backdated_requires_hr"
     | "clubbing_violation"
-    | "blackout_period";
+    | "blackout_period"
+    /** Employee has not completed the policy's `eligibilityMonths` from the
+     *  accrual anchor (joining / confirmation). */
+    | "not_yet_eligible"
+    /** Employee's employment status is not in `applicableEmployeeStatus`. */
+    | "status_not_eligible";
   conflictFlags: string[];
   messages: string[];
   overlaps: OverlapDetail[];
@@ -762,6 +823,10 @@ export interface CalculateDaysRequest {
   endDate: string;
   startDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
   endDayType: "FULL" | "FIRST_HALF" | "SECOND_HALF";
+  /** Always send this. Without it the backend ignores the policy's
+   *  week-off / holiday counting rules, so the preview disagrees with what
+   *  /leave-request/submit actually deducts. */
+  leaveTypeCode?: string;
 }
 
 export interface ExcludedHoliday {
@@ -774,6 +839,10 @@ export interface CalculateDaysResponse {
   calendarDays: number;
   excludedHolidays: ExcludedHoliday[];
   excludedWeekends: string[];
+  /** ISO dates of the week-offs / holidays the policy *charges* (sandwich
+   *  rules). These are included in `calculatedDays` — they are not excluded
+   *  days. Absent on backends predating the EL rollout. */
+  countedNonWorkingDays?: string[];
 }
 
 // ── Bulk Approval ───────────────────────────────────────────────────

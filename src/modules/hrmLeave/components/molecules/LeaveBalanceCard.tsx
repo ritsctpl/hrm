@@ -21,6 +21,19 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
   // leave drawer where the policy is loaded. Here just flag the state.
   const usingNegative = balance.availableBalance < 0;
 
+  // Balance sitting above the carry-forward limit will not survive year-end.
+  // Warn while there is still time to plan leave, using the policy's own cap
+  // rather than a hardcoded number.
+  const cfExcess =
+    balance.carryForwardAllowed &&
+    balance.carryForwardCap > 0 &&
+    balance.currentBalance > balance.carryForwardCap;
+  // Ceiling on the post-carry-forward balance, when the policy sets one.
+  const overAccumulation =
+    balance.maxAccumulation != null &&
+    balance.maxAccumulation > 0 &&
+    balance.currentBalance > balance.maxAccumulation;
+
   return (
     <Card
       hoverable={!!onClick}
@@ -53,6 +66,21 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({
       {usingNegative && (
         <Text type="warning" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
           Warning: negative balance in use.
+        </Text>
+      )}
+
+      {cfExcess && (
+        <Text type="warning" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
+          Only {balance.carryForwardCap} {balance.leaveTypeName || balance.leaveTypeCode} day
+          {balance.carryForwardCap === 1 ? "" : "s"} can be carried forward. Excess
+          balance will lapse.
+        </Text>
+      )}
+
+      {overAccumulation && (
+        <Text type="warning" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
+          Balance exceeds the {balance.maxAccumulation}-day accumulation ceiling.
+          The excess will lapse.
         </Text>
       )}
 

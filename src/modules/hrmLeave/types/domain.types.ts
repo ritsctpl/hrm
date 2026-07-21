@@ -10,6 +10,15 @@ export type LeaveRequestStatus =
 
 export type DayType = "FULL" | "FIRST_HALF" | "SECOND_HALF";
 
+/** Employment status a leave policy can be scoped to. Distinct from
+ *  `employeeType` (PERMANENT / CONTRACT / INTERN …), which describes the
+ *  contract rather than where the employee sits in the joiner lifecycle. */
+export type EmployeeStatus =
+  | "PROBATION"
+  | "PERMANENT"
+  | "NOTICE_PERIOD"
+  | "TERMINATED";
+
 export interface LeaveAttachment {
   id: string;
   name: string;
@@ -50,6 +59,9 @@ export interface LeaveBalance {
   availableBalance: number;
   carryForwardAllowed: boolean;
   carryForwardCap: number;
+  /** Balance ceiling from the effective policy; excess above this lapses.
+   *  0 / absent = no ceiling. */
+  maxAccumulation?: number;
   encashmentAllowed: boolean;
   /** Whether the effective policy permits going below zero. Authoritative
    *  for validation — supersedes the same field on the policy when both
@@ -218,8 +230,32 @@ export interface LeavePolicy {
   supervisorSlaDays: number;
   escalationSlaDays: number;
   probationRestricted?: boolean;
+  /** @deprecated Superseded by `eligibilityMonths`. Retained so existing
+   *  records still round-trip; the policy form migrates it on edit. */
   availableAfterMonths?: number;
   entitlementTiers?: LeaveEntitlementTier[];
+  // ── Earned-Leave configuration ──────────────────────────────────────
+  /** Employment statuses this policy applies to. Empty/absent = all. */
+  applicableEmployeeStatus?: EmployeeStatus[];
+  /** Months of service from the `accrualStartBasis` anchor before the leave
+   *  is earned or may be taken. 0 = no waiting period. */
+  eligibilityMonths?: number;
+  /** Cycle length in months when `accrualFrequency` is "ANNIVERSARY". */
+  creditCycleMonths?: number;
+  /** Balance ceiling after carry-forward; the excess lapses. 0 = no ceiling. */
+  maxAccumulation?: number;
+  /** Sandwich rules — charge non-working days before / between / after the
+   *  leave span. "Between" is the classic sandwich rule. */
+  countWeekOffBefore?: boolean;
+  countWeekOffBetween?: boolean;
+  countWeekOffAfter?: boolean;
+  countHolidayBefore?: boolean;
+  countHolidayBetween?: boolean;
+  countHolidayAfter?: boolean;
+  encashmentAllowedDuringEmployment?: boolean;
+  encashmentAllowedDuringExit?: boolean;
+  /** Divisor in the encashment formula: (Basic / divisor) × days. */
+  encashmentBasicDivisor?: number;
   version: number;
   active?: number;
   createdDateTime?: string;
@@ -250,7 +286,12 @@ export interface ValidationSummary {
     | "gender_restricted"
     | "backdated_requires_hr"
     | "clubbing_violation"
-    | "blackout_period";
+    | "blackout_period"
+    /** Employee has not completed the policy's `eligibilityMonths` from the
+     *  accrual anchor (joining / confirmation). */
+    | "not_yet_eligible"
+    /** Employee's employment status is not in `applicableEmployeeStatus`. */
+    | "status_not_eligible";
   conflictFlags: string[];
   messages: string[];
   overlaps: OverlapDetail[];

@@ -28,7 +28,11 @@ import { mapApiProfileToEmployeeProfile } from "../../../hrmEmployee/utils/trans
 import { mapBalanceResponseToDomain } from "../../utils/transformations";
 import type { EmployeeProfile } from "../../../hrmEmployee/types/domain.types";
 import { LeaveBalance, LeaveRequest, LeavePolicy, LeaveAttachment } from "../../types/domain.types";
-import { checkGenderMaritalEligibility } from "../../utils/constants";
+import {
+  checkGenderMaritalEligibility,
+  ELIGIBILITY_FLAGS,
+  ELIGIBILITY_ERROR_CODES,
+} from "../../utils/constants";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
@@ -181,6 +185,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // Effective policy for the selected leave type — drives negative-balance
   // handling (item 15). Null until a leave type is chosen / policy loads.
   const [effectivePolicy, setEffectivePolicy] = useState<LeavePolicy | null>(null);
+  // Policy-eligibility verdict from /leave-request/validate. The backend
+  // computes the actual eligible-from date and returns it inside the
+  // message, so we render `messages` verbatim rather than composing our own
+  // copy from eligibilityMonths.
+  const [eligibilityBlock, setEligibilityBlock] = useState<{
+    flags: string[];
+    messages: string[];
+  } | null>(null);
   const [handoverPerson, setHandoverPerson] = useState<string | undefined>();
   const [wfhDetails, setWfhDetails] = useState({ workPlan: "", taskDetails: "", reportingNotes: "" });
   const [maternityDetails, setMaternityDetails] = useState({ childCount: "", childDate: null as string | null });
@@ -448,9 +460,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       });
     }
 
-    // TODO: probation filter — requires fetching effective policies per leave
-    // type and comparing joiningDate + availableAfterMonths with today. The
-    // backend already validates at submit time (state "probation_restricted").
+    // Probation / tenure filtering is handled by the eligibility pre-check
+    // below, which asks the backend to evaluate eligibilityMonths against the
+    // policy anchor rather than re-deriving the rule here.
 
     return Array.from(byCode.values());
   }, [balances, fetchedBalances, leaveTypes, employeeGender, employeeMarital, currentProfile]);
@@ -597,6 +609,77 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       cancelled = true;
     };
   }, [showLeaveForm, organizationId, leaveFormState.leaveTypeCode, leaveTypes, buHandle]);
+
+  // ── Policy eligibility pre-check ───────────────────────────────────
+  // Ask the backend whether this employee may take this leave type at all
+  // (service tenure from the accrual anchor, employment status). Submitting
+  // regardless returns LEAVE_NOT_YET_ELIGIBLE / LEAVE_STATUS_NOT_ELIGIBLE,
+  // so catching it here keeps the failure inline instead of post-submit.
+  useEffect(() => {
+    const { leaveTypeCode, startDate, endDate } = leaveFormState;
+    if (
+      !showLeaveForm ||
+      !organizationId ||
+      !leaveTypeCode ||
+      !startDate ||
+      !endDate ||
+      !effectiveEmployeeId
+    ) {
+      setEligibilityBlock(null);
+      return;
+    }
+    let cancelled = false;
+    // Debounced — the date pickers fire in quick succession while the user
+    // adjusts a range.
+    const timer = setTimeout(() => {
+      HrmLeaveService.validateLeaveRequest({
+        organizationId,
+        employeeId: effectiveEmployeeId,
+        leaveTypeCode,
+        startDate,
+        endDate,
+        startDayType: leaveFormState.startDayType,
+        endDayType: leaveFormState.endDayType,
+        totalDays: leaveFormState.totalDays,
+        reason: leaveFormState.reason || "",
+        createdBy: identity.employeeIdWithName || "",
+      })
+        .then((res) => {
+          if (cancelled) return;
+          const flags = [
+            ...(res?.conflictFlags ?? []),
+            // Some backends report the failure as the summary state rather
+            // than a conflict flag; accept either.
+            ...(res?.state ? [res.state] : []),
+          ].filter((f) => ELIGIBILITY_FLAGS.includes(f));
+          setEligibilityBlock(
+            flags.length > 0
+              ? { flags, messages: res?.messages ?? [] }
+              : null,
+          );
+        })
+        .catch(() => {
+          // Validation is advisory here — the backend still rejects at
+          // submit. Don't block the form on a transport failure.
+          if (!cancelled) setEligibilityBlock(null);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    showLeaveForm,
+    organizationId,
+    effectiveEmployeeId,
+    leaveFormState.leaveTypeCode,
+    leaveFormState.startDate,
+    leaveFormState.endDate,
+    leaveFormState.startDayType,
+    leaveFormState.endDayType,
+    leaveFormState.totalDays,
+  ]);
 
   // Determine if the selected date range overlaps an active blackout period.
   const overlappingBlackout = useMemo(() => {
@@ -843,10 +926,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     !(overlappingBlackout && !isHrUser) &&
     // Block when the effective policy restricts this leave type to a
     // gender / marital status the employee doesn't match.
-    !policyApplicabilityError;
+    !policyApplicabilityError &&
+    // Block when the backend says the employee hasn't served long enough
+    // from the accrual anchor, or their employment status is out of scope.
+    !eligibilityBlock;
 
   const handleReset = () => {
     setAttachments([]);
+    setEligibilityBlock(null);
     setHandoverPerson(undefined);
     setDraftHandle(null);
     setWfhDetails({ workPlan: "", taskDetails: "", reportingNotes: "" });
@@ -943,13 +1030,35 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
       onSubmitted();
     } catch (err: unknown) {
       // Extract actual backend error message instead of generic message
-      const apiError = err as { response?: { data?: { message_details?: { error?: string }; message?: string } }; message?: string };
+      const apiError = err as {
+        response?: {
+          data?: {
+            message_details?: { error?: string };
+            message?: string;
+            errorCode?: string;
+            messages?: string[];
+          };
+        };
+        message?: string;
+      };
       const backendMsg =
         apiError?.response?.data?.message_details?.error ||
         apiError?.response?.data?.message ||
         (err instanceof Error ? err.message : null) ||
         "Failed to submit leave request";
-      message.error(backendMsg);
+      // Eligibility rejections belong on the form next to the offending
+      // field, not in a toast that disappears. Promote them to the inline
+      // alert (which also disables submit) instead of flashing a message.
+      const errorCode = apiError?.response?.data?.errorCode;
+      const eligibilityFlag = errorCode ? ELIGIBILITY_ERROR_CODES[errorCode] : undefined;
+      if (eligibilityFlag) {
+        setEligibilityBlock({
+          flags: [eligibilityFlag],
+          messages: apiError?.response?.data?.messages ?? [backendMsg],
+        });
+      } else {
+        message.error(backendMsg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1185,6 +1294,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               endDayType={leaveFormState.endDayType}
               halfDayAllowed={selectedBalance?.halfDayAllowed ?? false}
               employeeId={effectiveEmployeeId}
+              leaveTypeCode={leaveFormState.leaveTypeCode}
               onStartDateChange={(date, dayType) =>
                 updateLeaveFormState({ startDate: date, startDayType: dayType })
               }
@@ -1229,6 +1339,34 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 showIcon
                 message="Not Eligible"
                 description={policyApplicabilityError}
+                style={{ marginTop: 8 }}
+              />
+            )}
+
+            {/* Policy eligibility (service tenure / employment status). The
+                backend message already carries the computed eligible-from
+                date, so it is rendered as returned rather than rebuilt. */}
+            {eligibilityBlock && (
+              <Alert
+                type="error"
+                showIcon
+                message={
+                  eligibilityBlock.flags.includes("status_not_eligible")
+                    ? "Not Eligible for Your Employment Status"
+                    : "Not Yet Eligible"
+                }
+                description={
+                  eligibilityBlock.messages.length > 0 ? (
+                    eligibilityBlock.messages.map((m, i) => (
+                      <div key={i}>{m}</div>
+                    ))
+                  ) : (
+                    <div>
+                      This leave type is not yet available to you under the
+                      current policy.
+                    </div>
+                  )
+                }
                 style={{ marginTop: 8 }}
               />
             )}

@@ -712,3 +712,188 @@
     max-height: 45vh;
   }
 }
+
+/* ── Compact policy configuration form ──────────────────────────────────
+   Dense enterprise-admin layout (SAP Fiori / Oracle Fusion idiom): a
+   4-column grid, subtle section rules instead of cards, and tightened
+   control metrics so the whole policy fits a 1080p viewport without
+   scrolling. Antd internals are reached via :global, scoped under
+   .policyForm so nothing leaks to other forms in the module. */
+.policyForm {
+  --pf-row-gap: 10px;
+  --pf-col-gap: 12px;
+  --pf-section-gap: 16px;
+  --pf-radius: 6px;
+  --pf-control-h: 36px;
+  font-size: 13px;
+}
+
+/* Label / control metrics. Antd's vertical form ships a 8px label pad and
+   24px item margin; both are far looser than this screen needs. */
+.policyForm :global(.ant-form-item) {
+  margin-bottom: var(--pf-row-gap);
+}
+
+.policyForm :global(.ant-form-item-label) {
+  padding-bottom: 4px;
+  line-height: 1.2;
+}
+
+.policyForm :global(.ant-form-item-label > label) {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  height: auto;
+}
+
+/* Uniform control height + radius across every input type, so rows align
+   on a single baseline regardless of which widget sits in the cell. */
+.policyForm :global(.ant-input),
+.policyForm :global(.ant-input-number),
+.policyForm :global(.ant-picker),
+.policyForm :global(.ant-select-selector),
+.policyForm :global(.ant-input-number-group-wrapper),
+.policyForm :global(.ant-input-number-input) {
+  border-radius: var(--pf-radius);
+  font-size: 13px;
+}
+
+.policyForm :global(.ant-input),
+.policyForm :global(.ant-picker),
+.policyForm :global(.ant-select-single .ant-select-selector),
+.policyForm :global(.ant-input-number) {
+  height: var(--pf-control-h);
+}
+
+.policyForm :global(.ant-select-single .ant-select-selector),
+.policyForm :global(.ant-input-number-input) {
+  height: calc(var(--pf-control-h) - 2px);
+  line-height: calc(var(--pf-control-h) - 2px);
+}
+
+/* Multi-select grows with its chips; pin only the floor so a single-chip
+   value still lines up with its neighbours. */
+.policyForm :global(.ant-select-multiple .ant-select-selector) {
+  min-height: var(--pf-control-h);
+  border-radius: var(--pf-radius);
+}
+
+/* Every control fills its grid cell — uniform widths are what make a dense
+   form scannable; per-field pixel widths are what break it. */
+.policyForm :global(.ant-input-number),
+.policyForm :global(.ant-picker),
+.policyForm :global(.ant-select),
+.policyForm :global(.ant-input-number-group-wrapper) {
+  width: 100%;
+}
+
+.policyForm :global(.ant-form-item-explain) {
+  font-size: 11px;
+  min-height: 18px;
+}
+
+/* Section rule: a hairline with a small heading, no card chrome. */
+.policySection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: var(--pf-section-gap) 0 10px;
+}
+
+.policySection:first-child {
+  margin-top: 0;
+}
+
+.policySectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.policySectionRule {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Switch cells: align the control to the same baseline as text inputs
+   rather than letting it float at the top of a taller row. */
+.policyToggleCell :global(.ant-form-item-control-input) {
+  min-height: var(--pf-control-h);
+}
+
+/* Leave-calculation checkbox columns. */
+.policyCheckGroup {
+  border: 1px solid #f0f0f0;
+  border-radius: var(--pf-radius);
+  padding: 8px 12px;
+  background: #fcfcfd;
+}
+
+.policyCheckGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.policyCheckRow {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.policyCheckRow :global(.ant-checkbox-wrapper) {
+  font-size: 13px;
+  margin-inline-start: 0;
+}
+
+.policyHelper {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+/* Inline read-only readouts (eligibility sentence, encashment formula). */
+.policyReadout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--pf-control-h);
+  padding: 0 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  border-radius: var(--pf-radius);
+  font-size: 13px;
+  color: #111827;
+}
+
+.policyReadoutLabel {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Modal body scrolls; the footer stays put so Save is always reachable. */
+.policyModalBody {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Entitlement tiers — compact repeating row. */
+.policyTierRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 1400px) {
+  .policyCheckRow {
+    gap: 12px;
+  }
+}

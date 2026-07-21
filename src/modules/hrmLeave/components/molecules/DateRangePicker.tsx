@@ -23,6 +23,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   endDayType,
   halfDayAllowed,
   employeeId,
+  leaveTypeCode,
   onStartDateChange,
   onEndDateChange,
   onTotalDaysChange,
@@ -34,6 +35,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     holidaysExcluded: number;
     weekendsExcluded: number;
     holidayNames: string[];
+    /** Non-working days the policy *charges* (sandwich rules). Already
+     *  included in workingDays — surfaced so the total is never a
+     *  surprise at submit time. */
+    countedNonWorkingDays: string[];
   } | null>(null);
 
   const { getHolidayName } = useHolidayCalendar();
@@ -84,6 +89,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       endDate,
       startDayType,
       endDayType,
+      // Without the leave type the backend ignores the policy's week-off /
+      // holiday counting rules and returns a plain working-day count.
+      leaveTypeCode: leaveTypeCode || undefined,
     })
       .then((res) => {
         if (cancelled) return;
@@ -93,6 +101,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           holidaysExcluded: res.excludedHolidays.length,
           weekendsExcluded: res.excludedWeekends.length,
           holidayNames: res.excludedHolidays.map((h) => `${h.name} (${h.date})`),
+          countedNonWorkingDays: res.countedNonWorkingDays ?? [],
         });
         onTotalDaysChange(res.calculatedDays);
       })
@@ -111,7 +120,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, startDayType, endDayType, employeeId]);
+  }, [startDate, endDate, startDayType, endDayType, employeeId, leaveTypeCode]);
 
   const handleStartChange = (date: dayjs.Dayjs | null, dayType?: DayType) => {
     const newDate = date ? date.format("YYYY-MM-DD") : null;
@@ -176,6 +185,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     !!startDate && !!endDate && dayjs(endDate).isBefore(dayjs(startDate), "day");
   // Whole range falls on weekends/holidays → zero working days.
   const effectiveDays = breakdown ? breakdown.workingDays : fallbackDays;
+  const countedDays = breakdown?.countedNonWorkingDays.length ?? 0;
   const noWorkingDays =
     !!startDate && !!endDate && !invalidRange && !calculating && effectiveDays === 0;
 
@@ -265,8 +275,27 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           ) : breakdown ? (
             <div>
               <Text strong style={{ fontSize: 13 }}>
-                {breakdown.workingDays.toFixed(1)} working days
+                {breakdown.workingDays.toFixed(1)}{" "}
+                {countedDays > 0 ? "days charged" : "working days"}
               </Text>
+              {/* Sandwiched / adjacent non-working days are deducted, not
+                  just displayed. Spell out the split so the charged total
+                  is never a surprise at submit time. */}
+              {countedDays > 0 && (
+                <Text style={{ fontSize: 11, display: "block", marginTop: 2, color: "#d46b08" }}>
+                  {breakdown.workingDays.toFixed(1)} days:{" "}
+                  {(breakdown.workingDays - countedDays).toFixed(1)} working +{" "}
+                  {countedDays} non-working counted under the policy&apos;s
+                  sandwich rule
+                </Text>
+              )}
+              {countedDays > 0 && (
+                <Text type="secondary" style={{ fontSize: 11, display: "block", fontStyle: "italic" }}>
+                  Counted: {breakdown.countedNonWorkingDays
+                    .map((d) => dayjs(d).format("ddd DD MMM"))
+                    .join(", ")}
+                </Text>
+              )}
               {(breakdown.holidaysExcluded > 0 || breakdown.weekendsExcluded > 0) && (
                 <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
                   {breakdown.calendarDays} calendar days

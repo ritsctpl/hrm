@@ -153,6 +153,11 @@ export interface DateRangePickerProps {
   endDayType: DayType;
   halfDayAllowed: boolean;
   employeeId?: string;
+  /** Send the selected leave type so the day-count preview applies the
+   *  policy's week-off / holiday counting rules. Without it the backend
+   *  falls back to plain working days and the preview disagrees with what
+   *  submit actually deducts. */
+  leaveTypeCode?: string;
   onStartDateChange: (date: string, dayType: DayType) => void;
   onEndDateChange: (date: string, dayType: DayType) => void;
   onTotalDaysChange: (days: number) => void;

@@ -17,6 +17,9 @@ import {
   Space,
   DatePicker,
   InputNumber,
+  Checkbox,
+  Row,
+  Col,
   message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -34,8 +37,12 @@ import {
   ENCASH_WHEN_OPTIONS,
   ENCASH_RATE_FORMULAS,
   GENDER_APPLICABILITY,
-  EMPLOYEE_TYPE_OPTIONS,
+  employeeTypeOptionsFor,
   MARITAL_STATUS_APPLICABILITY,
+  EMPLOYEE_STATUS_APPLICABILITY,
+  ACCRUAL_START_BASIS,
+  ACCRUAL_START_BASIS_LABELS,
+  summariseCountingRules,
 } from "../../utils/constants";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
@@ -44,6 +51,15 @@ import { textSearchFilter, categoryFilter } from "@/components/tableColumnFilter
 import styles from "../../styles/HrmLeave.module.css";
 
 const { Title, Text } = Typography;
+
+/** Subtle section rule — a small heading plus a hairline, no card chrome.
+ *  Module-level so it isn't re-created on every render of the table. */
+const FormSection: React.FC<{ title: string }> = ({ title }) => (
+  <div className={styles.policySection}>
+    <span className={styles.policySectionTitle}>{title}</span>
+    <span className={styles.policySectionRule} />
+  </div>
+);
 
 const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   leaveTypes,
@@ -75,6 +91,14 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
   const carryForwardOn = Form.useWatch("carryForwardAllowed", policyForm);
   const encashmentOn = Form.useWatch("encashmentAllowed", policyForm);
   const negativeOn = Form.useWatch("negativeBalanceAllowed", policyForm);
+  // Earned-Leave watches: the eligibility suffix and the credit-cycle field
+  // both read off other inputs, and the encashment formula preview
+  // recomputes live from the divisor.
+  const accrualFrequency = Form.useWatch("accrualFrequency", policyForm);
+  const accrualStartBasis = Form.useWatch("accrualStartBasis", policyForm);
+  const encashmentDivisor = Form.useWatch("encashmentBasicDivisor", policyForm);
+  const startBasisLabel =
+    ACCRUAL_START_BASIS_LABELS[accrualStartBasis || "JOINING"] ?? "Joining";
 
   // BU and Department dropdowns
   const [buOptions, setBuOptions] = useState<{ value: string; label: string }[]>([]);
@@ -220,9 +244,24 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       carryForwardCap: 0,
       encashmentAllowed: false,
       negativeBalanceAllowed: false,
-      availableAfterMonths: 0,
       supervisorSlaDays: 2,
       escalationSlaDays: 1,
+      // Earned-Leave defaults. These mirror the backend defaults so a policy
+      // saved without touching the EL section behaves exactly as it did
+      // before the fields existed.
+      applicableEmployeeStatus: [],
+      eligibilityMonths: 0,
+      creditCycleMonths: 12,
+      maxAccumulation: 0,
+      countWeekOffBefore: false,
+      countWeekOffBetween: false,
+      countWeekOffAfter: false,
+      countHolidayBefore: false,
+      countHolidayBetween: false,
+      countHolidayAfter: false,
+      encashmentAllowedDuringEmployment: false,
+      encashmentAllowedDuringExit: false,
+      encashmentBasicDivisor: 26,
     });
     setTiers([]);
     setPolicyModalOpen(true);
@@ -233,6 +272,19 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
     policyForm.setFieldsValue({
       ...policy,
       accrualStartBasis: policy.accrualStartBasis || "JOINING",
+      // Policies saved before the EL rollout come back without these. Seed
+      // the same defaults the create form uses so the section renders in a
+      // consistent state instead of showing blank numerics.
+      applicableEmployeeStatus: policy.applicableEmployeeStatus ?? [],
+      // `availableAfterMonths` was the pre-EL waiting period and means the
+      // same thing as `eligibilityMonths`. It no longer has an input, so
+      // carry a legacy value forward rather than leaving it enforcing
+      // invisibly on the backend — saving then clears the old field.
+      eligibilityMonths:
+        policy.eligibilityMonths || policy.availableAfterMonths || 0,
+      creditCycleMonths: policy.creditCycleMonths ?? 12,
+      maxAccumulation: policy.maxAccumulation ?? 0,
+      encashmentBasicDivisor: policy.encashmentBasicDivisor ?? 26,
       effectiveFrom: policy.effectiveFrom ? dayjs(policy.effectiveFrom) : null,
       effectiveTo: policy.effectiveTo ? dayjs(policy.effectiveTo) : null,
       lapseDate: policy.lapseDate ? dayjs(policy.lapseDate) : null,
@@ -290,8 +342,26 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         coExpiryDays: values.coExpiryDays,
         supervisorSlaDays: Number(values.supervisorSlaDays ?? 2),
         escalationSlaDays: Number(values.escalationSlaDays ?? 1),
-        availableAfterMonths: Number(values.availableAfterMonths ?? 0),
+        // Retired in favour of `eligibilityMonths`, which means the same
+        // thing. Sent as 0 rather than omitted so a legacy value is actively
+        // cleared — otherwise the backend keeps enforcing a waiting period
+        // that no longer appears anywhere in the UI.
+        availableAfterMonths: 0,
         entitlementTiers: tiers.length > 0 ? tiers : undefined,
+        // ── Earned-Leave configuration ────────────────────────────────
+        applicableEmployeeStatus: values.applicableEmployeeStatus ?? [],
+        eligibilityMonths: Number(values.eligibilityMonths ?? 0),
+        creditCycleMonths: Number(values.creditCycleMonths ?? 12),
+        maxAccumulation: Number(values.maxAccumulation ?? 0),
+        countWeekOffBefore: !!values.countWeekOffBefore,
+        countWeekOffBetween: !!values.countWeekOffBetween,
+        countWeekOffAfter: !!values.countWeekOffAfter,
+        countHolidayBefore: !!values.countHolidayBefore,
+        countHolidayBetween: !!values.countHolidayBetween,
+        countHolidayAfter: !!values.countHolidayAfter,
+        encashmentAllowedDuringEmployment: !!values.encashmentAllowedDuringEmployment,
+        encashmentAllowedDuringExit: !!values.encashmentAllowedDuringExit,
+        encashmentBasicDivisor: Number(values.encashmentBasicDivisor ?? 26),
         createdBy: userId,
       });
       message.success("Policy saved");
@@ -439,6 +509,27 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       width: 80,
       render: (v: boolean) => <Tag color={v ? "green" : "default"}>{v ? "Yes" : "No"}</Tag>,
     },
+    {
+      // Driven by the six week-off / holiday flags rather than the legacy
+      // `sandwichRuleEnabled` boolean, whose behaviour was the inverse of
+      // the current spec (it charged adjacent days and ignored between).
+      title: "Calculation",
+      key: "counting",
+      width: 200,
+      render: (_v, row) => {
+        const chips = summariseCountingRules(row);
+        if (chips.length === 0) {
+          return <Text type="secondary" style={{ fontSize: 11 }}>Working days only</Text>;
+        }
+        return (
+          <Space size={[2, 2]} wrap>
+            {chips.map((c) => (
+              <Tag key={c} style={{ fontSize: 10, marginInlineEnd: 0 }}>{c}</Tag>
+            ))}
+          </Space>
+        );
+      },
+    },
     { title: "Ver", dataIndex: "version", key: "version", width: 60 },
     {
       title: "Actions",
@@ -582,8 +673,12 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         title={editingPolicy ? "Edit Policy" : "Add Policy"}
         open={policyModalOpen}
         onCancel={() => setPolicyModalOpen(false)}
-        width={720}
+        // Wide enough for a true 4-column grid; the body scrolls while the
+        // footer stays pinned, so Save is reachable without scrolling.
+        width={1180}
+        centered
         zIndex={1100}
+        styles={{ body: { paddingTop: 12, paddingBottom: 4 } }}
         footer={[
           <Button key="cancel" onClick={() => setPolicyModalOpen(false)}>
             Cancel
@@ -593,246 +688,458 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
           </Button>,
         ]}
       >
-        <Form form={policyForm} layout="vertical">
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="effectiveFrom" label="Effective From" rules={[{ required: true }]}>
-              <DatePicker format="DD-MMM-YYYY" />
-            </Form.Item>
-            <Form.Item name="effectiveTo" label="Effective To">
-              <DatePicker format="DD-MMM-YYYY" />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="buId" label="Business Unit (optional)">
-              <Select
-                showSearch
-                allowClear
-                placeholder="All BUs"
-                options={buOptions}
-                style={{ width: 200 }}
-                onChange={(val) => {
-                  setSelectedBu(val);
-                  policyForm.setFieldValue("deptId", undefined);
-                }}
-                filterOption={(input, option) =>
-                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
-            <Form.Item name="deptId" label="Department (optional)">
-              <Select
-                showSearch
-                allowClear
-                placeholder={selectedBu ? "Select department" : "Select BU first"}
-                options={deptOptions}
-                disabled={!selectedBu}
-                style={{ width: 200 }}
-                filterOption={(input, option) =>
-                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
-          </Space>
-          {/* Policy applicability: a policy applies when the employee's
-              gender / employee-type / designation match, or the field is
-              left as ALL / blank. */}
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item
-              name="applicableGender"
-              label="Gender"
-              tooltip="Restrict this policy to a gender. ALL applies to everyone."
-            >
-              <Select options={GENDER_APPLICABILITY} style={{ width: 140 }} placeholder="All" />
-            </Form.Item>
-            <Form.Item
-              name="applicableMaritalStatus"
-              label="Marital Status"
-              tooltip="Restrict this policy to a marital status. Drives Maternity / Paternity eligibility together with Gender."
-            >
-              <Select
-                options={MARITAL_STATUS_APPLICABILITY}
-                style={{ width: 160 }}
-                placeholder="All"
-              />
-            </Form.Item>
-            <Form.Item
-              name="employeeType"
-              label="Employee Type"
-              tooltip="Restrict this policy to an employment type. Blank applies to all."
-            >
-              <Select
-                allowClear
-                options={EMPLOYEE_TYPE_OPTIONS}
-                style={{ width: 170 }}
-                placeholder="All employee types"
-              />
-            </Form.Item>
-            <Form.Item
-              name="designation"
-              label="Designation"
-              tooltip="Restrict this policy to a designation. Blank applies to all."
-            >
-              <Input placeholder="All designations" style={{ width: 180 }} allowClear />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item
-              name="accrualFrequency"
-              label="Accrual Frequency"
-              rules={[{ required: true }]}
-            >
-              <Select options={ACCRUAL_FREQUENCIES} style={{ width: 160 }} />
-            </Form.Item>
-            <Form.Item
-              name="accrualQuantity"
-              label="Accrual Qty"
-              rules={[{ required: true }]}
-            >
-              <InputNumber min={0} step={0.5} />
-            </Form.Item>
-            <Form.Item name="prorateEnabled" label="Prorate" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="accrualStartBasis"
-              label="Prorate from"
-              tooltip="When prorating, accrue from the employee's joining date, or from their confirmation date (probation end)."
-            >
-              <Select style={{ width: 160 }} options={[
-                { label: "Joining date", value: "JOINING" },
-                { label: "Confirmation date", value: "CONFIRMATION" },
-              ]} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="carryForwardAllowed" label="Carry Forward" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="carryForwardCap"
-              label="CF Cap"
-              dependencies={["carryForwardAllowed", "accrualQuantity"]}
-              rules={[
-                ({ getFieldValue }) => ({
-                  // CF Cap Count is mandatory only when Carry Forward is enabled.
-                  required: !!getFieldValue("carryForwardAllowed"),
-                  message: "CF Cap Count is required when Carry Forward is enabled.",
-                }),
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    // Only enforce the cap when Carry Forward is on and a value exists.
-                    if (!getFieldValue("carryForwardAllowed")) return Promise.resolve();
-                    if (value === undefined || value === null || value === "") return Promise.resolve();
-                    const accrual = Number(getFieldValue("accrualQuantity"));
-                    if (Number.isFinite(accrual) && Number(value) > accrual) {
-                      return Promise.reject(
-                        new Error("CF Cap Count cannot be greater than the Accrual Quantity."),
-                      );
+        <Form form={policyForm} layout="vertical" className={styles.policyForm}>
+          <div className={styles.policyModalBody}>
+            <FormSection title="General" />
+            <Row gutter={12}>
+              <Col span={6}>
+                <Form.Item name="effectiveFrom" label="Effective From" rules={[{ required: true }]}>
+                  <DatePicker format="DD-MMM-YYYY" />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="effectiveTo" label="Effective To">
+                  <DatePicker format="DD-MMM-YYYY" />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="buId" label="Business Unit" tooltip="Leave blank to apply to all business units.">
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder="All BUs"
+                    options={buOptions}
+                    onChange={(val) => {
+                      setSelectedBu(val);
+                      policyForm.setFieldValue("deptId", undefined);
+                    }}
+                    filterOption={(input, option) =>
+                      (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
                     }
-                    return Promise.resolve();
-                  },
-                }),
-              ]}
-            >
-              <InputNumber min={0} disabled={!carryForwardOn} />
-            </Form.Item>
-            <Form.Item name="lapseRule" label="Lapse Rule">
-              <Select options={LAPSE_RULES} style={{ width: 140 }} allowClear disabled={!carryForwardOn} />
-            </Form.Item>
-            <Form.Item name="lapseDate" label="Lapse Date">
-              <DatePicker format="DD-MMM-YYYY" disabled={!carryForwardOn} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="encashmentAllowed" label="Encashment" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="encashWhen" label="Encash When">
-              <Select options={ENCASH_WHEN_OPTIONS} style={{ width: 160 }} allowClear disabled={!encashmentOn} />
-            </Form.Item>
-            <Form.Item name="encashRateFormula" label="Encash Formula">
-              <Select options={ENCASH_RATE_FORMULAS} style={{ width: 160 }} allowClear disabled={!encashmentOn} />
-            </Form.Item>
-            <Form.Item name="minEncashableDays" label="Min Days">
-              <InputNumber min={0} disabled={!encashmentOn} />
-            </Form.Item>
-            <Form.Item name="maxEncashableDays" label="Max Days">
-              <InputNumber min={0} disabled={!encashmentOn} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="negativeBalanceAllowed" label="Allow Negative" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="negativeFloor" label="Negative Floor">
-              <InputNumber disabled={!negativeOn} />
-            </Form.Item>
-            <Form.Item name="coExpiryDays" label="CO Expiry (days)">
-              <InputNumber min={0} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item name="supervisorSlaDays" label="Supervisor SLA (days)">
-              <InputNumber min={0} />
-            </Form.Item>
-            <Form.Item name="escalationSlaDays" label="Escalation SLA (days)">
-              <InputNumber min={0} />
-            </Form.Item>
-            <Form.Item
-              name="availableAfterMonths"
-              label="Eligible after (months of service)"
-              tooltip="Minimum months of service before an employee can avail this leave. 0 means no restriction."
-            >
-              <InputNumber min={0} precision={0} style={{ width: 90 }} />
-            </Form.Item>
-          </Space>
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="deptId" label="Department" tooltip="Leave blank to apply to all departments in the selected BU.">
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder={selectedBu ? "Select department" : "Select BU first"}
+                    options={deptOptions}
+                    disabled={!selectedBu}
+                    filterOption={(input, option) =>
+                      (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            {/* Policy applicability: a policy applies when the employee's
+                gender / employee-type / designation match, or the field is
+                left as ALL / blank. */}
+            <Row gutter={12}>
+              <Col span={6}>
+                <Form.Item
+                  name="applicableGender"
+                  label="Gender"
+                  tooltip="Restrict this policy to a gender. ALL applies to everyone."
+                >
+                  <Select options={GENDER_APPLICABILITY} placeholder="All" />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="applicableMaritalStatus"
+                  label="Marital Status"
+                  tooltip="Restrict this policy to a marital status. Drives Maternity / Paternity eligibility together with Gender."
+                >
+                  <Select options={MARITAL_STATUS_APPLICABILITY} placeholder="All" />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="employeeType"
+                  label="Employee Type"
+                  tooltip="The contract the employee holds. For lifecycle stage (probation, confirmed, notice period) use Applicable For instead."
+                >
+                  {/* Options exclude PERMANENT / PROBATION — those are
+                      lifecycle stages owned by Applicable For. A policy saved
+                      before the split re-injects its stored value so editing
+                      it doesn't silently clear the field. */}
+                  <Select
+                    allowClear
+                    options={employeeTypeOptionsFor(editingPolicy?.employeeType)}
+                    placeholder="All contract types"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="designation"
+                  label="Designation"
+                  tooltip="Restrict this policy to a designation. Blank applies to all."
+                >
+                  <Input placeholder="All designations" allowClear />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={12}>
+              <Col span={24}>
+                <Form.Item
+                  name="applicableEmployeeStatus"
+                  label="Applicable For"
+                  tooltip="Employment lifecycle statuses this policy applies to. Empty applies to everyone. Earned Leave is typically restricted to Confirmed (Permanent)."
+                >
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    options={EMPLOYEE_STATUS_APPLICABILITY}
+                    placeholder="All employment statuses"
+                    maxTagCount={3}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          {/* Entitlement Tiers */}
-          <div style={{ marginTop: 16 }}>
-            <Text strong>Entitlement Tiers (Optional)</Text>
-            <Text
-              type="secondary"
-              style={{ display: "block", fontSize: 11, marginBottom: 8 }}
-            >
-              Define different entitlements based on employee tenure. Leave blank
-              to use the standard accrual quantity.
-            </Text>
+            <FormSection title="Accrual Rules" />
+            <Row gutter={12}>
+              <Col span={6}>
+                <Form.Item name="accrualFrequency" label="Accrual Frequency" rules={[{ required: true }]}>
+                  <Select options={ACCRUAL_FREQUENCIES} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="accrualQuantity" label="Accrual Qty" rules={[{ required: true }]}>
+                  <InputNumber min={0} step={0.5} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="prorateEnabled"
+                  label="Prorate"
+                  valuePropName="checked"
+                  className={styles.policyToggleCell}
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="accrualStartBasis"
+                  label="Anchor Date"
+                  tooltip="The date both proration and eligibility count from: the employee's joining date, or their confirmation date (probation end)."
+                >
+                  <Select options={ACCRUAL_START_BASIS} />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={12}>
+              <Col span={6}>
+                {/* Reads as a sentence — "Eligible After [12] Months from
+                    Confirmation" — so the anchor is never a number whose
+                    reference point lives in another field. The anchor itself
+                    stays a single control above; this suffix mirrors it. */}
+                <Form.Item
+                  name="eligibilityMonths"
+                  label="Eligible After"
+                  tooltip="Months of service from the anchor date before this leave is earned or may be taken. 0 means no waiting period."
+                >
+                  <InputNumber
+                    min={0}
+                    precision={0}
+                    addonAfter={`Months from ${startBasisLabel}`}
+                  />
+                </Form.Item>
+              </Col>
+              {accrualFrequency === "ANNIVERSARY" && (
+                <Col span={6}>
+                  <Form.Item
+                    name="creditCycleMonths"
+                    label="Credit Every"
+                    tooltip="How often the credit repeats, counted from the anchor date."
+                  >
+                    <InputNumber min={1} precision={0} addonAfter="Month(s)" />
+                  </Form.Item>
+                </Col>
+              )}
+            </Row>
 
+            {/* Six independent flags decide which non-working days inside or
+                adjacent to a leave span are charged against the balance.
+                "Between" is the classic sandwich rule. These days are now
+                actually deducted, not merely previewed. */}
+            <FormSection title="Leave Calculation" />
+            <Row gutter={12}>
+              <Col span={12}>
+                <div className={styles.policyCheckGroup}>
+                  <div className={styles.policyCheckGroupTitle}>Weekly Off</div>
+                  <div className={styles.policyCheckRow}>
+                    <Form.Item name="countWeekOffBefore" valuePropName="checked" noStyle>
+                      <Checkbox>Before</Checkbox>
+                    </Form.Item>
+                    <Form.Item name="countWeekOffBetween" valuePropName="checked" noStyle>
+                      <Checkbox>Between (Sandwich)</Checkbox>
+                    </Form.Item>
+                    <Form.Item name="countWeekOffAfter" valuePropName="checked" noStyle>
+                      <Checkbox>After</Checkbox>
+                    </Form.Item>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className={styles.policyCheckGroup}>
+                  <div className={styles.policyCheckGroupTitle}>Holiday</div>
+                  <div className={styles.policyCheckRow}>
+                    <Form.Item name="countHolidayBefore" valuePropName="checked" noStyle>
+                      <Checkbox>Before</Checkbox>
+                    </Form.Item>
+                    <Form.Item name="countHolidayBetween" valuePropName="checked" noStyle>
+                      <Checkbox>Between (Sandwich)</Checkbox>
+                    </Form.Item>
+                    <Form.Item name="countHolidayAfter" valuePropName="checked" noStyle>
+                      <Checkbox>After</Checkbox>
+                    </Form.Item>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+            <div className={styles.policyHelper}>
+              Sandwiched days are non-working days with leave on both sides.
+              Example: leave on Friday and the following Monday charges 4 days,
+              because Saturday and Sunday fall between them.
+            </div>
+
+            <FormSection title="Carry Forward" />
+            <Row gutter={12}>
+              <Col span={3}>
+                <Form.Item
+                  name="carryForwardAllowed"
+                  label="Enable"
+                  valuePropName="checked"
+                  className={styles.policyToggleCell}
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item
+                  name="carryForwardCap"
+                  label="CF Cap"
+                  dependencies={["carryForwardAllowed", "accrualQuantity", "maxAccumulation"]}
+                  rules={[
+                    ({ getFieldValue }) => ({
+                      // CF Cap Count is mandatory only when Carry Forward is enabled.
+                      required: !!getFieldValue("carryForwardAllowed"),
+                      message: "Required when Carry Forward is enabled.",
+                    }),
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        // Only enforce the cap when Carry Forward is on and a value exists.
+                        if (!getFieldValue("carryForwardAllowed")) return Promise.resolve();
+                        if (value === undefined || value === null || value === "") return Promise.resolve();
+                        // Accumulating policies (Earned Leave) legitimately carry
+                        // forward far more than one period's accrual — the real
+                        // ceiling is Maximum Accumulation. Fall back to the
+                        // accrual-quantity guard only when no ceiling is set.
+                        const ceiling = Number(getFieldValue("maxAccumulation"));
+                        if (Number.isFinite(ceiling) && ceiling > 0) {
+                          if (Number(value) > ceiling) {
+                            return Promise.reject(
+                              new Error("Cannot exceed Max Accumulation."),
+                            );
+                          }
+                          return Promise.resolve();
+                        }
+                        const accrual = Number(getFieldValue("accrualQuantity"));
+                        if (Number.isFinite(accrual) && Number(value) > accrual) {
+                          return Promise.reject(
+                            new Error("Cannot exceed Accrual Qty."),
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    }),
+                  ]}
+                >
+                  <InputNumber min={0} disabled={!carryForwardOn} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item
+                  name="maxAccumulation"
+                  label="Max Accumulation"
+                  tooltip="Balance ceiling after carry-forward. Anything above this lapses. 0 means no ceiling."
+                >
+                  <InputNumber min={0} disabled={!carryForwardOn} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="lapseRule" label="Lapse Rule">
+                  <Select options={LAPSE_RULES} allowClear disabled={!carryForwardOn} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="lapseDate" label="Lapse Date">
+                  <DatePicker format="DD-MMM-YYYY" disabled={!carryForwardOn} />
+                </Form.Item>
+              </Col>
+            </Row>
+            {/* Display-only: there is no backend flag for this. Balance above
+                Maximum Accumulation always lapses and is never encashable, so
+                the row states the behaviour rather than offering a choice. */}
+            <div className={styles.policyReadout}>
+              <span className={styles.policyReadoutLabel}>Lapse Excess Balance</span>
+              <Tag color="green" style={{ marginInlineEnd: 0 }}>Yes</Tag>
+              <span className={styles.policyReadoutLabel}>
+                Balance above Max Accumulation always lapses and cannot be encashed.
+              </span>
+            </div>
+
+            <FormSection title="Encashment" />
+            <Row gutter={12}>
+              <Col span={3}>
+                <Form.Item
+                  name="encashmentAllowed"
+                  label="Enable"
+                  valuePropName="checked"
+                  className={styles.policyToggleCell}
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="encashWhen" label="Encash When">
+                  <Select options={ENCASH_WHEN_OPTIONS} allowClear disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item name="encashRateFormula" label="Formula">
+                  <Select options={ENCASH_RATE_FORMULAS} allowClear disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item name="minEncashableDays" label="Min Days">
+                  <InputNumber min={0} disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="maxEncashableDays" label="Max Days">
+                  <InputNumber min={0} disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={12}>
+              <Col span={5}>
+                <Form.Item
+                  name="encashmentAllowedDuringEmployment"
+                  label="During Employment"
+                  valuePropName="checked"
+                  tooltip="When off, employees cannot encash this leave while still employed."
+                  className={styles.policyToggleCell}
+                >
+                  <Switch disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item
+                  name="encashmentAllowedDuringExit"
+                  label="During Exit"
+                  valuePropName="checked"
+                  tooltip="Permits encashment as part of Full & Final Settlement."
+                  className={styles.policyToggleCell}
+                >
+                  <Switch disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  name="encashmentBasicDivisor"
+                  label="Basic Divisor"
+                  tooltip="Paid days per month used to derive a day's pay in the encashment formula."
+                >
+                  <InputNumber min={1} disabled={!encashmentOn} />
+                </Form.Item>
+              </Col>
+              <Col span={10}>
+                {/* Read-only preview so the configured divisor is legible as
+                    the formula it actually produces. */}
+                <Form.Item label="Formula Preview">
+                  <div className={styles.policyReadout}>
+                    <Text strong style={{ fontSize: 13 }}>
+                      (Basic Salary / {Number(encashmentDivisor) > 0 ? encashmentDivisor : 26}) ×
+                      Accumulated {policyDrawerType?.code ?? "Leave"} Days
+                    </Text>
+                  </div>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <FormSection title="Other Rules" />
+            <Row gutter={12}>
+              <Col span={4}>
+                <Form.Item
+                  name="negativeBalanceAllowed"
+                  label="Allow Negative"
+                  valuePropName="checked"
+                  className={styles.policyToggleCell}
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="negativeFloor" label="Negative Floor">
+                  <InputNumber disabled={!negativeOn} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="coExpiryDays" label="CO Expiry (days)">
+                  <InputNumber min={0} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="supervisorSlaDays" label="Supervisor SLA (days)">
+                  <InputNumber min={0} />
+                </Form.Item>
+              </Col>
+              <Col span={5}>
+                <Form.Item name="escalationSlaDays" label="Escalation SLA (days)">
+                  <InputNumber min={0} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <FormSection title="Entitlement Tiers (Optional)" />
+            <div className={styles.policyHelper} style={{ marginTop: 0, marginBottom: 8 }}>
+              Different entitlements by tenure. Leave empty to use the standard
+              accrual quantity.
+            </div>
             {tiers.map((tier, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  marginBottom: 8,
-                  alignItems: "center",
-                }}
-              >
+              <div key={idx} className={styles.policyTierRow}>
                 <InputNumber
                   placeholder="Min Years"
                   min={0}
                   value={tier.minTenureYears}
                   onChange={(v) => updateTier(idx, "minTenureYears", v)}
-                  style={{ width: 100 }}
+                  style={{ width: 110 }}
                 />
-                <Text>to</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>to</Text>
                 <InputNumber
                   placeholder="Max Years"
                   min={0}
                   value={tier.maxTenureYears}
                   onChange={(v) => updateTier(idx, "maxTenureYears", v)}
-                  style={{ width: 100 }}
+                  style={{ width: 110 }}
                 />
-                <Text>years →</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>years →</Text>
                 <InputNumber
                   placeholder="Days/Year"
                   min={0}
                   step={0.5}
                   value={tier.annualEntitlement}
                   onChange={(v) => updateTier(idx, "annualEntitlement", v)}
-                  style={{ width: 100 }}
+                  style={{ width: 110 }}
                 />
-                <Text>days</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>days</Text>
                 <Button
                   type="text"
                   danger
@@ -842,13 +1149,7 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
                 />
               </div>
             ))}
-
-            <Button
-              type="dashed"
-              size="small"
-              onClick={addTier}
-              icon={<PlusOutlined />}
-            >
+            <Button type="dashed" size="small" onClick={addTier} icon={<PlusOutlined />}>
               Add Tier
             </Button>
           </div>

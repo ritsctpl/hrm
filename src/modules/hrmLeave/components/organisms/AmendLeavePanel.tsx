@@ -278,6 +278,9 @@ const AmendLeavePanel: React.FC<AmendLeavePanelProps> = ({
       endDate: end.format("YYYY-MM-DD"),
       startDayType: request.startDayType,
       endDayType: request.endDayType,
+      // Apply the policy's week-off / holiday counting rules, so an amended
+      // range is costed the same way the original submission was.
+      leaveTypeCode: request.leaveTypeCode,
     })
       .then((res) => {
         if (cancelled) return;

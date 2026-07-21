@@ -45,6 +45,11 @@ export function mapBalanceResponseToDomain(res: LeaveBalanceResponse): LeaveBala
     availableBalance,
     carryForwardAllowed: !!res.carryForwardAllowed,
     carryForwardCap: toNum(res.carryForwardCap),
+    // Balance ceiling from the effective policy. Absent on backends
+    // predating the EL rollout, so keep it undefined rather than 0 —
+    // 0 legitimately means "no ceiling" and the UI must tell them apart.
+    maxAccumulation:
+      res.maxAccumulation != null ? toNum(res.maxAccumulation) : undefined,
     encashmentAllowed: !!res.encashmentAllowed,
     // /leave-balance/retrieve now carries the negative-balance settings,
     // making the balance row the authoritative source for them (the policy
