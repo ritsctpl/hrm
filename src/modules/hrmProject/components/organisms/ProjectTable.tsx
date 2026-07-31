@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Table, Tag, Button, Space, Popconfirm, Progress, Typography, Tooltip, Modal, Form, Input, Switch, message } from 'antd';
+import { Table, Tag, Button, Space, Popconfirm, Typography, Tooltip, Modal, Form, Input, Switch, message } from 'antd';
 import { EyeOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, InboxOutlined, ExportOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import type { ColumnsType } from 'antd/es/table';
@@ -121,15 +121,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       key: 'projectManagerName',
       width: 160,
       render: (name: string) => name || <Text type="secondary">—</Text>,
-    },
-    {
-      title: 'Progress',
-      key: 'progress',
-      width: 140,
-      sorter: (a, b) => (a.utilizationPercentage ?? 0) - (b.utilizationPercentage ?? 0),
-      render: (_, p) => (
-        <Progress percent={Math.min(p.utilizationPercentage ?? 0, 100)} size="small" />
-      ),
     },
     {
       title: 'Timeline',

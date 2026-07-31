@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import {
-  Descriptions, Progress, Card, Button, Dropdown, Tag, Space,
+  Descriptions, Card, Button, Dropdown, Space,
   Form, Input, Select, InputNumber, DatePicker, Radio, message,
 } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
@@ -20,7 +20,7 @@ import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types
 import type { BusinessUnit, Department } from '@/modules/hrmOrganization/types/domain.types';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
 import { formatDate } from '../../utils/projectHelpers';
-import { ALLOCATION_OVER_THRESHOLD_PCT, CURRENCY_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
+import { CURRENCY_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import ChangeManagerModal from './ChangeManagerModal';
 import styles from '../../styles/ProjectDetail.module.css';
@@ -81,14 +81,6 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const [loadingRef, setLoadingRef] = useState(false);
   const watchBuCode = Form.useWatch('buCode', form);
   const watchPm = Form.useWatch('projectManagerId', form);
-
-  const estimate = project.estimateHours || 0;
-  const committed = project.committedWorkHours ?? project.totalAllocatedHours ?? 0;
-  const actual = project.totalActualHours || 0;
-  const remaining = Math.max(estimate - actual, 0);
-  const actualPct = estimate > 0 ? Math.round((actual / estimate) * 100) : 0;
-  const allowed = estimate * (ALLOCATION_OVER_THRESHOLD_PCT / 100);
-  const overCommitted = estimate > 0 && committed > allowed;
 
   const isPM = !!employeeCode && employeeCode === project.projectManagerId;
   const nextStages = STATUS_TRANSITIONS[project.status] ?? [];
@@ -274,64 +266,26 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
         )}
       </Card>
 
-      <div>
-        <Card size="small" title="Effort & Progress" className={styles.progressCard} style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontSize: 12, color: '#8c8c8c' }}>Estimated</div>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>{estimate} h</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: '#8c8c8c' }}>Actual (timesheet)</div>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>{actual} h</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: '#8c8c8c' }}>Remaining</div>
-              <div style={{ fontSize: 18, fontWeight: 600, color: remaining === 0 && estimate > 0 ? '#ff4d4f' : undefined }}>{remaining} h</div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#595959', marginBottom: 2 }}>
-              <span>Progress — actual vs estimate</span><span>{actual} h / {estimate} h · {actualPct}%</span>
-            </div>
-            <Progress
-              percent={Math.min(actualPct, 100)}
-              size="small"
-              showInfo={false}
-              strokeColor={actualPct > 100 ? '#ff4d4f' : '#52c41a'}
-            />
-          </div>
-
-          <div style={{ fontSize: 12, color: '#595959' }}>
-            Committed work: <strong>{committed} h</strong> of {estimate} h
-            {overCommitted && (
-              <Tag color="red" style={{ marginLeft: 8 }}>exceeds {ALLOCATION_OVER_THRESHOLD_PCT}% ({allowed.toFixed(0)} h allowed)</Tag>
+      {isPM && (
+        <Card size="small" title="Project Actions">
+          <Space wrap>
+            {nextStages.length > 0 && (
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: nextStages.map((s) => ({ key: s, label: STATUS_LABELS[s] ?? s, danger: s === 'CANCELLED' })),
+                  onClick: ({ key }) => handleStatusChange(key as ProjectStatus),
+                }}
+              >
+                <Button size="small">
+                  {TERMINAL_STATUSES.has(project.status) ? 'Re-open' : 'Move to next stage'} <DownOutlined />
+                </Button>
+              </Dropdown>
             )}
-          </div>
+            <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
+          </Space>
         </Card>
-
-        {isPM && (
-          <Card size="small" title="Project Actions">
-            <Space wrap>
-              {nextStages.length > 0 && (
-                <Dropdown
-                  trigger={['click']}
-                  menu={{
-                    items: nextStages.map((s) => ({ key: s, label: STATUS_LABELS[s] ?? s, danger: s === 'CANCELLED' })),
-                    onClick: ({ key }) => handleStatusChange(key as ProjectStatus),
-                  }}
-                >
-                  <Button size="small">
-                    {TERMINAL_STATUSES.has(project.status) ? 'Re-open' : 'Move to next stage'} <DownOutlined />
-                  </Button>
-                </Dropdown>
-              )}
-              <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
-            </Space>
-          </Card>
-        )}
-      </div>
+      )}
 
       <ChangeManagerModal open={changeManagerOpen} project={project} onClose={() => setChangeManagerOpen(false)} />
     </div>
