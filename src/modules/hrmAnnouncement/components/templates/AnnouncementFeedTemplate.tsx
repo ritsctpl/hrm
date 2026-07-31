@@ -37,7 +37,12 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
   onMarkAllRead,
   onCreateNew,
 }) => {
-  const unreadCount = [...feed, ...pinnedAnnouncements].filter(
+  // Belt-and-braces: the service normalizes list shapes, but a rendering crash
+  // here takes the whole module down, so never assume these are arrays.
+  const feedItems = Array.isArray(feed) ? feed : [];
+  const pinnedItems = Array.isArray(pinnedAnnouncements) ? pinnedAnnouncements : [];
+
+  const unreadCount = [...feedItems, ...pinnedItems].filter(
     (a) => !a.isRead
   ).length;
 
@@ -67,10 +72,10 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
             onChange={(v) => onPriorityFilter(v || "")}
             style={{ width: 120 }}
           >
-            <Option value="LOW">Low</Option>
-            <Option value="MEDIUM">Medium</Option>
-            <Option value="HIGH">High</Option>
-            <Option value="URGENT">Urgent</Option>
+            <Option value="GENERAL">General</Option>
+            <Option value="IMPORTANT">Important</Option>
+            <Option value="CRITICAL">Critical</Option>
+            <Option value="EMERGENCY">Emergency</Option>
           </Select>
           {onMarkAllRead && unreadCount > 0 && (
             <Button
@@ -96,8 +101,8 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
         )}
       </div>
       <AnnouncementFeed
-        pinnedAnnouncements={pinnedAnnouncements}
-        feed={feed}
+        pinnedAnnouncements={pinnedItems}
+        feed={feedItems}
         loading={loading}
         onAnnouncementClick={onAnnouncementClick}
       />

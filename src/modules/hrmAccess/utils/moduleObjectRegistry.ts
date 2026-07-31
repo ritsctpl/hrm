@@ -140,6 +140,14 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "announcement_record", label: "Announcements" },
     { code: "announcement_category", label: "Categories" },
     { code: "announcement_target_group", label: "Target Groups" },
+    // ── added 2026-07-31: priority-driven approval routing ──
+    // Backend created these in Mongo; this registry is the source of truth for
+    // what an administrator can grant, so they must be listed here too.
+    { code: "announcement_publish", label: "Publish (General)" },
+    { code: "announcement_approve_l1", label: "Approve — Level 1" },
+    { code: "announcement_approve_top", label: "Approve — Top Level" },
+    { code: "announcement_emergency", label: "Emergency Publish" },
+    { code: "announcement_report", label: "Delivery Reports" },
   ],
 
   // ── Appraisal ───────────────────────────────────────────────────────

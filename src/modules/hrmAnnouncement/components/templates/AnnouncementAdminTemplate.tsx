@@ -1,47 +1,52 @@
 "use client";
 
 import React from "react";
-import { Table, Button, Space, Popconfirm, Tag } from "antd";
+import { Table, Button, Space, Popconfirm, Tag, Select } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, SendOutlined, StopOutlined, PlusOutlined, BarChartOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { Announcement } from "../../types/domain.types";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
 import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
-import AnnouncementComposeDrawer from "../organisms/AnnouncementComposeDrawer";
 import Can from "../../../hrmAccess/components/Can";
-import { STATUS_COLORS } from "../../utils/constants";
+import { STATUS_COLORS, STATUS_LABELS, PRIORITY_LABELS, normalizePriority } from "../../utils/constants";
 import styles from "../../styles/HrmAnnouncement.module.css";
 
 interface AnnouncementAdminTemplateProps {
   announcements: Announcement[];
   loading: boolean;
-  showComposeDrawer: boolean;
-  editAnnouncement: Announcement | null;
-  organizationId: string;
   onEdit: (announcement: Announcement) => void;
   onPublish: (announcementId: string) => void;
-  onWithdraw: (announcementId: string) => void;
+  /** Passes the whole record so the confirm modal can show title + read count. */
+  onWithdraw: (announcement: Announcement) => void;
   onViewStats: (announcement: Announcement) => void;
   onCreateNew: () => void;
-  onDrawerClose: () => void;
-  onDrawerSaved: () => void;
 }
 
 const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
   announcements,
   loading,
-  showComposeDrawer,
-  editAnnouncement,
-  organizationId,
   onEdit,
   onPublish,
   onWithdraw,
   onViewStats,
   onCreateNew,
-  onDrawerClose,
-  onDrawerSaved,
 }) => {
+  // Filtering is client-side: the admin list is already fully loaded, and a
+  // round trip per dropdown change would make the filters feel sluggish.
+  const [statusFilter, setStatusFilter] = React.useState("");
+  const [priorityFilter, setPriorityFilter] = React.useState("");
+
+  const visibleAnnouncements = React.useMemo(
+    () =>
+      announcements.filter(
+        (a) =>
+          (!statusFilter || a.status === statusFilter) &&
+          (!priorityFilter || normalizePriority(a.priority) === priorityFilter)
+      ),
+    [announcements, statusFilter, priorityFilter]
+  );
+
   const columns: ColumnsType<Announcement> = [
     {
       title: "Title",
@@ -68,7 +73,11 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       dataIndex: "status",
       key: "status",
       width: 110,
-      render: (s) => <Tag color={STATUS_COLORS[s as keyof typeof STATUS_COLORS]}>{s}</Tag>,
+      render: (s) => (
+        <Tag color={STATUS_COLORS[s as keyof typeof STATUS_COLORS]}>
+          {STATUS_LABELS[s as keyof typeof STATUS_LABELS] ?? s}
+        </Tag>
+      ),
     },
     {
       title: "Published",
@@ -96,9 +105,14 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
           )}
           {record.status === "PUBLISHED" && (
             <Can I="edit">
-              <Popconfirm title="Withdraw?" onConfirm={() => onWithdraw(record.handle)} okText="Withdraw" okButtonProps={{ danger: true }}>
-                <Button size="small" icon={<StopOutlined />} danger />
-              </Popconfirm>
+              {/* Opens WithdrawConfirmModal — withdrawing needs a reason for the
+                  audit trail, which a Popconfirm can't collect. */}
+              <Button
+                size="small"
+                icon={<StopOutlined />}
+                danger
+                onClick={() => onWithdraw(record)}
+              />
             </Can>
           )}
         </Space>
@@ -114,21 +128,30 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
             New Announcement
           </Button>
         </Can>
+        <Select
+          allowClear
+          placeholder="Status"
+          style={{ width: 170 }}
+          value={statusFilter || undefined}
+          onChange={(v) => setStatusFilter(v ?? "")}
+          options={Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+        />
+        <Select
+          allowClear
+          placeholder="Priority"
+          style={{ width: 140 }}
+          value={priorityFilter || undefined}
+          onChange={(v) => setPriorityFilter(v ?? "")}
+          options={Object.entries(PRIORITY_LABELS).map(([value, label]) => ({ value, label }))}
+        />
       </div>
       <Table
         columns={columns}
-        dataSource={announcements}
+        dataSource={visibleAnnouncements}
         rowKey="handle"
         loading={loading}
         size="small"
         pagination={{ pageSize: 20 }}
-      />
-      <AnnouncementComposeDrawer
-        open={showComposeDrawer}
-        editAnnouncement={editAnnouncement}
-        organizationId={organizationId}
-        onClose={onDrawerClose}
-        onSaved={onDrawerSaved}
       />
     </div>
   );
