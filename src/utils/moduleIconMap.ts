@@ -25,6 +25,7 @@ import {
   KeyRound,
   Blocks,
   Layers,
+  BookOpen,
 } from 'lucide-react';
 
 const MODULE_ICON_MAP: Record<string, LucideIcon> = {
@@ -47,6 +48,7 @@ const MODULE_ICON_MAP: Record<string, LucideIcon> = {
   '/rits/hrm_policy_app':        Scale,
   '/rits/hrm_announcement_app':  Newspaper,
   '/rits/hrm_notification_app':  Bell,
+  '/rits/hrm_user_guide_app':    BookOpen,
   '/rits/user_maintenance_app':  UserCog,
   '/rits/userGroup_app':         UsersRound,
   '/rits/activityGroup_app':     LayoutGrid,
