@@ -19,7 +19,7 @@ export default function AssetCustodyHistoryTab() {
         <Typography.Text strong style={{ minWidth: 140 }}>Employee</Typography.Text>
         <Typography.Text strong style={{ minWidth: 100 }}>From</Typography.Text>
         <Typography.Text strong style={{ minWidth: 100 }}>To</Typography.Text>
-        <Typography.Text strong>Request Ref</Typography.Text>
+        <Typography.Text strong>Origin &amp; reason</Typography.Text>
       </div>
       {custodyHistory.length === 0 ? (
         <Empty description="No custody history" style={{ marginTop: 32 }} />

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Tabs, Button, Badge, Spin, Segmented, Empty, Typography } from 'antd';
-import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { Tabs, Button, Badge, Spin, Segmented, Empty, Typography, message } from 'antd';
+import { PlusOutlined, ReloadOutlined, SettingOutlined, UserAddOutlined } from '@ant-design/icons';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import { useHrmAssetData } from './hooks/useHrmAssetData';
@@ -14,12 +14,15 @@ import AssetRequestCard from './components/molecules/AssetRequestCard';
 import AssetRequestDetail from './components/organisms/AssetRequestDetail';
 import AssetRequestEditDrawer from './components/organisms/AssetRequestEditDrawer';
 import AllocationPanel from './components/organisms/AllocationPanel';
+import AssignAssetModal from './components/organisms/AssignAssetModal';
 import AssetForm from './components/organisms/AssetForm';
 import AssetCategoryForm from './components/organisms/AssetCategoryForm';
 import AssetRequestForm from './components/organisms/AssetRequestForm';
 import AssetMasterDetailTemplate from './components/templates/AssetMasterDetailTemplate';
 import AssetTeamHistoryTab from './components/organisms/AssetTeamHistoryTab';
 import HrmAssetScreen from './HrmAssetScreen';
+import { useCanDirectAssign } from './hooks/useCanDirectAssign';
+import { ASSIGNMENT_BULK_LIMIT } from './utils/assetConstants';
 import type { Asset, AssetRequest } from './types/domain.types';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
@@ -59,6 +62,9 @@ const HrmAssetLanding: React.FC = () => {
   const teamHistoryPerms = useCan('HRM_ASSET', 'asset_team_history');
   const canViewTeamHistory = teamHistoryPerms.canView;
   const canViewAssets = assetPerms.canView;
+  // Direct assignment (no request, no approval chain). Drives the row
+  // checkboxes, the bulk toolbar button and the "Available to assign" chip.
+  const canDirectAssign = useCanDirectAssign();
   // Signed-in employee — used to load the "My Assets" (allocated-to-me) list
   // for non-admins, who don't have the full-register asset_record grant.
   const identity = useEmployeeIdentity();
@@ -168,6 +174,20 @@ const HrmAssetLanding: React.FC = () => {
 
   // ── ASSETS TAB ───────────────────────────────────────────────────────────
 
+  // Bulk direct assignment. The cap is enforced here, at the point of ticking,
+  // so the user is told immediately rather than at submit time.
+  const bulkSelection = store.bulkAssignSelection;
+  const handleToggleBulk = (assetId: string) => {
+    if (
+      !bulkSelection.includes(assetId) &&
+      bulkSelection.length >= ASSIGNMENT_BULK_LIMIT
+    ) {
+      message.warning(`Select up to ${ASSIGNMENT_BULK_LIMIT} assets at a time.`);
+      return;
+    }
+    store.toggleBulkAssignSelection(assetId);
+  };
+
   const assetsTabContent = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div
@@ -192,8 +212,25 @@ const HrmAssetLanding: React.FC = () => {
           onStatusChange={store.setFilterStatus}
           onLocationChange={store.setFilterLocation}
           onClear={store.clearFilters}
+          showAvailableToAssign={canDirectAssign}
         />
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {/* Bulk hand-out. Present (disabled) once the user holds the grant so
+              the capability is discoverable before anything is ticked. */}
+          {canDirectAssign && (
+            <Button
+              size="small"
+              icon={<UserAddOutlined />}
+              disabled={bulkSelection.length === 0}
+              onClick={() =>
+                store.openAssignModal({ kind: 'bulk', assetIds: bulkSelection })
+              }
+            >
+              {bulkSelection.length > 0
+                ? `Assign Assets (${bulkSelection.length})`
+                : 'Assign Assets'}
+            </Button>
+          )}
           <Can I="view" object="asset_category">
             <Button
               size="small"
@@ -229,6 +266,12 @@ const HrmAssetLanding: React.FC = () => {
               loading={store.loadingAssets}
               selectedAssetId={store.selectedAsset?.assetId}
               onSelect={(asset: Asset) => store.setSelectedAsset(asset)}
+              selectable={canDirectAssign}
+              checkedAssetIds={bulkSelection}
+              onToggleSelect={handleToggleBulk}
+              onSelectAll={store.setBulkAssignSelection}
+              onClearSelection={store.clearBulkAssignSelection}
+              selectionLimit={ASSIGNMENT_BULK_LIMIT}
             />
           }
           rightPanel={store.selectedAsset ? <HrmAssetScreen /> : null}
@@ -431,6 +474,10 @@ const HrmAssetLanding: React.FC = () => {
           in the approval flow opened nothing. */}
       <AssetRequestEditDrawer onSaved={refreshRequests} />
       {store.isAllocationPanelOpen && <AllocationPanel onAllocated={refreshRequests} />}
+      {/* Direct assignment. Mounted at landing level because the asset-list row
+          action opens it without selecting an asset, so it can't live inside
+          HrmAssetScreen. Self-gating: renders nothing until opened. */}
+      <AssignAssetModal />
 
       <AssetCategoryForm
         open={categoryFormOpen}

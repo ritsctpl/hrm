@@ -421,6 +421,22 @@ const OfficialStep: React.FC<{
     </div>
     <div className={formStyles.formRow}>
       <div className={formStyles.formField}>
+        <label className={formStyles.formFieldLabel}>Confirmation Date</label>
+        <DatePicker
+          style={{ width: '100%' }}
+          format="YYYY-MM-DD"
+          placeholder="Select confirmation date"
+          value={draft.confirmationDate ? dayjs(draft.confirmationDate) : null}
+          onChange={(date) =>
+            onChange({ confirmationDate: date ? date.format('YYYY-MM-DD') : '' })
+          }
+        />
+      </div>
+      {/* Spacer keeps the date picker half-width — .formRow > * is flex: 1. */}
+      <div className={formStyles.formField} />
+    </div>
+    <div className={formStyles.formRow}>
+      <div className={formStyles.formField}>
         <label className={`${formStyles.formFieldLabel} ${formStyles.formFieldRequired}`}>
           Country
         </label>
@@ -783,6 +799,10 @@ const ReviewStep: React.FC<{ draft: Partial<CreateEmployeeRequest> }> = ({ draft
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Joining Date</span>
         <span className={formStyles.reviewValue}>{draft.joiningDate || '--'}</span>
+      </div>
+      <div className={formStyles.reviewRow}>
+        <span className={formStyles.reviewLabel}>Confirmation Date</span>
+        <span className={formStyles.reviewValue}>{draft.confirmationDate || '--'}</span>
       </div>
       <div className={formStyles.reviewRow}>
         <span className={formStyles.reviewLabel}>Reporting Manager</span>
@@ -1211,61 +1231,6 @@ const OnboardingWizard: React.FC = () => {
           message.warning(
             'Employee created, but the access role could not be assigned automatically — assign it from Access Control.'
           );
-        }
-      }
-
-      // Step 2a: Persist joiningDate via /update-official.
-      // Backend's /employee/create currently drops joiningDate from the
-      // payload (the field reaches the server but isn't saved on the
-      // officialDetails record), so the profile reads back blank. The
-      // update-official endpoint does honour it — re-applying it here
-      // forces the save without requiring the user to edit afterwards.
-      if (newEmployeeHandle && draft.joiningDate) {
-        try {
-          const organizationId = getOrganizationId();
-          const cookies = parseCookies();
-          await HrmEmployeeService.updateOfficialDetails({
-            organizationId,
-            handle: newEmployeeHandle,
-            firstName: draft.firstName || '',
-            lastName: draft.lastName || '',
-            title: draft.title || '',
-            department: draft.department || '',
-            role: draft.role || draft.designation || 'EMPLOYEE',
-            businessUnits: draft.businessUnits || [],
-            location: draft.location,
-            reportingManager: draft.reportingManager,
-            reportingManagerName: draft.reportingManagerName,
-            joiningDate: draft.joiningDate,
-            modifiedBy: cookies.username || 'system',
-          });
-        } catch (err) {
-          console.warn('Failed to persist joiningDate via update-official:', err);
-          message.warning(
-            'Employee created, but joining date could not be saved automatically — please edit the profile to set it.'
-          );
-        }
-      }
-
-      // Step 2a-ii: Persist Gender / Marital Status captured at onboarding.
-      // These are personal details — the /employee/create payload may not
-      // store them, so re-apply via /update-personal (mirrors the
-      // joiningDate workaround above). Degrades gracefully: if the call
-      // fails the employee is still created and HR can set them from the
-      // Personal Details tab.
-      if (newEmployeeHandle && (draft.gender || draft.maritalStatus)) {
-        try {
-          const organizationId = getOrganizationId();
-          const cookies = parseCookies();
-          await HrmEmployeeService.updatePersonalDetails({
-            organizationId,
-            handle: newEmployeeHandle,
-            gender: draft.gender,
-            maritalStatus: draft.maritalStatus,
-            modifiedBy: cookies.username || 'system',
-          });
-        } catch (err) {
-          console.warn('Failed to persist gender/maritalStatus via update-personal:', err);
         }
       }
 

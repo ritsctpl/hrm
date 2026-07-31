@@ -172,36 +172,58 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
     }
   };
 
-  const handleUpload = async (file: File) => {
+  /**
+   * Upload a whole selection at once. antd calls `beforeUpload` once per file
+   * but hands each call the full batch, so we act only on the first call and
+   * upload the batch serially — the asset prop doesn't re-render between
+   * calls, so parallel uploads would each append to a stale attachment list
+   * and only the last one would survive.
+   */
+  const handleUploadBatch = async (files: File[]) => {
     const organizationId = getOrganizationId();
     const { userId, rl_user_id, userEmail } = parseCookies();
     const uploadedBy = userId || rl_user_id || userEmail || '';
     if (!organizationId) {
       message.error('Organization not found in session');
-      return false;
+      return;
     }
     setUploading(true);
+    const uploaded: AssetAttachment[] = [];
+    const failed: string[] = [];
     try {
-      const att = await HrmAssetService.uploadAttachment(organizationId, asset.assetId, file, uploadedBy);
-      updateAssetInList(asset.assetId, {
-        attachments: [...(asset.attachments ?? []), att],
-      });
-      message.success('File uploaded');
-    } catch {
-      message.error('Upload failed');
+      for (const file of files) {
+        try {
+          const att = await HrmAssetService.uploadAttachment(organizationId, asset.assetId, file, uploadedBy);
+          uploaded.push(att);
+        } catch {
+          failed.push(file.name);
+        }
+      }
+      if (uploaded.length > 0) {
+        updateAssetInList(asset.assetId, {
+          attachments: [...(asset.attachments ?? []), ...uploaded],
+        });
+        message.success(uploaded.length === 1 ? 'File uploaded' : `${uploaded.length} files uploaded`);
+      }
+      if (failed.length > 0) {
+        message.error(`Upload failed: ${failed.join(', ')}`);
+      }
     } finally {
       setUploading(false);
     }
-    // Prevent antd's default upload behavior — we handle the request ourselves
-    return false;
   };
 
   const uploadButton = (
     <Can I="add" object="asset_record">
       <Upload
         accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
+        multiple
         showUploadList={false}
-        beforeUpload={handleUpload}
+        beforeUpload={(file, fileList) => {
+          if (file === fileList[0]) handleUploadBatch(fileList as unknown as File[]);
+          // Prevent antd's default upload behavior — we handle the request ourselves
+          return false;
+        }}
         disabled={uploading}
       >
         <Button
@@ -209,7 +231,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
           size="small"
           loading={uploading}
         >
-          Upload File
+          Upload Files
         </Button>
       </Upload>
     </Can>

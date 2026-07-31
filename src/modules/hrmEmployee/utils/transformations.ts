@@ -145,6 +145,7 @@ export function buildCreateRequest(
     gender: draft.gender || undefined,
     maritalStatus: draft.maritalStatus || undefined,
     joiningDate: draft.joiningDate || undefined,
+    confirmationDate: draft.confirmationDate || undefined,
     organizationHandle,
     organizationName,
     createdBy,
@@ -396,6 +397,19 @@ export function buildUpdateContactPayload(
 }
 
 /**
+ * Lifecycle dates on /update-official are null-clearable: the backend reads an
+ * absent key as "leave unchanged" and an explicit null as "clear the value".
+ * A plain `|| undefined` would collapse null into undefined, which
+ * JSON.stringify drops — silently turning every clear into a no-op. Undefined
+ * stays undefined (key omitted); null and '' both mean an explicit clear.
+ */
+function nullableDate(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  return value as string;
+}
+
+/**
  * Transform official details to API payload format
  * Maps UI fields to backend expected fields and includes reportingManagerName
  */
@@ -421,11 +435,13 @@ export function buildUpdateOfficialPayload(
     businessUnits: officialData.businessUnits || undefined,
     organizationName: officialData.organizationName || undefined,
     organizationHandle: officialData.organizationHandle || undefined,
-    joiningDate: officialData.joiningDate || undefined,
+    joiningDate: nullableDate(officialData.joiningDate),
+    // Not clearable by design — the backend ignores a null employmentStatus
+    // because leave-eligibility policies gate on it.
     employmentStatus: officialData.employmentStatus || undefined,
-    probationEndDate: officialData.probationEndDate || undefined,
-    confirmationDate: officialData.confirmationDate || undefined,
-    lastWorkingDay: officialData.lastWorkingDay || undefined,
+    probationEndDate: nullableDate(officialData.probationEndDate),
+    confirmationDate: nullableDate(officialData.confirmationDate),
+    lastWorkingDay: nullableDate(officialData.lastWorkingDay),
     modifiedBy,
   };
 

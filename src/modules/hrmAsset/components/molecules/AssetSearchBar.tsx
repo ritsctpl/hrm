@@ -19,8 +19,10 @@ export default function AssetSearchBar({
   onStatusChange,
   onLocationChange,
   onClear,
+  showAvailableToAssign,
 }: AssetSearchBarProps) {
   const categoryOptions = categories.map((c) => ({ value: c.categoryCode, label: c.categoryName }));
+  const availableOnly = filterStatus === 'IN_STORE';
 
   return (
     <div className={styles.searchBar}>
@@ -55,6 +57,18 @@ export default function AssetSearchBar({
           style={{ width: 140 }}
           allowClear
         />
+        {/* Shortcut to the only directly-assignable status, so a store keeper
+            handing out kit doesn't have to work the Status dropdown. Reflects
+            and drives the same filterStatus as that dropdown. */}
+        {showAvailableToAssign && (
+          <Button
+            type={availableOnly ? 'primary' : 'default'}
+            aria-pressed={availableOnly}
+            onClick={() => onStatusChange(availableOnly ? '' : 'IN_STORE')}
+          >
+            Available to assign
+          </Button>
+        )}
         <Button icon={<ClearIcon style={{ fontSize: 16 }} />} onClick={onClear}>Clear</Button>
       </Space>
     </div>

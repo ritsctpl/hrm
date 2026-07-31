@@ -106,6 +106,22 @@ export interface AssetCustody {
   toDate?: string;
   expectedReturnDate?: string;
   allocationRequestId?: string;
+  /**
+   * How this custody came about. Authoritative once the backend persists it;
+   * rows written before that change read as REQUEST_BASED. Absent only on
+   * responses from an older service build, where a null allocationRequestId is
+   * the fallback marker for a direct hand-out.
+   */
+  assignmentType?: 'REQUEST_BASED' | 'DIRECT';
+  /**
+   * One of ASSIGNMENT_REASONS. Persisted on DIRECT custody only — the service
+   * drops it on the request-driven path so an auditor is never offered two
+   * competing justifications for the same allocation.
+   */
+  assignmentReason?: string;
+  remarks?: string;
+  assignedBy?: string;
+  assignedByName?: string;
   returnedBy?: string;
   returnRemarks?: string;
   handoverReceiptNo?: string;

@@ -15,6 +15,14 @@ export interface AssetListRowProps {
   asset: Asset;
   isSelected: boolean;
   onClick: (asset: Asset) => void;
+  /**
+   * Bulk direct assignment. When `selectable` is set the row shows a checkbox;
+   * it is only ever passed for rows the user could actually assign, so there is
+   * no "ticked but unassignable" state to reconcile at submit time.
+   */
+  selectable?: boolean;
+  isChecked?: boolean;
+  onToggleSelect?: (assetId: string) => void;
 }
 
 export interface AssetSummaryCardProps {
@@ -79,6 +87,12 @@ export interface AssetSearchBarProps {
   onStatusChange: (status: string) => void;
   onLocationChange: (loc: string) => void;
   onClear: () => void;
+  /**
+   * Shows the "Available to assign" shortcut chip (status = IN_STORE). Only
+   * meaningful to users who can hand assets out, so the caller gates it on the
+   * direct-assign grant rather than showing a dead filter to everyone.
+   */
+  showAvailableToAssign?: boolean;
 }
 
 export interface AssetMasterListProps {
@@ -86,6 +100,14 @@ export interface AssetMasterListProps {
   loading: boolean;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
+  /** Bulk direct assignment — see AssetListRowProps.selectable. */
+  selectable?: boolean;
+  checkedAssetIds?: string[];
+  onToggleSelect?: (assetId: string) => void;
+  onSelectAll?: (assetIds: string[]) => void;
+  onClearSelection?: () => void;
+  /** Cap on how many rows may be ticked at once. */
+  selectionLimit?: number;
 }
 
 export interface AssetDashboardHeaderProps {

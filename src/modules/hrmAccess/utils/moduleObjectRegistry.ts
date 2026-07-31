@@ -69,6 +69,7 @@ export const APP_URL_TO_MODULE: Record<string, string> = {
   "/rits/hrm_settings_app": "HRM_SETTINGS",
   "/rits/hrm_timesheet_app": "HRM_TIMESHEET",
   "/rits/hrm_travel_app": "HRM_TRAVEL",
+  "/rits/hrm_user_guide_app": "HRM_USER_GUIDE",
 };
 
 export const MODULE_TO_APP_URL: Record<string, string> = Object.fromEntries(
@@ -158,6 +159,11 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_ASSET: [
     { code: "asset_module", label: "Module Access" },
     { code: "asset_record", label: "Assets" },
+    // Handing an in-store asset straight to an employee, bypassing the request
+    // + approval chain. Deliberately NOT implied by asset_record EDIT — a store
+    // keeper may maintain the asset register without ever being allowed to
+    // hand assets out approval-free. Gated on this object's ADD grant.
+    { code: "asset_direct_assign", label: "Direct Assignment" },
     { code: "asset_request", label: "Requests" },
     // Reporting-manager tier: sees + acts on the FIRST approval step only
     // (the "Pending Supervisor" tab).
@@ -376,6 +382,14 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "travel_co_traveller", label: "Co-Travellers" },
     { code: "travel_policy", label: "Policy" },
     { code: "travel_history", label: "History" },
+  ],
+
+  // ── User Guide ──────────────────────────────────────────────────────
+  // Read access is broad (every employee needs the guides); ADD/EDIT/DELETE
+  // on user_guide_doc is what makes someone a guide maintainer.
+  HRM_USER_GUIDE: [
+    { code: "user_guide_module", label: "Module Access" },
+    { code: "user_guide_doc", label: "User Guides" },
   ],
 };
 

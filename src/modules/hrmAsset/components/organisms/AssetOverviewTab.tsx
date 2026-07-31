@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Descriptions, Button, Space, Popconfirm, Select, Modal, Input, message } from 'antd';
+import { Descriptions, Button, Space, Popconfirm, Select, Modal, Input, Tooltip, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import AssetStatusBadge from '../atoms/AssetStatusBadge';
@@ -11,7 +11,8 @@ import { HrmAssetService } from '../../services/hrmAssetService';
 import { useHrmAssetStore } from '../../stores/hrmAssetStore';
 import { useHrmAssetData } from '../../hooks/useHrmAssetData';
 import { useEmployeeIdentity } from '../../../hrmAccess/hooks/useEmployeeIdentity';
-import { formatDate, formatCurrency } from '../../utils/assetHelpers';
+import { formatDate, formatCurrency, getDirectAssignBlockReason } from '../../utils/assetHelpers';
+import { useCanDirectAssign } from '../../hooks/useCanDirectAssign';
 import type { Asset, AssetStatus } from '../../types/domain.types';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/AssetDetail.module.css';
@@ -35,9 +36,11 @@ const STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 };
 
 export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOverviewTabProps) {
-  const { updateAssetInList, openReturnModal } = useHrmAssetStore();
+  const { updateAssetInList, openReturnModal, openAssignModal } = useHrmAssetStore();
   const { loadDashboard } = useHrmAssetData();
   const identity = useEmployeeIdentity();
+  const canDirectAssign = useCanDirectAssign();
+  const assignBlockReason = getDirectAssignBlockReason(asset);
   const warrantyAttr = (asset.attributes ?? []).find((a) => a.attrName.toLowerCase().includes('warranty'));
 
   // The signed-in employee currently holds this asset → they may raise a
@@ -170,7 +173,25 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
               </Space>
             </>
           ) : (
-            <span style={{ color: '#8c8c8c' }}>Unassigned</span>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <span style={{ color: '#8c8c8c' }}>Unassigned</span>
+              {/* Direct assignment — immediate, no approval workflow. Hidden
+                  entirely without the permission; present-but-disabled with a
+                  reason when the asset is simply in the wrong state, since
+                  that's something the user can act on. */}
+              {canDirectAssign && (
+                <Tooltip title={assignBlockReason ?? ''}>
+                  <Button
+                    size="small"
+                    type="primary"
+                    disabled={!!assignBlockReason}
+                    onClick={() => openAssignModal({ kind: 'asset', assetId: asset.assetId })}
+                  >
+                    Assign to Employee
+                  </Button>
+                </Tooltip>
+              )}
+            </Space>
           )}
         </div>
 

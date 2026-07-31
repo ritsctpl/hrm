@@ -26,58 +26,81 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
   const canDeleteDocs = permissions.canDeleteDocuments || permissions.isAdmin;
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // "Uploading 2 of 5" — documents go up one request at a time
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [docType, setDocType] = useState<string>('OTHER');
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
   const [loadingView, setLoadingView] = useState(false);
 
   const handleUpload = useCallback(async () => {
-    if (!selectedFile) {
-      message.warning('Please select a file');
+    if (selectedFiles.length === 0) {
+      message.warning('Please select at least one file');
       return;
     }
 
     setUploading(true);
-    try {
-      const organizationId = getOrganizationId();
-      const cookies = parseCookies();
-      const uploadedBy = cookies.username || 'system';
+    setUploadProgress({ done: 0, total: selectedFiles.length });
+    const organizationId = getOrganizationId();
+    const cookies = parseCookies();
+    const uploadedBy = cookies.username || 'system';
+    const failed: string[] = [];
+    let succeeded = 0;
 
-      // Convert file to base64
-      const base64String = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-          const base64 = result.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
+    // Upload one at a time — the BE endpoint takes a single document per call,
+    // and serialising keeps large base64 payloads off the wire simultaneously.
+    for (const file of selectedFiles) {
+      try {
+        // Convert file to base64
+        const base64String = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-      await HrmEmployeeService.uploadDocument(
-        organizationId,
-        profile.handle,
-        docType,
-        selectedFile.name,
-        selectedFile.type || 'application/octet-stream',
-        base64String,
-        uploadedBy
-      );
-      message.success('Document uploaded');
-      setUploadOpen(false);
-      setSelectedFile(null);
-      setDocType('OTHER');
-      onRefresh();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
-      message.error(msg);
-    } finally {
-      setUploading(false);
+        await HrmEmployeeService.uploadDocument(
+          organizationId,
+          profile.handle,
+          docType,
+          file.name,
+          file.type || 'application/octet-stream',
+          base64String,
+          uploadedBy
+        );
+        succeeded += 1;
+      } catch (err) {
+        failed.push(file.name);
+      } finally {
+        setUploadProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
+      }
     }
-  }, [selectedFile, docType, profile.handle, onRefresh]);
+
+    setUploading(false);
+    setUploadProgress(null);
+
+    if (succeeded > 0) {
+      message.success(succeeded === 1 ? 'Document uploaded' : `${succeeded} documents uploaded`);
+      onRefresh();
+    }
+    if (failed.length > 0) {
+      message.error(`Failed to upload: ${failed.join(', ')}`);
+    }
+    // Keep the modal open with only the failures still listed so the user can retry
+    if (failed.length === 0) {
+      setUploadOpen(false);
+      setSelectedFiles([]);
+      setDocType('OTHER');
+    } else {
+      setSelectedFiles((prev) => prev.filter((f) => failed.includes(f.name)));
+    }
+  }, [selectedFiles, docType, profile.handle, onRefresh]);
 
   const handleDelete = useCallback(
     async (docId: string) => {
@@ -257,15 +280,23 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
       )}
 
       <Modal
-        title="Upload Document"
+        title="Upload Documents"
         open={uploadOpen}
         onOk={handleUpload}
         onCancel={() => {
           setUploadOpen(false);
-          setSelectedFile(null);
+          setSelectedFiles([]);
         }}
         confirmLoading={uploading}
-        okText="Upload"
+        okText={
+          uploadProgress
+            ? `Uploading ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}`
+            : selectedFiles.length > 1
+              ? `Upload ${selectedFiles.length} files`
+              : 'Upload'
+        }
+        cancelButtonProps={{ disabled: uploading }}
+        maskClosable={!uploading}
         destroyOnHidden
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 0' }}>
@@ -285,29 +316,35 @@ const DocumentsTab: React.FC<ProfileTabProps & { onRefresh: () => void }> = ({
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>
-              File
+              Files
             </label>
             <Upload
+              multiple
               beforeUpload={(file) => {
-                setSelectedFile(file);
+                // antd fires this once per selected file — append, skipping
+                // duplicates already staged from an earlier pick.
+                setSelectedFiles((prev) =>
+                  prev.some((f) => f.name === file.name) ? prev : [...prev, file]
+                );
                 return false; // prevent auto upload
               }}
-              maxCount={1}
-              onRemove={() => setSelectedFile(null)}
-              fileList={
-                selectedFile
-                  ? [
-                      {
-                        uid: '-1',
-                        name: selectedFile.name,
-                        status: 'done',
-                      },
-                    ]
-                  : []
-              }
+              onRemove={(uploadFile) => {
+                setSelectedFiles((prev) => prev.filter((f) => f.name !== uploadFile.name));
+              }}
+              disabled={uploading}
+              fileList={selectedFiles.map((f, i) => ({
+                uid: `${i}-${f.name}`,
+                name: f.name,
+                status: 'done' as const,
+              }))}
             >
-              <Button icon={<UploadOutlined />}>Select File</Button>
+              <Button icon={<UploadOutlined />} disabled={uploading}>
+                Select Files
+              </Button>
             </Upload>
+            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+              You can select multiple files — the document type above applies to all of them.
+            </div>
           </div>
         </div>
       </Modal>

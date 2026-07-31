@@ -3,6 +3,7 @@ import { parseCookies, setCookie } from 'nookies';
 import { HrmAccessService } from '../services/hrmAccessService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import { getRootObjectCode, getObjectCodesForModule } from '../utils/moduleObjectRegistry';
+import { isModuleHidden, resolveModuleCategory } from '@/config/dashboardConfig';
 import type { PermissionAction } from '../types/api.types';
 import type {
   OrganizationModules,
@@ -127,10 +128,17 @@ const initialState: HrmRbacState = {
   sectionPermissionCache: {},
 };
 
+/**
+ * Buckets modules for the landing page and sidebar. The frontend owns the
+ * product grouping (see `dashboardConfig`), so the API's `moduleCategory` is
+ * only a fallback for modules the map doesn't cover. Hidden modules are
+ * dropped from navigation here — their routes and permissions stay intact.
+ */
 function groupByCategory(modules: EnrichedModule[]): Record<string, EnrichedModule[]> {
   const groups: Record<string, EnrichedModule[]> = {};
   for (const mod of modules) {
-    const cat = mod.moduleCategory || 'General';
+    if (isModuleHidden(mod.appUrl)) continue;
+    const cat = resolveModuleCategory(mod.appUrl, mod.moduleCategory);
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(mod);
   }

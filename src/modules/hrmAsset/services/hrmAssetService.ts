@@ -133,8 +133,23 @@ export class HrmAssetService {
     return res.data;
   }
 
-  static async assignAsset(payload: AssignAssetPayload): Promise<AssetResponse> {
-    const res = await api.post(`${this.BASE}/asset/assign`, payload);
+  /**
+   * Assign an asset to an employee. Omit `allocationRequestId` for a direct
+   * hand-out; include it when allocating against an approved request.
+   *
+   * `idempotencyKey` is generated once per modal open and reused across retries
+   * of the SAME attempt, so a replayed request can be recognised rather than
+   * creating a second custody record. The service does not honour the header
+   * yet — until it does, the only real protection against a double submit is
+   * the client-side in-flight guard, so do not treat a retry as safe.
+   */
+  static async assignAsset(
+    payload: AssignAssetPayload,
+    idempotencyKey?: string,
+  ): Promise<AssetResponse> {
+    const res = await api.post(`${this.BASE}/asset/assign`, payload, {
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
     return res.data;
   }
 

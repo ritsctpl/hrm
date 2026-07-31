@@ -13,7 +13,7 @@ const { Text } = Typography;
 interface Props {
   attachments: TravelAttachment[];
   readonly?: boolean;
-  onUpload?: (file: File) => Promise<void>;
+  onUpload?: (files: File[]) => Promise<void>;
   onDelete?: (attachmentId: string) => void;
   onPreview?: (attachment: TravelAttachment) => Promise<Blob>;
   showPreviewDownload?: boolean;
@@ -43,6 +43,7 @@ const AttachmentsPanel: React.FC<Props> = ({
 }) => {
   const organizationId = getOrganizationId();
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
+  const [batchUploading, setBatchUploading] = useState(false);
 
   const isPendingAttachment = (attachmentId: string): boolean => {
     return attachmentId.startsWith("pending-");
@@ -53,63 +54,60 @@ const AttachmentsPanel: React.FC<Props> = ({
     return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
   };
 
-  const validateUploadWithPolicy = async (file: File): Promise<{ valid: boolean; allowedTypes?: string[]; maxSize?: number; maxCount?: number }> => {
+  /**
+   * Validate a whole selection against the server-side travel policy in one
+   * pass: type and size are per-file, but the count limit has to account for
+   * files already accepted earlier in the same batch.
+   */
+  const validateBatchWithPolicy = async (
+    files: File[],
+  ): Promise<{ accepted: File[]; errors: string[] }> => {
+    let policies;
     try {
       // Fetch latest policies from server
-      const policies = await HrmTravelService.getPolicies({ organizationId });
-      
-      if (policies.length === 0) {
-        return { valid: false };
-      }
+      policies = await HrmTravelService.getPolicies({ organizationId });
+    } catch (err) {
+      message.error("Failed to validate upload. Please try again.");
+      return { accepted: [], errors: [] };
+    }
 
-      // Find policy matching the current travel type
-      const policy = travelType 
-        ? policies.find(p => p.travelType === travelType) || policies[0]
-        : policies[0];
+    if (policies.length === 0) {
+      return { accepted: [], errors: ["No travel policy configured — upload is not allowed."] };
+    }
 
+    // Find policy matching the current travel type
+    const policy = travelType
+      ? policies.find((p) => p.travelType === travelType) || policies[0]
+      : policies[0];
+
+    const accepted: File[] = [];
+    const errors: string[] = [];
+    let slotsLeft = policy.maxFileCount - attachments.length;
+
+    for (const file of files) {
       const fileExt = getFileExtension(file.name);
       const sizeMb = file.size / (1024 * 1024);
 
-      // Validate file type
       if (!policy.allowedFileTypes.includes(fileExt)) {
-        return { 
-          valid: false, 
-          allowedTypes: policy.allowedFileTypes,
-          maxSize: policy.maxFileSizeMb,
-          maxCount: policy.maxFileCount,
-        };
+        errors.push(
+          `${file.name}: file type .${fileExt} is not allowed. Allowed types: ${policy.allowedFileTypes.join(", ")}`,
+        );
+        continue;
       }
-
-      // Validate file size
       if (sizeMb > policy.maxFileSizeMb) {
-        return { 
-          valid: false, 
-          allowedTypes: policy.allowedFileTypes,
-          maxSize: policy.maxFileSizeMb,
-          maxCount: policy.maxFileCount,
-        };
+        errors.push(`${file.name}: file size must be under ${policy.maxFileSizeMb} MB.`);
+        continue;
+      }
+      if (slotsLeft <= 0) {
+        errors.push(`${file.name}: maximum ${policy.maxFileCount} files allowed.`);
+        continue;
       }
 
-      // Validate file count
-      if (attachments.length >= policy.maxFileCount) {
-        return { 
-          valid: false, 
-          allowedTypes: policy.allowedFileTypes,
-          maxSize: policy.maxFileSizeMb,
-          maxCount: policy.maxFileCount,
-        };
-      }
-
-      return { 
-        valid: true, 
-        allowedTypes: policy.allowedFileTypes,
-        maxSize: policy.maxFileSizeMb,
-        maxCount: policy.maxFileCount,
-      };
-    } catch (err) {
-      message.error("Failed to validate upload. Please try again.");
-      return { valid: false };
+      accepted.push(file);
+      slotsLeft -= 1;
     }
+
+    return { accepted, errors };
   };
 
   const fetchBlob = async (att: TravelAttachment): Promise<Blob | null> => {
@@ -256,36 +254,31 @@ const AttachmentsPanel: React.FC<Props> = ({
         <Can I="add" object="travel_attachment">
           <Upload.Dragger
             style={{ marginBottom: 16 }}
-            multiple={false}
+            multiple
             showUploadList={false}
-            beforeUpload={async (file) => {
-              // Validate against server policies
-              const validation = await validateUploadWithPolicy(file);
-              
-              if (!validation.valid) {
-                const fileExt = getFileExtension(file.name);
-                const sizeMb = file.size / (1024 * 1024);
-                
-                // Determine which validation failed
-                if (validation.allowedTypes && !validation.allowedTypes.includes(fileExt)) {
-                  message.error(`File type .${fileExt} is not allowed. Allowed types: ${validation.allowedTypes.join(', ')}`);
-                } else if (validation.maxSize && sizeMb > validation.maxSize) {
-                  message.error(`File size must be under ${validation.maxSize} MB.`);
-                } else if (validation.maxCount && attachments.length >= validation.maxCount) {
-                  message.error(`Maximum ${validation.maxCount} files allowed.`);
-                } else {
-                  message.error("Upload validation failed. Please check your file and try again.");
+            disabled={batchUploading}
+            beforeUpload={async (file, fileList) => {
+              // antd calls this once per file but passes the whole selection —
+              // handle the batch on the first call and ignore the rest so the
+              // policy (especially maxFileCount) is applied to the set at once.
+              if (file !== fileList[0]) return false;
+
+              setBatchUploading(true);
+              try {
+                const { accepted, errors } = await validateBatchWithPolicy(
+                  fileList as unknown as File[],
+                );
+                errors.forEach((e) => message.error(e));
+
+                if (accepted.length > 0 && onUpload) {
+                  try {
+                    await onUpload(accepted);
+                  } catch (err) {
+                    // Error already handled by onUpload
+                  }
                 }
-                return false;
-              }
-              
-              // Call onUpload and wait for it to complete
-              if (onUpload) {
-                try {
-                  await onUpload(file);
-                } catch (err) {
-                  // Error already handled by onUpload
-                }
+              } finally {
+                setBatchUploading(false);
               }
               return false;
             }}
@@ -293,7 +286,7 @@ const AttachmentsPanel: React.FC<Props> = ({
             <p className="ant-upload-drag-icon">
               <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
             </p>
-            <p>Drag and drop files here, or click to choose</p>
+            <p>Drag and drop files here, or click to choose (multiple files supported)</p>
             <p style={{ fontSize: 12, color: "#8c8c8c" }}>
               Allowed: {allowedFileTypes.map(ft => ft.toUpperCase()).join(', ')} — Max {maxFileSizeMb} MB each — Up to {maxFileCount} files
             </p>

@@ -22,6 +22,10 @@ const ACTION_META: Record<string, { color: string; label: string }> = {
   MOVE_NEXT: { color: 'purple', label: 'Moved to Next Supervisor' },
   ESCALATE: { color: 'volcano', label: 'Escalated' },
   ALLOCATE: { color: 'cyan', label: 'Allocated' },
+  // Written by the backend when an asset is handed over with no request and no
+  // approval chain. Deliberately amber rather than cyan so it reads as
+  // distinct from a request-based allocation at a glance.
+  DIRECT_ASSIGN: { color: 'orange', label: 'Assigned Directly' },
   PROCUREMENT: { color: 'gold', label: 'Marked for Procurement' },
   CANCEL: { color: 'default', label: 'Cancelled' },
 };

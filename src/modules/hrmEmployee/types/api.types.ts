@@ -62,6 +62,17 @@ export interface EmployeeDirectoryRow {
   businessUnits?: string[];
   reportingManager?: string;
   reportingManagerName?: string;
+  /** Date of joining. Backs the "assignment date ≥ joining date" asset rule. */
+  joiningDate?: string;
+  /**
+   * Lifecycle stage (`PROBATION` | `PERMANENT` | `NOTICE_PERIOD` | …). Not yet
+   * part of the backend's EmployeeSummaryResponse — read where present so the
+   * consumers that gate on it (e.g. asset direct assignment, which must not
+   * hand assets to an exited employee) light up when the field is added.
+   */
+  employmentStatus?: string;
+  /** Non-null when NOTICE_PERIOD or TERMINATED. Same pending-field caveat. */
+  lastWorkingDay?: string;
 }
 
 /** Create employee (onboarding) */
@@ -98,6 +109,11 @@ export interface CreateEmployeeRequest {
   grade?: string;
   /** Employee's date of joining (ISO YYYY-MM-DD). */
   joiningDate?: string;
+  /** Confirmation date — probation cleared (ISO YYYY-MM-DD). Persisted via
+   *  /update-official after create, alongside joiningDate. Drives the
+   *  CONFIRMATION leave-accrual basis, so leaving it blank makes those
+   *  employees accrue against a null date. */
+  confirmationDate?: string;
   presentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
   permanentAddress?: string | { line1: string; line2?: string; city: string; state: string; pinCode: string; country: string; };
   emergencyContacts?: import('./domain.types').EmergencyContact[];
@@ -132,16 +148,20 @@ export interface UpdateOfficialRequest {
   reportingManagerName?: string;
   location?: string;
   businessUnits: string[];
+  /* The four lifecycle dates below are null-clearable: omit the key to leave
+   * the stored value unchanged, or send an explicit null to clear it. */
   /** Employee's date of joining (ISO YYYY-MM-DD). */
-  joiningDate?: string;
-  /** Lifecycle stage — see EmploymentStatus enum in domain.types. */
+  joiningDate?: string | null;
+  /** Lifecycle stage — see EmploymentStatus enum in domain.types. Not
+   *  clearable: the backend ignores a null because leave-eligibility
+   *  policies gate on it. */
   employmentStatus?: import('./domain.types').EmploymentStatus;
   /** End of probation (ISO YYYY-MM-DD). */
-  probationEndDate?: string;
+  probationEndDate?: string | null;
   /** Confirmation date — probation cleared (ISO YYYY-MM-DD). */
-  confirmationDate?: string;
+  confirmationDate?: string | null;
   /** Last working day for NOTICE_PERIOD / TERMINATED (ISO YYYY-MM-DD). */
-  lastWorkingDay?: string;
+  lastWorkingDay?: string | null;
   modifiedBy: string;
 }
 

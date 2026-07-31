@@ -358,7 +358,9 @@ const HrmTravelScreen: React.FC<Props> = ({
     }
   }, [organizationId]);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (files: File[]) => {
+    if (!files.length) return;
+
     let handle = currentRequest?.handle;
 
     // If no handle, need to save draft first - but only if form is valid
@@ -392,7 +394,12 @@ const HrmTravelScreen: React.FC<Props> = ({
       handle = saved.handle;
     }
 
-    return new Promise<void>((resolve, reject) => {
+    // Add files one at a time. Each iteration re-reads `attachmentRefs` from
+    // the store rather than the render closure — otherwise every file in a
+    // multi-select batch would append to the same stale list and only the
+    // last one would survive.
+    const addOne = (file: File) =>
+      new Promise<void>((resolve, reject) => {
       try {
         // Convert file to base64
         const reader = new FileReader();
@@ -402,7 +409,8 @@ const HrmTravelScreen: React.FC<Props> = ({
             const base64Data = base64String.split(',')[1]; // Remove data:image/png;base64, prefix
 
             // Check for duplicate file names and add suffix if needed
-            const currentAttachments = formState.attachmentRefs || [];
+            const currentAttachments =
+              useHrmTravelStore.getState().formState.attachmentRefs || [];
             const existingNames = new Set<string>();
             
             // Collect existing file names from both server and pending attachments
@@ -440,7 +448,6 @@ const HrmTravelScreen: React.FC<Props> = ({
               attachmentRefs: [...currentAttachments, attachment as any],
             });
 
-            message.success("Attachment added. Save draft to persist.");
             resolve();
           } catch (err) {
             const detail = err instanceof Error ? err.message : "";
@@ -466,7 +473,25 @@ const HrmTravelScreen: React.FC<Props> = ({
         );
         reject(err);
       }
-    });
+      });
+
+    let added = 0;
+    for (const file of files) {
+      try {
+        await addOne(file);
+        added += 1;
+      } catch {
+        // Per-file failure already surfaced by addOne
+      }
+    }
+
+    if (added > 0) {
+      message.success(
+        added === 1
+          ? "Attachment added. Save draft to persist."
+          : `${added} attachments added. Save draft to persist.`,
+      );
+    }
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {

@@ -300,19 +300,32 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         businessUnits: selectedBUName ? [selectedBUName] : [], // Send as array with full label (e.g., ["BU983383 - BUPAY Updated"])
         organizationName: selectedCompanyName || '', // Newly added
         organizationHandle: selectedCompany || '', // Newly added
+        // Lifecycle dates are null-clearable server-side: an absent key means
+        // "leave unchanged", an explicit null means "clear". These two fields
+        // are always rendered, so an empty picker is a deliberate clear.
         joiningDate: values.joiningDate
           ? values.joiningDate.format('YYYY-MM-DD')
-          : officialDetails.joiningDate,
-        employmentStatus: values.employmentStatus || undefined,
-        probationEndDate: values.probationEndDate
-          ? values.probationEndDate.format('YYYY-MM-DD')
-          : undefined,
+          : null,
         confirmationDate: values.confirmationDate
           ? values.confirmationDate.format('YYYY-MM-DD')
-          : undefined,
-        lastWorkingDay: values.lastWorkingDay
-          ? values.lastWorkingDay.format('YYYY-MM-DD')
-          : undefined,
+          : null,
+        employmentStatus: values.employmentStatus || undefined,
+        // probationEndDate and lastWorkingDay are conditionally rendered below
+        // (on employmentStatus). When hidden, values.X is undefined for a
+        // reason unrelated to the user's intent — sending null there would wipe
+        // a stored date, so omit the key entirely and let the server keep it.
+        ...(values.employmentStatus === 'PROBATION'
+          ? {
+              probationEndDate:
+                values.probationEndDate?.format('YYYY-MM-DD') ?? null,
+            }
+          : {}),
+        ...(['NOTICE_PERIOD', 'TERMINATED'].includes(values.employmentStatus ?? '')
+          ? {
+              lastWorkingDay:
+                values.lastWorkingDay?.format('YYYY-MM-DD') ?? null,
+            }
+          : {}),
       });
       setLocalEditing(false);
     } catch {
@@ -567,8 +580,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
               <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
             </Form.Item>
             <Form.Item name="employmentStatus" label="Employment Status">
+              {/* No allowClear: the backend ignores a null employmentStatus by
+                  design, so offering a clear would be a silent no-op. */}
               <Select
-                allowClear
                 placeholder="Select status"
                 options={EMPLOYMENT_STATUS_OPTIONS}
               />

@@ -14,6 +14,23 @@ import type {
   AssetDetailTab,
 } from '../types/domain.types';
 
+/**
+ * Which side of a direct assignment is already decided.
+ *
+ * `asset`    — opened from the asset list / asset detail: the asset is locked
+ *              and the user picks the employee.
+ * `employee` — opened from an employee record: the employee is locked and the
+ *              user picks from the in-store assets. This is the onboarding-kit
+ *              path, where several assets go to one person in sequence.
+ * `bulk`     — opened from the asset-list toolbar with several rows ticked: the
+ *              asset set is fixed (rows removable) and one employee/date/reason
+ *              applies to all of them.
+ */
+export type AssignModalContext =
+  | { kind: 'asset'; assetId: string }
+  | { kind: 'employee'; employeeId: string; employeeName?: string }
+  | { kind: 'bulk'; assetIds: string[] };
+
 interface HrmAssetState {
   // UI state
   selectedAsset: Asset | null;
@@ -30,6 +47,13 @@ interface HrmAssetState {
   isEditRequestDrawerOpen: boolean;
   isAllocationPanelOpen: boolean;
   isReturnModalOpen: boolean;
+  assignModalContext: AssignModalContext | null;
+  /**
+   * Asset IDs ticked in the list for a bulk direct assignment. Held in the
+   * store rather than the list component so the toolbar button (a sibling of
+   * the list) can read the count and hand the set to the modal.
+   */
+  bulkAssignSelection: string[];
   searchQuery: string;
   filterCategory: string;
   filterStatus: string;
@@ -84,6 +108,11 @@ interface HrmAssetState {
   closeAllocationPanel: () => void;
   openReturnModal: () => void;
   closeReturnModal: () => void;
+  openAssignModal: (ctx: AssignModalContext) => void;
+  closeAssignModal: () => void;
+  toggleBulkAssignSelection: (assetId: string) => void;
+  setBulkAssignSelection: (assetIds: string[]) => void;
+  clearBulkAssignSelection: () => void;
   setSearchQuery: (q: string) => void;
   setFilterCategory: (cat: string) => void;
   setFilterStatus: (status: string) => void;
@@ -136,6 +165,8 @@ const defaultState = {
   isEditRequestDrawerOpen: false,
   isAllocationPanelOpen: false,
   isReturnModalOpen: false,
+  assignModalContext: null,
+  bulkAssignSelection: [],
   searchQuery: '',
   filterCategory: '',
   filterStatus: '',
@@ -171,12 +202,46 @@ const defaultState = {
 export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   ...defaultState,
 
-  setSelectedAsset: (asset) => set({ selectedAsset: asset, activeDetailTab: 'overview' }),
+  // Drop the outgoing asset's detail lists along with the selection. They are
+  // keyed to the asset that was showing, so keeping them means the new asset's
+  // panel renders the previous one's custody/maintenance/depreciation rows
+  // until the refetch lands. Same reasoning as setSelectedRequest below.
+  setSelectedAsset: (asset) =>
+    set({
+      selectedAsset: asset,
+      activeDetailTab: 'overview',
+      custodyHistory: [],
+      maintenanceHistory: [],
+      depreciationHistory: [],
+    }),
   // Selecting a request resets the cached detail so the panel shows a
   // loading state until the fresh detail (with full history) arrives.
   setSelectedRequest: (request) => set({ selectedRequest: request, requestDetail: null }),
   setRequestDetail: (request) => set({ requestDetail: request }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  /**
+   * Switching tabs clears the asset selection.
+   *
+   * The Assets tab and Team History are two different lists that share one
+   * `selectedAsset` slice, and each renders its own detail panel from it. Left
+   * alone, picking an asset on Assets and switching to Team History shows that
+   * asset in the team panel — an asset that need not even be in the team list,
+   * and vice versa. Clearing makes each tab open on its own empty state.
+   *
+   * Guarded so a no-op set (same tab) never discards a live selection.
+   */
+  setActiveTab: (tab) =>
+    set((s) =>
+      s.activeTab === tab
+        ? { activeTab: tab }
+        : {
+            activeTab: tab,
+            selectedAsset: null,
+            activeDetailTab: 'overview',
+            custodyHistory: [],
+            maintenanceHistory: [],
+            depreciationHistory: [],
+          },
+    ),
   setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
   openAssetForm: () => set({ isAssetFormOpen: true }),
   closeAssetForm: () => set({ isAssetFormOpen: false }),
@@ -188,6 +253,16 @@ export const useHrmAssetStore = create<HrmAssetState>((set) => ({
   closeAllocationPanel: () => set({ isAllocationPanelOpen: false }),
   openReturnModal: () => set({ isReturnModalOpen: true }),
   closeReturnModal: () => set({ isReturnModalOpen: false }),
+  openAssignModal: (assignModalContext) => set({ assignModalContext }),
+  closeAssignModal: () => set({ assignModalContext: null }),
+  toggleBulkAssignSelection: (assetId) =>
+    set((s) => ({
+      bulkAssignSelection: s.bulkAssignSelection.includes(assetId)
+        ? s.bulkAssignSelection.filter((id) => id !== assetId)
+        : [...s.bulkAssignSelection, assetId],
+    })),
+  setBulkAssignSelection: (bulkAssignSelection) => set({ bulkAssignSelection }),
+  clearBulkAssignSelection: () => set({ bulkAssignSelection: [] }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setFilterCategory: (filterCategory) => set({ filterCategory }),
   setFilterStatus: (filterStatus) => set({ filterStatus }),

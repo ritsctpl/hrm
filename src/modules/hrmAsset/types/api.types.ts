@@ -155,9 +155,26 @@ export interface AssignAssetPayload {
   assetId: string;
   employeeId: string;
   employeeName: string;
-  allocationRequestId: string;
+  /**
+   * Only set when allocating against an approved asset request. A direct admin
+   * assignment omits it — the backend then records the custody as a direct
+   * hand-out (audit action DIRECT_ASSIGN) with no approval chain.
+   */
+  allocationRequestId?: string;
   allocationDate: string;
   expectedReturnDate?: string;
+  /**
+   * Why this asset is being handed over. Direct assignments only — the service
+   * discards it on the request-driven path, where the approved request is the
+   * justification of record. Must be one of ASSIGNMENT_REASONS; anything else
+   * is rejected with ASSET_011, and `OTHER` additionally requires 10+ chars of
+   * `remarks` (ASSET_012).
+   *
+   * Optional on the wire so the service still accepts callers that predate the
+   * field. The modal always sends it.
+   */
+  assignmentReason?: string;
+  remarks?: string;
   assignedBy: string;
 }
 
@@ -285,6 +302,12 @@ export interface AssetCustodyResponse {
   toDate?: string;
   expectedReturnDate?: string;
   allocationRequestId?: string;
+  assignmentType?: 'REQUEST_BASED' | 'DIRECT';
+  /** Set on DIRECT custody only; see AssignAssetPayload.assignmentReason. */
+  assignmentReason?: string;
+  remarks?: string;
+  assignedBy?: string;
+  assignedByName?: string;
   returnRemarks?: string;
   handoverReceiptNo?: string;
 }

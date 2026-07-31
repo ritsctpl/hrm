@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Tabs, Button, Space, Typography, Spin } from 'antd';
-import { CloseOutlined, EditOutlined } from '@ant-design/icons';
+import { Tabs, Button, Space, Typography, Spin, Tooltip } from 'antd';
+import { CloseOutlined, EditOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useHrmAssetStore } from './stores/hrmAssetStore';
 import AssetOverviewTab from './components/organisms/AssetOverviewTab';
 import AssetAttributesTab from './components/organisms/AssetAttributesTab';
@@ -14,6 +14,8 @@ import ReturnAssetModal from './components/organisms/ReturnAssetModal';
 import { useModulePermissions } from '../hrmAccess/hooks/useModulePermissions';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import Can from '../hrmAccess/components/Can';
+import { useCanDirectAssign } from './hooks/useCanDirectAssign';
+import { getDirectAssignBlockReason } from './utils/assetHelpers';
 
 interface HrmAssetScreenProps {
   canEdit?: boolean;
@@ -28,10 +30,13 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
   
   const canEdit = props.canEdit ?? assetPerms.canEdit;
   const canAssign = props.canAssign ?? assetPerms.canEdit;
+  const canDirectAssign = useCanDirectAssign();
   const store = useHrmAssetStore();
   const { selectedAsset, activeDetailTab, setActiveDetailTab, setSelectedAsset, openAssetForm } = store;
 
   if (!selectedAsset) return null;
+
+  const assignBlockReason = getDirectAssignBlockReason(selectedAsset);
 
   const tabItems = [
     {
@@ -100,6 +105,21 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
           </div>
         </div>
         <Space>
+          {/* Direct assignment. Hidden without the grant; disabled with a
+              reason when the asset itself isn't assignable. */}
+          {canDirectAssign && (
+            <Tooltip title={assignBlockReason ?? ''}>
+              <Button
+                size="small"
+                type="primary"
+                icon={<UserAddOutlined />}
+                disabled={!!assignBlockReason}
+                onClick={() => store.openAssignModal({ kind: 'asset', assetId: selectedAsset.assetId })}
+              >
+                Assign
+              </Button>
+            </Tooltip>
+          )}
           {canEdit && (
             <Can I="edit" object="asset_record">
               <Button
@@ -135,6 +155,9 @@ const HrmAssetScreen: React.FC<HrmAssetScreenProps> = (props) => {
       )}
 
       {store.isReturnModalOpen && <ReturnAssetModal />}
+      {/* AssignAssetModal is mounted once in HrmAssetLanding — the asset-list
+          row action can open it without an asset being selected, so it must
+          live above this screen. */}
     </div>
   );
 };
