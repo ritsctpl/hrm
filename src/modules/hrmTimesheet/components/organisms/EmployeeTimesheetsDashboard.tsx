@@ -165,7 +165,9 @@ export default function EmployeeTimesheetsDashboard() {
           style={{ width: 220 }}
           options={[
             { value: 'direct', label: 'Reporting To Me' },
-            { value: 'all', label: 'All reportees (incl. 2nd level)' },
+            // The server returns the whole subtree it lets you see, not just
+            // one extra rung, so the label does not promise exactly two levels.
+            { value: 'all', label: 'All reportees (2nd level and below)' },
           ]}
         />
         <div className={styles.mgrFiltersRight}>
@@ -179,8 +181,8 @@ export default function EmployeeTimesheetsDashboard() {
       </div>
 
       {managerScope === 'all' && (
-        <Text type="warning" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-          Indirect (2nd-level) reports require backend org-tree support — currently showing direct reports.
+        <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+          Showing everyone below you in the reporting line, as deep as you are permitted to approve.
         </Text>
       )}
 

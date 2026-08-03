@@ -178,7 +178,10 @@ export function useHrmTimesheetData() {
         organizationId,
         supervisorId,
         startDate,
-        endDate
+        endDate,
+        // The picker offered "All reportees (incl. 2nd level)" but the scope
+        // was never sent, so both options asked for the same direct reports.
+        store.managerScope === 'all' ? 'ALL' : 'DIRECT',
       );
       // Backend audit (C3): the team endpoint returns FLAT day-rows
       // ({employeeId, date, totalHours, colorCode, status, ...}), not the

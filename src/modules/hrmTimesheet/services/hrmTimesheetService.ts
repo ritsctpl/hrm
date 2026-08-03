@@ -84,8 +84,19 @@ export class HrmTimesheetService {
 
   // ─── Team View ────────────────────────────────────────────────────────────
 
-  static async getTeamTimesheets(organizationId: string, supervisorId: string, startDate: string, endDate: string): Promise<TeamTimesheetSummaryResponse[]> {
-    const res = await api.post(`${this.BASE}/team/list`, { organizationId, supervisorId, startDate, endDate });
+  /**
+   * `scope` is "DIRECT" (default) or "ALL". The server walks the reporting
+   * subtree for "ALL", bounded by the depth the caller is actually allowed to
+   * see — so asking for more than you may approve returns what you may.
+   */
+  static async getTeamTimesheets(
+    organizationId: string,
+    supervisorId: string,
+    startDate: string,
+    endDate: string,
+    scope: 'DIRECT' | 'ALL' = 'DIRECT',
+  ): Promise<TeamTimesheetSummaryResponse[]> {
+    const res = await api.post(`${this.BASE}/team/list`, { organizationId, supervisorId, startDate, endDate, scope });
     return Array.isArray(res.data) ? res.data : [];
   }
 
