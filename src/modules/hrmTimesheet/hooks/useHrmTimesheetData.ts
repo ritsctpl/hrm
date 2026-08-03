@@ -221,7 +221,11 @@ export function useHrmTimesheetData() {
     } finally {
       store.setLoadingTeam(false);
     }
-  }, [organizationId, supervisorId, isReady, store.managerPeriod, store.selectedWeekStart, store.selectedMonth]);
+    // store.managerScope belongs here: without it the memoised callback keeps
+    // the store snapshot from the last time one of the other deps changed, so
+    // switching the scope picker re-invoked a closure that still read "direct"
+    // and the request went out unchanged.
+  }, [organizationId, supervisorId, isReady, store.managerPeriod, store.selectedWeekStart, store.selectedMonth, store.managerScope]);
 
   const loadAssignedAllocations = useCallback(async () => {
     if (!isReady) return;
