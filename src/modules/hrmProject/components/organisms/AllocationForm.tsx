@@ -128,16 +128,15 @@ export default function AllocationForm({ projectHandle }: Props) {
     }
 
     const recurring = isTaskMode ? false : !!values.recurring;
-    // Task mode: each task's estimate is the TOTAL effort; spread it over the working days
-    // of the assignment window to get hours/day. (FE-side split — calendar days inclusive.)
-    const windowDays = Math.max(s1.isValid() && e1.isValid() ? e1.diff(s1, 'day') + 1 : 1, 1);
     const prepared: AllocationFormValues = {
       ...values,
       employeeId,
       employeeName: selectedEmployeeName,
       role: isTaskMode ? (allocationPrefill?.role || 'Member') : values.role,
       bookingType: isTaskMode ? ((allocationPrefill?.bookingType as 'FIRM' | 'TENTATIVE') || 'FIRM') : values.bookingType,
-      hoursPerDay: isTaskMode ? 0 : values.hoursPerDay, // per-task hours set on each assignment in task mode
+      // Assigning tasks records what the member works on, not for how long — the hours
+      // stay on their project-level allocation and are not split across tasks.
+      hoursPerDay: isTaskMode ? 0 : values.hoursPerDay,
       startDate: startStr,
       endDate: endStr,
       recurring,
@@ -147,9 +146,7 @@ export default function AllocationForm({ projectHandle }: Props) {
     const assignments = taskIds.length
       ? taskIds.map((id) => {
           const task = selectedProject?.tasks?.find((t) => t.handle === id);
-          const est = task?.estimatedHours ?? 0;
-          const hoursPerDay = isTaskMode && windowDays > 0 ? Math.round((est / windowDays) * 100) / 100 : undefined;
-          return { taskId: id, billableRate: task?.billableRate ?? values.billableRate, hoursPerDay };
+          return { taskId: id, billableRate: task?.billableRate ?? values.billableRate };
         })
       : [{ taskId: null as string | null, billableRate: values.billableRate }];
 
@@ -158,13 +155,6 @@ export default function AllocationForm({ projectHandle }: Props) {
 
   // Opened via "Assign Task" on a team member → focused, task-only layout.
   const isTaskMode = !!allocationPrefill;
-  // Working-day span of the member's window — used to spread each task's total estimate into hours/day.
-  const windowDays = (() => {
-    const s = dayjs(allocationPrefill?.startDate);
-    const e = dayjs(allocationPrefill?.endDate);
-    return allocationPrefill && s.isValid() && e.isValid() ? Math.max(e.diff(s, 'day') + 1, 1) : 1;
-  })();
-
   // Resource meta + task matrix data for assign-task mode
   const empRow = employees.find((e) => e.employeeCode === allocationPrefill?.employeeId);
   const assignedTaskIds = new Set(
@@ -263,11 +253,7 @@ export default function AllocationForm({ projectHandle }: Props) {
                   <span>{n}{assignedTaskIds.has(t.handle) && <Text type="secondary" style={{ fontSize: 11 }}> · assigned</Text>}</span>
                 ),
               },
-              { title: 'Total hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 90, align: 'right' },
-              {
-                title: `Hrs/day (÷${windowDays}d)`, key: 'perDay', width: 110, align: 'right',
-                render: (_: unknown, t) => <Text type="secondary">{((t.estimatedHours || 0) / windowDays).toFixed(2)}</Text>,
-              },
+              { title: 'Est. hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 90, align: 'right' },
             ]}
             locale={{ emptyText: 'No tasks' }}
           />
@@ -303,8 +289,8 @@ export default function AllocationForm({ projectHandle }: Props) {
       </Space>
       {isTaskMode ? (
         <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
-          Each task&apos;s <strong>total estimate</strong> is spread across the {windowDays}-day window
-          to set its hours/day (see the table). The 9h/day cap still applies to the combined total.
+          Pick the tasks this member will work on. Their hours stay on the project allocation —
+          assigning a task does not book any time against it.
         </div>
       ) : (
         <Form.Item
