@@ -31,6 +31,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
     currentPage,
     pageSize,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
     viewMode,
     searchKeyword,
     departmentFilter,
@@ -127,6 +130,9 @@ const HrmEmployeeLanding: React.FC<HrmEmployeeLandingProps> = ({ onSelectEmploye
         currentPage={currentPage}
         pageSize={pageSize}
         isLoading={isLoading}
+        isLoadingMore={isLoadingMore}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
         viewMode={viewMode}
         searchKeyword={searchKeyword}
         filters={filters}

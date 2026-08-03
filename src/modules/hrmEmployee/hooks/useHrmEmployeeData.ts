@@ -24,6 +24,7 @@ export function useEmployeeDirectory() {
   const {
     directory,
     fetchDirectory,
+    loadMoreEmployees,
     setViewMode,
     setSearchKeyword,
     setFilters,
@@ -72,6 +73,10 @@ export function useEmployeeDirectory() {
 
   return {
     ...directory,
+    // Card view pages by scrolling rather than by page numbers, so it needs to
+    // know whether anything is left to fetch.
+    hasMore: directory.employees.length < directory.totalCount,
+    loadMore: loadMoreEmployees,
     setViewMode,
     setPage,
     handleSearch,

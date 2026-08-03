@@ -103,6 +103,18 @@
   padding: 4px;
   overflow: auto;
   flex: 1;
+  align-content: start;
+}
+
+/* Full width under the cards — it is the end of the list, not another tile. */
+.cardGridFooter {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 4px 4px;
+  min-height: 32px;
 }
 
 /* ----- Empty state ----- */

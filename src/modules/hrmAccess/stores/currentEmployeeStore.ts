@@ -99,6 +99,10 @@ export const useCurrentEmployeeStore = create<CurrentEmployeeState>((set, get) =
         // and not the email, the cookieEmployeeCode path is the
         // authoritative tiebreaker.
         const match =
+          // Username logins (e.g. `rits_hrm_admin`) match nothing by email, so
+          // employeeCode stayed "" and every code-authorised call failed. The
+          // directory row now carries `userId` — the strictest match there is.
+          items.find((e) => (e.userId || '').toLowerCase() === lowerLogin) ||
           items.find((e) => (e.workEmail || '').toLowerCase() === lowerLogin) ||
           (lowerEmail
             ? items.find((e) => (e.workEmail || '').toLowerCase() === lowerEmail)

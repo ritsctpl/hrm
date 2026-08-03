@@ -45,6 +45,8 @@ export interface EmployeeDirectoryRow {
   employeeCode: string;
   fullName: string;
   workEmail: string;
+  /** Login id — set when the user signs in with a username rather than email. */
+  userId?: string;
   phone?: string;
   photoUrl?: string;
   /** Raw base64-encoded photo (with or without a data: URL prefix). Backend

@@ -105,6 +105,12 @@ export interface EmployeeCardGridProps {
   data: EmployeeSummary[];
   loading: boolean;
   onCardClick: (handle: string) => void;
+  /** Server-side total, so the grid can say how much of it is on screen. */
+  totalCount?: number;
+  hasMore?: boolean;
+  /** Appending a page — the grid keeps its cards and shows a small spinner. */
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 /** Tab props (shared across profile tabs) */

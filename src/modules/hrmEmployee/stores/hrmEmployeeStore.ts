@@ -25,6 +25,9 @@ interface DirectoryState {
   currentPage: number;
   pageSize: number;
   isLoading: boolean;
+  /** Appending the next page in card view — distinct from a fresh load, which
+      blanks the grid. */
+  isLoadingMore: boolean;
   viewMode: DirectoryViewMode;
   searchKeyword: string;
   departmentFilter: string | null;
@@ -55,7 +58,9 @@ export interface HrmEmployeeState {
   onboarding: OnboardingState;
 
   // Directory actions
-  fetchDirectory: () => Promise<void>;
+  fetchDirectory: (options?: { append?: boolean }) => Promise<void>;
+  /** Card view: pull the next page and add it to what is already on screen. */
+  loadMoreEmployees: () => Promise<void>;
   setViewMode: (mode: DirectoryViewMode) => void;
   setSearchKeyword: (keyword: string) => void;
   setFilters: (filters: Partial<DirectoryFilters>) => void;
@@ -92,6 +97,7 @@ const initialDirectory: DirectoryState = {
   currentPage: 1,
   pageSize: DEFAULT_PAGE_SIZE,
   isLoading: false,
+  isLoadingMore: false,
   viewMode: 'card',
   searchKeyword: '',
   departmentFilter: null,
@@ -127,9 +133,18 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
 
   /* ---- Directory ---- */
 
-  fetchDirectory: async () => {
+  fetchDirectory: async (options) => {
+    const append = !!options?.append;
     const state = get();
-    set({ directory: { ...state.directory, isLoading: true } });
+    // A fresh load empties the grid and shows a spinner; appending must not,
+    // or every "load more" would flash the whole list away.
+    set({
+      directory: {
+        ...state.directory,
+        isLoading: append ? state.directory.isLoading : true,
+        isLoadingMore: append,
+      },
+    });
 
     try {
       const organizationId = getOrganizationId();
@@ -168,24 +183,47 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       });
 
       const employees = (response.employees || []).map(mapDirectoryRowToSummary);
+      const existing = append ? get().directory.employees : [];
+      // Dedupe on handle: a record added or reordered server-side between two
+      // page requests can otherwise arrive twice and collide on its React key.
+      const seen = new Set(existing.map((e) => e.handle));
+      const merged = [...existing, ...employees.filter((e) => !seen.has(e.handle))];
 
       set({
         directory: {
           ...get().directory,
-          employees,
-          totalCount: response.totalCount ?? employees.length,
+          employees: merged,
+          totalCount: response.totalCount ?? merged.length,
           isLoading: false,
+          isLoadingMore: false,
         },
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to fetch employees';
       message.error(msg);
-      set({ directory: { ...get().directory, isLoading: false } });
+      set({ directory: { ...get().directory, isLoading: false, isLoadingMore: false } });
     }
   },
 
+  loadMoreEmployees: async () => {
+    const d = get().directory;
+    if (d.isLoading || d.isLoadingMore) return;
+    // Nothing further to ask for. totalCount is the server's count, so this
+    // also stops a short final page from triggering an endless fetch loop.
+    if (d.totalCount > 0 && d.employees.length >= d.totalCount) return;
+
+    set({ directory: { ...d, currentPage: d.currentPage + 1 } });
+    await get().fetchDirectory({ append: true });
+  },
+
   setViewMode: (mode) => {
-    set({ directory: { ...get().directory, viewMode: mode } });
+    const d = get().directory;
+    if (d.viewMode === mode) return;
+    // Back to page one on every switch. Card view accumulates pages while the
+    // table shows exactly one, so carrying a page number across would leave
+    // the table on page 4 or the grid showing a mid-list slice.
+    set({ directory: { ...d, viewMode: mode, currentPage: 1 } });
+    get().fetchDirectory();
   },
 
   setSearchKeyword: (keyword) => {

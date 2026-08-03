@@ -36,6 +36,10 @@ interface EmployeeDirectoryTemplateProps {
   currentPage: number;
   pageSize: number;
   isLoading: boolean;
+  /** Card view is appending its next page — the grid stays on screen. */
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   viewMode: DirectoryViewMode;
   searchKeyword: string;
   filters: DirectoryFilters;
@@ -66,6 +70,9 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
   currentPage,
   pageSize,
   isLoading,
+  isLoadingMore,
+  hasMore,
+  onLoadMore,
   viewMode,
   searchKeyword,
   filters,
@@ -254,6 +261,10 @@ const EmployeeDirectoryTemplate: React.FC<EmployeeDirectoryTemplateProps> = ({
           data={employees}
           loading={isLoading}
           onCardClick={onRowClick}
+          totalCount={totalCount}
+          hasMore={hasMore}
+          loadingMore={isLoadingMore}
+          onLoadMore={onLoadMore}
         />
       )}
     </div>
