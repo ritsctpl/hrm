@@ -10,10 +10,11 @@ import {
   WithdrawAnnouncementPayload,
   DeleteAnnouncementPayload,
   GetEngagementPayload,
-  PreviewRoutePayload,
-  ApprovalRoutePreview,
+  GetPinnedAnnouncementsPayload,
+  PreviewAudiencePayload,
+  AudienceResolution,
+  AnnouncementCategoryRecord,
   AnnouncementActionPayload,
-  ApprovalPolicy,
 } from "../types/api.types";
 import { Announcement, EngagementStats } from "../types/domain.types";
 
@@ -23,7 +24,6 @@ import { Announcement, EngagementStats } from "../types/domain.types";
  * `/getAnnouncement` → `/get`, `/listAnnouncements` → `/search`, and so on.
  */
 const BASE = "/hrm-service/announcement";
-const POLICY_BASE = `${BASE}/policy`;
 
 /**
  * Unwraps a list response. The announcement controller mixes shapes: some
@@ -40,15 +40,33 @@ function asList<T>(data: unknown): T[] {
   return [];
 }
 
+/**
+ * The feed endpoints answer from the per-employee delivery record, which keys
+ * the announcement as `announcementHandle` and has no `handle` of its own.
+ * Every other endpoint — mark-read, acknowledge, `/get` — takes `handle`, so
+ * normalize once here rather than making each caller remember which shape it
+ * is holding.
+ *
+ * The delivery snapshot also carries no message body: it stores the title and
+ * summary only, so a feed that shows the message has to fetch it per item.
+ */
+function withHandle(items: Announcement[]): Announcement[] {
+  return items.map((a) => ({
+    ...a,
+    handle: a.handle ?? (a as { announcementHandle?: string }).announcementHandle ?? "",
+  }));
+}
+
 export class HrmAnnouncementService {
   static async getFeed(payload: GetAnnouncementsPayload): Promise<Announcement[]> {
     const res = await api.post(`${BASE}/getMyAnnouncements`, payload);
-    return asList<Announcement>(res.data);
+    return withHandle(asList<Announcement>(res.data));
   }
 
-  static async getPinned(organizationId: string): Promise<Announcement[]> {
-    const res = await api.post(`${BASE}/getPinned`, { organizationId });
-    return asList<Announcement>(res.data);
+  /** Audience-scoped — without an employee code the server has nothing to match. */
+  static async getPinned(payload: GetPinnedAnnouncementsPayload): Promise<Announcement[]> {
+    const res = await api.post(`${BASE}/getPinned`, payload);
+    return withHandle(asList<Announcement>(res.data));
   }
 
   static async getDetail(payload: GetAnnouncementDetailPayload): Promise<Announcement> {
@@ -58,6 +76,15 @@ export class HrmAnnouncementService {
 
   static async markRead(payload: MarkReadPayload): Promise<void> {
     await api.post(`${BASE}/markAsRead`, payload);
+  }
+
+  /**
+   * Records an explicit acknowledgement. Distinct from markAsRead: reading is
+   * passive, acknowledging is the employee confirming they have understood —
+   * it's what `acknowledgedCount` and the overdue tracking count.
+   */
+  static async acknowledge(payload: MarkReadPayload): Promise<void> {
+    await api.post(`${BASE}/acknowledge`, payload);
   }
 
   static async listAnnouncements(payload: ListAnnouncementsPayload): Promise<Announcement[]> {
@@ -75,12 +102,29 @@ export class HrmAnnouncementService {
     return res.data;
   }
 
-  static async publishAnnouncement(payload: PublishAnnouncementPayload): Promise<void> {
-    await api.post(`${BASE}/publish`, payload);
+  static async publishAnnouncement(payload: PublishAnnouncementPayload): Promise<Announcement> {
+    const res = await api.post(`${BASE}/publish`, payload);
+    return res.data;
   }
 
-  static async withdrawAnnouncement(payload: WithdrawAnnouncementPayload): Promise<void> {
-    await api.post(`${BASE}/withdraw`, payload);
+  static async withdrawAnnouncement(payload: WithdrawAnnouncementPayload): Promise<Announcement> {
+    const res = await api.post(`${BASE}/withdraw`, payload);
+    return res.data;
+  }
+
+  /** Per-site category records — the source of truth for the composer picker. */
+  static async listCategories(organizationId: string): Promise<AnnouncementCategoryRecord[]> {
+    const res = await api.post(`${BASE}/category/list`, { organizationId });
+    return asList<AnnouncementCategoryRecord>(res.data);
+  }
+
+  /** `{unread, pendingAcknowledgment}` — drives the feed badge. */
+  static async getMyCounts(payload: {
+    organizationId: string;
+    employeeCode: string;
+  }): Promise<Record<string, number>> {
+    const res = await api.post(`${BASE}/getMyCounts`, payload);
+    return res.data ?? {};
   }
 
   static async getEngagementStats(payload: GetEngagementPayload): Promise<EngagementStats> {
@@ -92,43 +136,36 @@ export class HrmAnnouncementService {
     await api.post(`${BASE}/delete`, payload);
   }
 
-  // ── Approval routing (handover §4.4) ────────────────────────────────────
-
   /**
-   * Call whenever `priority` changes in the composer. Drives the route stepper,
-   * the forced-acknowledgement lock, and which primary action is offered.
+   * Resolves how many employees the current targeting actually reaches.
+   * Call before save — "I didn't realise this went to all 148 people" is the
+   * most common post-publish regret (screen.md §2).
    */
-  static async previewRoute(payload: PreviewRoutePayload): Promise<ApprovalRoutePreview> {
-    const res = await api.post(`${POLICY_BASE}/previewRoute`, payload);
+  static async previewAudience(payload: PreviewAudiencePayload): Promise<AudienceResolution> {
+    const res = await api.post(`${BASE}/previewAudience`, payload);
     return res.data;
   }
 
-  /** Every configured route at the site. Requires MANAGE. */
-  static async listPolicies(payload: {
-    organizationId: string;
-    actorId: string;
-  }): Promise<ApprovalPolicy[]> {
-    const res = await api.post(`${POLICY_BASE}/list`, payload);
-    return asList<ApprovalPolicy>(res.data);
-  }
+  // ── Approval ────────────────────────────────────────────────────────────
+  //
+  // There is no policy controller and no route preview: approval routes to the
+  // author's reporting manager, exactly as a leave request does. The per-
+  // category `AnnouncementApprovalConfig` (SLA hours, delegation, self-approval)
+  // is read server-side only — no endpoint exposes it, so there is nothing for
+  // the UI to configure.
 
-  /**
-   * Replaces one priority's route. Requires MANAGE.
-   *
-   * NOTE: the controller resolves the tenant from `site` (not `organizationId`)
-   * and takes the actor from `modifiedBy` — unlike every other endpoint here.
-   */
-  static async updatePolicy(payload: ApprovalPolicy): Promise<ApprovalPolicy> {
-    const res = await api.post(`${POLICY_BASE}/update`, payload);
-    return res.data;
-  }
-
+  /** Routes to the author's reporting manager, or HR when they have none. */
   static async submitForApproval(payload: AnnouncementActionPayload): Promise<Announcement> {
     const res = await api.post(`${BASE}/submitForApproval`, payload);
     return res.data;
   }
 
-  /** Items awaiting *this* approver, across every level they hold. */
+  /**
+   * Items this approver may act on right now — the server queries
+   * `currentApproverId === approverId AND status = PENDING_APPROVAL`, so the
+   * list itself is the authority on what may be actioned. Never re-derive that
+   * from a permission.
+   */
   static async getPendingApprovals(payload: {
     organizationId: string;
     approverId: string;
@@ -167,7 +204,7 @@ export class HrmAnnouncementService {
 
   /**
    * Ratify (`ratified: true`) or refuse (`false`) an emergency publish after
-   * the fact. Requires APPROVE_TOP. Refusing sets status WITHDRAWN and
+   * the fact. Requires ANNOUNCEMENT_MANAGE. Refusing sets status WITHDRAWN and
    * ratificationStatus REFUSED — it does not recall the emails already sent.
    */
   static async ratify(payload: AnnouncementActionPayload): Promise<Announcement> {

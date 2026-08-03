@@ -1,15 +1,51 @@
 import { AnnouncementPriority, AnnouncementCategory, AnnouncementStatus } from "./domain.types";
 
+/**
+ * Mirrors `MyAnnouncementsRequest`. Note `category` and `priority` are ARRAYS
+ * server-side — sending a bare string fails Jackson deserialization and comes
+ * back as a 500. There is no `status` field: the feed is published-only by
+ * definition, filtered by audience rather than by status.
+ */
 export interface GetAnnouncementsPayload {
   organizationId: string;
+  /** Employee CODE. Either key is accepted; blank means no audience match. */
+  employeeCode?: string;
   employeeId?: string;
-  department?: string;
-  role?: string;
-  category?: AnnouncementCategory;
-  priority?: AnnouncementPriority;
-  status?: AnnouncementStatus;
+  category?: string[];
+  priority?: string[];
+  text?: string;
+  year?: number;
+  includePast?: boolean;
+  unreadOnly?: boolean;
+  pendingAcknowledgmentOnly?: boolean;
   page?: number;
   size?: number;
+}
+
+/** Mirrors `AnnouncementSearchRequest` — status/category/priority are arrays. */
+export interface ListAnnouncementsPayload {
+  organizationId: string;
+  text?: string;
+  status?: string[];
+  category?: string[];
+  priority?: string[];
+  createdBy?: string;
+  year?: number;
+  acknowledgmentRequired?: boolean;
+  pinnedOnly?: boolean;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: "ASC" | "DESC";
+  includeFacets?: boolean;
+  /** REQUIRED since 2026-07-31 — needs CREATE, MANAGE or REPORT. */
+  actorId: string;
+}
+
+/** `/getPinned` resolves the employee from `employeeCode` (or `employeeId`). */
+export interface GetPinnedAnnouncementsPayload {
+  organizationId: string;
+  employeeCode: string;
 }
 
 export interface GetAnnouncementDetailPayload {
@@ -22,19 +58,14 @@ export interface GetAnnouncementDetailPayload {
   actorId: string;
 }
 
-export interface ListAnnouncementsPayload {
-  organizationId: string;
-  status?: string;
-  category?: string;
-  page?: number;
-  size?: number;
-}
-
+/** Mirrors `AnnouncementReadRequest`. `via` — not `readVia`. */
 export interface MarkReadPayload {
   organizationId: string;
   announcementHandle: string;
-  employeeId: string;
-  readVia?: string;
+  /** Either key is accepted server-side; prefer the code. */
+  employeeCode?: string;
+  employeeId?: string;
+  via?: string;
 }
 
 export interface CreateAnnouncementPayload {
@@ -56,114 +87,111 @@ export interface CreateAnnouncementPayload {
   /** Server forces this on for CRITICAL/EMERGENCY regardless of what is sent. */
   acknowledgmentRequired?: boolean;
   pinnedUntil?: string;
+  /**
+   * REQUIRED in practice — the server resolves the actor for the CREATE
+   * permission check from this field, not from a header or token. Must be the
+   * employee code; omitting it yields 403 PERMISSION_DENIED.
+   */
   createdBy?: string;
 }
 
 export interface UpdateAnnouncementPayload extends Partial<CreateAnnouncementPayload> {
   organizationId: string;
   announcementHandle: string;
+  /** REQUIRED — actor for the EDIT permission check. */
+  modifiedBy?: string;
 }
 
+/** `/publish` takes an AnnouncementActionRequest — the actor is `actorId`. */
 export interface PublishAnnouncementPayload {
   organizationId: string;
   announcementHandle: string;
-  publishedBy?: string;
+  actorId: string;
 }
 
+/** `/withdraw` is an AnnouncementActionRequest too: `actorId` + `remarks`. */
 export interface WithdrawAnnouncementPayload {
   organizationId: string;
   announcementHandle: string;
-  withdrawnBy?: string;
-  reason?: string;
+  actorId: string;
+  remarks?: string;
 }
 
+/** `/delete` reads `announcementHandle` and `deletedBy` — not announcementId. */
 export interface DeleteAnnouncementPayload {
   organizationId: string;
-  announcementId: string;
+  announcementHandle: string;
   deletedBy: string;
 }
 
 export interface GetEngagementPayload {
   organizationId: string;
   announcementHandle: string;
+  /** REQUIRED since 2026-07-31 — needs REPORT or MANAGE. */
+  actorId: string;
 }
 
 export interface GetPinnedPayload {
   organizationId: string;
 }
 
-/** `/policy/previewRoute` — what the composer renders (handover §4.4). */
-export interface PreviewRoutePayload {
-  organizationId: string;
-  priority: string;
-  actorId: string;
-}
-
-export interface ApprovalRouteLevel {
-  level: number;
-  levelCode: string;
-  resolverType: string;
-  slaHours: number;
-  approverIds: string[];
-  /** false ⇒ submission will fail with 422 APPROVER_NOT_CONFIGURED. */
-  resolvable: boolean;
-}
-
-export interface ApprovalRoutePreview {
-  site: string;
-  priority: string;
-  approvalRequired: boolean;
-  acknowledgementForced: boolean;
-  levels: ApprovalRouteLevel[];
-}
-
-export type ResolverType =
-  | "PERMISSION"
-  | "ROLE"
-  | "DESIGNATION"
-  | "EMPLOYEE_LIST"
-  | "ORG_HIERARCHY_TOP";
-export type OnBreach = "REMIND" | "ESCALATE" | "AUTO_APPROVE";
-export type OnEmpty = "FAIL" | "ESCALATE";
-
-/** Mirrors `AnnouncementApprovalPolicy.ApprovalLevelDefinition`. */
-export interface ApprovalLevelDefinition {
-  level: number;
-  levelCode: string;
-  resolverType: ResolverType;
-  /** Not required for ORG_HIERARCHY_TOP; required for every other type. */
-  resolverValue?: string;
-  slaHours: number;
-  onBreach: OnBreach;
-  onEmpty: OnEmpty;
-}
-
-/** Mirrors `AnnouncementApprovalPolicy`. */
-export interface ApprovalPolicy {
+/**
+ * Mirrors `AnnouncementCategory`. Categories are per-site Mongo records, not a
+ * fixed enum — always read them from `/category/list` rather than hardcoding,
+ * or a site with a custom category can't select it.
+ */
+export interface AnnouncementCategoryRecord {
   handle?: string;
-  site: string;
-  priority: string;
-  approvalRequired: boolean;
-  levels: ApprovalLevelDefinition[];
-  emailOnPublish?: boolean;
-  acknowledgementRequired?: boolean;
-  /** EMERGENCY only — the post-hoc ratification window. */
-  ratificationHours?: number;
+  site?: string;
+  categoryCode: string;
+  categoryName: string;
+  description?: string;
+  iconName?: string;
+  color?: string;
+  displayOrder?: number;
+  approvalRequired?: boolean;
+  acknowledgmentRequiredDefault?: boolean;
+  defaultAcknowledgmentDays?: number;
+  emailByDefault?: boolean;
+  pushByDefault?: boolean;
+  defaultPriority?: string;
   systemDefined?: boolean;
-  modifiedBy?: string;
+}
+
+/** Mirrors `ResolveAudienceRequest`. Empty targeting matches nobody. */
+export interface PreviewAudiencePayload {
+  organizationId: string;
+  allEmployees?: boolean;
+  targetDepartments?: string[];
+  targetBusinessUnits?: string[];
+  targetRoles?: string[];
+  targetEmployeeIds?: string[];
+}
+
+/** Mirrors `AudienceResolution`. */
+export interface AudienceResolution {
+  totalTargetEmployees: number;
+  withEmailCount: number;
+  withoutEmailCount: number;
+  sampleRecipients?: {
+    employeeCode: string;
+    employeeName: string;
+    workEmailMasked: string;
+  }[];
 }
 
 /**
- * Shared action body. `expectedLevel` is the level the UI rendered — sending it
- * turns a stale double-click into 409 ALREADY_ACTIONED instead of approving a
- * step the user never saw (handover §4.1).
+ * Shared action body.
+ *
+ * There is no level token to send: with one approver at a time the server's
+ * compare-and-set guards on status alone, so two approvers racing still
+ * resolves deterministically — the loser gets 409 HRM_ANN_NOT_PENDING_APPROVAL.
  */
 export interface AnnouncementActionPayload {
   organizationId: string;
   announcementHandle: string;
   actorId: string;
   remarks?: string;
-  expectedLevel?: number;
   emergencyJustification?: string;
   ratified?: boolean;
 }

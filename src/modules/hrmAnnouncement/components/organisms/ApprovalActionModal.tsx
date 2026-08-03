@@ -39,8 +39,6 @@ interface ApprovalActionModalProps {
   open: boolean;
   action: ApprovalAction;
   announcement: Announcement | null;
-  /** The level the UI rendered — sent as expectedLevel to catch stale views. */
-  expectedLevel?: number | null;
   submitting: boolean;
   onCancel: () => void;
   onConfirm: (remarks: string) => void;
@@ -50,7 +48,6 @@ const ApprovalActionModal: React.FC<ApprovalActionModalProps> = ({
   open,
   action,
   announcement,
-  expectedLevel,
   submitting,
   onCancel,
   onConfirm,
@@ -78,12 +75,7 @@ const ApprovalActionModal: React.FC<ApprovalActionModalProps> = ({
       onCancel={onCancel}
       destroyOnClose
     >
-      <Text>
-        <Text strong>&ldquo;{announcement?.title}&rdquo;</Text>
-        {expectedLevel != null && (
-          <Text type="secondary"> — level {expectedLevel}</Text>
-        )}
-      </Text>
+      <Text strong>&ldquo;{announcement?.title}&rdquo;</Text>
 
       <Alert type="info" showIcon style={{ margin: "12px 0" }} message={copy.hint} />
 

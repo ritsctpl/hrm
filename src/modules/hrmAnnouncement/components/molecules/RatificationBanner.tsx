@@ -2,14 +2,14 @@
 
 import React from "react";
 import { Alert, Button, Space, Typography, Tag } from "antd";
-import dayjs from "dayjs";
+import { formatDateTime, isPast } from "@/utils/dateUtils";
 import type { Announcement } from "../../types/domain.types";
 
 const { Text } = Typography;
 
 interface RatificationBannerProps {
   announcement: Announcement;
-  /** Only APPROVE_TOP holders get the actions; everyone else sees the state. */
+  /** Only ANNOUNCEMENT_MANAGE holders get the actions; the rest see the state. */
   canRatify: boolean;
   onRatify: () => void;
   onRefuse: () => void;
@@ -20,7 +20,8 @@ interface RatificationBannerProps {
  *
  * Amber while the window is open, red once the deadline has passed. Shown to
  * everyone so the pending state is visible; actions appear only for holders of
- * ANNOUNCEMENT_APPROVE_TOP.
+ * ANNOUNCEMENT_MANAGE — with no approval levels left there is no "top level"
+ * to name, so HR administration is what signs an emergency off.
  */
 const RatificationBanner: React.FC<RatificationBannerProps> = ({
   announcement,
@@ -41,9 +42,7 @@ const RatificationBanner: React.FC<RatificationBannerProps> = ({
         description={
           <>
             {announcement.ratifiedBy ? `Ratified by ${announcement.ratifiedBy}` : "Ratified"}
-            {announcement.ratifiedAt
-              ? ` on ${dayjs(announcement.ratifiedAt).format("DD-MMM-YYYY HH:mm")}`
-              : ""}
+            {announcement.ratifiedAt ? ` on ${formatDateTime(announcement.ratifiedAt)}` : ""}
           </>
         }
       />
@@ -64,7 +63,7 @@ const RatificationBanner: React.FC<RatificationBannerProps> = ({
 
   // PENDING
   const deadline = announcement.ratificationDeadline;
-  const overdue = !!deadline && dayjs(deadline).isBefore(dayjs());
+  const overdue = isPast(deadline);
 
   return (
     <Alert
@@ -80,12 +79,12 @@ const RatificationBanner: React.FC<RatificationBannerProps> = ({
       description={
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
           <Text style={{ fontSize: 13 }}>
-            This was published as an emergency, bypassing the approval chain.
+            This was published as an emergency, bypassing approval.
             {deadline && (
               <>
                 {" "}
-                Top level must ratify by{" "}
-                <Text strong>{dayjs(deadline).format("DD-MMM-YYYY HH:mm")}</Text>
+                HR must ratify by{" "}
+                <Text strong>{formatDateTime(deadline)}</Text>
                 {overdue ? " — that deadline has passed." : "."}
               </>
             )}

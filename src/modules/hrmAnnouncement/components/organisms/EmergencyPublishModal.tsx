@@ -25,7 +25,7 @@ interface EmergencyForm {
 /**
  * Emergency publish confirmation (screen.md §7.4).
  *
- * Deliberately high-friction: this bypasses the approval chain and mails the
+ * Deliberately high-friction: this bypasses approval entirely and mails the
  * whole audience immediately. Typed confirmation + explicit checkbox, because
  * a single misclick here is not recallable — the emails have gone.
  */
@@ -77,8 +77,8 @@ const EmergencyPublishModal: React.FC<EmergencyPublishModalProps> = ({
         message={`"${title}" will be sent now.`}
         description={
           <>
-            This bypasses the approval chain and emails the full audience immediately.
-            Top level will be notified and must ratify within {ratificationHours} hours.
+            This bypasses approval and emails the full audience immediately.
+            HR will be notified and must ratify within {ratificationHours} hours.
             If ratification is refused the announcement is withdrawn — but{" "}
             <Text strong>the emails already sent stay sent.</Text> This action is recorded
             against your user ID.

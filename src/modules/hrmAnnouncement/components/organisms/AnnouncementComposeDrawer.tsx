@@ -1,18 +1,33 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { Drawer, Form, Input, Select, DatePicker, Switch, Button, Space, Tooltip, message } from "antd";
-import dayjs from "dayjs";
+import React, { useEffect, useState } from "react";
+import { Alert, Drawer, Form, Input, Select, DatePicker, Switch, Button, Space, message } from "antd";
+import { toLocalDateTime } from "@/utils/dateUtils";
 import { AnnouncementComposeDrawerProps } from "../../types/ui.types";
-import type { ApprovalRoutePreview } from "../../types/api.types";
 import { HrmAnnouncementService } from "../../services/hrmAnnouncementService";
-import { CATEGORY_LABELS, PRIORITY_LABELS, normalizePriority } from "../../utils/constants";
+import {
+  FORCED_ACK_PRIORITIES,
+  PRIORITY_LABELS,
+  normalizePriority,
+} from "../../utils/constants";
 import { useHrmAnnouncementStore } from "../../stores/hrmAnnouncementStore";
 import { useAnnouncementPermissions } from "../../hooks/useAnnouncementPermissions";
 import { useEmployeeIdentity } from "@/modules/hrmAccess/hooks/useEmployeeIdentity";
-import ApprovalRoutePanel from "../molecules/ApprovalRoutePanel";
+import { useAnnouncementCategories } from "../../hooks/useAnnouncementCategories";
+import { parseAnnouncementError } from "../../utils/announcementErrors";
+import AudienceSelector, { EMPTY_AUDIENCE, isAudienceEmpty, type AudienceValue } from "./AudienceSelector";
 import EmergencyPublishModal from "./EmergencyPublishModal";
 import Can from "../../../hrmAccess/components/Can";
+
+const EMPTY_AUDIENCE_ERROR = "EMPTY_AUDIENCE";
+
+/** Shows the recipient error when that was the cause, the generic one otherwise. */
+const reportSaveError = (e: unknown, fallback: string) =>
+  message.error(
+    e instanceof Error && e.message === EMPTY_AUDIENCE_ERROR
+      ? "Select at least one recipient"
+      : fallback
+  );
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -33,40 +48,59 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
   const { employeeCode: actorId, isReady: identityReady } = useEmployeeIdentity();
 
   const [priority, setPriority] = useState<string>("GENERAL");
-  const [route, setRoute] = useState<ApprovalRoutePreview | null>(null);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [routeError, setRouteError] = useState<string | null>(null);
+  const [categoryCode, setCategoryCode] = useState<string>("");
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const [acting, setActing] = useState(false);
+  // Audience lives outside the antd Form — it's a composite value, not a field.
+  const [audience, setAudience] = useState<AudienceValue>(EMPTY_AUDIENCE);
+  // Categories are per-site records, not an enum — never hardcode them.
+  const { sorted: categories, byCode: categoryByCode } = useAnnouncementCategories();
 
-  // The server decides the route; the composer only renders it (handover §0 rule 1).
-  const loadRoute = useCallback(
-    async (p: string) => {
-      setRouteLoading(true);
-      setRouteError(null);
-      try {
-        const preview = await HrmAnnouncementService.previewRoute({
-          organizationId,
-          priority: p,
-          actorId,
-        });
-        setRoute(preview);
-        // Acknowledgement is forced on for CRITICAL/EMERGENCY — reflect the lock.
-        if (preview.acknowledgementForced) {
-          form.setFieldValue("acknowledgmentRequired", true);
-        }
-      } catch (e: unknown) {
-        setRoute(null);
-        setRouteError(e instanceof Error ? e.message : "Request failed");
-      } finally {
-        setRouteLoading(false);
-      }
-    },
-    [organizationId, actorId, form]
-  );
+  /**
+   * Whether this announcement needs a review before it goes out.
+   *
+   * The category decides — the author may opt in to review but never out of
+   * it, which is what the server enforces on create. There is no route to
+   * preview any more: approval goes to the author's reporting manager, and
+   * neither the composer nor the author gets a say in who that is.
+   */
+  const approvalRequired =
+    !!categoryByCode(categoryCode)?.approvalRequired ||
+    !!editAnnouncement?.approvalRequired;
+
+  /** Forced on by the server for CRITICAL/EMERGENCY — reflect the lock. */
+  const ackForced = FORCED_ACK_PRIORITIES.includes(normalizePriority(priority));
 
   useEffect(() => {
-    if (!open || !identityReady) return;
+    if (ackForced) form.setFieldValue("acknowledgmentRequired", true);
+  }, [ackForced, form]);
+
+  /**
+   * Picking a category applies its server-side defaults. These are the
+   * author's expectation-setters: choosing "Policy Update" should immediately
+   * show that it needs approval and forces acknowledgement, not leave them to
+   * discover it at submit.
+   */
+  const handleCategoryChange = (code: string) => {
+    setCategoryCode(code);
+    const record = categoryByCode(code);
+    if (!record) return;
+    if (record.defaultPriority) {
+      // Seeded defaults still carry legacy values (NORMAL/HIGH/URGENT/LOW).
+      const p = normalizePriority(record.defaultPriority);
+      form.setFieldValue("priority", p);
+      setPriority(p);
+    }
+    // A category default never unsets a priority that forces acknowledgement —
+    // the server would force it back on and the switch would look like it lied.
+    if (record.acknowledgmentRequiredDefault !== undefined && !ackForced) {
+      form.setFieldValue("acknowledgmentRequired", record.acknowledgmentRequiredDefault);
+    }
+  };
+
+  useEffect(() => {
+    // A blank actorId can never succeed — treat it as not-ready.
+    if (!open || !identityReady || !actorId) return;
     if (editAnnouncement) {
       const p = normalizePriority(editAnnouncement.priority);
       form.setFieldsValue({
@@ -75,43 +109,80 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         priority: p,
         category: editAnnouncement.category,
         pinToTop: editAnnouncement.pinToTop,
-        scheduledPublishAt: editAnnouncement.scheduledPublishAt
-          ? dayjs(editAnnouncement.scheduledPublishAt)
-          : undefined,
-        expiresAt: editAnnouncement.expiresAt ? dayjs(editAnnouncement.expiresAt) : undefined,
+        // The picker works in local time; the server's value is zoneless UTC.
+        // Saving sends `.toISOString()` back, so the round trip stays honest.
+        scheduledPublishAt: toLocalDateTime(editAnnouncement.scheduledPublishAt) ?? undefined,
+        expiresAt: toLocalDateTime(editAnnouncement.expiresAt) ?? undefined,
       });
       setPriority(p);
-      loadRoute(p);
+      setCategoryCode(editAnnouncement.category ?? "");
+      setAudience({
+        allEmployees: editAnnouncement.allEmployees ?? false,
+        targetBusinessUnits: editAnnouncement.targetBusinessUnits ?? [],
+        targetDepartments: editAnnouncement.targetDepartments ?? [],
+        targetRoles: editAnnouncement.targetRoles ?? [],
+        targetEmployeeIds: editAnnouncement.targetEmployeeIds ?? [],
+      });
     } else {
       form.resetFields();
-      form.setFieldsValue({ priority: "GENERAL", category: "GENERAL", pinToTop: false });
+      // Category is seeded from the server list once it arrives — see below.
+      form.setFieldsValue({ priority: "GENERAL", pinToTop: false });
       setPriority("GENERAL");
-      loadRoute("GENERAL");
+      setCategoryCode("");
+      setAudience(EMPTY_AUDIENCE);
     }
-  }, [open, identityReady, editAnnouncement, form, loadRoute]);
+  }, [open, identityReady, actorId, editAnnouncement, form]);
+
+  /**
+   * Preselect the first category once the server list arrives. Deliberately
+   * not hardcoded to "GENERAL" — a site may rename or remove it, and picking
+   * a code that doesn't exist would fail on save with an unhelpful error.
+   */
+  useEffect(() => {
+    if (!open || editAnnouncement || !categories.length) return;
+    if (form.getFieldValue("category")) return;
+    const first = categories[0];
+    form.setFieldValue("category", first.categoryCode);
+    handleCategoryChange(first.categoryCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editAnnouncement, categories]);
 
   const handlePriorityChange = (p: string) => {
     setPriority(p);
-    loadRoute(p);
   };
 
   /** Saves and returns the handle, so an action can chain onto a new record. */
   const persist = async (): Promise<string | null> => {
     const values = await form.validateFields();
+    // Callers show this one themselves so it isn't followed by a generic
+    // "Failed to save" that hides the real reason.
+    if (isAudienceEmpty(audience)) throw new Error(EMPTY_AUDIENCE_ERROR);
     const payload = {
       ...values,
       organizationId,
       scheduledPublishAt: values.scheduledPublishAt?.toISOString(),
       expiresAt: values.expiresAt?.toISOString(),
+      // Targeting is additive server-side; allEmployees overrides the rest.
+      allEmployees: audience.allEmployees,
+      targetBusinessUnits: audience.targetBusinessUnits,
+      targetDepartments: audience.targetDepartments,
+      targetRoles: audience.targetRoles,
+      targetEmployeeIds: audience.targetEmployeeIds,
     };
+    // The actor for the permission check comes from createdBy / modifiedBy on
+    // these two endpoints — not actorId, and not a header.
     if (editAnnouncement) {
       await HrmAnnouncementService.updateAnnouncement({
         ...payload,
         announcementHandle: editAnnouncement.handle,
+        modifiedBy: actorId,
       });
       return editAnnouncement.handle;
     }
-    const created = await HrmAnnouncementService.createAnnouncement(payload);
+    const created = await HrmAnnouncementService.createAnnouncement({
+      ...payload,
+      createdBy: actorId,
+    });
     return created?.handle ?? null;
   };
 
@@ -121,8 +192,8 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       await persist();
       message.success(editAnnouncement ? "Announcement updated" : "Draft saved");
       onSaved();
-    } catch {
-      message.error("Failed to save announcement");
+    } catch (e) {
+      reportSaveError(e, "Failed to save announcement");
     } finally {
       setSaving(false);
     }
@@ -140,8 +211,15 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       });
       message.success("Submitted for approval");
       onSaved();
-    } catch {
-      message.error("Failed to submit for approval");
+    } catch (e) {
+      // HRM_ANN_NO_APPROVER is the one the author can act on — it names the
+      // missing reporting manager — so let the parser surface the server text
+      // rather than flattening it into "Failed to submit".
+      if (e instanceof Error && e.message === EMPTY_AUDIENCE_ERROR) {
+        reportSaveError(e, "Failed to submit for approval");
+      } else {
+        message.error(parseAnnouncementError(e, "Failed to submit for approval").message);
+      }
     } finally {
       setActing(false);
     }
@@ -155,11 +233,12 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       await HrmAnnouncementService.publishAnnouncement({
         organizationId,
         announcementHandle: handle,
+        actorId,
       });
       message.success("Announcement published");
       onSaved();
-    } catch {
-      message.error("Failed to publish announcement");
+    } catch (e) {
+      reportSaveError(e, "Failed to publish announcement");
     } finally {
       setActing(false);
     }
@@ -179,8 +258,8 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       setEmergencyOpen(false);
       message.success("Emergency announcement published — awaiting ratification");
       onSaved();
-    } catch {
-      message.error("Failed to publish emergency announcement");
+    } catch (e) {
+      reportSaveError(e, "Failed to publish emergency announcement");
     } finally {
       setActing(false);
     }
@@ -203,12 +282,9 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
     }
   };
 
-  const ackForced = !!route?.acknowledgementForced;
-  const blocked = !!route?.levels?.some((l) => !l.resolvable);
-  const isEmergency = priority === "EMERGENCY";
-  const canPublishDirect = route ? !route.approvalRequired && can.publishGeneral : false;
+  const isEmergency = normalizePriority(priority) === "EMERGENCY";
 
-  // One primary action, chosen by the policy — never both.
+  // One primary action, chosen by the category — never both.
   const primaryAction = (() => {
     if (isEmergency && can.emergency) {
       return (
@@ -217,23 +293,21 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         </Button>
       );
     }
-    if (canPublishDirect) {
+    if (approvalRequired) {
+      return (
+        <Button type="primary" loading={acting} onClick={handleSubmitForApproval}>
+          Submit for approval
+        </Button>
+      );
+    }
+    if (can.publishGeneral) {
       return (
         <Button type="primary" loading={acting} onClick={handlePublishDirect}>
           Publish
         </Button>
       );
     }
-    if (route?.approvalRequired) {
-      return (
-        <Tooltip title={blocked ? "An approval level has no one assigned — ask an administrator" : ""}>
-          <Button type="primary" loading={acting} disabled={blocked} onClick={handleSubmitForApproval}>
-            Submit for approval
-          </Button>
-        </Tooltip>
-      );
-    }
-    // No route loaded, or no publish grant — saving a draft is all that's offered.
+    // No publish grant — saving a draft is all that's offered.
     return null;
   })();
 
@@ -273,17 +347,34 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
           </Select>
         </Form.Item>
 
-        <ApprovalRoutePanel preview={route} loading={routeLoading} error={routeError} />
+        {approvalRequired && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="This category needs approval"
+            description={
+              "It goes to your reporting manager, the same way a leave request does. " +
+              "If nobody answers in time it moves up the reporting chain, and HR picks up " +
+              "anything that runs off the top."
+            }
+          />
+        )}
 
         <Form.Item name="title" label="Title" rules={[{ required: true }]}>
           <Input placeholder="Announcement title" />
         </Form.Item>
         <Form.Item name="category" label="Category" rules={[{ required: true }]}>
-          <Select>
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <Option key={value} value={value}>{label}</Option>
-            ))}
-          </Select>
+          <Select
+            loading={!categories.length}
+            optionFilterProp="label"
+            showSearch
+            onChange={handleCategoryChange}
+            options={categories.map((c) => ({
+              value: c.categoryCode,
+              label: c.categoryName || c.categoryCode,
+            }))}
+          />
         </Form.Item>
         <Form.Item name="content" label="Content" rules={[{ required: true }]}>
           <TextArea rows={8} placeholder="Announcement content (HTML supported)" />

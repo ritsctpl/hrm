@@ -17,15 +17,12 @@ import WithdrawConfirmModal from './components/organisms/WithdrawConfirmModal';
 import ApprovalInbox from './components/organisms/ApprovalInbox';
 import ApprovalActionModal, { type ApprovalAction } from './components/organisms/ApprovalActionModal';
 import RatifyConfirmModal from './components/organisms/RatifyConfirmModal';
-import ApprovalPolicyAdmin from './components/organisms/ApprovalPolicyAdmin';
-import { currentStep } from './components/molecules/ApprovalLevelIndicator';
 import { useAnnouncementPermissions } from './hooks/useAnnouncementPermissions';
 import { parseAnnouncementError } from './utils/announcementErrors';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
 import { Announcement } from './types/domain.types';
-import type { ApprovalPolicy } from './types/api.types';
 import { ANNOUNCEMENT_HR_ROLES } from './utils/constants';
 import styles from './styles/HrmAnnouncement.module.css';
 
@@ -70,6 +67,7 @@ const HrmAnnouncementLanding: React.FC = () => {
     setFilterCategory,
     setFilterPriority,
     markAsRead,
+    markAcknowledged,
     setPublishing,
     setWithdrawing,
     withdrawing,
@@ -85,40 +83,97 @@ const HrmAnnouncementLanding: React.FC = () => {
     setPendingApprovals,
     setApprovalsLoading,
     setApprovalActing,
+    announcementBodies,
+    loadingBodies,
+    setBodyLoading,
+    setAnnouncementBody,
   } = useHrmAnnouncementStore();
 
   const can = useAnnouncementPermissions();
-  const isApprover = can.approveL1 || can.approveTop;
   const [approvalTarget, setApprovalTarget] = React.useState<Announcement | null>(null);
   const [approvalAction, setApprovalAction] = React.useState<ApprovalAction>('approve');
   const [ratifyIntent, setRatifyIntent] = React.useState<boolean | null>(null);
   const [ratifying, setRatifying] = React.useState(false);
   const [retryingEmails, setRetryingEmails] = React.useState(false);
-  const [policies, setPolicies] = React.useState<ApprovalPolicy[]>([]);
-  const [policiesLoading, setPoliciesLoading] = React.useState(false);
-  const [savingPriority, setSavingPriority] = React.useState<string | null>(null);
+  const [acknowledgingHandle, setAcknowledgingHandle] = React.useState<string | null>(null);
+  // Cards come into view together, so the store flag alone would let two of
+  // them fire the same fetch in one tick. This is the synchronous guard.
+  const requestedBodies = React.useRef<Set<string>>(new Set());
 
   const { loadFeed, loadAdminAnnouncements, loadEngagementStats } = useHrmAnnouncementData();
 
   useEffect(() => {
-    loadFeed();
+    // Feed is audience-scoped — wait for the employee code to resolve.
+    if (identityReady) loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterCategory, filterPriority]);
+  }, [identityReady, filterCategory, filterPriority]);
 
   useEffect(() => {
-    if (activeTab === 'admin' && canAdmin) {
+    if (activeTab === 'admin' && canAdmin && identityReady) {
       loadAdminAnnouncements();
     }
-  }, [activeTab, canAdmin, loadAdminAnnouncements]);
+  }, [activeTab, canAdmin, identityReady, loadAdminAnnouncements]);
 
   const handleMarkRead = async (announcementHandle: string) => {
     try {
-      await HrmAnnouncementService.markRead({ organizationId, announcementHandle, employeeId });
+      await HrmAnnouncementService.markRead({ organizationId, announcementHandle, employeeCode: employeeId });
       markAsRead(announcementHandle);
     } catch {
       // silent
     }
   };
+
+  const handleAcknowledge = async (announcementHandle: string) => {
+    if (!announcementHandle) return;
+    setAcknowledgingHandle(announcementHandle);
+    try {
+      await HrmAnnouncementService.acknowledge({
+        organizationId,
+        announcementHandle,
+        employeeCode: employeeId,
+      });
+      markAcknowledged(announcementHandle);
+      message.success('Acknowledgement recorded');
+    } catch (err) {
+      message.error(parseAnnouncementError(err, 'Failed to record acknowledgement').message);
+    } finally {
+      setAcknowledgingHandle(null);
+    }
+  };
+
+  /**
+   * Fetches one announcement's message body for the feed.
+   *
+   * The feed answers from delivery records, which carry the title and a
+   * summary but not the content, so a feed that prints the message has to ask
+   * per item. Called when a card scrolls into view and cached by handle, so
+   * this is one request per announcement the reader actually reaches — not one
+   * per page load.
+   */
+  const loadBody = React.useCallback(
+    async (announcementHandle: string) => {
+      if (!announcementHandle || !employeeId) return;
+      if (requestedBodies.current.has(announcementHandle)) return;
+      requestedBodies.current.add(announcementHandle);
+      setBodyLoading(announcementHandle, true);
+      try {
+        const full = await HrmAnnouncementService.getDetail({
+          organizationId,
+          announcementHandle,
+          actorId: employeeId,
+        });
+        if (full) setAnnouncementBody(announcementHandle, full);
+        else setBodyLoading(announcementHandle, false);
+      } catch {
+        // Quiet by design: one body failing is one card falling back to its
+        // summary, not something to interrupt the reader with. Left in the
+        // requested set so a failing item is not retried on every scroll.
+        setBodyLoading(announcementHandle, false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [organizationId, employeeId]
+  );
 
   const handleMarkAllRead = async () => {
     const unread = [
@@ -137,11 +192,12 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   /**
    * Opens the detail view immediately from the list record, then upgrades it
-   * with `/get`. Only `/get` returns `approvalChain` / `currentLevel` — the
-   * feed, search and pending-approval responses are summaries without it.
+   * with `/get`. Only `/get` carries the approval detail — `supervisorId`,
+   * the SLA deadline and the breach flag; the feed, search and pending-approval
+   * responses are summaries that stop at `currentApproverId`.
    * Audience-scoped, so `actorId` is mandatory or the server 404s.
    */
-  const openDetailWithChain = React.useCallback(
+  const openDetail = React.useCallback(
     async (announcement: Announcement) => {
       openDetailPanel(announcement);
       try {
@@ -150,9 +206,23 @@ const HrmAnnouncementLanding: React.FC = () => {
           announcementHandle: announcement.handle,
           actorId: employeeId,
         });
-        if (full) setSelectedAnnouncement({ ...announcement, ...full });
+        if (full) {
+          // `/get` returns the announcement-level record — it has no
+          // per-employee read/acknowledgement state, and a null in the
+          // response would otherwise clobber what the feed already knows.
+          setSelectedAnnouncement({
+            ...announcement,
+            ...full,
+            isRead: announcement.isRead,
+            readAt: announcement.readAt,
+            isAcknowledged: announcement.isAcknowledged,
+            acknowledgedAt: announcement.acknowledgedAt,
+            acknowledgmentDueDate: announcement.acknowledgmentDueDate,
+            acknowledgmentOverdue: announcement.acknowledgmentOverdue,
+          });
+        }
       } catch (err) {
-        // Non-fatal: the summary is already on screen, just without the chain.
+        // Non-fatal: the summary is already on screen, just without the extras.
         const info = parseAnnouncementError(err, 'Could not load full announcement details');
         if (info.status !== 404) message.error(info.message);
       }
@@ -161,17 +231,10 @@ const HrmAnnouncementLanding: React.FC = () => {
     [organizationId, employeeId]
   );
 
-  const handleAnnouncementClick = (announcement: Announcement) => {
-    openDetailWithChain(announcement);
-    if (!announcement.isRead) {
-      handleMarkRead(announcement.handle);
-    }
-  };
-
   const handlePublish = async (announcementHandle: string) => {
     setPublishing(true);
     try {
-      await HrmAnnouncementService.publishAnnouncement({ organizationId, announcementHandle });
+      await HrmAnnouncementService.publishAnnouncement({ organizationId, announcementHandle, actorId: employeeId });
       message.success('Announcement published');
       loadAdminAnnouncements();
       loadFeed();
@@ -189,8 +252,8 @@ const HrmAnnouncementLanding: React.FC = () => {
       await HrmAnnouncementService.withdrawAnnouncement({
         organizationId,
         announcementHandle: withdrawTarget.handle,
-        withdrawnBy: employeeId,
-        reason,
+        actorId: employeeId,
+        remarks: reason,
       });
       message.success('Announcement withdrawn');
       closeWithdrawConfirm();
@@ -226,7 +289,7 @@ const HrmAnnouncementLanding: React.FC = () => {
       message.error(info.message);
       if (info.shouldRefetch) {
         setRatifyIntent(null);
-        openDetailWithChain(selectedAnnouncement);
+        openDetail(selectedAnnouncement);
       }
     } finally {
       setRatifying(false);
@@ -254,48 +317,6 @@ const HrmAnnouncementLanding: React.FC = () => {
     }
   };
 
-  const loadPolicies = React.useCallback(async () => {
-    setPoliciesLoading(true);
-    try {
-      const data = await HrmAnnouncementService.listPolicies({
-        organizationId,
-        actorId: employeeId,
-      });
-      setPolicies(data ?? []);
-    } catch (err) {
-      message.error(parseAnnouncementError(err, 'Failed to load approval policies').message);
-    } finally {
-      setPoliciesLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, employeeId]);
-
-  useEffect(() => {
-    if (activeTab === 'policy' && can.manage && identityReady) {
-      loadPolicies();
-    }
-  }, [activeTab, can.manage, identityReady, loadPolicies]);
-
-  const handleSavePolicy = async (policy: typeof policies[number]) => {
-    setSavingPriority(policy.priority);
-    try {
-      // This endpoint reads the tenant from `site` and the actor from
-      // `modifiedBy`, unlike the rest of the module.
-      const updated = await HrmAnnouncementService.updatePolicy({
-        ...policy,
-        site: policy.site || organizationId,
-        modifiedBy: employeeId,
-      });
-      setPolicies(policies.map((p) => (p.priority === policy.priority ? updated ?? policy : p)));
-      message.success(`${policy.priority} route saved`);
-    } catch (err) {
-      // The server names the exact problem on 422 — show it rather than a generic.
-      message.error(parseAnnouncementError(err, 'Failed to save approval policy').message);
-    } finally {
-      setSavingPriority(null);
-    }
-  };
-
   const loadPendingApprovals = React.useCallback(async () => {
     if (!employeeId) return;
     setApprovalsLoading(true);
@@ -313,11 +334,20 @@ const HrmAnnouncementLanding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, employeeId]);
 
+  /**
+   * Loaded for everyone once the identity resolves, not just for a permission
+   * holder: whether you approve announcements is decided by who reports to
+   * you, so the only way to know is to ask. The response also decides whether
+   * the tab appears at all — an empty list means nothing is with you.
+   */
   useEffect(() => {
-    if (activeTab === 'approvals' && isApprover && identityReady) {
-      loadPendingApprovals();
-    }
-  }, [activeTab, isApprover, identityReady, loadPendingApprovals]);
+    if (identityReady) loadPendingApprovals();
+  }, [identityReady, loadPendingApprovals]);
+
+  useEffect(() => {
+    if (identityReady && activeTab === 'approvals') loadPendingApprovals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const openApprovalAction = (announcement: Announcement, action: ApprovalAction) => {
     setApprovalTarget(announcement);
@@ -327,15 +357,13 @@ const HrmAnnouncementLanding: React.FC = () => {
   const handleApprovalConfirm = async (remarks: string) => {
     if (!approvalTarget) return;
     setApprovalActing(true);
-    // expectedLevel is the rung the UI rendered — if the chain moved on we get
-    // 409 ALREADY_ACTIONED instead of silently actioning a step never seen.
-    const expectedLevel = currentStep(approvalTarget)?.level;
+    // No level token to send: the server's compare-and-set guards on status,
+    // so a stale second click loses with 409 rather than actioning twice.
     const payload = {
       organizationId,
       announcementHandle: approvalTarget.handle,
       actorId: employeeId,
       remarks,
-      expectedLevel,
     };
     const verb =
       approvalAction === 'approve' ? 'approved'
@@ -362,7 +390,7 @@ const HrmAnnouncementLanding: React.FC = () => {
 
   const handleViewStats = (announcement: Announcement) => {
     loadEngagementStats(announcement.handle);
-    openDetailWithChain(announcement);
+    openDetail(announcement);
   };
 
   const handleDrawerSaved = () => {
@@ -382,7 +410,9 @@ const HrmAnnouncementLanding: React.FC = () => {
             announcement={selectedAnnouncement}
             onClose={closeDetailPanel}
             onMarkRead={handleMarkRead}
-            canRatify={can.approveTop}
+            onAcknowledge={() => handleAcknowledge(selectedAnnouncement.handle)}
+            acknowledging={acknowledgingHandle === selectedAnnouncement.handle}
+            canRatify={can.manage}
             onRatify={() => setRatifyIntent(true)}
             onRefuseRatification={() => setRatifyIntent(false)}
           />
@@ -420,7 +450,12 @@ const HrmAnnouncementLanding: React.FC = () => {
           filterCategory={filterCategory}
           filterPriority={filterPriority}
           canAdmin={canAdmin}
-          onAnnouncementClick={handleAnnouncementClick}
+          bodies={announcementBodies}
+          loadingBodies={loadingBodies}
+          onNeedBody={loadBody}
+          onRead={handleMarkRead}
+          onAcknowledge={handleAcknowledge}
+          acknowledgingHandle={acknowledgingHandle}
           onCategoryFilter={setFilterCategory}
           onPriorityFilter={setFilterPriority}
           onMarkAllRead={handleMarkAllRead}
@@ -430,7 +465,9 @@ const HrmAnnouncementLanding: React.FC = () => {
     },
   ];
 
-  if (isApprover) {
+  // Shown when something is actually with this user — or to HR, who can still
+  // override. There is no approval grant to gate on any more.
+  if (pendingApprovals.length > 0 || can.manage) {
     tabItems.push({
       key: 'approvals',
       label: `Approvals${pendingApprovals.length ? ` (${pendingApprovals.length})` : ''}`,
@@ -438,25 +475,9 @@ const HrmAnnouncementLanding: React.FC = () => {
         <ApprovalInbox
           items={pendingApprovals}
           loading={approvalsLoading}
-          can={can}
           actorId={employeeId}
           onAction={openApprovalAction}
-          onOpen={openDetailWithChain}
-        />
-      ),
-    });
-  }
-
-  if (can.manage) {
-    tabItems.push({
-      key: 'policy',
-      label: 'Approval Policy',
-      children: (
-        <ApprovalPolicyAdmin
-          policies={policies}
-          loading={policiesLoading}
-          savingPriority={savingPriority}
-          onSave={handleSavePolicy}
+          onOpen={openDetail}
         />
       ),
     });
@@ -486,7 +507,7 @@ const HrmAnnouncementLanding: React.FC = () => {
         <CommonAppBar appTitle="Announcements" />
         <Tabs
           activeKey={activeTab}
-          onChange={(key) => setActiveTab(key as 'feed' | 'admin' | 'approvals' | 'policy')}
+          onChange={(key) => setActiveTab(key as 'feed' | 'admin' | 'approvals')}
           items={tabItems}
           size="small"
           tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
@@ -512,7 +533,6 @@ const HrmAnnouncementLanding: React.FC = () => {
           open={!!approvalTarget}
           action={approvalAction}
           announcement={approvalTarget}
-          expectedLevel={approvalTarget ? currentStep(approvalTarget)?.level : undefined}
           submitting={approvalActing}
           onCancel={() => setApprovalTarget(null)}
           onConfirm={handleApprovalConfirm}

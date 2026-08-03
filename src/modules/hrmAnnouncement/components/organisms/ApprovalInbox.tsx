@@ -4,36 +4,19 @@ import React from "react";
 import { Table, Button, Space, Tag, Tooltip, Typography, Empty } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { CheckOutlined, CloseOutlined, RollbackOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import { formatDateTime } from "@/utils/dateUtils";
 import type { Announcement } from "../../types/domain.types";
-import type { AnnouncementPermissions } from "../../hooks/useAnnouncementPermissions";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
-import ApprovalLevelIndicator, { currentStep } from "../molecules/ApprovalLevelIndicator";
+import ApprovalStatusLine from "../molecules/ApprovalStatusLine";
+import { useEmployeeNames } from "../../hooks/useEmployeeNames";
 import type { ApprovalAction } from "./ApprovalActionModal";
 import styles from "../../styles/HrmAnnouncement.module.css";
 
 const { Text } = Typography;
 
-/** Maps a rung's requiredPermission onto the grants this user holds. */
-function holdsRequiredPermission(
-  requiredPermission: string | undefined,
-  can: AnnouncementPermissions
-): boolean {
-  switch (requiredPermission) {
-    case "ANNOUNCEMENT_APPROVE_L1":
-      return can.approveL1;
-    case "ANNOUNCEMENT_APPROVE_TOP":
-      return can.approveTop;
-    default:
-      // Unknown rung — let the server be the authority rather than guessing.
-      return can.approveL1 || can.approveTop;
-  }
-}
-
 interface ApprovalInboxProps {
   items: Announcement[];
   loading: boolean;
-  can: AnnouncementPermissions;
   /** Current user's employee code — used to block self-approval. */
   actorId: string;
   onAction: (announcement: Announcement, action: ApprovalAction) => void;
@@ -41,22 +24,25 @@ interface ApprovalInboxProps {
 }
 
 /**
- * Approval inbox (handover §6.2).
+ * Approval inbox.
  *
- * Two hard rules, both enforced here as usability and again by the server:
- *   1. You may only action the rung whose requiredPermission you hold — an
- *      APPROVE_L1 holder viewing a TOP_LEVEL step sees it read-only, not a
- *      button that will 403.
- *   2. You may never action your own announcement.
+ * Approving is not a grant: `/getPendingApprovals` returns exactly the items
+ * where the caller is the current approver and the item is still pending, so
+ * every row here is actionable by definition. Deriving the buttons from a
+ * permission instead would show actions the hierarchy never gave this user.
+ *
+ * The one guard left is self-approval — blocked unless the category opts in,
+ * and re-checked by the server either way.
  */
 const ApprovalInbox: React.FC<ApprovalInboxProps> = ({
   items,
   loading,
-  can,
   actorId,
   onAction,
   onOpen,
 }) => {
+  const { nameOf } = useEmployeeNames();
+
   const columns: ColumnsType<Announcement> = [
     {
       title: "Title",
@@ -75,24 +61,27 @@ const ApprovalInbox: React.FC<ApprovalInboxProps> = ({
     },
     {
       title: "Awaiting",
-      key: "level",
+      key: "approver",
       width: 240,
-      render: (_, r) => <ApprovalLevelIndicator announcement={r} />,
+      render: (_, r) => <ApprovalStatusLine announcement={r} actorId={actorId} />,
     },
     {
       title: "Author",
       dataIndex: "createdBy",
       key: "createdBy",
       width: 140,
-      render: (v: string) => v || <Text type="secondary">—</Text>,
+      render: (v: string) => nameOf(v) || <Text type="secondary">—</Text>,
     },
     {
       title: "Submitted",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      key: "submittedAt",
       width: 150,
-      render: (v: string) =>
-        v ? dayjs(v).format("DD-MMM-YYYY HH:mm") : <Text type="secondary">—</Text>,
+      render: (_, r) => {
+        // The summary rows carry createdDateTime; the full record adds
+        // submittedAt. createdAt only ever comes from a cached payload.
+        const when = r.submittedAt ?? r.createdDateTime ?? r.createdAt;
+        return formatDateTime(when) || <Text type="secondary">—</Text>;
+      },
     },
     {
       title: "Actions",
@@ -100,21 +89,12 @@ const ApprovalInbox: React.FC<ApprovalInboxProps> = ({
       width: 210,
       align: "right",
       render: (_, r) => {
-        const step = currentStep(r);
         const isOwn = !!actorId && r.createdBy === actorId;
-        const permitted = holdsRequiredPermission(step?.requiredPermission, can);
 
         if (isOwn) {
           return (
             <Tooltip title="You cannot action your own announcement">
               <Tag>your announcement</Tag>
-            </Tooltip>
-          );
-        }
-        if (!permitted) {
-          return (
-            <Tooltip title={`This step needs ${step?.requiredPermission ?? "another permission"}`}>
-              <Tag>read-only</Tag>
             </Tooltip>
           );
         }

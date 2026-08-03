@@ -4,10 +4,12 @@ import React from "react";
 import { Table, Button, Space, Popconfirm, Tag, Select } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, SendOutlined, StopOutlined, PlusOutlined, BarChartOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import { formatDateTime } from "@/utils/dateUtils";
 import { Announcement } from "../../types/domain.types";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
 import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
+import ApprovalStatusLine from "../molecules/ApprovalStatusLine";
+import { useEmployeeNames } from "../../hooks/useEmployeeNames";
 import Can from "../../../hrmAccess/components/Can";
 import { STATUS_COLORS, STATUS_LABELS, PRIORITY_LABELS, normalizePriority } from "../../utils/constants";
 import styles from "../../styles/HrmAnnouncement.module.css";
@@ -47,6 +49,8 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
     [announcements, statusFilter, priorityFilter]
   );
 
+  const { nameOf } = useEmployeeNames();
+
   const columns: ColumnsType<Announcement> = [
     {
       title: "Title",
@@ -69,6 +73,13 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       render: (c) => <AnnouncementCategoryBadge category={c} />,
     },
     {
+      title: "Author",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      width: 140,
+      render: (v: string) => nameOf(v) || "-",
+    },
+    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -80,11 +91,24 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       ),
     },
     {
+      // Where a submitted announcement actually is. "Pending Approval" in the
+      // status column says it is waiting; this says who it is waiting on.
+      title: "Approval",
+      key: "approval",
+      width: 220,
+      render: (_, record) =>
+        record.status === "PENDING_APPROVAL" ? (
+          <ApprovalStatusLine announcement={record} />
+        ) : (
+          "-"
+        ),
+    },
+    {
       title: "Published",
       dataIndex: "publishedAt",
       key: "publishedAt",
       width: 120,
-      render: (d) => (d ? dayjs(d).format("DD-MMM-YYYY") : "-"),
+      render: (d) => formatDateTime(d, "DD-MMM-YYYY") || "-",
     },
     {
       title: "Actions",

@@ -17,7 +17,12 @@ interface AnnouncementFeedTemplateProps {
   filterCategory: string;
   filterPriority: string;
   canAdmin?: boolean;
-  onAnnouncementClick: (announcement: Announcement) => void;
+  bodies: Record<string, Announcement>;
+  loadingBodies: Record<string, boolean>;
+  onNeedBody: (handle: string) => void;
+  onRead: (handle: string) => void;
+  onAcknowledge: (handle: string) => void;
+  acknowledgingHandle?: string | null;
   onCategoryFilter: (v: string) => void;
   onPriorityFilter: (v: string) => void;
   onMarkAllRead?: () => void;
@@ -31,7 +36,12 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
   filterCategory,
   filterPriority,
   canAdmin,
-  onAnnouncementClick,
+  bodies,
+  loadingBodies,
+  onNeedBody,
+  onRead,
+  onAcknowledge,
+  acknowledgingHandle,
   onCategoryFilter,
   onPriorityFilter,
   onMarkAllRead,
@@ -104,7 +114,12 @@ const AnnouncementFeedTemplate: React.FC<AnnouncementFeedTemplateProps> = ({
         pinnedAnnouncements={pinnedItems}
         feed={feedItems}
         loading={loading}
-        onAnnouncementClick={onAnnouncementClick}
+        bodies={bodies}
+        loadingBodies={loadingBodies}
+        onNeedBody={onNeedBody}
+        onRead={onRead}
+        onAcknowledge={onAcknowledge}
+        acknowledgingHandle={acknowledgingHandle}
       />
     </div>
   );

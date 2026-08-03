@@ -1,19 +1,16 @@
 import { Announcement } from "./domain.types";
 
-export interface AnnouncementListRowProps {
-  announcement: Announcement;
-  onClick: (announcement: Announcement) => void;
-  onMarkRead?: (handle: string) => void;
-}
-
 export interface AnnouncementDetailPanelProps {
   announcement: Announcement;
   onClose: () => void;
   onMarkRead?: (handle: string) => void;
-  /** ANNOUNCEMENT_APPROVE_TOP — gates the Ratify / Refuse actions. */
+  /** ANNOUNCEMENT_MANAGE — gates the Ratify / Refuse actions. */
   canRatify?: boolean;
   onRatify?: () => void;
   onRefuseRatification?: () => void;
+  /** Omitted when the record has no per-employee acknowledgement state. */
+  onAcknowledge?: () => void;
+  acknowledging?: boolean;
 }
 
 export interface AnnouncementComposeDrawerProps {

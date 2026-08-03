@@ -9,6 +9,14 @@ interface HrmAnnouncementState {
   selectedAnnouncement: Announcement | null;
   engagementStats: EngagementStats | null;
 
+  /**
+   * Message bodies by handle. The feed is built from delivery records, which
+   * hold no content, so each card fetches its own body once and keeps it here
+   * — leaving and returning to the tab must not re-fetch the whole page.
+   */
+  announcementBodies: Record<string, Announcement>;
+  loadingBodies: Record<string, boolean>;
+
   feedLoading: boolean;
   adminLoading: boolean;
   approvalsLoading: boolean;
@@ -18,7 +26,7 @@ interface HrmAnnouncementState {
   publishing: boolean;
   withdrawing: boolean;
 
-  activeTab: "feed" | "admin" | "approvals" | "policy";
+  activeTab: "feed" | "admin" | "approvals";
   showDetailPanel: boolean;
   showComposeDrawer: boolean;
   editAnnouncement: Announcement | null;
@@ -35,6 +43,8 @@ interface HrmAnnouncementState {
   setPendingApprovals: (items: Announcement[]) => void;
   setSelectedAnnouncement: (item: Announcement | null) => void;
   setEngagementStats: (stats: EngagementStats | null) => void;
+  setBodyLoading: (handle: string, loading: boolean) => void;
+  setAnnouncementBody: (handle: string, body: Announcement) => void;
 
   setFeedLoading: (v: boolean) => void;
   setAdminLoading: (v: boolean) => void;
@@ -45,7 +55,7 @@ interface HrmAnnouncementState {
   setPublishing: (v: boolean) => void;
   setWithdrawing: (v: boolean) => void;
 
-  setActiveTab: (tab: "feed" | "admin" | "approvals" | "policy") => void;
+  setActiveTab: (tab: "feed" | "admin" | "approvals") => void;
   openDetailPanel: (announcement: Announcement) => void;
   closeDetailPanel: () => void;
   openComposeDrawer: (announcement?: Announcement | null) => void;
@@ -53,6 +63,7 @@ interface HrmAnnouncementState {
   setFilterCategory: (category: string) => void;
   setFilterPriority: (priority: string) => void;
   markAsRead: (handle: string) => void;
+  markAcknowledged: (handle: string) => void;
   openWithdrawConfirm: (announcement: Announcement) => void;
   closeWithdrawConfirm: () => void;
 }
@@ -64,6 +75,8 @@ export const useHrmAnnouncementStore = create<HrmAnnouncementState>((set) => ({
   pendingApprovals: [],
   selectedAnnouncement: null,
   engagementStats: null,
+  announcementBodies: {},
+  loadingBodies: {},
   feedLoading: false,
   adminLoading: false,
   approvalsLoading: false,
@@ -87,6 +100,13 @@ export const useHrmAnnouncementStore = create<HrmAnnouncementState>((set) => ({
   setPendingApprovals: (pendingApprovals) => set({ pendingApprovals }),
   setSelectedAnnouncement: (selectedAnnouncement) => set({ selectedAnnouncement }),
   setEngagementStats: (engagementStats) => set({ engagementStats }),
+  setBodyLoading: (handle, loading) =>
+    set((s) => ({ loadingBodies: { ...s.loadingBodies, [handle]: loading } })),
+  setAnnouncementBody: (handle, body) =>
+    set((s) => ({
+      announcementBodies: { ...s.announcementBodies, [handle]: body },
+      loadingBodies: { ...s.loadingBodies, [handle]: false },
+    })),
   setFeedLoading: (feedLoading) => set({ feedLoading }),
   setAdminLoading: (adminLoading) => set({ adminLoading }),
   setApprovalsLoading: (approvalsLoading) => set({ approvalsLoading }),
@@ -113,4 +133,20 @@ export const useHrmAnnouncementStore = create<HrmAnnouncementState>((set) => ({
         a.handle === handle ? { ...a, isRead: true } : a
       ),
     })),
+  // Acknowledging implies read, so both flags flip together.
+  markAcknowledged: (handle) =>
+    set((s) => {
+      const ack = (a: Announcement) =>
+        a.handle === handle
+          ? { ...a, isAcknowledged: true, isRead: true, acknowledgmentOverdue: false }
+          : a;
+      return {
+        feed: s.feed.map(ack),
+        pinnedAnnouncements: s.pinnedAnnouncements.map(ack),
+        selectedAnnouncement:
+          s.selectedAnnouncement?.handle === handle
+            ? ack(s.selectedAnnouncement)
+            : s.selectedAnnouncement,
+      };
+    }),
 }));

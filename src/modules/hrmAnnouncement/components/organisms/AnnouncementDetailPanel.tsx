@@ -3,17 +3,15 @@
 import React from "react";
 import { Drawer, Typography, Space, Divider, Button, Tag } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import { fromNow } from "@/utils/dateUtils";
 import { AnnouncementDetailPanelProps } from "../../types/ui.types";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
 import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
 import { formatFileSize } from "../../utils/announcementHelpers";
-import ApprovalChainStepper from "./ApprovalChainStepper";
+import ApprovalStatusLine, { approverOf } from "../molecules/ApprovalStatusLine";
 import RatificationBanner from "../molecules/RatificationBanner";
+import AcknowledgementBanner from "../molecules/AcknowledgementBanner";
 import styles from "../../styles/HrmAnnouncement.module.css";
-
-dayjs.extend(relativeTime);
 
 const { Title, Text } = Typography;
 
@@ -24,6 +22,8 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
   canRatify = false,
   onRatify,
   onRefuseRatification,
+  acknowledging = false,
+  onAcknowledge,
 }) => (
   <Drawer
     title="Announcement"
@@ -39,6 +39,13 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
     }
   >
     <Space direction="vertical" size={8} style={{ width: "100%" }}>
+      {onAcknowledge && (
+        <AcknowledgementBanner
+          announcement={announcement}
+          acknowledging={acknowledging}
+          onAcknowledge={onAcknowledge}
+        />
+      )}
       {announcement.ratificationStatus && (
         <RatificationBanner
           announcement={announcement}
@@ -57,7 +64,7 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
       </Title>
       <Space split={<Divider type="vertical" />}>
         <Text type="secondary">
-          {announcement.publishedAt ? dayjs(announcement.publishedAt).fromNow() : ""}
+          {fromNow(announcement.publishedAt)}
         </Text>
         {announcement.announcementId && (
           <Text type="secondary">{announcement.announcementId}</Text>
@@ -97,10 +104,15 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
           </Space>
         </>
       )}
-      {!!announcement.approvalChain?.length && (
+      {/* One approver at a time — where it is now, or who decided it. */}
+      {(announcement.status === "PENDING_APPROVAL" ||
+        approverOf(announcement) ||
+        announcement.approvedBy ||
+        announcement.rejectedBy) && (
         <>
           <Divider style={{ margin: "8px 0" }} />
-          <ApprovalChainStepper announcement={announcement} />
+          <Text strong>Approval</Text>
+          <ApprovalStatusLine announcement={announcement} variant="detail" />
         </>
       )}
     </Space>

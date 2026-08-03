@@ -17,73 +17,106 @@
   gap: 8px;
 }
 
+/*
+ * The feed column.
+ *
+ * The gutters grow with the viewport rather than sitting at a fixed 16px, so a
+ * wide monitor gives the message air on both sides instead of stretching it
+ * wall to wall. `clamp` keeps that honest at the extremes: a phone still gets
+ * usable edges, and the gutter stops growing once the column is centred.
+ */
 .feedContainer {
   flex: 1;
   overflow-y: auto;
   width: 100%;
-  padding: 16px;
+  padding: 16px clamp(16px, 8vw, 120px);
 }
 
 .feedSectionHeader {
-  padding: 8px 16px;
+  /* Lines up with the cards, not with the container edge. */
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 8px 4px;
   font-size: 12px;
   color: #8c8c8c;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.listRow {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
+/* One announcement, printed in full. A readable measure, not edge to edge —
+   text the width of a monitor is skimmed, not read. */
+.feedCard {
   background: #fff;
-  transition: background 0.15s;
-  margin: 0 16px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  max-width: 780px;
+  margin: 0 auto 16px;
 }
 
-.listRow:hover {
-  background: #fafafa;
-}
-
-.unreadRow {
-  background: #f0f8ff;
-  border-left: 3px solid #1890ff;
-}
-
-.announcementCard {
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-  background: #fff;
-}
-
-.announcementCard.pinned {
+.feedCard.pinned {
   border-color: #faad14;
 }
 
-.announcementCard.unread {
+/* Unread is a marker, not a highlight: the message is already on screen, so
+   the card does not need to shout to be found. */
+.feedCard.unread {
   border-left: 3px solid #1890ff;
 }
 
-.cardHeader {
+.feedCardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.cardTitle {
+.feedCardTitle {
   margin: 4px 0 !important;
-  font-size: 14px !important;
 }
 
-.cardSummary {
-  font-size: 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.feedCardByline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+/* Authors write plain text with real line breaks; honour them. */
+.plainContent {
+  white-space: pre-wrap;
+}
+
+/* Anything an author can paste has to stay inside the card: a wide table or a
+   long unbroken URL must scroll or wrap, never widen the page. */
+.detailContent img,
+.detailContent video {
+  max-width: 100%;
+  height: auto;
+}
+
+.detailContent table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.detailContent pre {
+  overflow-x: auto;
+}
+
+.detailContent a {
+  overflow-wrap: anywhere;
+}
+
+/* Phones: give the text the full width, the gutters are already minimal. */
+@media (max-width: 576px) {
+  .feedContainer {
+    padding: 12px;
+  }
+
+  .feedCardHeader {
+    align-items: flex-start;
+  }
 }
 
 .unreadDot {
