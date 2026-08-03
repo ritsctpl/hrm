@@ -99,6 +99,12 @@ export interface ProjectListResponse {
   buCode: string;
   status: string;
   clientName?: string;
+  /**
+   * The composite "R10138 - Ravi Kumar", same as the detail response — the
+   * backend resolves it through EmployeeIdentityResolver. Parse it with
+   * `employeeCodeOf` before comparing it to a signed-in user's code.
+   */
+  projectManagerId?: string;
   projectManagerName: string;
   estimateHours: number;
   totalAllocatedHours: number;

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Typography, Space } from 'antd';
 import type { ProjectListRowProps } from '../../types/ui.types';
+import { employeeLabelOf } from '@/utils/employeeIdentity';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
 import styles from '../../styles/ProjectList.module.css';
 
@@ -24,7 +25,7 @@ const ProjectListRow: React.FC<ProjectListRowProps> = ({ project, isSelected, on
         </Text>
       </div>
       <Space size={16} style={{ fontSize: 12 }}>
-        <Text type="secondary">PM: {project.projectManagerName}</Text>
+        <Text type="secondary">PM: {employeeLabelOf(project.projectManagerId, project.projectManagerName) || '—'}</Text>
         <Text type="secondary">Est: {project.estimateHours}h</Text>
         <Text type="secondary">Alloc: {project.totalAllocatedHours}h</Text>
         <Text type="secondary">Act: {project.totalActualHours}h</Text>

@@ -138,7 +138,10 @@ export function useProjectData() {
           buCode: p.buCode,
           clientName: p.clientName,
           status: p.status as Project['status'],
-          projectManagerId: '',
+          // Was hardcoded to '' — which silently disabled every
+          // "am I the project manager?" check on a project opened from the
+          // list, because that is the only way a project gets opened.
+          projectManagerId: p.projectManagerId ?? '',
           projectManagerName: p.projectManagerName,
           milestones: [],
           tasks: [],

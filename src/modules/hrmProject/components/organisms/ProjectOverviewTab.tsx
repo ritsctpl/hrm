@@ -19,6 +19,9 @@ import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOr
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
 import type { BusinessUnit, Department } from '@/modules/hrmOrganization/types/domain.types';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
+import { employeeCodeOf, employeeLabelOf, isSameEmployee } from '@/utils/employeeIdentity';
+import { useCan } from '@/modules/hrmAccess/hooks/useCan';
+import Can from '@/modules/hrmAccess/components/Can';
 import { formatDate } from '../../utils/projectHelpers';
 import { CURRENCY_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
@@ -82,7 +85,10 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   const watchBuCode = Form.useWatch('buCode', form);
   const watchPm = Form.useWatch('projectManagerId', form);
 
-  const isPM = !!employeeCode && employeeCode === project.projectManagerId;
+  // projectManagerId comes back as the composite "R10138 - Ravi Kumar" while
+  // employeeCode is the bare code, so these must be compared as codes.
+  const isPM = isSameEmployee(employeeCode, project.projectManagerId);
+  const perms = useCan();
   const nextStages = STATUS_TRANSITIONS[project.status] ?? [];
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
@@ -101,7 +107,9 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
       currency: project.currency,
       buCode: project.buCode,
       departmentCode: project.departmentCode,
-      projectManagerId: project.projectManagerId,
+      // The picker's options are keyed by employee code — seeding it with the
+      // composite matches nothing and the field renders blank.
+      projectManagerId: employeeCodeOf(project.projectManagerId),
       estimateHours: project.estimateHours,
       startDate: project.startDate ? dayjs(project.startDate) : undefined,
       endDate: project.endDate ? dayjs(project.endDate) : undefined,
@@ -180,7 +188,9 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
             {project.departmentCode && <Descriptions.Item label="Department">{project.departmentCode}</Descriptions.Item>}
             {project.clientName && <Descriptions.Item label="Client">{project.clientName}</Descriptions.Item>}
             {project.currency && <Descriptions.Item label="Currency">{project.currency}</Descriptions.Item>}
-            <Descriptions.Item label="PM">{project.projectManagerName}</Descriptions.Item>
+            <Descriptions.Item label="PM">
+              {employeeLabelOf(project.projectManagerId, project.projectManagerName) || '—'}
+            </Descriptions.Item>
             <Descriptions.Item label="Start">{formatDate(project.startDate)}</Descriptions.Item>
             <Descriptions.Item label="End">{formatDate(project.endDate)}</Descriptions.Item>
             {project.description && <Descriptions.Item label="Description">{project.description}</Descriptions.Item>}
@@ -266,7 +276,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
         )}
       </Card>
 
-      {isPM && (
+      {(isPM || perms.canEdit) && (
         <Card size="small" title="Project Actions">
           <Space wrap>
             {nextStages.length > 0 && (
@@ -282,7 +292,11 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
                 </Button>
               </Dropdown>
             )}
-            <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
+            {/* The manager may hand the project on; anyone with edit rights on
+                the module may reassign it for them. */}
+            <Can I="edit" passIf={isPM}>
+              <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
+            </Can>
           </Space>
         </Card>
       )}

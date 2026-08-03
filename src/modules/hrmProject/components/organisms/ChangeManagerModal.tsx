@@ -9,6 +9,7 @@ import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
+import { employeeLabelOf, isSameEmployee } from '@/utils/employeeIdentity';
 import type { Project } from '../../types/domain.types';
 
 const { Text } = Typography;
@@ -56,7 +57,8 @@ export default function ChangeManagerModal({ open, project, onClose }: Props) {
       message.error('Select the new project manager.');
       return;
     }
-    if (newPmId === project.projectManagerId) {
+    // projectManagerId is the composite "code - name"; newPmId is a bare code.
+    if (isSameEmployee(newPmId, project.projectManagerId)) {
       message.error('Pick a different manager.');
       return;
     }
@@ -86,7 +88,7 @@ export default function ChangeManagerModal({ open, project, onClose }: Props) {
     >
       <div style={{ marginBottom: 12 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>Current manager</Text>
-        <div><Text strong>{project?.projectManagerName || project?.projectManagerId || '—'}</Text></div>
+        <div><Text strong>{employeeLabelOf(project?.projectManagerId, project?.projectManagerName) || '—'}</Text></div>
       </div>
       <Alert
         type="info"
@@ -100,7 +102,9 @@ export default function ChangeManagerModal({ open, project, onClose }: Props) {
             value={newPmId}
             loading={loadingEmployees}
             options={employees
-              .filter((e) => e.employeeCode !== project?.projectManagerId)
+              // Same shape mismatch — without parsing, the current manager
+              // stayed in the list of people to hand the project to.
+              .filter((e) => !isSameEmployee(e.employeeCode, project?.projectManagerId))
               .map((e) => ({ handle: e.employeeCode, name: e.fullName, employeeCode: e.employeeCode }))}
             onSelect={(emp) => { setNewPmId(emp.employeeCode); setNewPmName(emp.name); }}
           />

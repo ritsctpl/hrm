@@ -10,6 +10,7 @@ import ProjectSearchBar from '../molecules/ProjectSearchBar';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { employeeLabelOf } from '@/utils/employeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectList.module.css';
@@ -120,7 +121,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, loading, onView }
       dataIndex: 'projectManagerName',
       key: 'projectManagerName',
       width: 160,
-      render: (name: string) => name || <Text type="secondary">—</Text>,
+      // Fall back to the id when the name is missing — projects imported with
+      // an external manager id have no matching employee to resolve a name
+      // from, and showing "—" reads as "no manager assigned", which is wrong.
+      render: (_: string, p) => employeeLabelOf(p.projectManagerId, p.projectManagerName) || <Text type="secondary">—</Text>,
     },
     {
       title: 'Timeline',

@@ -5,6 +5,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import AllocationRow from '../molecules/AllocationRow';
 import ResourceMoveModal from './ResourceMoveModal';
 import ReviseAllocationModal from './ReviseAllocationModal';
+import EditAllocationModal from './EditAllocationModal';
 import TemporaryCoverModal from './TemporaryCoverModal';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectData } from '../../hooks/useProjectData';
@@ -33,6 +34,7 @@ export default function ProjectAllocationsTab() {
 
   // Resource lifecycle modals (reassign / replace / release member / revise)
   const [moveModal, setMoveModal] = useState<{ mode: 'reassign' | 'replace' | 'release'; allocation: ResourceAllocation; taskCount: number } | null>(null);
+  const [editTarget, setEditTarget] = useState<ResourceAllocation | null>(null);
   const [reviseTarget, setReviseTarget] = useState<ResourceAllocation | null>(null);
   const [coverTarget, setCoverTarget] = useState<ResourceAllocation | null>(null);
 
@@ -87,6 +89,8 @@ export default function ProjectAllocationsTab() {
     const grp = groups.find((g) => g.employeeId === employeeId);
     return grp ? grp.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED').length : 0;
   };
+  // DRAFT / REJECTED rows edit in place; approved ones go through Revise.
+  const handleEdit = (a: ResourceAllocation) => setEditTarget(a);
   const handleReassign = (a: ResourceAllocation) => setMoveModal({ mode: 'reassign', allocation: a, taskCount: 0 });
   const handleReplace = (a: ResourceAllocation) => setMoveModal({ mode: 'replace', allocation: a, taskCount: activeTaskCount(a.employeeId) });
   const handleRelease = (a: ResourceAllocation) => setMoveModal({ mode: 'release', allocation: a, taskCount: activeTaskCount(a.employeeId) });
@@ -157,6 +161,7 @@ export default function ProjectAllocationsTab() {
                   <AllocationRow
                     allocation={g.membership}
                     hideHours
+                    onEdit={handleEdit}
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     onAssignTask={handleAssignTask}
@@ -180,6 +185,7 @@ export default function ProjectAllocationsTab() {
                           key={t.handle}
                           allocation={t}
                           hideEmployee
+                          onEdit={handleEdit}
                           onSubmit={handleSubmit}
                           onCancel={handleCancel}
                           onReassign={handleReassign}
@@ -202,6 +208,12 @@ export default function ProjectAllocationsTab() {
         </div>
       )}
 
+      <EditAllocationModal
+        open={!!editTarget}
+        allocation={editTarget}
+        projectHandle={selectedProject.handle}
+        onClose={() => setEditTarget(null)}
+      />
       <ResourceMoveModal
         open={!!moveModal}
         mode={moveModal?.mode ?? 'reassign'}

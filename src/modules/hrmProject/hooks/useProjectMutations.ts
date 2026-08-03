@@ -286,6 +286,29 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
+  /**
+   * Correct a DRAFT or REJECTED allocation in place — no re-approval, because
+   * it was never approved. Without this the only way to fix a wrong figure on
+   * a draft was to cancel the row and add the person again.
+   */
+  const updateAllocation = useCallback(async (
+    projectHandle: string,
+    payload: { handle: string; hoursPerDay: number; startDate: string; endDate: string; billableRate?: number | null },
+    actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      await HrmProjectService.updateAllocation({ organizationId, modifiedBy: actor, ...payload });
+      message.success('Allocation updated');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to update allocation'));
+      console.error(error);
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
   // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
   const reviseAllocation = useCallback(async (
     projectHandle: string,
@@ -618,6 +641,7 @@ export function useProjectMutations() {
     replaceMember,
     releaseMember,
     recallAllocation,
+    updateAllocation,
     reviseAllocation,
     changeProjectManager,
     cloneProject,

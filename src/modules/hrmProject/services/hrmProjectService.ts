@@ -160,6 +160,27 @@ export class HrmProjectService {
     return res.data;
   }
 
+  /**
+   * Edit an allocation that has not been approved yet.
+   *
+   * Distinct from `reviseAllocation`: the server accepts this only for DRAFT
+   * or REJECTED rows and simply saves the change, where a revise sends an
+   * approved allocation back round for re-approval. Correcting a draft should
+   * not submit it.
+   */
+  static async updateAllocation(payload: {
+    organizationId: string;
+    handle: string;
+    hoursPerDay: number;
+    startDate: string;
+    endDate: string;
+    billableRate?: number | null;
+    modifiedBy?: string;
+  }): Promise<AllocationResponse> {
+    const res = await api.post(`${BASE}/allocation/update`, payload);
+    return res.data;
+  }
+
   // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
   static async reviseAllocation(payload: AllocationReviseRequest): Promise<AllocationResponse> {
     const res = await api.post(`${BASE}/allocation/revise`, payload);

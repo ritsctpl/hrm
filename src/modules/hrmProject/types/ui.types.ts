@@ -74,7 +74,7 @@ export interface ProjectKpis {
   completed: number;
 }
 
-export interface ProjectListItem extends Pick<Project, 'handle' | 'projectCode' | 'projectName' | 'projectType' | 'buCode' | 'status' | 'projectManagerName' | 'estimateHours' | 'totalAllocatedHours' | 'totalActualHours' | 'utilizationPercentage' | 'startDate' | 'endDate'> {}
+export interface ProjectListItem extends Pick<Project, 'handle' | 'projectCode' | 'projectName' | 'projectType' | 'buCode' | 'status' | 'projectManagerId' | 'projectManagerName' | 'estimateHours' | 'totalAllocatedHours' | 'totalActualHours' | 'utilizationPercentage' | 'startDate' | 'endDate'> {}
 
 // Component prop types (for linter compatibility)
 export interface ProjectStatusBadgeProps {

@@ -13,6 +13,7 @@ import type { ProjectFormValues } from '../../types/ui.types';
 import type { ClientResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
+import { employeeCodeOf } from '@/utils/employeeIdentity';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
@@ -166,7 +167,9 @@ export default function ProjectForm() {
         currency: editingProject.currency,
         buCode: editingProject.buCode,
         departmentCode: editingProject.departmentCode,
-        projectManagerId: editingProject.projectManagerId,
+        // Options are keyed by employee code; the record carries the
+        // composite, which would leave the field looking unset.
+        projectManagerId: employeeCodeOf(editingProject.projectManagerId),
         estimateHours: editingProject.estimateHours,
         description: editingProject.description,
       } : { projectType: 'BILLABLE' }}

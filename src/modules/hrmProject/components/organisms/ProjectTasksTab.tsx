@@ -10,6 +10,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { isSameEmployee } from '@/utils/employeeIdentity';
 import { HrmProjectService } from '../../services/hrmProjectService';
 import ExtendTaskModal from './ExtendTaskModal';
 import type { ProjectTask, TaskStatus } from '../../types/domain.types';
@@ -66,7 +67,8 @@ export default function ProjectTasksTab() {
   const estDiff = projectEst - taskEstTotal;
 
   // Over-budget: actuals reached the estimate and the task isn't complete → needs a PM decision.
-  const isPM = !!employeeCode && employeeCode === selectedProject.projectManagerId;
+  // The API returns the manager as "code - name"; employeeCode is bare.
+  const isPM = isSameEmployee(employeeCode, selectedProject.projectManagerId);
   const isOverBudget = (t: ProjectTask) =>
     (t.estimatedHours ?? 0) > 0 && (t.actualHours ?? 0) >= (t.estimatedHours ?? 0) && t.status !== 'COMPLETED';
   const overBudgetTasks = tasks.filter(isOverBudget);
@@ -246,13 +248,16 @@ export default function ProjectTasksTab() {
       title: 'Actions', key: 'actions', width: 120, align: 'right',
       render: (_, t) => (
         <Space size={2}>
-          <Can I="edit">
+          {/* The project's own manager can always edit its tasks, module-wide
+              edit rights or not — otherwise the only action left on a task is
+              deleting it and recreating it. */}
+          <Can I="edit" passIf={isPM}>
             <Tooltip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} disabled={!canEditTasks} /></Tooltip>
           </Can>
           {isOverBudget(t) && isPM && (
             <Tooltip title="Extend task time"><Button type="text" size="small" icon={<FieldTimeOutlined />} style={{ color: '#fa8c16' }} onClick={() => setExtendTarget(t)} /></Tooltip>
           )}
-          <Can I="edit">
+          <Can I="edit" passIf={isPM}>
             <Tooltip title="Move to another project"><Button type="text" size="small" icon={<SwapOutlined />} onClick={() => setMoveTarget(t)} disabled={!canEditTasks} /></Tooltip>
           </Can>
           <Can I="delete">
