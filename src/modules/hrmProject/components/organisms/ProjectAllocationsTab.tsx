@@ -8,6 +8,7 @@ import ReviseAllocationModal from './ReviseAllocationModal';
 import EditAllocationModal from './EditAllocationModal';
 import TemporaryCoverModal from './TemporaryCoverModal';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
+import { isSameEmployee } from '@/utils/employeeIdentity';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
@@ -37,6 +38,10 @@ export default function ProjectAllocationsTab() {
   const [editTarget, setEditTarget] = useState<ResourceAllocation | null>(null);
   const [reviseTarget, setReviseTarget] = useState<ResourceAllocation | null>(null);
   const [coverTarget, setCoverTarget] = useState<ResourceAllocation | null>(null);
+
+  // Changing an allocation is the manager's call; adding one is open to the team and only
+  // takes effect once the manager approves it.
+  const isProjectManager = isSameEmployee(employeeCode, selectedProject?.projectManagerId);
 
   useEffect(() => {
     if (selectedProject) {
@@ -154,12 +159,12 @@ export default function ProjectAllocationsTab() {
           {groups.map((g) => {
             // Summary counts only active task allocations — exclude cancelled / rejected.
             const activeTasks = g.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED');
-            const totalTaskHours = activeTasks.reduce((s, t) => s + (t.hoursPerDay || 0), 0);
             return (
               <div key={g.employeeId} className={styles.memberGroup}>
                 {g.membership ? (
                   <AllocationRow
                     allocation={g.membership}
+                    isProjectManager={isProjectManager}
                     hideHours
                     onEdit={handleEdit}
                     onSubmit={handleSubmit}
@@ -178,12 +183,13 @@ export default function ProjectAllocationsTab() {
                   {g.tasks.length > 0 ? (
                     <>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {activeTasks.length} active task{activeTasks.length === 1 ? '' : 's'} · {totalTaskHours}h/day total
+                        {activeTasks.length} active task{activeTasks.length === 1 ? '' : 's'}
                       </Text>
                       {g.tasks.map((t) => (
                         <AllocationRow
                           key={t.handle}
                           allocation={t}
+                          isProjectManager={isProjectManager}
                           hideEmployee
                           onEdit={handleEdit}
                           onSubmit={handleSubmit}
