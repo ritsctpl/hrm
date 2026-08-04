@@ -380,6 +380,12 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
           <TextArea rows={8} placeholder="Announcement content (HTML supported)" />
         </Form.Item>
 
+        {/* Deliberately outside Form.Item — the audience is a composite value held
+            in its own state, not a registered form field. It sits directly after
+            the message because who receives it is part of writing it, not a
+            delivery option to be set afterwards. */}
+        <AudienceSelector value={audience} onChange={setAudience} disabled={saving || acting} />
+
         <Form.Item
           name="acknowledgmentRequired"
           label="Require acknowledgement"
