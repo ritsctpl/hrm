@@ -20,8 +20,6 @@ import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types
 import type { BusinessUnit, Department } from '@/modules/hrmOrganization/types/domain.types';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
 import { employeeCodeOf, employeeLabelOf, isSameEmployee } from '@/utils/employeeIdentity';
-import { useCan } from '@/modules/hrmAccess/hooks/useCan';
-import Can from '@/modules/hrmAccess/components/Can';
 import { formatDate } from '../../utils/projectHelpers';
 import { CURRENCY_OPTIONS, PROJECT_TYPES } from '../../utils/projectConstants';
 import ProjectStatusBadge from '../atoms/ProjectStatusBadge';
@@ -88,7 +86,6 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   // projectManagerId comes back as the composite "R10138 - Ravi Kumar" while
   // employeeCode is the bare code, so these must be compared as codes.
   const isPM = isSameEmployee(employeeCode, project.projectManagerId);
-  const perms = useCan();
   const nextStages = STATUS_TRANSITIONS[project.status] ?? [];
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
@@ -276,7 +273,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
         )}
       </Card>
 
-      {(isPM || perms.canEdit) && (
+      {isPM && (
         <Card size="small" title="Project Actions">
           <Space wrap>
             {nextStages.length > 0 && (
@@ -294,9 +291,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
             )}
             {/* The manager may hand the project on; anyone with edit rights on
                 the module may reassign it for them. */}
-            <Can I="edit" passIf={isPM}>
-              <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
-            </Can>
+            <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
           </Space>
         </Card>
       )}

@@ -4,6 +4,8 @@ import { Tabs, Button, Modal, Badge, Drawer, Table, Input, Form, Empty, Popconfi
 import { PlusOutlined, TeamOutlined, ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
+import { isSameEmployee } from '@/utils/employeeIdentity';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import CommonAppBar from '@/components/CommonAppBar';
 import { useHrmProjectStore } from './stores/hrmProjectStore';
 import { useProjectData } from './hooks/useProjectData';
@@ -205,6 +207,10 @@ export default function HrmProjectLanding() {
     setSelectedProject,
   } = useHrmProjectStore();
   const { loadProjects, loadProjectDetail, loadPendingAllocations } = useProjectData();
+  // Only the project's own manager may edit it — the same rule the server enforces
+  // (PRJ_038). A module-wide edit grant does not open somebody else's project.
+  const { employeeCode } = useEmployeeIdentity();
+  const isProjectManager = isSameEmployee(employeeCode, selectedProject?.projectManagerId);
   const perms = useProjectPermissions();
 
   // Load projects on mount and when filters change
@@ -296,7 +302,7 @@ export default function HrmProjectLanding() {
                 {selectedProject.projectCode} — {selectedProject.projectName}
               </span>
               <ProjectStatusBadge status={selectedProject.status} />
-              <Can I="edit">
+              {isProjectManager && (
                 <Button
                   size="small"
                   icon={<EditOutlined />}
@@ -305,7 +311,7 @@ export default function HrmProjectLanding() {
                 >
                   Edit
                 </Button>
-              </Can>
+              )}
             </div>
             <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               <ProjectDetailPanel />
