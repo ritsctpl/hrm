@@ -37,9 +37,6 @@ export default function AllocationForm({ projectHandle }: Props) {
   const [taskFilter, setTaskFilter] = useState<'UNASSIGNED' | 'ASSIGNED' | 'ALL'>('UNASSIGNED');
   const [taskSearch, setTaskSearch] = useState('');
   const [selectedTaskKeys, setSelectedTaskKeys] = useState<string[]>([]);
-  // Hours/day the user types against each task, keyed by task handle. Entered, never
-  // derived: an estimate is total effort and says nothing about how a day is split.
-  const [taskHours, setTaskHours] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const organizationId = getOrganizationId();
@@ -149,11 +146,7 @@ export default function AllocationForm({ projectHandle }: Props) {
     const assignments = taskIds.length
       ? taskIds.map((id) => {
           const task = selectedProject?.tasks?.find((t) => t.handle === id);
-          return {
-            taskId: id,
-            billableRate: task?.billableRate ?? values.billableRate,
-            hoursPerDay: isTaskMode ? (taskHours[id] ?? 0) : undefined,
-          };
+          return { taskId: id, billableRate: task?.billableRate ?? values.billableRate };
         })
       : [{ taskId: null as string | null, billableRate: values.billableRate }];
 
@@ -260,24 +253,6 @@ export default function AllocationForm({ projectHandle }: Props) {
                   <span>{n}{assignedTaskIds.has(t.handle) && <Text type="secondary" style={{ fontSize: 11 }}> · assigned</Text>}</span>
                 ),
               },
-              { title: 'Est. hrs', dataIndex: 'estimatedHours', key: 'estimatedHours', width: 80, align: 'right' },
-              {
-                title: 'Hrs / day', key: 'perDay', width: 110, align: 'right',
-                render: (_: unknown, t) => (
-                  <InputNumber
-                    size="small"
-                    min={0}
-                    max={MAX_HOURS_PER_DAY}
-                    step={HOURS_STEP}
-                    style={{ width: 90 }}
-                    value={taskHours[t.handle]}
-                    disabled={!selectedTaskKeys.includes(t.handle)}
-                    onChange={(v) =>
-                      setTaskHours((prev) => ({ ...prev, [t.handle]: Number(v ?? 0) }))
-                    }
-                  />
-                ),
-              },
             ]}
             locale={{ emptyText: 'No tasks' }}
           />
@@ -313,14 +288,8 @@ export default function AllocationForm({ projectHandle }: Props) {
       </Space>
       {isTaskMode ? (
         <div style={{ marginBottom: 12, fontSize: 12, color: '#8c8c8c' }}>
-          Enter the hours per day for each task you select. Leave a task at 0 to record only
-          that the member works on it. Selected total:{' '}
-          <strong>
-            {selectedTaskKeys.reduce((sum, id) => sum + (taskHours[id] ?? 0), 0).toFixed(2)} h/day
-          </strong>
-          {selectedTaskKeys.reduce((sum, id) => sum + (taskHours[id] ?? 0), 0) > MAX_HOURS_PER_DAY && (
-            <Text type="danger"> · exceeds the {MAX_HOURS_PER_DAY}h daily cap</Text>
-          )}
+          Pick the tasks this member will work on. Time is not booked here — their hours stay
+          on the project allocation.
         </div>
       ) : (
         <Form.Item
