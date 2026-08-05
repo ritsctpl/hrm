@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Tabs, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Drawer, Tabs, message } from 'antd';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import CommonAppBar from '@/components/CommonAppBar';
@@ -96,6 +96,8 @@ const HrmAnnouncementLanding: React.FC = () => {
   const [ratifying, setRatifying] = React.useState(false);
   const [retryingEmails, setRetryingEmails] = React.useState(false);
   const [acknowledgingHandle, setAcknowledgingHandle] = React.useState<string | null>(null);
+  /** Announcement whose engagement stats are shown in the overlay drawer. */
+  const [statsFor, setStatsFor] = useState<Announcement | null>(null);
   // Cards come into view together, so the store flag alone would let two of
   // them fire the same fetch in one tick. This is the synchronous guard.
   const requestedBodies = React.useRef<Set<string>>(new Set());
@@ -391,9 +393,17 @@ const HrmAnnouncementLanding: React.FC = () => {
     }
   };
 
+  /**
+   * Engagement stats open over the admin list, not instead of it.
+   *
+   * This used to call openDetail, which swaps the whole page — tabs included —
+   * for the detail view. Its close button was then the only way out, so
+   * dismissing the stats dropped you out of the admin list entirely and there
+   * was no way to check one announcement's figures and move to the next.
+   */
   const handleViewStats = (announcement: Announcement) => {
     loadEngagementStats(announcement.handle);
-    openDetail(announcement);
+    setStatsFor(announcement);
   };
 
   const handleDrawerSaved = () => {
@@ -525,6 +535,23 @@ const HrmAnnouncementLanding: React.FC = () => {
           onClose={closeComposeDrawer}
           onSaved={handleDrawerSaved}
         />
+        {/* Overlays the list rather than replacing it, so closing returns you to
+            the same row you were on and the next announcement is one click away. */}
+        <Drawer
+          open={!!statsFor}
+          onClose={() => setStatsFor(null)}
+          width={520}
+          destroyOnHidden
+          title={statsFor ? `Engagement — ${statsFor.title}` : 'Engagement'}
+        >
+          <EngagementStatsPanel
+            stats={engagementStats}
+            loading={engagementLoading}
+            canRetryEmails={can.report || can.manage}
+            onRetryFailedEmails={handleRetryFailedEmails}
+            retryingEmails={retryingEmails}
+          />
+        </Drawer>
         <WithdrawConfirmModal
           open={isWithdrawConfirmOpen}
           announcement={withdrawTarget}

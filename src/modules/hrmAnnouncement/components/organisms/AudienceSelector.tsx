@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Radio, Select, Space, Typography, Alert, Spin, Tag, Row, Col } from "antd";
+import { Radio, Select, Space, Typography, Alert, Spin, Tag, Row, Col, message } from "antd";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmAnnouncementService } from "../../services/hrmAnnouncementService";
 import { HrmOrganizationService } from "@/modules/hrmOrganization/services/hrmOrganizationService";
@@ -204,6 +204,73 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
   const patch = (p: Partial<AudienceValue>) => onChange({ ...value, ...p });
   const specific = !value.allEmployees;
 
+  /**
+   * Picking a department selects its people, then releases the department.
+   *
+   * The department is a shortcut for "everyone in it right now", not a standing
+   * filter — so it resolves to explicit employees the author can see and remove
+   * one by one. Keeping the department chip as well would look editable while
+   * not being: the server ORs its clauses, so a person struck from the list
+   * would still match the department and receive it anyway.
+   *
+   * The trade is that the audience is fixed at the moment of choosing. Someone
+   * who joins the department before publishing is not included.
+   *
+   * `Employee.department` holds either the bare code or the "CODE - Name"
+   * composite depending on how the record was loaded, so both are queried and
+   * the results merged.
+   */
+  const expandDepartments = async (deptCodes: string[]) => {
+    if (!organizationId || !deptCodes.length) return;
+    setEmployeesLoading(true);
+    try {
+      const forms = deptCodes.flatMap((code) => {
+        const dept = departments.find((d) => d.deptCode === code);
+        return dept ? [code, `${code} - ${dept.deptName}`] : [code];
+      });
+      const results = await Promise.allSettled(
+        forms.map((department) =>
+          HrmEmployeeService.fetchDirectory({
+            organizationId,
+            department,
+            status: "ACTIVE",
+            size: 500,
+          })
+        )
+      );
+      const rows = results.flatMap((r) =>
+        r.status === "fulfilled" ? r.value?.employees ?? [] : []
+      );
+
+      // Nothing matched — keep the department selected rather than silently
+      // swapping a real target for an empty one.
+      if (!rows.length) {
+        patch({ targetDepartments: deptCodes });
+        message.warning(
+          "No active employees found in that department — it has been left as a filter instead."
+        );
+        return;
+      }
+
+      const codes = value.targetEmployeeIds.slice();
+      rows.forEach((e) => {
+        if (!codes.includes(e.employeeCode)) codes.push(e.employeeCode);
+        employeeLabels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
+      });
+      patch({ targetDepartments: [], targetEmployeeIds: codes });
+      message.success(
+        `Added ${rows.length} employee${rows.length === 1 ? "" : "s"} from the selected department${
+          deptCodes.length === 1 ? "" : "s"
+        }.`
+      );
+    } catch {
+      patch({ targetDepartments: deptCodes });
+      message.error("Could not load that department's employees — left as a filter.");
+    } finally {
+      setEmployeesLoading(false);
+    }
+  };
+
   /** Departments grouped under their business unit — for orientation only; each
    *  remains independently selectable. */
   const departmentOptions = React.useMemo(() => {
@@ -280,10 +347,20 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
                 placeholder="Any" loading={loadingRef} disabled={disabled}
                 value={value.targetDepartments}
-                onChange={(v) => patch({ targetDepartments: v })}
+                // Selecting resolves to people and clears itself; see
+                // expandDepartments. Deselecting is left alone so the guard
+                // path (department kept as a filter) stays clearable.
+                onChange={(v) =>
+                  v.length > value.targetDepartments.length
+                    ? expandDepartments(v)
+                    : patch({ targetDepartments: v })
+                }
                 optionFilterProp="label"
                 options={departmentOptions}
               />
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Adds that department&apos;s people below.
+              </Text>
             </Col>
             <Col span={12}>
               <Text type="secondary" style={{ fontSize: 12 }}>Roles</Text>
