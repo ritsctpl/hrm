@@ -121,12 +121,11 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
           </Can>
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
-            // Gated on the permission the server actually enforces —
-            // ANNOUNCEMENT_PUBLISH_GENERAL is announcement_publish/ADD. Gating
-            // this on "edit" offered the button to anyone who could edit a
-            // record, including reporting managers, whose grant stops at
-            // announcement_publish/EDIT and never included publishing.
-            <Can I="add" object="announcement_publish">
+            // Publishing is an "add" — it creates the published announcement.
+            // No object named, so this resolves to Module Access, matching what
+            // the server now accepts. Gating it on "edit" was wrong in both
+            // models: edit rights are not publish rights.
+            <Can I="add">
               <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
                 <Button size="small" icon={<SendOutlined />} type="primary" />
               </Popconfirm>
