@@ -1,25 +1,24 @@
 "use client";
 
 import React from "react";
-import { Radio, Select, Space, Typography, Alert, Spin, Tag, Row, Col, message } from "antd";
+import { Radio, Select, Space, Typography, Alert, Spin, Tag, Row, Col, Button } from "antd";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmAnnouncementService } from "../../services/hrmAnnouncementService";
 import { HrmOrganizationService } from "@/modules/hrmOrganization/services/hrmOrganizationService";
 import { HrmEmployeeService } from "@/modules/hrmEmployee/services/hrmEmployeeService";
 import { HrmAccessService } from "@/modules/hrmAccess/services/hrmAccessService";
 import type { AudienceResolution } from "../../types/api.types";
-import type { BusinessUnit, Department } from "@/modules/hrmOrganization/types/domain.types";
+import type { Department } from "@/modules/hrmOrganization/types/domain.types";
 import type { EmployeeDirectoryRow } from "@/modules/hrmEmployee/types/api.types";
 import type { RoleResponse } from "@/modules/hrmAccess/types/api.types";
 
 const { Text } = Typography;
 
-/**
- * One page of employee results. The picker searches server-side rather than
- * prefetching the directory, so this is a page size, not a ceiling on who can
- * be chosen.
- */
-const EMPLOYEE_PAGE_SIZE = 50;
+/** One page of employee search results. Not a ceiling on who can be chosen. */
+const SEARCH_PAGE_SIZE = 50;
+
+/** Upper bound when resolving a department or role to its members. */
+const GROUP_PAGE_SIZE = 500;
 
 export interface AudienceValue {
   allEmployees: boolean;
@@ -57,132 +56,179 @@ interface AudienceSelectorProps {
 /**
  * Recipient selection for the composer.
  *
- * The server treats targeting as **additive**: an employee matching any selected
- * BU, department, role or explicit code receives it. `allEmployees` overrides the
- * lot. Every control here is therefore a widening one, and the UI says so — an
- * earlier version nested departments under business units, which read as a
- * drill-down and led authors to expect "Manufacturing → QA" to mean the dozen
- * people in QA rather than the whole business unit.
+ * <p>One list decides who receives the announcement: <b>Recipients</b>. Department
+ * and role are conveniences that fill it — pick a department, optionally narrow
+ * by role, and the matching people are put in the list, where they can be
+ * searched, added to and removed individually.
  *
- * The resolved count is shown before save on purpose: "I didn't realise this
- * went to all 148 people" is the most common post-publish regret (screen.md §2),
- * and unlike a draft, a publish cannot be recalled once the mail is queued.
+ * <p>Filling replaces rather than accumulates. An earlier version merged each
+ * resolution into the list, so narrowing the filters could not shrink it: three
+ * filters that matched six people still showed thirty-three, because the first
+ * broad selection was never let go.
+ *
+ * <p>Business unit was dropped. On this data one unit holds every employee, so
+ * it could only ever mean "everyone", which the All employees option already
+ * says more clearly.
+ *
+ * <p>The groups are never sent. The server ORs its targeting clauses, so
+ * "department AND role" cannot be expressed there — the announcement carries the
+ * resolved employee codes alone, and the list is literally the recipients.
  */
 const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, disabled }) => {
   const organizationId = getOrganizationId();
 
-  const [businessUnits, setBusinessUnits] = React.useState<BusinessUnit[]>([]);
   const [departments, setDepartments] = React.useState<Department[]>([]);
   const [roles, setRoles] = React.useState<RoleResponse[]>([]);
   const [loadingRef, setLoadingRef] = React.useState(false);
 
-  const [employees, setEmployees] = React.useState<EmployeeDirectoryRow[]>([]);
-  const [employeeTotal, setEmployeeTotal] = React.useState(0);
-  const [employeeSearch, setEmployeeSearch] = React.useState("");
-  const [employeesLoading, setEmployeesLoading] = React.useState(false);
+  // Filters are UI only — they choose who goes in the list, they are not sent.
+  const [filterDepts, setFilterDepts] = React.useState<string[]>([]);
+  const [filterRoles, setFilterRoles] = React.useState<string[]>([]);
+  const [filling, setFilling] = React.useState(false);
 
-  /**
-   * Labels for employees that have been picked. A server-side search only
-   * returns what matches the current query, so without this a selected employee
-   * renders as a bare code the moment the search box is retyped.
-   */
-  const employeeLabels = React.useRef<Record<string, string>>({});
+  const [results, setResults] = React.useState<EmployeeDirectoryRow[]>([]);
+  const [resultTotal, setResultTotal] = React.useState(0);
+  const [search, setSearch] = React.useState("");
+  const [searching, setSearching] = React.useState(false);
+
+  /** Names for chosen people; a later search need not return them again. */
+  const labels = React.useRef<Record<string, string>>({});
 
   const [preview, setPreview] = React.useState<AudienceResolution | null>(null);
   const [previewLoading, setPreviewLoading] = React.useState(false);
-
-  /**
-   * Active headcount, resolved once. Used only to tell the author when a
-   * "specific" selection has quietly become everyone — the case that reads as
-   * targeting being broken when it is working exactly as asked.
-   */
   const [headcount, setHeadcount] = React.useState(0);
-  React.useEffect(() => {
-    if (!organizationId) return;
-    HrmAnnouncementService.previewAudience({ organizationId, allEmployees: true })
-      .then((r) => setHeadcount(r?.totalTargetEmployees ?? 0))
-      .catch(() => setHeadcount(0));
-  }, [organizationId]);
 
-  // Reference data — loaded once, tolerant of individual failures so one bad
-  // endpoint doesn't blank every picker.
+  // Reference data — loaded once, tolerant of individual failures.
   React.useEffect(() => {
     if (!organizationId) return;
     setLoadingRef(true);
     Promise.allSettled([
       HrmOrganizationService.fetchBusinessUnitsBySite(organizationId),
       HrmAccessService.fetchActiveRoles(organizationId),
+      HrmAnnouncementService.previewAudience({ organizationId, allEmployees: true }),
     ])
-      .then(async ([bu, role]) => {
-        const units = bu.status === "fulfilled" ? bu.value ?? [] : [];
-        setBusinessUnits(units);
+      .then(async ([bu, role, all]) => {
         if (role.status === "fulfilled") setRoles(role.value ?? []);
-
-        // Departments are only queryable per business unit, but the picker must
-        // offer all of them regardless of what is selected above — a department
-        // is an independent target, not a child of a chosen BU. Sites have a
-        // handful of BUs, so fanning out is cheaper than the cascade it replaces.
+        if (all.status === "fulfilled") setHeadcount(all.value?.totalTargetEmployees ?? 0);
+        // Departments are only queryable per business unit, so the units are
+        // read to reach them — the unit itself is not offered as a filter.
+        const units = bu.status === "fulfilled" ? bu.value ?? [] : [];
         const perBu = await Promise.allSettled(
-          units
-            .map((b) => b.handle)
-            .filter(Boolean)
+          units.map((b) => b.handle).filter(Boolean)
             .map((h) => HrmOrganizationService.fetchDepartments(organizationId, h))
         );
-        setDepartments(
-          perBu.flatMap((r) => (r.status === "fulfilled" ? r.value ?? [] : []))
-        );
+        setDepartments(perBu.flatMap((r) => (r.status === "fulfilled" ? r.value ?? [] : [])));
       })
       .finally(() => setLoadingRef(false));
   }, [organizationId]);
 
   /**
-   * Employee search, server-side and debounced.
+   * Employees matching one filter value.
    *
-   * The previous implementation prefetched 500 rows ordered by creation date and
-   * filtered them in the browser, so at higher headcount the longest-serving
-   * employees were simply unselectable with nothing to indicate it.
-   *
-   * `status: "ACTIVE"` mirrors what the server's audience query counts as a
-   * recipient (`active == 1 && status == "ACTIVE"`). Filtering on `isActive`
-   * instead — a separate, nullable field — hid employees who were valid
-   * recipients, so the picker and the delivery disagreed about who exists.
+   * `Employee.department` holds either the bare code or the "CODE - Name"
+   * composite depending on how the record was written, while `role` holds the
+   * bare code. The directory matches by equality, so each plausible form is
+   * tried and the results merged.
    */
+  const membersOf = React.useCallback(
+    async (field: "department" | "role", forms: string[]): Promise<string[]> => {
+      const settled = await Promise.allSettled(
+        forms.map((v) =>
+          HrmEmployeeService.fetchDirectory({
+            organizationId,
+            [field]: v,
+            status: "ACTIVE",
+            size: GROUP_PAGE_SIZE,
+          } as Parameters<typeof HrmEmployeeService.fetchDirectory>[0])
+        )
+      );
+      const codes: string[] = [];
+      settled.forEach((r) => {
+        if (r.status !== "fulfilled") return;
+        (r.value?.employees ?? []).forEach((e) => {
+          labels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
+          if (!codes.includes(e.employeeCode)) codes.push(e.employeeCode);
+        });
+      });
+      return codes;
+    },
+    [organizationId]
+  );
+
+  /**
+   * Fills the recipient list from the current filters, replacing whatever was
+   * there. Values within a field are OR'd — nobody is in two departments at
+   * once — while department and role are AND'd, so adding a role narrows.
+   */
+  const applyFilters = async (depts: string[], roleCodes: string[]) => {
+    if (!organizationId) return;
+    if (!depts.length && !roleCodes.length) {
+      onChange({ ...value, allEmployees: false, targetEmployeeIds: [] });
+      return;
+    }
+    setFilling(true);
+    try {
+      const sets: string[][] = [];
+      if (depts.length) {
+        const forms = depts.flatMap((code) => {
+          const d = departments.find((x) => x.deptCode === code);
+          return d ? [code, `${code} - ${d.deptName}`] : [code];
+        });
+        sets.push(await membersOf("department", forms));
+      }
+      if (roleCodes.length) {
+        sets.push(await membersOf("role", roleCodes));
+      }
+      const matched = sets.reduce((acc, s) => acc.filter((c) => s.includes(c)));
+      onChange({
+        allEmployees: false,
+        // Never sent — the server ORs these, undoing the narrowing above.
+        targetBusinessUnits: [],
+        targetDepartments: [],
+        targetRoles: [],
+        targetEmployeeIds: matched,
+      });
+    } finally {
+      setFilling(false);
+    }
+  };
+
+  // Recipient search — server-side, debounced.
   React.useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      setEmployeesLoading(true);
+      setSearching(true);
       try {
         const res = await HrmEmployeeService.fetchDirectory({
           organizationId,
-          keyword: employeeSearch.trim() || undefined,
+          keyword: search.trim() || undefined,
           status: "ACTIVE",
-          size: EMPLOYEE_PAGE_SIZE,
+          size: SEARCH_PAGE_SIZE,
         });
         if (cancelled) return;
         const rows = res?.employees ?? [];
         rows.forEach((e) => {
-          employeeLabels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
+          labels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
         });
-        setEmployees(rows);
-        setEmployeeTotal(res?.totalCount ?? rows.length);
+        setResults(rows);
+        setResultTotal(res?.totalCount ?? rows.length);
       } catch {
         if (!cancelled) {
-          setEmployees([]);
-          setEmployeeTotal(0);
+          setResults([]);
+          setResultTotal(0);
         }
       } finally {
-        if (!cancelled) setEmployeesLoading(false);
+        if (!cancelled) setSearching(false);
       }
     }, 350);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [organizationId, employeeSearch]);
+  }, [organizationId, search]);
 
-  // Debounced recipient count — the targeting changes on every keystroke of a
-  // multi-select, and each preview is a server round trip.
+  // Debounced recipient count.
   React.useEffect(() => {
     if (!organizationId) return;
     if (isAudienceEmpty(value)) {
@@ -196,9 +242,9 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
         const result = await HrmAnnouncementService.previewAudience({
           organizationId,
           allEmployees: value.allEmployees,
-          targetBusinessUnits: value.targetBusinessUnits,
-          targetDepartments: value.targetDepartments,
-          targetRoles: value.targetRoles,
+          targetBusinessUnits: [],
+          targetDepartments: [],
+          targetRoles: [],
           targetEmployeeIds: value.targetEmployeeIds,
         });
         if (!cancelled) setPreview(result);
@@ -214,111 +260,24 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
     };
   }, [organizationId, value]);
 
-  const patch = (p: Partial<AudienceValue>) => onChange({ ...value, ...p });
   const specific = !value.allEmployees;
+  const chosen = value.targetEmployeeIds;
 
-  /**
-   * Picking a group selects the people in it, then releases the group.
-   *
-   * Business unit, department and role are shortcuts for "everyone in this right
-   * now", not standing filters — each resolves to explicit employees the author
-   * can see and strike out one by one. Keeping the group chip as well would look
-   * editable while not being: the server ORs its clauses, so a person removed
-   * from the list would still match the group and receive it anyway.
-   *
-   * This also makes the reach honest. Selecting a business unit that happens to
-   * contain the whole company used to read as a narrow choice while resolving to
-   * everyone; now the roster fills with every name, and the count agrees.
-   *
-   * The trade is that the audience is fixed when chosen — someone who joins the
-   * group before publishing is not swept in.
-   *
-   * Employee records store these inconsistently: `department` and
-   * `businessUnits` hold either the bare code or the "CODE - Name" composite,
-   * while `role` holds the bare code. The directory filter matches by equality,
-   * so every plausible form is queried and the results merged.
-   */
-  const expandToEmployees = async (
-    field: "businessUnit" | "department" | "role",
-    forms: string[],
-    restore: () => void,
-    label: string
-  ) => {
-    if (!organizationId || !forms.length) return;
-    setEmployeesLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        forms.map((v) =>
-          HrmEmployeeService.fetchDirectory({
-            organizationId,
-            [field]: v,
-            status: "ACTIVE",
-            size: 500,
-          } as Parameters<typeof HrmEmployeeService.fetchDirectory>[0])
-        )
-      );
-      const rows = results.flatMap((r) =>
-        r.status === "fulfilled" ? r.value?.employees ?? [] : []
-      );
+  const departmentOptions = React.useMemo(
+    () => departments.map((d) => ({ value: d.deptCode, label: `${d.deptCode} — ${d.deptName}` })),
+    [departments]
+  );
 
-      // Nothing matched — keep the selection rather than silently swapping a
-      // real target for an empty one.
-      if (!rows.length) {
-        restore();
-        message.warning(`No active employees found in that ${label} — left as a filter instead.`);
-        return;
-      }
-
-      const codes = value.targetEmployeeIds.slice();
-      let added = 0;
-      rows.forEach((e) => {
-        if (!codes.includes(e.employeeCode)) {
-          codes.push(e.employeeCode);
-          added += 1;
-        }
-        employeeLabels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
-      });
-      patch({ targetBusinessUnits: [], targetDepartments: [], targetRoles: [], targetEmployeeIds: codes });
-      message.success(`Added ${added} employee${added === 1 ? "" : "s"} from the selected ${label}.`);
-    } catch {
-      restore();
-      message.error(`Could not load that ${label}'s employees — left as a filter.`);
-    } finally {
-      setEmployeesLoading(false);
-    }
-  };
-
-  /** Departments grouped under their business unit — for orientation only; each
-   *  remains independently selectable. */
-  const departmentOptions = React.useMemo(() => {
-    const buLabel: Record<string, string> = {};
-    businessUnits.forEach((b) => {
-      buLabel[b.handle] = `${b.buCode} — ${b.buName}`;
-    });
-    const grouped: Record<string, { value: string; label: string }[]> = {};
-    departments.forEach((d) => {
-      const key = buLabel[d.buHandle] ?? d.buName ?? "Other";
-      (grouped[key] ??= []).push({ value: d.deptCode, label: `${d.deptCode} — ${d.deptName}` });
-    });
-    return Object.entries(grouped).map(([label, options]) => ({ label, options }));
-  }, [businessUnits, departments]);
-
-  /** Search results, plus any already-picked employee the current query omits. */
-  const employeeOptions = React.useMemo(() => {
-    const shown = new Set(employees.map((e) => e.employeeCode));
-    const missing = value.targetEmployeeIds
-      .filter((code) => !shown.has(code))
-      .map((code) => ({ value: code, label: employeeLabels.current[code] ?? code }));
+  /** Search results, plus any chosen person the current query omits. */
+  const recipientOptions = React.useMemo(() => {
+    const shown = new Set(results.map((e) => e.employeeCode));
     return [
-      ...missing,
-      ...employees.map((e) => ({
-        value: e.employeeCode,
-        label: `${e.employeeCode} — ${e.fullName}`,
-      })),
+      ...chosen.filter((c) => !shown.has(c)).map((c) => ({ value: c, label: labels.current[c] ?? c })),
+      ...results.map((e) => ({ value: e.employeeCode, label: `${e.employeeCode} — ${e.fullName}` })),
     ];
-  }, [employees, value.targetEmployeeIds]);
+  }, [results, chosen]);
 
-  const employeesTruncated = employeeTotal > employees.length;
+  const reachesAll = specific && headcount > 0 && chosen.length >= headcount;
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -328,11 +287,15 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
         value={value.allEmployees ? "all" : "specific"}
         disabled={disabled}
         style={{ display: "block", margin: "8px 0" }}
-        onChange={(e) =>
-          e.target.value === "all"
-            ? onChange({ ...EMPTY_AUDIENCE, allEmployees: true })
-            : patch({ allEmployees: false })
-        }
+        onChange={(e) => {
+          setFilterDepts([]);
+          setFilterRoles([]);
+          onChange(
+            e.target.value === "all"
+              ? { ...EMPTY_AUDIENCE, allEmployees: true }
+              : { ...EMPTY_AUDIENCE, allEmployees: false }
+          );
+        }}
       >
         <Radio value="all">All employees</Radio>
         <Radio value="specific">Specific recipients</Radio>
@@ -340,107 +303,74 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
 
       {specific && (
         <>
-          <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-            Business unit, department and role are shortcuts: choosing one adds
-            its people to <b>Individual employees</b> below, where you can remove
-            any of them. The recipients are whoever is listed there.
-          </Text>
           <Row gutter={[8, 8]}>
             <Col span={12}>
-              <Text type="secondary" style={{ fontSize: 12 }}>Business units</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>Department</Text>
               <Select
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
-                placeholder="Any" loading={loadingRef} disabled={disabled}
-                value={value.targetBusinessUnits}
-                onChange={(v) => {
-                  if (v.length <= value.targetBusinessUnits.length) {
-                    patch({ targetBusinessUnits: v });
-                    return;
-                  }
-                  const forms = v.flatMap((code) => {
-                    const bu = businessUnits.find((b) => b.buCode === code);
-                    return bu ? [code, `${code} - ${bu.buName}`] : [code];
-                  });
-                  expandToEmployees("businessUnit", forms,
-                    () => patch({ targetBusinessUnits: v }), "business unit");
-                }}
+                placeholder="Any" loading={loadingRef} disabled={disabled || filling}
+                value={filterDepts}
+                onChange={(v) => { setFilterDepts(v); applyFilters(v, filterRoles); }}
                 optionFilterProp="label"
-                options={businessUnits.map((b) => ({ value: b.buCode, label: `${b.buCode} — ${b.buName}` }))}
-              />
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                Adds that unit&apos;s people below.
-              </Text>
-            </Col>
-            <Col span={12}>
-              <Text type="secondary" style={{ fontSize: 12 }}>Departments</Text>
-              <Select
-                mode="multiple" allowClear size="small" style={{ width: "100%" }}
-                placeholder="Any" loading={loadingRef} disabled={disabled}
-                value={value.targetDepartments}
-                // Selecting resolves to people and clears itself; see
-                // expandDepartments. Deselecting is left alone so the guard
-                // path (department kept as a filter) stays clearable.
-                onChange={(v) => {
-                  if (v.length <= value.targetDepartments.length) {
-                    patch({ targetDepartments: v });
-                    return;
-                  }
-                  const forms = v.flatMap((code) => {
-                    const d = departments.find((x) => x.deptCode === code);
-                    return d ? [code, `${code} - ${d.deptName}`] : [code];
-                  });
-                  expandToEmployees("department", forms,
-                    () => patch({ targetDepartments: v }), "department");
-                }}
-                optionFilterProp="label"
+                maxTagCount="responsive"
                 options={departmentOptions}
               />
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                Adds that department&apos;s people below.
-              </Text>
             </Col>
             <Col span={12}>
-              <Text type="secondary" style={{ fontSize: 12 }}>Roles</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>Role</Text>
               <Select
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
-                placeholder="Any" loading={loadingRef} disabled={disabled}
-                value={value.targetRoles}
-                onChange={(v) => {
-                  if (v.length <= value.targetRoles.length) {
-                    patch({ targetRoles: v });
-                    return;
-                  }
-                  // Employee.role holds the bare code, so no composite form.
-                  expandToEmployees("role", v, () => patch({ targetRoles: v }), "role");
-                }}
+                placeholder="Any" loading={loadingRef} disabled={disabled || filling}
+                value={filterRoles}
+                onChange={(v) => { setFilterRoles(v); applyFilters(filterDepts, v); }}
                 optionFilterProp="label"
+                maxTagCount="responsive"
                 options={roles.map((r) => ({ value: r.roleCode, label: r.roleName || r.roleCode }))}
               />
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                Adds that role&apos;s people below.
-              </Text>
             </Col>
-            <Col span={12}>
-              <Text type="secondary" style={{ fontSize: 12 }}>Individual employees</Text>
+            <Col span={24}>
+              <Space size={6} style={{ width: "100%", justifyContent: "space-between" }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Recipients{chosen.length ? ` (${chosen.length})` : ""}
+                </Text>
+                {chosen.length > 0 && (
+                  <Button
+                    type="link" size="small" disabled={disabled}
+                    onClick={() => {
+                      setFilterDepts([]);
+                      setFilterRoles([]);
+                      onChange({ ...value, allEmployees: false, targetEmployeeIds: [] });
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </Space>
               <Select
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
-                placeholder="Search by name or code" disabled={disabled}
-                value={value.targetEmployeeIds}
-                onChange={(v) => patch({ targetEmployeeIds: v })}
-                // Matching happens server-side; filtering again in the browser
-                // would hide results the search already qualified.
+                placeholder="Search by name or code, or pick a department above"
+                disabled={disabled}
+                value={chosen}
+                onChange={(v) => onChange({ ...value, allEmployees: false, targetEmployeeIds: v })}
+                // Matching happens server-side; filtering again here would hide
+                // results the search already qualified.
                 filterOption={false}
-                onSearch={setEmployeeSearch}
-                onBlur={() => setEmployeeSearch("")}
-                loading={employeesLoading}
-                notFoundContent={employeesLoading ? <Spin size="small" /> : "No matches"}
-                options={employeeOptions}
+                onSearch={setSearch}
+                onBlur={() => setSearch("")}
+                loading={searching || filling}
+                notFoundContent={searching ? <Spin size="small" /> : "No matches"}
+                // Keeps a large roster from becoming a wall of chips.
+                maxTagCount={8}
+                maxTagPlaceholder={(rest) => `+${rest.length} more`}
+                options={recipientOptions}
               />
-              {employeesTruncated && (
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  Showing {employees.length} of {employeeTotal} — type to narrow.
-                </Text>
-              )}
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {filling
+                  ? "Applying filters…"
+                  : resultTotal > results.length
+                  ? `Search shows ${results.length} of ${resultTotal} — type to narrow.`
+                  : "Department and role fill this list; add or remove anyone by name."}
+              </Text>
             </Col>
           </Row>
         </>
@@ -452,7 +382,7 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
             type="error"
             showIcon
             message="No recipients selected"
-            description="Pick at least one business unit, department, role or employee — otherwise this announcement reaches nobody."
+            description="Pick a department or role, or search for people by name — otherwise this announcement reaches nobody."
           />
         ) : previewLoading ? (
           <Space size={6}>
@@ -461,18 +391,12 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
           </Space>
         ) : preview ? (
           <Alert
-            type={
-              preview.totalTargetEmployees === 0
-                ? "warning"
-                : specific && headcount > 0 && preview.totalTargetEmployees >= headcount
-                ? "warning"
-                : "info"
-            }
+            type={preview.totalTargetEmployees === 0 || reachesAll ? "warning" : "info"}
             showIcon
             message={
               preview.totalTargetEmployees === 0
                 ? "This targeting matches nobody"
-                : specific && headcount > 0 && preview.totalTargetEmployees >= headcount
+                : reachesAll
                 ? `This reaches all ${headcount} employees — the same as "All employees"`
                 : `Reaches ${preview.totalTargetEmployees} employee${preview.totalTargetEmployees === 1 ? "" : "s"}`
             }
