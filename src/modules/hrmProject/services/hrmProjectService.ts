@@ -181,6 +181,11 @@ export class HrmProjectService {
     return res.data;
   }
 
+  /** Removes an allocation for good; a project-level one takes its task rows with it. */
+  static async deleteAllocation(payload: { organizationId: string; handle: string; deletedBy: string }): Promise<void> {
+    await api.post(`${BASE}/allocation/delete`, payload);
+  }
+
   // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
   static async reviseAllocation(payload: AllocationReviseRequest): Promise<AllocationResponse> {
     const res = await api.post(`${BASE}/allocation/revise`, payload);

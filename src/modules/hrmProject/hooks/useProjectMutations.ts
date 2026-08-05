@@ -309,6 +309,22 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
+  /** Delete, as distinct from cancel: the row goes, rather than staying as a record. */
+  const deleteAllocation = useCallback(async (
+    handle: string, projectHandle: string, actor: string,
+  ) => {
+    store.setSavingAllocation(true);
+    try {
+      await HrmProjectService.deleteAllocation({ organizationId, handle, deletedBy: actor });
+      message.success('Allocation deleted');
+      await loadAllocations(projectHandle);
+    } catch (error: any) {
+      message.error(extractBackendMsg(error, 'Failed to delete allocation'));
+    } finally {
+      store.setSavingAllocation(false);
+    }
+  }, [organizationId, loadAllocations]);
+
   // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
   const reviseAllocation = useCallback(async (
     projectHandle: string,
@@ -642,6 +658,7 @@ export function useProjectMutations() {
     releaseMember,
     recallAllocation,
     updateAllocation,
+    deleteAllocation,
     reviseAllocation,
     changeProjectManager,
     cloneProject,

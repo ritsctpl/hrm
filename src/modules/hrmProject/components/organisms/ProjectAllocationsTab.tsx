@@ -8,7 +8,7 @@ import ReviseAllocationModal from './ReviseAllocationModal';
 import EditAllocationModal from './EditAllocationModal';
 import TemporaryCoverModal from './TemporaryCoverModal';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
-import { isSameEmployee } from '@/utils/employeeIdentity';
+import { isSameEmployee, employeeCodeOf } from '@/utils/employeeIdentity';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
@@ -30,7 +30,7 @@ export default function ProjectAllocationsTab() {
     setFilterStatus,
   } = useHrmProjectStore();
   const { loadAllocations } = useProjectData();
-  const { submitAllocation, cancelAllocation, recallAllocation } = useProjectMutations();
+  const { submitAllocation, cancelAllocation, recallAllocation , deleteAllocation} = useProjectMutations();
   const { employeeCode } = useEmployeeIdentity();
 
   // Resource lifecycle modals (reassign / replace / release member / revise)
@@ -62,13 +62,21 @@ export default function ProjectAllocationsTab() {
       tasks: typeof projectAllocations[number][];
     }>();
     for (const a of filtered) {
-      const g = map.get(a.employeeId) ?? { employeeId: a.employeeId, employeeName: a.employeeName, membership: null, tasks: [] };
+      const g = map.get(a.employeeId) ?? {
+        employeeId: a.employeeId,
+        // The code is a poor label but an honest one; a blank header reads as a stray row.
+        employeeName: a.employeeName || employeeCodeOf(a.employeeId),
+        membership: null,
+        tasks: [],
+      };
       if (a.employeeName) g.employeeName = a.employeeName;
+      if (!g.employeeName) g.employeeName = employeeCodeOf(a.employeeId);
       if (!a.taskId) g.membership = a;
       else g.tasks.push(a);
       map.set(a.employeeId, g);
     }
-    return Array.from(map.values());
+    // A group with neither a membership row nor any task is a leftover, not a member.
+    return Array.from(map.values()).filter((g) => g.membership || g.tasks.length > 0);
   }, [filtered]);
 
   const handleSubmit = (a: typeof projectAllocations[number]) => {
@@ -96,6 +104,11 @@ export default function ProjectAllocationsTab() {
   };
   // DRAFT / REJECTED rows edit in place; approved ones go through Revise.
   const handleEdit = (a: ResourceAllocation) => setEditTarget(a);
+  const handleDelete = (a: ResourceAllocation) => {
+    if (!selectedProject) return;
+    const actor = employeeCode || parseCookies().employeeCode || parseCookies().rl_user_id || parseCookies().user || '';
+    deleteAllocation(a.handle, selectedProject.handle, actor);
+  };
   const handleReassign = (a: ResourceAllocation) => setMoveModal({ mode: 'reassign', allocation: a, taskCount: 0 });
   const handleReplace = (a: ResourceAllocation) => setMoveModal({ mode: 'replace', allocation: a, taskCount: activeTaskCount(a.employeeId) });
   const handleRelease = (a: ResourceAllocation) => setMoveModal({ mode: 'release', allocation: a, taskCount: activeTaskCount(a.employeeId) });
@@ -165,6 +178,7 @@ export default function ProjectAllocationsTab() {
                   <AllocationRow
                     allocation={g.membership}
                     isProjectManager={isProjectManager}
+                    onDelete={handleDelete}
                     hideHours
                     onEdit={handleEdit}
                     onSubmit={handleSubmit}
@@ -190,6 +204,7 @@ export default function ProjectAllocationsTab() {
                           key={t.handle}
                           allocation={t}
                           isProjectManager={isProjectManager}
+                          onDelete={handleDelete}
                           hideEmployee
                           onEdit={handleEdit}
                           onSubmit={handleSubmit}

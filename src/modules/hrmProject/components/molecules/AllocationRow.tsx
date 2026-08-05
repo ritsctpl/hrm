@@ -22,6 +22,7 @@ interface AllocationRowProps {
   onRevise?: (a: ResourceAllocation) => void;   // edit/extend an approved allocation
   onRecall?: (a: ResourceAllocation) => void;   // pull a submitted allocation back to draft
   onCover?: (a: ResourceAllocation) => void;    // temporary cover for a task allocation
+  onDelete?: (a: ResourceAllocation) => void;   // remove the row entirely (cancel keeps it)
   hideEmployee?: boolean;
   hideHours?: boolean;
   /** Signed-in user is this project's manager. Only they may change an existing allocation. */
@@ -36,10 +37,11 @@ const isProjectLevel = (a: ResourceAllocation) => !a.taskId;
 const isActive = (a: ResourceAllocation) => a.status !== 'CANCELLED' && a.status !== 'REJECTED';
 const cancelTitle = (a: ResourceAllocation) =>
   isProjectLevel(a)
-    ? "Cancel this allocation? This also cancels the employee's task allocations on this project."
-    : 'Cancel this allocation?';
+    ? "Cancel this member's allocation? Their task assignments on this project are cancelled too. "
+      + 'The rows stay visible as cancelled — use Delete to remove them.'
+    : 'Cancel this task assignment? It stays visible as cancelled — use Delete to remove it.';
 
-const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onRecall, onCover, hideEmployee, hideHours, isProjectManager = false }) => (
+const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onRecall, onCover, onDelete, hideEmployee, hideHours, isProjectManager = false }) => (
   <div style={{ padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
     <Space size={12} wrap>
       {!hideEmployee && <Text strong style={{ minWidth: 140 }}>{allocation.employeeName}</Text>}
@@ -55,6 +57,24 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSub
         <Text type="secondary" style={{ fontSize: 12 }}>{allocation.recurrencePattern}</Text>
       )}
       <AllocationStatusBadge status={allocation.status} />
+
+      {/* A cancelled row stays on the project as the record of what was called off.
+          Delete is the way to take it away for good. */}
+      {onDelete && !isActive(allocation) && (
+        <PMOnly ok={isProjectManager}>
+          <Popconfirm
+            title={isProjectLevel(allocation)
+              ? 'Delete this member from the project? Their task assignments are deleted with it. This cannot be undone.'
+              : 'Delete this task assignment? This cannot be undone.'}
+            okText="Delete"
+            okType="danger"
+            cancelText="Keep"
+            onConfirm={() => onDelete(allocation)}
+          >
+            <Button size="small" type="link" danger>Delete</Button>
+          </Popconfirm>
+        </PMOnly>
+      )}
 
       {/* Assign a task to this team member (project-level membership only) */}
       {onAssignTask && isProjectLevel(allocation) && isActive(allocation) && (
