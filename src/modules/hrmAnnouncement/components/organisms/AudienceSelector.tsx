@@ -91,6 +91,19 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
   const [preview, setPreview] = React.useState<AudienceResolution | null>(null);
   const [previewLoading, setPreviewLoading] = React.useState(false);
 
+  /**
+   * Active headcount, resolved once. Used only to tell the author when a
+   * "specific" selection has quietly become everyone — the case that reads as
+   * targeting being broken when it is working exactly as asked.
+   */
+  const [headcount, setHeadcount] = React.useState(0);
+  React.useEffect(() => {
+    if (!organizationId) return;
+    HrmAnnouncementService.previewAudience({ organizationId, allEmployees: true })
+      .then((r) => setHeadcount(r?.totalTargetEmployees ?? 0))
+      .catch(() => setHeadcount(0));
+  }, [organizationId]);
+
   // Reference data — loaded once, tolerant of individual failures so one bad
   // endpoint doesn't blank every picker.
   React.useEffect(() => {
@@ -205,67 +218,71 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
   const specific = !value.allEmployees;
 
   /**
-   * Picking a department selects its people, then releases the department.
+   * Picking a group selects the people in it, then releases the group.
    *
-   * The department is a shortcut for "everyone in it right now", not a standing
-   * filter — so it resolves to explicit employees the author can see and remove
-   * one by one. Keeping the department chip as well would look editable while
-   * not being: the server ORs its clauses, so a person struck from the list
-   * would still match the department and receive it anyway.
+   * Business unit, department and role are shortcuts for "everyone in this right
+   * now", not standing filters — each resolves to explicit employees the author
+   * can see and strike out one by one. Keeping the group chip as well would look
+   * editable while not being: the server ORs its clauses, so a person removed
+   * from the list would still match the group and receive it anyway.
    *
-   * The trade is that the audience is fixed at the moment of choosing. Someone
-   * who joins the department before publishing is not included.
+   * This also makes the reach honest. Selecting a business unit that happens to
+   * contain the whole company used to read as a narrow choice while resolving to
+   * everyone; now the roster fills with every name, and the count agrees.
    *
-   * `Employee.department` holds either the bare code or the "CODE - Name"
-   * composite depending on how the record was loaded, so both are queried and
-   * the results merged.
+   * The trade is that the audience is fixed when chosen — someone who joins the
+   * group before publishing is not swept in.
+   *
+   * Employee records store these inconsistently: `department` and
+   * `businessUnits` hold either the bare code or the "CODE - Name" composite,
+   * while `role` holds the bare code. The directory filter matches by equality,
+   * so every plausible form is queried and the results merged.
    */
-  const expandDepartments = async (deptCodes: string[]) => {
-    if (!organizationId || !deptCodes.length) return;
+  const expandToEmployees = async (
+    field: "businessUnit" | "department" | "role",
+    forms: string[],
+    restore: () => void,
+    label: string
+  ) => {
+    if (!organizationId || !forms.length) return;
     setEmployeesLoading(true);
     try {
-      const forms = deptCodes.flatMap((code) => {
-        const dept = departments.find((d) => d.deptCode === code);
-        return dept ? [code, `${code} - ${dept.deptName}`] : [code];
-      });
       const results = await Promise.allSettled(
-        forms.map((department) =>
+        forms.map((v) =>
           HrmEmployeeService.fetchDirectory({
             organizationId,
-            department,
+            [field]: v,
             status: "ACTIVE",
             size: 500,
-          })
+          } as Parameters<typeof HrmEmployeeService.fetchDirectory>[0])
         )
       );
       const rows = results.flatMap((r) =>
         r.status === "fulfilled" ? r.value?.employees ?? [] : []
       );
 
-      // Nothing matched — keep the department selected rather than silently
-      // swapping a real target for an empty one.
+      // Nothing matched — keep the selection rather than silently swapping a
+      // real target for an empty one.
       if (!rows.length) {
-        patch({ targetDepartments: deptCodes });
-        message.warning(
-          "No active employees found in that department — it has been left as a filter instead."
-        );
+        restore();
+        message.warning(`No active employees found in that ${label} — left as a filter instead.`);
         return;
       }
 
       const codes = value.targetEmployeeIds.slice();
+      let added = 0;
       rows.forEach((e) => {
-        if (!codes.includes(e.employeeCode)) codes.push(e.employeeCode);
+        if (!codes.includes(e.employeeCode)) {
+          codes.push(e.employeeCode);
+          added += 1;
+        }
         employeeLabels.current[e.employeeCode] = `${e.employeeCode} — ${e.fullName}`;
       });
-      patch({ targetDepartments: [], targetEmployeeIds: codes });
-      message.success(
-        `Added ${rows.length} employee${rows.length === 1 ? "" : "s"} from the selected department${
-          deptCodes.length === 1 ? "" : "s"
-        }.`
-      );
+      patch({ targetBusinessUnits: [], targetDepartments: [], targetRoles: [], targetEmployeeIds: codes });
+      message.success(`Added ${added} employee${added === 1 ? "" : "s"} from the selected ${label}.`);
     } catch {
-      patch({ targetDepartments: deptCodes });
-      message.error("Could not load that department's employees — left as a filter.");
+      restore();
+      message.error(`Could not load that ${label}'s employees — left as a filter.`);
     } finally {
       setEmployeesLoading(false);
     }
@@ -324,10 +341,9 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
       {specific && (
         <>
           <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
-            Anyone matching <b>any</b> of these receives the announcement — each
-            selection widens the audience rather than narrowing it. Selecting a
-            business unit <i>and</i> a department inside it reaches the whole
-            business unit.
+            Business unit, department and role are shortcuts: choosing one adds
+            its people to <b>Individual employees</b> below, where you can remove
+            any of them. The recipients are whoever is listed there.
           </Text>
           <Row gutter={[8, 8]}>
             <Col span={12}>
@@ -336,10 +352,24 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
                 placeholder="Any" loading={loadingRef} disabled={disabled}
                 value={value.targetBusinessUnits}
-                onChange={(v) => patch({ targetBusinessUnits: v })}
+                onChange={(v) => {
+                  if (v.length <= value.targetBusinessUnits.length) {
+                    patch({ targetBusinessUnits: v });
+                    return;
+                  }
+                  const forms = v.flatMap((code) => {
+                    const bu = businessUnits.find((b) => b.buCode === code);
+                    return bu ? [code, `${code} - ${bu.buName}`] : [code];
+                  });
+                  expandToEmployees("businessUnit", forms,
+                    () => patch({ targetBusinessUnits: v }), "business unit");
+                }}
                 optionFilterProp="label"
                 options={businessUnits.map((b) => ({ value: b.buCode, label: `${b.buCode} — ${b.buName}` }))}
               />
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Adds that unit&apos;s people below.
+              </Text>
             </Col>
             <Col span={12}>
               <Text type="secondary" style={{ fontSize: 12 }}>Departments</Text>
@@ -350,11 +380,18 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
                 // Selecting resolves to people and clears itself; see
                 // expandDepartments. Deselecting is left alone so the guard
                 // path (department kept as a filter) stays clearable.
-                onChange={(v) =>
-                  v.length > value.targetDepartments.length
-                    ? expandDepartments(v)
-                    : patch({ targetDepartments: v })
-                }
+                onChange={(v) => {
+                  if (v.length <= value.targetDepartments.length) {
+                    patch({ targetDepartments: v });
+                    return;
+                  }
+                  const forms = v.flatMap((code) => {
+                    const d = departments.find((x) => x.deptCode === code);
+                    return d ? [code, `${code} - ${d.deptName}`] : [code];
+                  });
+                  expandToEmployees("department", forms,
+                    () => patch({ targetDepartments: v }), "department");
+                }}
                 optionFilterProp="label"
                 options={departmentOptions}
               />
@@ -368,10 +405,20 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
                 mode="multiple" allowClear size="small" style={{ width: "100%" }}
                 placeholder="Any" loading={loadingRef} disabled={disabled}
                 value={value.targetRoles}
-                onChange={(v) => patch({ targetRoles: v })}
+                onChange={(v) => {
+                  if (v.length <= value.targetRoles.length) {
+                    patch({ targetRoles: v });
+                    return;
+                  }
+                  // Employee.role holds the bare code, so no composite form.
+                  expandToEmployees("role", v, () => patch({ targetRoles: v }), "role");
+                }}
                 optionFilterProp="label"
                 options={roles.map((r) => ({ value: r.roleCode, label: r.roleName || r.roleCode }))}
               />
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Adds that role&apos;s people below.
+              </Text>
             </Col>
             <Col span={12}>
               <Text type="secondary" style={{ fontSize: 12 }}>Individual employees</Text>
@@ -414,11 +461,19 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ value, onChange, di
           </Space>
         ) : preview ? (
           <Alert
-            type={preview.totalTargetEmployees === 0 ? "warning" : "info"}
+            type={
+              preview.totalTargetEmployees === 0
+                ? "warning"
+                : specific && headcount > 0 && preview.totalTargetEmployees >= headcount
+                ? "warning"
+                : "info"
+            }
             showIcon
             message={
               preview.totalTargetEmployees === 0
                 ? "This targeting matches nobody"
+                : specific && headcount > 0 && preview.totalTargetEmployees >= headcount
+                ? `This reaches all ${headcount} employees — the same as "All employees"`
                 : `Reaches ${preview.totalTargetEmployees} employee${preview.totalTargetEmployees === 1 ? "" : "s"}`
             }
             description={
