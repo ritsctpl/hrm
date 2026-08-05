@@ -121,7 +121,12 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
           </Can>
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
-            <Can I="edit">
+            // Gated on the permission the server actually enforces —
+            // ANNOUNCEMENT_PUBLISH_GENERAL is announcement_publish/ADD. Gating
+            // this on "edit" offered the button to anyone who could edit a
+            // record, including reporting managers, whose grant stops at
+            // announcement_publish/EDIT and never included publishing.
+            <Can I="add" object="announcement_publish">
               <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
                 <Button size="small" icon={<SendOutlined />} type="primary" />
               </Popconfirm>

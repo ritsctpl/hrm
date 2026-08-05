@@ -238,8 +238,11 @@ const HrmAnnouncementLanding: React.FC = () => {
       message.success('Announcement published');
       loadAdminAnnouncements();
       loadFeed();
-    } catch {
-      message.error('Failed to publish announcement');
+    } catch (err) {
+      // Report what the server said. A blanket "Failed to publish" hid the
+      // difference between a missing grant and a genuine failure, sending
+      // people to look for a bug when the answer was a permission.
+      message.error(parseAnnouncementError(err, 'Failed to publish announcement').message);
     } finally {
       setPublishing(false);
     }
