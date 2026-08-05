@@ -90,8 +90,12 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
     (request.employeeId === identity.employeeCode ||
       request.employeeId === identity.employeeIdWithName ||
       (request.employeeId ?? "").startsWith(identity.employeeCode));
+  // Approved leave can be given back until the day it starts; a draft can be
+  // cancelled at any point because nothing has been held or approved for it.
+  // Anything in between is awaiting an approver and is withdrawn with Delete.
   const canCancel =
-    request.status === "APPROVED" && startsInFuture && isOwnRequest;
+    isOwnRequest &&
+    (request.status === "DRAFT" || (request.status === "APPROVED" && startsInFuture));
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
@@ -418,8 +422,9 @@ const LeaveRequestDetail: React.FC<LeaveRequestDetailProps> = ({
         destroyOnHidden
       >
         <Text>
-          Cancel this approved leave request? The leave balance will be restored
-          automatically upon cancellation.
+          {request.status === "DRAFT"
+            ? "Cancel this draft? It was never submitted, so no balance is affected."
+            : "Cancel this approved leave request? The leave balance will be restored automatically upon cancellation."}
         </Text>
         <Input.TextArea
           rows={3}

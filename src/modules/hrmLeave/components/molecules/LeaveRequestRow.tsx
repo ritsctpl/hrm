@@ -96,7 +96,7 @@ const LeaveRequestRow: React.FC<LeaveRequestRowProps> = ({
           <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
             <Popconfirm
               title="Delete Leave Request"
-              description="Are you sure you want to delete this pending leave request?"
+              description="This withdraws the request from your approver and removes it from their queue. Continue?"
               onConfirm={(e) => {
                 e?.stopPropagation();
                 onDelete(request);

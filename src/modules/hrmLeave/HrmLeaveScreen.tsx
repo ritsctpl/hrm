@@ -339,8 +339,12 @@ const HrmLeaveScreen: React.FC<HrmLeaveScreenProps> = ({
         loading={loading}
       />
 
+      {/* Cancel covers the two ends of the lifecycle: a draft that never went
+          out, and approved leave being given back. A request sitting with an
+          approver is withdrawn with Delete instead, so the approver's queue is
+          left clean rather than holding a cancelled row they never acted on. */}
       {permissions.canCancel &&
-        (request.status === "PENDING_SUPERVISOR" || request.status === "APPROVED") &&
+        (request.status === "DRAFT" || request.status === "APPROVED") &&
         (request.createdBy === actorId || isHr) && (
           <div style={{ padding: "12px 0" }}>
             <Can I="delete" object="leave_request" passIf={true}>
