@@ -67,6 +67,7 @@ export const APP_URL_TO_MODULE: Record<string, string> = {
   "/rits/hrm_policy_app": "HRM_POLICY",
   "/rits/hrm_project_app": "HRM_PROJECT",
   "/rits/hrm_settings_app": "HRM_SETTINGS",
+  "/rits/hrm_ticket_app": "HRM_TICKET",
   "/rits/hrm_timesheet_app": "HRM_TIMESHEET",
   "/rits/hrm_travel_app": "HRM_TRAVEL",
   "/rits/hrm_user_guide_app": "HRM_USER_GUIDE",
@@ -254,6 +255,11 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "expense_attachment", label: "Attachments" },
     { code: "expense_mileage", label: "Mileage" },
     { code: "expense_history", label: "History" },
+    // Extracting expense data out of the system — CSV/Excel download of a report set.
+    // Deliberately NOT implied by expense_record VIEW: reading your own expenses on screen and
+    // pulling the whole org's spend into a spreadsheet that leaves the system are different
+    // decisions, and only the second one needs a paper trail.
+    { code: "expense_export", label: "Export" },
   ],
 
   // ── Holiday ─────────────────────────────────────────────────────────
@@ -371,6 +377,26 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   ],
 
   // ── Timesheet ───────────────────────────────────────────────────────
+  // ── Ticketing ───────────────────────────────────────────────────────
+  HRM_TICKET: [
+    { code: "ticket_module", label: "Module Access" },
+    // Raising and reading one's own tickets. Granted broadly — this is the
+    // employee-facing half of the module.
+    { code: "ticket_record", label: "Tickets" },
+    // Working a queue: claiming, replying, changing status, resolving. Held by
+    // support agents. Which queue they see comes from support-group membership,
+    // not from this grant — the two answer different questions.
+    { code: "ticket_queue", label: "Support Queue" },
+    // Assigning to somebody else, and raising on another employee's behalf.
+    // Deliberately NOT implied by ticket_queue EDIT: an agent works their own
+    // tickets without being able to hand work to colleagues.
+    { code: "ticket_assign", label: "Assignment" },
+    // Categories and support groups — the routing configuration.
+    { code: "ticket_category", label: "Categories & Groups" },
+    // Site-wide visibility and the helpdesk dashboard.
+    { code: "ticket_report", label: "Reports & Dashboard" },
+  ],
+
   HRM_TIMESHEET: [
     { code: "timesheet_module", label: "Module Access" },
     { code: "timesheet_record", label: "Timesheets" },

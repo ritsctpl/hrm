@@ -35,6 +35,7 @@ const MODULE_LABELS: Record<string, string> = {
   HRM_POLICY: 'HR Policies',
   HRM_PROJECT: 'Projects & Resources',
   HRM_SETTINGS: 'Settings',
+  HRM_TICKET: 'Tickets & Support',
   HRM_TIMESHEET: 'Timesheet',
   HRM_TRAVEL: 'Travel Requests',
   HRM_USER_GUIDE: 'User Guides',

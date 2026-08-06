@@ -10,6 +10,7 @@ import ExpenseStatusChip from "../atoms/ExpenseStatusChip";
 import ExpenseTypeTag from "../atoms/ExpenseTypeTag";
 import OutOfPolicyIcon from "../atoms/OutOfPolicyIcon";
 import ExpenseScreenHeader from "./ExpenseScreenHeader";
+import Can from "../../../hrmAccess/components/Can";
 import styles from "../../styles/ExpenseList.module.css";
 
 const { Text } = Typography;
@@ -181,9 +182,13 @@ const ExpenseReportScreen: React.FC<Props> = ({
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
               Run
             </Button>
-            <Button icon={<DownloadOutlined />} onClick={exportCsv} disabled={data.length === 0}>
-              Export CSV
-            </Button>
+            {/* Module named explicitly: this organism is reused outside the expense app's gate,
+                where the enclosing permission context would otherwise resolve to the wrong module. */}
+            <Can I="view" on="HRM_EXPENSE" object="expense_export">
+              <Button icon={<DownloadOutlined />} onClick={exportCsv} disabled={data.length === 0}>
+                Export CSV
+              </Button>
+            </Can>
           </Space>
         }
       />

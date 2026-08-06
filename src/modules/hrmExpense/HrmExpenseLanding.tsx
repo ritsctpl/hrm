@@ -291,9 +291,13 @@ const HrmExpenseLanding: React.FC = () => {
         title="My Expense Reports"
         actions={
           <Space>
-            <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
-              Export CSV
-            </Button>
+            {/* Extracting expense data out of the system is a separate grant from reading it on
+                screen — see `expense_export` in the module object registry. */}
+            <Can I="view" object="expense_export">
+              <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
+                Export CSV
+              </Button>
+            </Can>
             <Can I="add" object="expense_record">
               <Button type="primary" icon={<PlusOutlined />} onClick={handleNewExpense}>
                 New Expense

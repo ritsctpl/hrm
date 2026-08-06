@@ -40,6 +40,9 @@ export const MODULE_CATEGORY_MAP: Record<string, string> = {
   // User Guides is read-only for everyone — it belongs with the shared apps,
   // not with the admin tooling, even though only admins can upload.
   '/rits/hrm_user_guide_app': 'General',
+  // Raising a ticket is something every employee does; only the queue and the
+  // configuration behind it are admin-facing, and those are tabs within the app.
+  '/rits/hrm_ticket_app': 'General',
 
   // Admin — system configuration and administration
   '/rits/hrm_access_app': 'Admin',
@@ -148,6 +151,7 @@ export interface TaskShortcut {
 
 export const TASK_SHORTCUTS: TaskShortcut[] = [
   { label: 'Apply Leave', route: '/rits/hrm_leave_app' },
+  { label: 'Raise a Ticket', route: '/rits/hrm_ticket_app' },
   { label: 'Submit Expense', route: '/rits/hrm_expense_app' },
   { label: 'View Payslip', route: '/rits/hrm_payslip_app' },
   { label: 'Log Timesheet', route: '/rits/hrm_timesheet_app' },

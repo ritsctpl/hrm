@@ -26,6 +26,7 @@ import {
   Blocks,
   Layers,
   BookOpen,
+  LifeBuoy,
 } from 'lucide-react';
 
 const MODULE_ICON_MAP: Record<string, LucideIcon> = {
@@ -44,6 +45,7 @@ const MODULE_ICON_MAP: Record<string, LucideIcon> = {
   '/rits/hrm_project_app':       FolderKanban,
   '/rits/hrm_expense_app':       Receipt,
   '/rits/hrm_travel_app':        Globe,
+  '/rits/hrm_ticket_app':        LifeBuoy,
   '/rits/hrm_timesheet_app':     Timer,
   '/rits/hrm_policy_app':        Scale,
   '/rits/hrm_announcement_app':  Newspaper,
