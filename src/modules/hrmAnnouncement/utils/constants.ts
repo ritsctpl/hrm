@@ -73,5 +73,19 @@ export const STATUS_LABELS: Record<AnnouncementStatus, string> = {
 /** Statuses the author may still edit (handover §1 item 3). */
 export const EDITABLE_STATUSES: AnnouncementStatus[] = ["DRAFT", "RETURNED", "REJECTED"];
 
+/**
+ * Statuses that may be deleted, mirroring the server's `AnnouncementStatus.DELETABLE`.
+ *
+ * Kept identical to the server set — no wider, no narrower. Offering delete on a status the
+ * server refuses turns a disabled control into a failed request, and hiding it on one the
+ * server allows leaves the author with a draft they cannot get rid of, which is the whole of
+ * CT-2026-477's second complaint. Once published, an announcement is a permanent record and is
+ * withdrawn rather than deleted.
+ */
+export const DELETABLE_STATUSES: AnnouncementStatus[] = ["DRAFT", "REJECTED", "RETURNED"];
+
+export const isDeletableStatus = (status?: string): boolean =>
+  DELETABLE_STATUSES.includes(status as AnnouncementStatus);
+
 export const ANNOUNCEMENT_HR_ROLES = ["HR", "HR_MANAGER", "ADMIN", "SUPERADMIN"];
 

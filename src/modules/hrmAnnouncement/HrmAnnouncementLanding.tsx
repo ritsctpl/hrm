@@ -19,6 +19,7 @@ import ApprovalActionModal, { type ApprovalAction } from './components/organisms
 import RatifyConfirmModal from './components/organisms/RatifyConfirmModal';
 import { useAnnouncementPermissions } from './hooks/useAnnouncementPermissions';
 import { parseAnnouncementError } from './utils/announcementErrors';
+import { mergeAnnouncementDetail } from './utils/announcementHelpers';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
@@ -98,6 +99,10 @@ const HrmAnnouncementLanding: React.FC = () => {
   const [acknowledgingHandle, setAcknowledgingHandle] = React.useState<string | null>(null);
   /** Announcement whose engagement stats are shown in the overlay drawer. */
   const [statsFor, setStatsFor] = useState<Announcement | null>(null);
+  /** Row whose full record is being fetched before the editor opens — see openForEdit. */
+  const [openingEditHandle, setOpeningEditHandle] = React.useState<string | null>(null);
+  /** Row currently being deleted, so its buttons can show progress. */
+  const [deletingHandle, setDeletingHandle] = React.useState<string | null>(null);
   // Cards come into view together, so the store flag alone would let two of
   // them fire the same fetch in one tick. This is the synchronous guard.
   const requestedBodies = React.useRef<Set<string>>(new Set());
@@ -232,6 +237,75 @@ const HrmAnnouncementLanding: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [organizationId, employeeId]
   );
+
+  /**
+   * Opens an announcement for editing, with its body and audience.
+   *
+   * The row handed over by the admin table comes from `/search`, which answers with summaries —
+   * no `content`, no targeting. Opening the composer on that row left the author staring at an
+   * empty Content box and "No recipients selected", and since both are required to save, their
+   * own draft became uneditable (CT-2026-477).
+   *
+   * So fetch the full record first and open on that. On failure the drawer stays shut: a blank
+   * editor IS the reported bug, and offering one here would let the author "fix" it by retyping
+   * over a record we never actually loaded.
+   */
+  const openForEdit = React.useCallback(
+    async (announcement: Announcement) => {
+      // A second click while the first fetch is in flight would open two drawers on the same row.
+      if (openingEditHandle) return;
+      setOpeningEditHandle(announcement.handle);
+      try {
+        const full = await HrmAnnouncementService.getDetail({
+          organizationId,
+          announcementHandle: announcement.handle,
+          actorId: employeeId,
+        });
+        openComposeDrawer(mergeAnnouncementDetail(announcement, full));
+      } catch (err) {
+        // `/get` is audience-scoped and answers HRM_ANN_NOT_FOUND for an announcement this user
+        // may not read — which the archive search still lists for anyone holding CREATE. The
+        // server keeps 403 and 404 shape-identical on purpose, so we pass its wording through
+        // rather than inventing "you can only edit your own", which would confirm the record
+        // exists.
+        message.error(
+          parseAnnouncementError(err, 'Could not open this announcement for editing').message
+        );
+      } finally {
+        setOpeningEditHandle(null);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [organizationId, employeeId, openingEditHandle]
+  );
+
+  /**
+   * Deletes a draft. Soft delete server-side (`active: 0`) with an audit row, and refused for
+   * anything past the DELETABLE statuses — a published announcement is withdrawn, never deleted.
+   */
+  const handleDelete = async (announcement: Announcement) => {
+    setDeletingHandle(announcement.handle);
+    try {
+      await HrmAnnouncementService.deleteAnnouncement({
+        organizationId,
+        announcementHandle: announcement.handle,
+        // `deletedBy`, not `actorId` — this endpoint reads the actor under its own name, and it
+        // wants the employee CODE, never the login email.
+        deletedBy: employeeId,
+      });
+      message.success('Draft deleted');
+      loadAdminAnnouncements();
+      loadFeed();
+    } catch (err) {
+      // HRM_ANN_NOT_DELETABLE names the status that blocked it, which tells the user what to do
+      // instead. A blanket "Failed to delete" would throw that away.
+      const info = parseAnnouncementError(err, 'Failed to delete announcement');
+      message.error(info.message);
+      if (info.shouldRefetch) loadAdminAnnouncements();
+    } finally {
+      setDeletingHandle(null);
+    }
+  };
 
   const handlePublish = async (announcementHandle: string) => {
     setPublishing(true);
@@ -504,11 +578,14 @@ const HrmAnnouncementLanding: React.FC = () => {
         <AnnouncementAdminTemplate
           announcements={adminAnnouncements}
           loading={adminLoading}
-          onEdit={(a: Announcement) => openComposeDrawer(a)}
+          onEdit={openForEdit}
           onPublish={handlePublish}
           onWithdraw={openWithdrawConfirm}
+          onDelete={handleDelete}
           onViewStats={handleViewStats}
           onCreateNew={() => openComposeDrawer()}
+          openingEditHandle={openingEditHandle}
+          deletingHandle={deletingHandle}
         />
       ),
     });

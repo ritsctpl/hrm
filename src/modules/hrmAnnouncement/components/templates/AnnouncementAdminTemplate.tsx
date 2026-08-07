@@ -3,7 +3,7 @@
 import React from "react";
 import { Table, Button, Space, Popconfirm, Tag, Select } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, SendOutlined, StopOutlined, PlusOutlined, BarChartOutlined } from "@ant-design/icons";
+import { EditOutlined, SendOutlined, StopOutlined, PlusOutlined, BarChartOutlined, DeleteOutlined } from "@ant-design/icons";
 import { formatDateTime } from "@/utils/dateUtils";
 import { Announcement } from "../../types/domain.types";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
@@ -11,7 +11,7 @@ import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
 import ApprovalStatusLine from "../molecules/ApprovalStatusLine";
 import { useEmployeeNames } from "../../hooks/useEmployeeNames";
 import Can from "../../../hrmAccess/components/Can";
-import { STATUS_COLORS, STATUS_LABELS, PRIORITY_LABELS, normalizePriority } from "../../utils/constants";
+import { STATUS_COLORS, STATUS_LABELS, PRIORITY_LABELS, normalizePriority, isDeletableStatus } from "../../utils/constants";
 import styles from "../../styles/HrmAnnouncement.module.css";
 
 interface AnnouncementAdminTemplateProps {
@@ -21,8 +21,14 @@ interface AnnouncementAdminTemplateProps {
   onPublish: (announcementId: string) => void;
   /** Passes the whole record so the confirm modal can show title + read count. */
   onWithdraw: (announcement: Announcement) => void;
+  /** Whole record, like onWithdraw, so the confirmation can name the announcement. */
+  onDelete: (announcement: Announcement) => void;
   onViewStats: (announcement: Announcement) => void;
   onCreateNew: () => void;
+  /** Row whose full record is being fetched before the editor opens — shows progress. */
+  openingEditHandle?: string | null;
+  /** Row currently being deleted. */
+  deletingHandle?: string | null;
 }
 
 const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
@@ -31,8 +37,11 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
   onEdit,
   onPublish,
   onWithdraw,
+  onDelete,
   onViewStats,
   onCreateNew,
+  openingEditHandle,
+  deletingHandle,
 }) => {
   // Filtering is client-side: the admin list is already fully loaded, and a
   // round trip per dropdown change would make the filters feel sluggish.
@@ -113,11 +122,19 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
     {
       title: "Actions",
       key: "actions",
-      width: 160,
+      // Widened for the delete control — a DRAFT row now carries four buttons and wrapped at 160.
+      width: 200,
       render: (_, record) => (
         <Space size={4}>
           <Can I="edit">
-            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              // Opening now fetches the full record first (the list row has no body), so the
+              // click is no longer instant — say so rather than looking like a no-op.
+              loading={openingEditHandle === record.handle}
+              onClick={() => onEdit(record)}
+            />
           </Can>
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
@@ -141,6 +158,27 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
                 danger
                 onClick={() => onWithdraw(record)}
               />
+            </Can>
+          )}
+          {isDeletableStatus(record.status) && (
+            // Only where the server would accept it — DELETABLE_STATUSES mirrors its set.
+            // Delete is soft and audited, so a Popconfirm is proportionate; unlike Withdraw
+            // it collects no reason, because nothing was published to explain away.
+            <Can I="delete">
+              <Popconfirm
+                title="Delete this announcement?"
+                description={`"${record.title}" will be removed from the list.`}
+                onConfirm={() => onDelete(record)}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  danger
+                  loading={deletingHandle === record.handle}
+                />
+              </Popconfirm>
             </Can>
           )}
         </Space>
