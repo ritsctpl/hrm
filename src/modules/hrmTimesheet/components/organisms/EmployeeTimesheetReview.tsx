@@ -7,6 +7,8 @@ import {
   CheckOutlined,
   CloseCircleOutlined,
   CloseOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
@@ -18,9 +20,11 @@ import {
   decimalToHHMM,
   isToday,
   weekOfMonthIndex,
+  shiftWeekStart,
+  weekIntersectsMonth,
 } from '../../utils/timesheetHelpers';
 import { LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
-import Can from '../../../hrmAccess/components/Can';
+import ApprovalGate from '../atoms/ApprovalGate';
 import type { TimesheetHeader, TimesheetLine } from '../../types/domain.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
 
@@ -58,6 +62,11 @@ export default function EmployeeTimesheetReview() {
   // Reject modal — used for both single-day and global reject (handles list).
   const [reject, setReject] = useState<{ scope: string; handles: string[] } | null>(null);
   const [remarks, setRemarks] = useState('');
+  // Approve modal. The note is optional for a direct manager, but hrm-service requires one
+  // when the approver is outside the employee's direct reporting line (TS_016), and the UI
+  // previously sent an empty string always — so a skip-level approval could never succeed.
+  const [approve, setApprove] = useState<{ scope: string; handles: string[] } | null>(null);
+  const [approveNote, setApproveNote] = useState('');
   // Drill-down view toggle: monthly calendar summary vs weekly matrix verification.
   const [layout, setLayout] = useState<'month' | 'week'>('month');
 
@@ -106,13 +115,21 @@ export default function EmployeeTimesheetReview() {
     await loadTeamTimesheets();
   }
 
-  async function approveDay(handle: string) {
-    await approveTimesheet(handle, 'APPROVED', '');
-    await afterAction();
+  function askApprove(scope: string, handles: string[]) {
+    setApprove({ scope, handles });
+    setApproveNote('');
   }
 
-  async function approveAll() {
-    await bulkApproveTimesheets(submittedHandles, 'APPROVED', '');
+  async function confirmApprove() {
+    if (!approve) return;
+    const note = approveNote.trim();
+    if (approve.handles.length === 1) {
+      await approveTimesheet(approve.handles[0], 'APPROVED', note);
+    } else {
+      await bulkApproveTimesheets(approve.handles, 'APPROVED', note);
+    }
+    setApprove(null);
+    setApproveNote('');
     await afterAction();
   }
 
@@ -129,6 +146,16 @@ export default function EmployeeTimesheetReview() {
   }
 
   const weekNote = dates.map((d) => byDate.get(d)).find((t) => t?.notes)?.notes;
+
+  // Week navigation is bounded by the month that is actually loaded: byDate comes from
+  // loadTargetEmployeeMonth, which is scoped to selectedMonth, so stepping onto a week with
+  // no overlap would render seven empty columns and read as "nothing was logged".
+  const canStepWeek = (delta: number) =>
+    weekIntersectsMonth(shiftWeekStart(selectedDate, delta), selectedMonth);
+  const stepWeek = (delta: number) => setSelectedDate(shiftWeekStart(selectedDate, delta));
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  const showThisWeek =
+    weekIntersectsMonth(todayStr, selectedMonth) && !dates.includes(todayStr);
 
   return (
     <div className={styles.reviewRoot}>
@@ -159,19 +186,19 @@ export default function EmployeeTimesheetReview() {
           <Text className={styles.calTotal}>
             Total Hours<span className={styles.calTotalValue}>{decimalToHHMM(monthTotal)}</span>
           </Text>
-          <Can I="edit">
+          <ApprovalGate>
             <Button
               type="primary"
               icon={<CheckOutlined />}
               disabled={submittedHandles.length === 0}
               loading={approvingTimesheet}
               style={{ background: '#52c41a', borderColor: '#52c41a' }}
-              onClick={approveAll}
+              onClick={() => askApprove('all submitted days', submittedHandles)}
             >
               Approve All
             </Button>
-          </Can>
-          <Can I="edit">
+          </ApprovalGate>
+          <ApprovalGate>
             <Button
               danger
               icon={<CloseOutlined />}
@@ -184,7 +211,7 @@ export default function EmployeeTimesheetReview() {
             >
               Reject All
             </Button>
-          </Can>
+          </ApprovalGate>
         </Space>
       </div>
 
@@ -254,15 +281,17 @@ export default function EmployeeTimesheetReview() {
                             className={styles.dayActionIcons}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Can I="edit">
+                            <ApprovalGate>
                               <Tooltip title="Approve this day">
                                 <CheckCircleOutlined
                                   className={styles.dayApprove}
-                                  onClick={() => approveDay(ts.handle)}
+                                  onClick={() =>
+                                    askApprove(dayjs(cell.date).format('DD MMM'), [ts.handle])
+                                  }
                                 />
                               </Tooltip>
-                            </Can>
-                            <Can I="edit">
+                            </ApprovalGate>
+                            <ApprovalGate>
                               <Tooltip title="Reject this day">
                                 <CloseCircleOutlined
                                   className={styles.dayReject}
@@ -272,7 +301,7 @@ export default function EmployeeTimesheetReview() {
                                   }}
                                 />
                               </Tooltip>
-                            </Can>
+                            </ApprovalGate>
                           </div>
                         )}
                       </>
@@ -288,11 +317,38 @@ export default function EmployeeTimesheetReview() {
           {layout === 'week' && (
           <>
           {/* Layout 2: weekly matrix verification with per-day actions */}
-          <div style={{ margin: '16px 0 8px' }}>
+          <div
+            style={{
+              margin: '16px 0 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Button
+              size="small"
+              icon={<LeftOutlined />}
+              disabled={!canStepWeek(-1)}
+              onClick={() => stepWeek(-1)}
+              title={canStepWeek(-1) ? 'Previous week' : 'Start of the selected month'}
+            />
             <Text strong>
               Week {weekOfMonthIndex(dates[0])}: {dayjs(dates[0]).format('MMM DD')} –{' '}
               {dayjs(dates[6]).format('MMM DD, YYYY')}
             </Text>
+            <Button
+              size="small"
+              icon={<RightOutlined />}
+              disabled={!canStepWeek(1)}
+              onClick={() => stepWeek(1)}
+              title={canStepWeek(1) ? 'Next week' : 'End of the selected month'}
+            />
+            {showThisWeek && (
+              <Button size="small" type="link" onClick={() => setSelectedDate(todayStr)}>
+                This week
+              </Button>
+            )}
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table className={styles.matrixTable}>
@@ -310,15 +366,15 @@ export default function EmployeeTimesheetReview() {
                         <div style={{ fontSize: 11, color: '#8c8c8c' }}>{dayjs(d).format('DD')}</div>
                         {submitted && ts?.handle && (
                           <div className={styles.dayActionIcons}>
-                            <Can I="edit">
+                            <ApprovalGate>
                               <Tooltip title="Approve this day">
                                 <CheckCircleOutlined
                                   className={styles.dayApprove}
-                                  onClick={() => approveDay(ts.handle)}
+                                  onClick={() => askApprove(dayjs(d).format('DD MMM'), [ts.handle])}
                                 />
                               </Tooltip>
-                            </Can>
-                            <Can I="edit">
+                            </ApprovalGate>
+                            <ApprovalGate>
                               <Tooltip title="Reject this day">
                                 <CloseCircleOutlined
                                   className={styles.dayReject}
@@ -328,7 +384,7 @@ export default function EmployeeTimesheetReview() {
                                   }}
                                 />
                               </Tooltip>
-                            </Can>
+                            </ApprovalGate>
                           </div>
                         )}
                       </th>
@@ -386,6 +442,27 @@ export default function EmployeeTimesheetReview() {
           )}
         </>
       )}
+
+      <Modal
+        title={`Approve — ${approve?.scope ?? ''}`}
+        open={!!approve}
+        onCancel={() => setApprove(null)}
+        onOk={confirmApprove}
+        okText="Approve"
+        okButtonProps={{ loading: approvingTimesheet }}
+      >
+        <Text type="secondary">
+          Add a note if you want one on the approval record. A note is required when you are
+          approving for someone outside your own reporting line.
+        </Text>
+        <Input.TextArea
+          rows={3}
+          placeholder="Approval note (optional)"
+          value={approveNote}
+          onChange={(e) => setApproveNote(e.target.value)}
+          style={{ marginTop: 8 }}
+        />
+      </Modal>
 
       <Modal
         title={`Reject — ${reject?.scope ?? ''}`}
