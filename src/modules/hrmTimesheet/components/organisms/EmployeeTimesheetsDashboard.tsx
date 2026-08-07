@@ -8,7 +8,7 @@ import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
 import { useHrmTimesheetUI } from '../../hooks/useHrmTimesheetUI';
 import WeekNavigator from '../molecules/WeekNavigator';
 import { decimalToHHMM } from '../../utils/timesheetHelpers';
-import Can from '../../../hrmAccess/components/Can';
+import ApprovalGate from '../atoms/ApprovalGate';
 import type { TeamTimesheetSummary } from '../../types/domain.types';
 import type { ManagerStatusFilter } from '../../types/ui.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
@@ -223,7 +223,7 @@ export default function EmployeeTimesheetsDashboard() {
                 )}
                 {actionable && (
                   <div className={styles.mgrCardActions}>
-                    <Can I="edit">
+                    <ApprovalGate>
                       <Button
                         size="small"
                         type="primary"
@@ -234,8 +234,8 @@ export default function EmployeeTimesheetsDashboard() {
                       >
                         Approve
                       </Button>
-                    </Can>
-                    <Can I="edit">
+                    </ApprovalGate>
+                    <ApprovalGate>
                       <Button
                         size="small"
                         danger
@@ -248,7 +248,7 @@ export default function EmployeeTimesheetsDashboard() {
                       >
                         Reject
                       </Button>
-                    </Can>
+                    </ApprovalGate>
                   </div>
                 )}
               </div>

@@ -43,6 +43,42 @@ function mondayOf(dateStr: string): string {
   return ymdLocal(d);
 }
 
+/** Last calendar day of the month `monthStart` (YYYY-MM-01) belongs to. */
+function lastDayOfMonth(monthStart: string): string {
+  const [y, m] = monthStart.split('-').map(Number);
+  return ymdLocal(new Date(y, m, 0)); // day 0 of the next month = last day of this one
+}
+
+/**
+ * The day the manager drill-down should open on.
+ *
+ * The weekly layout derives its seven columns from `selectedDate`, so seeding it with
+ * `selectedMonth` (always the 1st) meant the weekly view opened on the week containing the
+ * 1st — a week in the past for all but the first days of a month, which is what CT-2026-473
+ * reported. Seed a day the manager actually cares about instead:
+ *
+ *   - week period   → the week they were already looking at, unchanged
+ *   - current month → today
+ *   - past month    → its last day, so the review opens on that month's final week
+ *   - future month  → its first day; nothing later has happened yet
+ *
+ * `today` is a parameter so the rule can be asserted on a fixed date rather than on
+ * whatever day the test happens to run.
+ */
+export function drillDownSeedDate(
+  managerPeriod: 'week' | 'month',
+  selectedMonth: string,
+  selectedWeekStart: string,
+  today: Date = new Date(),
+): string {
+  if (managerPeriod === 'week') return selectedWeekStart;
+
+  const todayStr = ymdLocal(today);
+  const currentMonthStart = firstDayOfMonth(today);
+  if (selectedMonth === currentMonthStart) return todayStr;
+  return selectedMonth < currentMonthStart ? lastDayOfMonth(selectedMonth) : selectedMonth;
+}
+
 interface TimesheetUIState {
   /** Employee tab view: month calendar (landing) -> week matrix (on date click). */
   myViewMode: 'month' | 'week';
@@ -233,14 +269,23 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       openEmployeeReview: (emp) =>
         set((state) => {
           // Align the drill-down to whatever period the manager was viewing so
-          // the grid loads/renders the month that actually has data.
+          // the grid loads/renders the month that actually has data. The month is the
+          // period; the *day* decides which week the Weekly layout opens on, and it must
+          // be a real day (today, or the last day of a past month) — never the 1st.
           const aligned =
             state.managerPeriod === 'week'
               ? {
                   selectedDate: state.selectedWeekStart,
                   selectedMonth: firstDayOfMonth(new Date(`${state.selectedWeekStart}T00:00:00`)),
                 }
-              : { selectedDate: state.selectedMonth, selectedMonth: state.selectedMonth };
+              : {
+                  selectedDate: drillDownSeedDate(
+                    'month',
+                    state.selectedMonth,
+                    state.selectedWeekStart,
+                  ),
+                  selectedMonth: state.selectedMonth,
+                };
           return {
             managerViewMode: 'detail',
             targetEmployee: emp,

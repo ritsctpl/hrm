@@ -73,6 +73,30 @@ export function weekDates(dateStr: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
+/**
+ * Sunday of the week `delta` whole weeks away from the week containing `dateStr`.
+ * `delta` of 0 normalises to the current week's Sunday, so callers can use this as the
+ * single way to express "the week I am on" and "the week next to it".
+ */
+export function shiftWeekStart(dateStr: string, delta: number): string {
+  return addDays(sundayOf(dateStr), delta * 7);
+}
+
+/**
+ * True when any day of the week containing `dateStr` falls inside `monthStart`'s month.
+ *
+ * Week navigation in the manager review is bounded by this: the grid is fed by a
+ * month-scoped load, so stepping onto a week with no overlap at all would show seven
+ * empty columns and read as "this employee logged nothing".
+ */
+export function weekIntersectsMonth(dateStr: string, monthStart: string): boolean {
+  const [year, month] = monthStart.split('-').map(Number);
+  return weekDates(dateStr).some((d) => {
+    const [dy, dm] = d.split('-').map(Number);
+    return dy === year && dm === month;
+  });
+}
+
 export function isToday(dateStr: string): boolean {
   return dateStr === ymd(new Date());
 }

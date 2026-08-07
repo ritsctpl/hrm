@@ -8,6 +8,7 @@ import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import HoursDisplay from '../atoms/HoursDisplay';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import Can from '../../../hrmAccess/components/Can';
+import ApprovalGate from '../atoms/ApprovalGate';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text, Title } = Typography;
@@ -92,7 +93,7 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
             style={{ flex: 1 }}
           />
           <Space direction="vertical">
-            <Can I="edit">
+            <ApprovalGate>
               <Button
                 type="primary"
                 size="small"
@@ -101,8 +102,8 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
               >
                 Approve
               </Button>
-            </Can>
-            <Can I="edit">
+            </ApprovalGate>
+            <ApprovalGate>
               <Button
                 danger
                 size="small"
@@ -112,7 +113,7 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
               >
                 Reject
               </Button>
-            </Can>
+            </ApprovalGate>
           </Space>
         </div>
       )}

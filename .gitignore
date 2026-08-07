@@ -14,7 +14,9 @@
 /e2e_test_screenshots/
 /playwright-report/
 /test-results/
-/tests/
+# Scratch e2e runs stay local; committed unit tests do not.
+/tests/*
+!/tests/unit/
 # next.js
 /.next/
 /out/

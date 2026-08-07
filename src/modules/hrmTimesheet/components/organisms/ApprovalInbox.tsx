@@ -7,7 +7,7 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import DayColorIndicator from '../atoms/DayColorIndicator';
 import TimesheetApprovalDetail from './TimesheetApprovalDetail';
-import Can from '../../../hrmAccess/components/Can';
+import ApprovalGate from '../atoms/ApprovalGate';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text } = Typography;
@@ -90,7 +90,7 @@ export default function ApprovalInbox({ onApprove, onBulkApprove, onReopen }: Pr
                 size="small"
               />
               <Space size={4}>
-                <Can I="edit">
+                <ApprovalGate>
                   <Button
                     size="small"
                     type="primary"
@@ -100,8 +100,8 @@ export default function ApprovalInbox({ onApprove, onBulkApprove, onReopen }: Pr
                   >
                     Bulk Approve
                   </Button>
-                </Can>
-                <Can I="edit">
+                </ApprovalGate>
+                <ApprovalGate>
                   <Button
                     size="small"
                     danger
@@ -112,7 +112,7 @@ export default function ApprovalInbox({ onApprove, onBulkApprove, onReopen }: Pr
                   >
                     Bulk Reject
                   </Button>
-                </Can>
+                </ApprovalGate>
               </Space>
             </div>
           )}

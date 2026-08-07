@@ -8,19 +8,8 @@ import { HrmTimesheetService } from '../services/hrmTimesheetService';
 import { mapTimesheetResponse, useHrmTimesheetData } from './useHrmTimesheetData';
 import { useEmployeeIdentity } from '../../hrmAccess/hooks/useEmployeeIdentity';
 import { SOFT_DAILY_HOUR_LIMIT } from '../utils/timesheetConstants';
+import { extractBackendMsg } from '../utils/backendMessage';
 import type { MatrixLineInput } from '../types/ui.types';
-
-function extractBackendMsg(error: any, fallback: string): string {
-  return (
-    error?.response?.data?.message_details?.msg ||
-    error?.response?.data?.message ||
-    error?.response?.data?.response ||
-    error?.response?.data?.error ||
-    error?.response?.data?.errorCode ||
-    error?.message ||
-    fallback
-  );
-}
 
 export function useHrmTimesheetUI() {
   const store = useHrmTimesheetStore();
@@ -132,20 +121,26 @@ export function useHrmTimesheetUI() {
 
   const approveTimesheet = useCallback(async (handle: string, action: 'APPROVED' | 'REJECTED', remarks: string) => {
     store.setApprovingTimesheet(true);
+    const payload = {
+      organizationId,
+      timesheetHandle: handle,
+      action,
+      remarks,
+      approverEmployeeId: supervisorId,
+      approverName,
+    };
     try {
-      await HrmTimesheetService.approveOrReject({ organizationId,
-        timesheetHandle: handle,
-        action,
-        remarks,
-        approverEmployeeId: supervisorId,
-        approverName,
-      });
+      await HrmTimesheetService.approveOrReject(payload);
       message.success(`Timesheet ${action.toLowerCase()}`);
       await loadPendingApprovals();
       store.setSelectedTimesheetHandle(null);
-    } catch (err) {
-      message.error('Failed to process approval');
-      console.error(err);
+    } catch (err: any) {
+      // The server sends a specific, actionable reason ("approval belongs to X", "only
+      // SUBMITTED timesheets…", "remarks are mandatory…"). Showing a generic sentence
+      // instead is what left CT-2026-473 undiagnosable for the reporter.
+      console.error('[approveTimesheet] payload:', payload);
+      console.error('[approveTimesheet] response:', err?.response?.data);
+      message.error(extractBackendMsg(err, 'Failed to process approval'));
     } finally {
       store.setApprovingTimesheet(false);
     }
@@ -157,20 +152,28 @@ export function useHrmTimesheetUI() {
       return;
     }
     store.setApprovingTimesheet(true);
+    const payload = {
+      organizationId,
+      timesheetHandles: handles,
+      action,
+      remarks,
+      approverEmployeeId: supervisorId,
+      approverName,
+    };
     try {
-      const result = await HrmTimesheetService.bulkApproveOrReject({ organizationId,
-        timesheetHandles: handles,
-        action,
-        remarks,
-        approverEmployeeId: supervisorId,
-        approverName,
-      });
+      const result = await HrmTimesheetService.bulkApproveOrReject(payload);
       message.success(`Bulk ${action.toLowerCase()}: ${result.successful ?? 0} processed, ${result.failed ?? 0} failed`);
+      // The bulk endpoint reports per-day failures in the body rather than throwing, so a
+      // "0 processed, 3 failed" result is a failure the user must see the reason for.
+      if ((result.failed ?? 0) > 0 && result.errors?.length) {
+        message.warning(result.errors[0]);
+      }
       await loadPendingApprovals();
       store.setSelectedTimesheetHandle(null);
-    } catch (err) {
-      message.error('Failed to process bulk approval');
-      console.error(err);
+    } catch (err: any) {
+      console.error('[bulkApproveTimesheets] payload:', payload);
+      console.error('[bulkApproveTimesheets] response:', err?.response?.data);
+      message.error(extractBackendMsg(err, 'Failed to process bulk approval'));
     } finally {
       store.setApprovingTimesheet(false);
     }
