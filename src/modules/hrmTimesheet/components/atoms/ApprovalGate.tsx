@@ -18,13 +18,19 @@ const DENIED_HINT =
  *
  * The fallback shows the control greyed and unclickable rather than removing it: a button
  * that vanishes leaves the user with no idea why approving is impossible, which is the same
- * dead end in a quieter form. `approvalQueue` is the module's section name for this object
- * (`utils/sectionMap.ts`).
+ * dead end in a quieter form.
+ *
+ * The object name is the BACKEND one (`timesheet_approval`), not the module's section alias
+ * (`approvalQueue` in `utils/sectionMap.ts`). The section cache is keyed by
+ * `permission.objectName` exactly as RBAC returns it, so an alias matches no key and
+ * `useCan` denies a user who actually holds the grant — caught live: HRM_SUPER_ADMIN holds
+ * `timesheet_approval/EDIT` and was still refused while this read `approvalQueue`. Every
+ * other module passes the backend name too (`object="leave_request"`, `"leave_approval"`).
  */
 const ApprovalGate: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Can
     I="edit"
-    object="approvalQueue"
+    object="timesheet_approval"
     fallback={
       <Tooltip title={DENIED_HINT}>
         {/* The outer span stays hoverable so the tooltip can explain the denial; the inner
