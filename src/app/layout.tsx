@@ -79,6 +79,7 @@ import { ThemeProviderComponent } from "@components/ThemeContext";
 import RbacProvider from "@components/RbacProvider";
 import AppSidebar from "@components/AppSidebar";
 import AppFooter from "@components/AppFooter";
+import CaptureWidget from "@components/capture-widget/CaptureWidget";
 import himalayaLogo from "../../public/ico/himalaya.ico";
 import ritsLogo from "../../public/ico/rits.ico";
 import exideLogo from "../../public/ico/exide.ico";
@@ -155,6 +156,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   </div>
                   <AppFooter />
                 </LoadingWrapper>
+                {/* "Report a Problem" capture widget (UF-12). Renders null unless
+                    NEXT_PUBLIC_TICKET_WIDGET=true, so this line is inert by default. */}
+                <CaptureWidget />
               </AntdApp>
             </ThemeProviderComponent>
           </RbacProvider>
