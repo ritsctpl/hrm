@@ -14,7 +14,7 @@
 // INERT BY DEFAULT. Without NEXT_PUBLIC_TICKET_WIDGET=true it renders null and
 // patches nothing, so merging this cannot affect any host app until the flag is
 // deliberately turned on.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Collapse, Input, Modal, Radio, Space, Tag, Tooltip, Typography, message } from 'antd';
 import { BugOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
@@ -61,10 +61,20 @@ export const CaptureWidget: React.FC = () => {
   // Render only on the client, and only for a signed-in session — an anonymous
   // visitor on the login screen has nothing to report and no ticket to own.
   useEffect(() => { setMounted(true); }, []);
-  const signedIn = useMemo(() => {
-    if (!mounted) return false;
-    try { return !!parseCookies().token; } catch { return false; }
-  }, [mounted]);
+  // The token cookie lands only after the client-side auth exchange, which can finish
+  // AFTER this app-wide widget mounts (the home screen straight off the login redirect).
+  // A one-shot check left the button missing on home until the next full page load, so
+  // keep looking until the cookie shows up, then stop.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    if (!mounted || signedIn) return;
+    const check = () => { try { return !!parseCookies().token; } catch { return false; } };
+    if (check()) { setSignedIn(true); return; }
+    const id = window.setInterval(() => {
+      if (check()) { setSignedIn(true); window.clearInterval(id); }
+    }, 1500);
+    return () => window.clearInterval(id);
+  }, [mounted, signedIn]);
 
   // Never leave a page patched behind us.
   useEffect(() => () => { recorderRef.current?.stop(); }, []);
