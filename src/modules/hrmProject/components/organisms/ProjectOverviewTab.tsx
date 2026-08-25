@@ -13,6 +13,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { useRbacContext } from '@/modules/hrmAccess/context/RbacContext';
 import { HrmProjectService } from '../../services/hrmProjectService';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
@@ -86,6 +87,7 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
   // projectManagerId comes back as the composite "R10138 - Ravi Kumar" while
   // employeeCode is the bare code, so these must be compared as codes.
   const isPM = isSameEmployee(employeeCode, project.projectManagerId);
+  const { isSuperAdmin } = useRbacContext();
   const nextStages = STATUS_TRANSITIONS[project.status] ?? [];
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
@@ -274,10 +276,10 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
         )}
       </Card>
 
-      {isPM && (
+      {(isPM || isSuperAdmin) && (
         <Card size="small" title="Project Actions">
           <Space wrap>
-            {nextStages.length > 0 && (
+            {isPM && nextStages.length > 0 && (
               <Dropdown
                 trigger={['click']}
                 menu={{
@@ -290,8 +292,8 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
                 </Button>
               </Dropdown>
             )}
-            {/* The manager may hand the project on; anyone with edit rights on
-                the module may reassign it for them. */}
+            {/* The current manager may hand the project on; a super-admin can also
+                reassign it — e.g. when the PM has left and can no longer act. */}
             <Button size="small" onClick={() => setChangeManagerOpen(true)}>Change Manager</Button>
           </Space>
         </Card>
