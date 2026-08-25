@@ -97,7 +97,6 @@ interface ProjectActions {
   updateProjectInList: (updated: Project) => void;
   removeProjectFromList: (handle: string) => void;
   updateAllocationInList: (updated: ResourceAllocation) => void;
-  removePendingAllocation: (handle: string) => void;
 }
 
 type HrmProjectStore = ProjectUIState & ProjectDataState & ProjectLoadingState & ProjectActions;
