@@ -8,6 +8,7 @@ import {
   CloseCircleOutlined,
   CloseOutlined,
   LeftOutlined,
+  RedoOutlined,
   RightOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -57,11 +58,16 @@ export default function EmployeeTimesheetReview() {
     setSelectedDate,
   } = useHrmTimesheetStore();
   const { loadTargetEmployeeMonth, loadTeamTimesheets } = useHrmTimesheetData();
-  const { approveTimesheet, bulkApproveTimesheets } = useHrmTimesheetUI();
+  const { approveTimesheet, bulkApproveTimesheets, reopenTimesheet } = useHrmTimesheetUI();
 
   // Reject modal — used for both single-day and global reject (handles list).
   const [reject, setReject] = useState<{ scope: string; handles: string[] } | null>(null);
   const [remarks, setRemarks] = useState('');
+  // Reopen modal — undoes an approval (or a still-lingering rejection) for one day, so the
+  // employee can re-enter it. A reason is required (hrm-service TS_XXX @NotBlank) and is written
+  // to the approval audit trail.
+  const [reopen, setReopen] = useState<{ scope: string; handle: string } | null>(null);
+  const [reopenReason, setReopenReason] = useState('');
   // Approve modal. The note is optional for a direct manager, but hrm-service requires one
   // when the approver is outside the employee's direct reporting line (TS_016), and the UI
   // previously sent an empty string always — so a skip-level approval could never succeed.
@@ -142,6 +148,19 @@ export default function EmployeeTimesheetReview() {
     }
     setReject(null);
     setRemarks('');
+    await afterAction();
+  }
+
+  function askReopen(scope: string, handle: string) {
+    setReopen({ scope, handle });
+    setReopenReason('');
+  }
+
+  async function confirmReopen() {
+    if (!reopen || !reopenReason.trim()) return;
+    await reopenTimesheet(reopen.handle, reopenReason.trim());
+    setReopen(null);
+    setReopenReason('');
     await afterAction();
   }
 
@@ -304,6 +323,21 @@ export default function EmployeeTimesheetReview() {
                             </ApprovalGate>
                           </div>
                         )}
+                        {(ts?.status === 'APPROVED' || ts?.status === 'REJECTED') && ts?.handle && (
+                          <div
+                            className={styles.dayActionIcons}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ApprovalGate>
+                              <Tooltip title="Reopen this day — undo the decision and let the employee re-enter it">
+                                <RedoOutlined
+                                  className={styles.dayReject}
+                                  onClick={() => askReopen(dayjs(cell.date).format('DD MMM'), ts.handle)}
+                                />
+                              </Tooltip>
+                            </ApprovalGate>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -382,6 +416,18 @@ export default function EmployeeTimesheetReview() {
                                     setReject({ scope: dayjs(d).format('DD MMM'), handles: [ts.handle] });
                                     setRemarks('');
                                   }}
+                                />
+                              </Tooltip>
+                            </ApprovalGate>
+                          </div>
+                        )}
+                        {(ts?.status === 'APPROVED' || ts?.status === 'REJECTED') && ts?.handle && (
+                          <div className={styles.dayActionIcons}>
+                            <ApprovalGate>
+                              <Tooltip title="Reopen this day — undo the decision and let the employee re-enter it">
+                                <RedoOutlined
+                                  className={styles.dayReject}
+                                  onClick={() => askReopen(dayjs(d).format('DD MMM'), ts.handle)}
                                 />
                               </Tooltip>
                             </ApprovalGate>
@@ -478,6 +524,27 @@ export default function EmployeeTimesheetReview() {
           placeholder="Reason for rejection..."
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
+          style={{ marginTop: 8 }}
+        />
+      </Modal>
+
+      <Modal
+        title={`Reopen — ${reopen?.scope ?? ''}`}
+        open={!!reopen}
+        onCancel={() => setReopen(null)}
+        onOk={confirmReopen}
+        okText="Reopen"
+        okButtonProps={{ disabled: !reopenReason.trim(), loading: approvingTimesheet }}
+      >
+        <Text type="secondary">
+          Undoes the approval or rejection for this day and clears it from both calendars — the
+          employee re-enters it from scratch. A reason is required and kept on the audit trail.
+        </Text>
+        <Input.TextArea
+          rows={3}
+          placeholder="Reason for reopening..."
+          value={reopenReason}
+          onChange={(e) => setReopenReason(e.target.value)}
           style={{ marginTop: 8 }}
         />
       </Modal>
