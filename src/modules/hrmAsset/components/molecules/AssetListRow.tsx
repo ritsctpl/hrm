@@ -89,6 +89,13 @@ export default function AssetListRow({
       </div>
       <div className={styles.listRowMeta}>
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>{asset.assetId}</Typography.Text>
+        {/* Serial No. — the physical identifier a workforce attribution is keyed
+            on. Only rendered when the asset carries one, so older rows stay clean. */}
+        {asset.serialNumber && (
+          <Typography.Text type="secondary" style={{ fontSize: 11 }} ellipsis>
+            SN {asset.serialNumber}
+          </Typography.Text>
+        )}
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
           {asset.currentHolderName ?? asset.location ?? '—'}
         </Typography.Text>

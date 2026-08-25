@@ -50,6 +50,7 @@ export const MODULE_CATEGORY_MAP: Record<string, string> = {
   '/rits/hrm_asset_app': 'Admin',
   '/rits/hrm_settings_app': 'Admin',
   '/rits/hrm_grade_app': 'Admin',
+  '/rits/hrm_workforce_app': 'Admin',
 
   // HR — core people management
   '/rits/hrm_employee_app': 'HR',

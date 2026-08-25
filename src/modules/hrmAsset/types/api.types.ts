@@ -53,6 +53,7 @@ export interface CreateAssetPayload {
   organizationId: string;
   categoryCode: string;
   assetName: string;
+  serialNumber?: string;
   assetId?: string;
   purchaseValueINR: number;
   purchaseDate: string;
@@ -68,6 +69,7 @@ export interface UpdateAssetPayload {
   organizationId: string;
   assetId: string;
   assetName?: string;
+  serialNumber?: string;
   purchaseValueINR?: number;
   purchaseDate?: string;
   vendor?: string;
@@ -108,6 +110,7 @@ export interface AssetResponse {
   categoryCode: string;
   categoryName: string;
   assetName: string;
+  serialNumber?: string;
   status: AssetStatus;
   purchaseValueINR: number;
   purchaseDate: string;
@@ -136,6 +139,7 @@ export interface AssetListResponse {
   categoryCode: string;
   categoryName: string;
   assetName: string;
+  serialNumber?: string;
   status: AssetStatus;
   currentHolderName?: string;
   presentValueINR: number;

@@ -71,6 +71,7 @@ export const APP_URL_TO_MODULE: Record<string, string> = {
   "/rits/hrm_timesheet_app": "HRM_TIMESHEET",
   "/rits/hrm_travel_app": "HRM_TRAVEL",
   "/rits/hrm_user_guide_app": "HRM_USER_GUIDE",
+  "/rits/hrm_workforce_app": "HRM_WORKFORCE",
 };
 
 export const MODULE_TO_APP_URL: Record<string, string> = Object.fromEntries(
@@ -422,6 +423,14 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
   HRM_USER_GUIDE: [
     { code: "user_guide_module", label: "Module Access" },
     { code: "user_guide_doc", label: "User Guides" },
+  ],
+
+  // ── Workforce ───────────────────────────────────────────────────────
+  HRM_WORKFORCE: [
+    { code: "workforce_module", label: "Module Access" },
+    { code: "workforce_fleet", label: "Fleet" },
+    { code: "attendance", label: "Attendance" },
+    { code: "workforce_reports", label: "Reports" },
   ],
 };
 

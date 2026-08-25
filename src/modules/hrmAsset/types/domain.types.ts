@@ -76,6 +76,7 @@ export interface Asset {
   categoryCode: string;
   categoryName: string;
   assetName: string;
+  serialNumber?: string;
   status: AssetStatus;
   purchaseValueINR: number;
   purchaseDate: string;

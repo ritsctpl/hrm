@@ -115,6 +115,7 @@ export default function AssetOverviewTab({ asset, canEdit, canAssign }: AssetOve
         <Descriptions column={1} size="small" bordered>
           <Descriptions.Item label="Asset ID">{asset.assetId}</Descriptions.Item>
           <Descriptions.Item label="Name">{asset.assetName}</Descriptions.Item>
+          <Descriptions.Item label="Serial No.">{asset.serialNumber ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Category">{asset.categoryName}</Descriptions.Item>
           <Descriptions.Item label="Purchase Value">{formatCurrency(asset.purchaseValueINR)}</Descriptions.Item>
           <Descriptions.Item label="Purchase Date">{formatDate(asset.purchaseDate)}</Descriptions.Item>

@@ -90,6 +90,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
           organizationId,
           assetId: editAsset!.assetId,
           assetName: values.assetName,
+          serialNumber: values.serialNumber,
           purchaseValueINR: values.purchaseValueINR,
           purchaseDate: dayjs(values.purchaseDate).format('YYYY-MM-DD'),
           vendor: values.vendor,
@@ -109,6 +110,7 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
           organizationId,
           categoryCode: values.categoryCode,
           assetName: values.assetName,
+          serialNumber: values.serialNumber,
           purchaseValueINR: values.purchaseValueINR,
           purchaseDate: dayjs(values.purchaseDate).format('YYYY-MM-DD'),
           vendor: values.vendor,
@@ -174,6 +176,15 @@ export default function AssetForm({ editAsset }: AssetFormProps) {
               <Input placeholder="e.g. Dell Latitude 5420" />
             </Form.Item>
           </Col>
+        </Row>
+
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item label="Serial Number" name="serialNumber">
+              <Input placeholder="Manufacturer serial no." />
+            </Form.Item>
+          </Col>
+          <Col span={12} />
         </Row>
 
         <Row gutter={12}>
