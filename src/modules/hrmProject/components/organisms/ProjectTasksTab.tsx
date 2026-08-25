@@ -16,7 +16,6 @@ import ExtendTaskModal from './ExtendTaskModal';
 import type { ProjectTask, TaskStatus } from '../../types/domain.types';
 import type { ProjectTaskResponse } from '../../types/api.types';
 import type { TaskFormValues } from '../../types/ui.types';
-import Can from '../../../hrmAccess/components/Can';
 
 const { Text } = Typography;
 
@@ -251,24 +250,24 @@ export default function ProjectTasksTab() {
           {/* The project's own manager can always edit its tasks, module-wide
               edit rights or not — otherwise the only action left on a task is
               deleting it and recreating it. */}
-          <Can I="edit" passIf={isPM}>
+          {isPM && (
             <Tooltip title="Edit"><Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} disabled={!canEditTasks} /></Tooltip>
-          </Can>
+          )}
           {isOverBudget(t) && isPM && (
             <Tooltip title="Extend task time"><Button type="text" size="small" icon={<FieldTimeOutlined />} style={{ color: '#fa8c16' }} onClick={() => setExtendTarget(t)} /></Tooltip>
           )}
-          <Can I="edit" passIf={isPM}>
+          {isPM && (
             <Tooltip title="Move to another project"><Button type="text" size="small" icon={<SwapOutlined />} onClick={() => setMoveTarget(t)} disabled={!canEditTasks} /></Tooltip>
-          </Can>
-          <Can I="delete">
-            {canEditTasks ? (
+          )}
+          {isPM && (
+            canEditTasks ? (
               <Popconfirm title="Remove this task? Any allocations on it will be cancelled." okText="Remove" okType="danger" onConfirm={() => removeTask(selectedProject.handle, t.handle)}>
                 <Tooltip title="Remove"><Button type="text" size="small" danger icon={<DeleteOutlined />} /></Tooltip>
               </Popconfirm>
             ) : (
               <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled />
-            )}
-          </Can>
+            )
+          )}
         </Space>
       ),
     },
@@ -300,12 +299,14 @@ export default function ProjectTasksTab() {
         )
       )}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
-        <Can I="add">
-          <Button icon={<StarOutlined />} onClick={openDefaults} disabled={!canEditTasks}>Add Default</Button>
-          <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)} disabled={!canEditTasks}>Import from Project</Button>
-          <Button icon={<MergeCellsOutlined />} onClick={() => setMergeOpen(true)} disabled={!canEditTasks || tasks.length < 2}>Merge</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canEditTasks}>Add Task</Button>
-        </Can>
+        {isPM && (
+          <>
+            <Button icon={<StarOutlined />} onClick={openDefaults} disabled={!canEditTasks}>Add Default</Button>
+            <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)} disabled={!canEditTasks}>Import from Project</Button>
+            <Button icon={<MergeCellsOutlined />} onClick={() => setMergeOpen(true)} disabled={!canEditTasks || tasks.length < 2}>Merge</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canEditTasks}>Add Task</Button>
+          </>
+        )}
       </div>
 
       <Table<ProjectTask>
