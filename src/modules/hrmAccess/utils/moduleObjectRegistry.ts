@@ -360,7 +360,6 @@ export const MODULE_OBJECT_REGISTRY: Record<string, PermissionObjectEntry[]> = {
     { code: "project_module", label: "Module Access" },
     { code: "project_record", label: "Projects" },
     { code: "project_allocation", label: "Resource Allocation" },
-    { code: "project_approval", label: "Allocation Approvals" },
     { code: "project_milestone", label: "Milestones" },
     { code: "project_calendar", label: "Calendar" },
     { code: "project_report", label: "Reports" },

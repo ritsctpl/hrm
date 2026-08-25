@@ -2,7 +2,7 @@
 
 export type ProjectStatus = 'INITIATED' | 'DRAFT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 export type ProjectType = 'BILLABLE' | 'NON_BILLABLE' | 'REVENUE_GENERATION';
-export type AllocationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type AllocationStatus = 'APPROVED' | 'CANCELLED';
 export type MilestoneStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
 export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
 export type RecurrencePattern = 'WEEKLY' | 'MONTHLY';

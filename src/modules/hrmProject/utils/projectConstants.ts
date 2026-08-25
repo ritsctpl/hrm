@@ -19,10 +19,7 @@ export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
 };
 
 export const ALLOCATION_STATUS_COLORS: Record<AllocationStatus, string> = {
-  DRAFT: 'default',
-  SUBMITTED: 'processing',
   APPROVED: 'success',
-  REJECTED: 'error',
   CANCELLED: 'default',
 };
 
@@ -41,10 +38,7 @@ export const CAPACITY_COLORS: Record<CapacityStatus, string> = {
 };
 
 export const ALLOCATION_STATUS_OPTIONS: { value: AllocationStatus; label: string }[] = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'SUBMITTED', label: 'Submitted' },
   { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 

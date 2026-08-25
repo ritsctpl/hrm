@@ -192,14 +192,6 @@ export interface AllocationDayResponse {
   availableCapacity: number;
 }
 
-export interface AllocationApprovalRequest {
-  organizationId: string;
-  allocationHandle: string;
-  action: 'APPROVED' | 'REJECTED';
-  approverEmployeeId: string;
-  approverName?: string;
-  remarks?: string;
-}
 
 // ─── Resource lifecycle: reassign / replace / revise ─────────────────────────
 
@@ -292,30 +284,6 @@ export interface AllocationTemporaryCoverRequest {
   coverTo: string;
   coveredBy: string;
   remarks?: string;
-}
-
-// ─── Approval delegation ─────────────────────────────────────────────────────
-export interface ApprovalDelegationRequest {
-  organizationId: string;
-  fromEmployeeId: string;
-  toEmployeeId: string;
-  fromDate: string;
-  toDate: string;
-  delegatedBy: string;
-  remarks?: string;
-}
-
-export interface ApprovalDelegationResponse {
-  id?: string;
-  handle?: string;
-  organizationId: string;
-  fromEmployeeId: string;
-  fromEmployeeName?: string;
-  toEmployeeId: string;
-  toEmployeeName?: string;
-  fromDate: string;
-  toDate: string;
-  active?: number;
 }
 
 export interface CapacityCheckRequest {
