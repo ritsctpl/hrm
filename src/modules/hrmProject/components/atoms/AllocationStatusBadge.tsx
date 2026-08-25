@@ -5,8 +5,7 @@ import type { AllocationStatusBadgeProps } from '../../types/ui.types';
 import { ALLOCATION_STATUS_COLORS } from '../../utils/projectConstants';
 
 const LABELS: Record<string, string> = {
-  DRAFT: 'Draft', SUBMITTED: 'Submitted', APPROVED: 'Approved',
-  REJECTED: 'Rejected', CANCELLED: 'Cancelled',
+  APPROVED: 'Approved', CANCELLED: 'Cancelled',
 };
 
 const AllocationStatusBadge: React.FC<AllocationStatusBadgeProps> = ({ status }) => (

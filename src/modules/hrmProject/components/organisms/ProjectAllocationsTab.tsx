@@ -95,9 +95,8 @@ export default function ProjectAllocationsTab() {
 
   const activeTaskCount = (employeeId: string) => {
     const grp = groups.find((g) => g.employeeId === employeeId);
-    return grp ? grp.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED').length : 0;
+    return grp ? grp.tasks.filter((t) => t.status !== 'CANCELLED').length : 0;
   };
-  // DRAFT / REJECTED rows edit in place; approved ones go through Revise.
   const handleEdit = (a: ResourceAllocation) => setEditTarget(a);
   const handleDelete = (a: ResourceAllocation) => {
     if (!selectedProject) return;
@@ -158,8 +157,8 @@ export default function ProjectAllocationsTab() {
       ) : (
         <div className={styles.allocationsList}>
           {groups.map((g) => {
-            // Summary counts only active task allocations — exclude cancelled / rejected.
-            const activeTasks = g.tasks.filter((t) => t.status !== 'CANCELLED' && t.status !== 'REJECTED');
+            // Summary counts only active task allocations — exclude cancelled.
+            const activeTasks = g.tasks.filter((t) => t.status !== 'CANCELLED');
             return (
               <div key={g.employeeId} className={styles.memberGroup}>
                 {g.membership ? (

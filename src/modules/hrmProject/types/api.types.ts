@@ -232,9 +232,8 @@ export interface MemberReplaceRequest {
   remarks?: string;
 }
 
-// Edit/extend an existing (typically APPROVED) allocation without cancel+recreate.
-// Changing hours or shortening/extending the window resets the allocation to SUBMITTED
-// for re-approval. End date cannot be moved before days that already have logged actuals.
+// Edit/extend an existing APPROVED allocation without cancel+recreate.
+// End date cannot be moved before days that already have logged actuals.
 export interface AllocationReviseRequest {
   organizationId: string;
   allocationHandle: string;
@@ -246,7 +245,6 @@ export interface AllocationReviseRequest {
 }
 
 // ─── Project manager handover ────────────────────────────────────────────────
-// Changing the PM re-routes pending allocation approvals to the new manager.
 export interface ProjectManagerChangeRequest {
   organizationId: string;
   handle: string;

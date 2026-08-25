@@ -98,7 +98,7 @@ export default function AllocationForm({ projectHandle }: Props) {
       return;
     }
     const isProjectLevel = (a: typeof projectAllocations[number]) => !a.taskId;
-    const isActive = (a: typeof projectAllocations[number]) => a.status !== 'CANCELLED' && a.status !== 'REJECTED';
+    const isActive = (a: typeof projectAllocations[number]) => a.status !== 'CANCELLED';
 
     // FE-5: assigning to tasks needs the employee already on the project (project-level allocation).
     // Skip the pre-check if allocations aren't loaded yet — the backend (PRJ_036) is the source of truth.
@@ -159,7 +159,7 @@ export default function AllocationForm({ projectHandle }: Props) {
   const empRow = employees.find((e) => e.employeeCode === allocationPrefill?.employeeId);
   const assignedTaskIds = new Set(
     projectAllocations
-      .filter((a) => a.employeeId === allocationPrefill?.employeeId && a.taskId && a.status !== 'CANCELLED' && a.status !== 'REJECTED')
+      .filter((a) => a.employeeId === allocationPrefill?.employeeId && a.taskId && a.status !== 'CANCELLED')
       .map((a) => a.taskId as string)
   );
   const filteredTasks = (selectedProject?.tasks ?? []).filter((t) => {
@@ -173,7 +173,7 @@ export default function AllocationForm({ projectHandle }: Props) {
   // Tasks can only be assigned once the employee is already on the project (a
   // project-level allocation with no task). Until then the task picker stays disabled.
   const employeeOnProject = isTaskMode || (!!watchEmployee && projectAllocations.some(
-    (a) => a.employeeId === watchEmployee && !a.taskId && a.status !== 'CANCELLED' && a.status !== 'REJECTED'
+    (a) => a.employeeId === watchEmployee && !a.taskId && a.status !== 'CANCELLED'
   ));
 
   return (

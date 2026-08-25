@@ -309,7 +309,7 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
-  // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
+  // Edit/extend an existing APPROVED allocation.
   const reviseAllocation = useCallback(async (
     projectHandle: string,
     payload: { allocationHandle: string; hoursPerDay?: number; endDate?: string; billableRate?: number | null; remarks?: string },

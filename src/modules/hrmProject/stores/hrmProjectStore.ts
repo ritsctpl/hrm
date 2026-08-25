@@ -5,7 +5,6 @@ import { devtools } from 'zustand/middleware';
 import type {
   Project,
   ResourceAllocation,
-  AllocationApproval,
   CapacityCheckResult,
   ProjectAllocationVsActual,
   ResourceUtilizationReport,
@@ -39,7 +38,6 @@ interface ProjectDataState {
   projects: Project[];
   projectKpis: { total: number; active: number; draft: number; onHold: number; completed: number };
   projectAllocations: ResourceAllocation[];
-  allocationApprovals: AllocationApproval[];
   capacityCheck: CapacityCheckResult | null;
   allocationVsActual: ProjectAllocationVsActual | null;
   utilizationReport: ResourceUtilizationReport | null;
@@ -82,7 +80,6 @@ interface ProjectActions {
   setProjects: (p: Project[]) => void;
   setProjectKpis: (kpis: ProjectDataState['projectKpis']) => void;
   setProjectAllocations: (a: ResourceAllocation[]) => void;
-  setAllocationApprovals: (a: AllocationApproval[]) => void;
   setCapacityCheck: (c: CapacityCheckResult | null) => void;
   setAllocationVsActual: (r: ProjectAllocationVsActual | null) => void;
   setUtilizationReport: (r: ResourceUtilizationReport | null) => void;
@@ -128,7 +125,6 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       projects: [],
       projectKpis: { total: 0, active: 0, draft: 0, onHold: 0, completed: 0 },
       projectAllocations: [],
-      allocationApprovals: [],
       capacityCheck: null,
       allocationVsActual: null,
       utilizationReport: null,
@@ -174,7 +170,6 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       setProjects: (projects) => set({ projects }),
       setProjectKpis: (projectKpis) => set({ projectKpis }),
       setProjectAllocations: (projectAllocations) => set({ projectAllocations }),
-      setAllocationApprovals: (allocationApprovals) => set({ allocationApprovals }),
       setCapacityCheck: (capacityCheck) => set({ capacityCheck }),
       setAllocationVsActual: (allocationVsActual) => set({ allocationVsActual }),
       setUtilizationReport: (utilizationReport) => set({ utilizationReport }),

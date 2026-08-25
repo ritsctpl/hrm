@@ -126,18 +126,6 @@ export interface ResourceAllocation {
   modifiedDateTime: string;
 }
 
-export interface AllocationApproval {
-  handle: string;
-  organizationId: string;
-  allocationHandle: string;
-  approverEmployeeId: string;
-  approverName: string;
-  approverRole: string;
-  action: 'APPROVED' | 'REJECTED';
-  remarks?: string;
-  actionDateTime: string;
-}
-
 export interface DailyCapacity {
   date: string;
   baseCapacity: number;

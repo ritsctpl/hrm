@@ -156,7 +156,7 @@ export class HrmProjectService {
     await api.post(`${BASE}/allocation/delete`, payload);
   }
 
-  // Edit/extend an existing allocation (resets to SUBMITTED for re-approval).
+  // Edit/extend an existing APPROVED allocation.
   static async reviseAllocation(payload: AllocationReviseRequest): Promise<AllocationResponse> {
     const res = await api.post(`${BASE}/allocation/revise`, payload);
     return res.data;
