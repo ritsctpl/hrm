@@ -6,21 +6,18 @@ import type { ResourceAllocation } from '../../types/domain.types';
 import AllocationStatusBadge from '../atoms/AllocationStatusBadge';
 import HoursDisplay from '../atoms/HoursDisplay';
 import { formatDate } from '../../utils/projectHelpers';
-import Can from '../../../hrmAccess/components/Can';
 
 const { Text } = Typography;
 
 interface AllocationRowProps {
   allocation: ResourceAllocation;
   onEdit?: (a: ResourceAllocation) => void;
-  onSubmit?: (a: ResourceAllocation) => void;
   onCancel?: (a: ResourceAllocation) => void;
   onAssignTask?: (a: ResourceAllocation) => void;
   onReassign?: (a: ResourceAllocation) => void; // move a task allocation to another person
   onReplace?: (a: ResourceAllocation) => void;  // replace a project member (membership row)
   onRelease?: (a: ResourceAllocation) => void;  // release a member, no replacement (membership row)
-  onRevise?: (a: ResourceAllocation) => void;   // edit/extend an approved allocation
-  onRecall?: (a: ResourceAllocation) => void;   // pull a submitted allocation back to draft
+  onRevise?: (a: ResourceAllocation) => void;   // edit/extend an allocation
   onCover?: (a: ResourceAllocation) => void;    // temporary cover for a task allocation
   onDelete?: (a: ResourceAllocation) => void;   // remove the row entirely (cancel keeps it)
   hideEmployee?: boolean;
@@ -34,14 +31,14 @@ const PMOnly: React.FC<{ ok: boolean; children: React.ReactNode }> = ({ ok, chil
   ok ? <>{children}</> : null;
 
 const isProjectLevel = (a: ResourceAllocation) => !a.taskId;
-const isActive = (a: ResourceAllocation) => a.status !== 'CANCELLED' && a.status !== 'REJECTED';
+const isActive = (a: ResourceAllocation) => a.status !== 'CANCELLED';
 const cancelTitle = (a: ResourceAllocation) =>
   isProjectLevel(a)
     ? "Cancel this member's allocation? Their task assignments on this project are cancelled too. "
       + 'The rows stay visible as cancelled — use Delete to remove them.'
     : 'Cancel this task assignment? It stays visible as cancelled — use Delete to remove it.';
 
-const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSubmit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onRecall, onCover, onDelete, hideEmployee, hideHours, isProjectManager = false }) => (
+const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onCover, onDelete, hideEmployee, hideHours, isProjectManager = false }) => (
   <div style={{ padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
     <Space size={12} wrap>
       {!hideEmployee && <Text strong style={{ minWidth: 140 }}>{allocation.employeeName}</Text>}
@@ -78,40 +75,11 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSub
 
       {/* Assign a task to this team member (project-level membership only) */}
       {onAssignTask && isProjectLevel(allocation) && isActive(allocation) && (
-        <Can I="add">
+        <PMOnly ok={isProjectManager}>
           <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => onAssignTask(allocation)}>
             Assign Task
           </Button>
-        </Can>
-      )}
-
-      {/* DRAFT: Edit, Submit, Cancel */}
-      {allocation.status === 'DRAFT' && (
-        <>
-          {onEdit && <PMOnly ok={isProjectManager}><Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button></PMOnly>}
-          {onSubmit && <PMOnly ok={isProjectManager}><Button size="small" type="link" onClick={() => onSubmit(allocation)}>Submit</Button></PMOnly>}
-          {onCancel && (
-            <PMOnly ok={isProjectManager}>
-              <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
-                <Button size="small" type="link" danger>Cancel</Button>
-              </Popconfirm>
-            </PMOnly>
-          )}
-        </>
-      )}
-
-      {/* SUBMITTED: Recall (back to draft) + Cancel */}
-      {allocation.status === 'SUBMITTED' && (
-        <>
-          {onRecall && <PMOnly ok={isProjectManager}><Button size="small" type="link" onClick={() => onRecall(allocation)}>Recall</Button></PMOnly>}
-          {onCancel && (
-            <PMOnly ok={isProjectManager}>
-              <Popconfirm title={cancelTitle(allocation)} onConfirm={() => onCancel(allocation)}>
-                <Button size="small" type="link" danger>Cancel</Button>
-              </Popconfirm>
-            </PMOnly>
-          )}
-        </>
+        </PMOnly>
       )}
 
       {/* APPROVED: edit/extend, reassign/replace, then Cancel (reverses hours) */}
@@ -137,14 +105,6 @@ const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onSub
               </Popconfirm>
             </PMOnly>
           )}
-        </>
-      )}
-
-      {/* REJECTED: Edit + Resubmit */}
-      {allocation.status === 'REJECTED' && (
-        <>
-          {onEdit && <PMOnly ok={isProjectManager}><Button size="small" type="link" onClick={() => onEdit(allocation)}>Edit</Button></PMOnly>}
-          {onSubmit && <PMOnly ok={isProjectManager}><Button size="small" type="link" onClick={() => onSubmit(allocation)}>Resubmit</Button></PMOnly>}
         </>
       )}
     </Space>
