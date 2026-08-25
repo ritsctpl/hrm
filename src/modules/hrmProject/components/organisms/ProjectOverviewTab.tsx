@@ -144,7 +144,8 @@ const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project }) => {
       message.error('End date cannot be before start date');
       return;
     }
-    const user = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    // Backend actor checks (e.g. PRJ_038) compare against employeeCode, never the login string.
+    const user = employeeCode || parseCookies().rl_user_id || parseCookies().user || 'system';
     await updateProject(project.handle, {
       projectName: project.projectName, // locked — sent unchanged
       projectType: v.projectType,

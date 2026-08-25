@@ -14,6 +14,7 @@ import type { ClientResponse } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
 import { employeeCodeOf } from '@/utils/employeeIdentity';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import { HrmOrganizationService } from '@/modules/hrmOrganization/services/hrmOrganizationService';
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
@@ -26,6 +27,7 @@ export default function ProjectForm() {
   const [form] = Form.useForm<ProjectFormValues>();
   const { editingProject, closeProjectForm, savingProject, projects } = useHrmProjectStore();
   const { createProject, updateProject } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
   const [milestones, setMilestones] = useState(
     editingProject?.milestones.map((m) => ({ key: m.milestoneId, ...m })) ?? []
   );
@@ -101,7 +103,9 @@ export default function ProjectForm() {
         description: m.description ?? '',
       })),
     };
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    // Backend actor checks (e.g. PRJ_038 — "only the project manager") compare against
+    // employeeCode, never the login string. See utils/employeeIdentity.ts.
+    const userId = employeeCode || parseCookies().rl_user_id || parseCookies().user || 'system';
     if (editingProject) {
       await updateProject(editingProject.handle, formValues, userId);
     } else {

@@ -79,11 +79,12 @@ export class HrmProjectService {
   }
 
   static async addMilestone(
+    organizationId: string,
     projectHandle: string,
     milestone: { milestoneName: string; targetDate: string; description?: string },
     createdBy: string
   ): Promise<ProjectResponse> {
-    const res = await api.post(`${BASE}/milestone/add`, { projectHandle, milestone, createdBy });
+    const res = await api.post(`${BASE}/milestone/add`, { organizationId, projectHandle, milestone, createdBy });
     return res.data;
   }
 

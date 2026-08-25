@@ -8,6 +8,7 @@ import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmProjectStore } from '../stores/hrmProjectStore';
 import { HrmProjectService } from '../services/hrmProjectService';
 import { useProjectData } from './useProjectData';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
 import type { ProjectFormValues, AllocationFormValues, TaskFormValues } from '../types/ui.types';
 
 function extractBackendMsg(error: any, fallback: string): string {
@@ -26,6 +27,17 @@ export function useProjectMutations() {
   const store = useHrmProjectStore();
   const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
   const organizationId = getOrganizationId();
+  // Backend actor fields (createdBy/modifiedBy/deletedBy/...) are compared against
+  // employeeCode (e.g. project.projectManagerId), never the login string — sending the
+  // raw cookie here is what caused PRJ_038 to fire for the actual project manager (the
+  // login's email/username never matches the stored employeeCode). See
+  // useEmployeeIdentity's contract doc for the full rationale.
+  const { employeeCode } = useEmployeeIdentity();
+
+  const resolveActor = useCallback(
+    () => employeeCode || parseCookies().rl_user_id || parseCookies().user || 'system',
+    [employeeCode]
+  );
 
   // Business rule: a COMPLETED project whose end date is pushed out is no longer finished —
   // reopen it to IN_PROGRESS so work/timesheets can resume. `existing` must be a snapshot taken
@@ -113,7 +125,7 @@ export function useProjectMutations() {
   }, [organizationId, loadProjects, reopenIfExtended]);
 
   const deleteProject = useCallback(async (handle: string) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.deleteProject(organizationId, handle, userId);
       message.success('Project deleted');
@@ -123,7 +135,7 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Cannot delete project (may have approved allocations)'));
       console.error(error);
     }
-  }, [organizationId, loadProjects]);
+  }, [organizationId, loadProjects, resolveActor]);
 
   const updateProjectStatus = useCallback(async (
     handle: string,
@@ -194,7 +206,7 @@ export function useProjectMutations() {
   }, [organizationId, loadAllocations]);
 
   const submitAllocation = useCallback(async (handle: string, projectHandle: string) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.submitAllocation(organizationId, handle, userId);
       message.success('Allocation submitted for approval');
@@ -203,10 +215,10 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to submit allocation'));
       console.error(error);
     }
-  }, [organizationId, loadAllocations]);
+  }, [organizationId, loadAllocations, resolveActor]);
 
   const cancelAllocation = useCallback(async (handle: string, projectHandle: string) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.cancelAllocation(organizationId, handle, userId);
       message.success('Allocation cancelled');
@@ -215,7 +227,7 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to cancel allocation'));
       console.error(error);
     }
-  }, [organizationId, loadAllocations]);
+  }, [organizationId, loadAllocations, resolveActor]);
 
   // Move one allocation (task or membership) to another employee.
   const reassignAllocation = useCallback(async (
@@ -477,23 +489,23 @@ export function useProjectMutations() {
     projectHandle: string,
     milestone: { milestoneName: string; targetDate: string; description?: string }
   ) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
-      await HrmProjectService.addMilestone(projectHandle, milestone, userId);
+      await HrmProjectService.addMilestone(organizationId, projectHandle, milestone, userId);
       message.success('Milestone added');
       await loadProjectDetail(projectHandle);
     } catch (error: any) {
       message.error(extractBackendMsg(error, 'Failed to add milestone'));
       console.error(error);
     }
-  }, [loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const updateMilestone = useCallback(async (
     projectHandle: string,
     milestoneId: string,
     values: { milestoneName: string; targetDate: string; description?: string }
   ) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.updateMilestone({ organizationId, projectHandle, milestoneId, ...values, modifiedBy: userId });
       message.success('Milestone updated');
@@ -502,10 +514,10 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to update milestone'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const removeMilestone = useCallback(async (projectHandle: string, milestoneId: string) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.removeMilestone(projectHandle, milestoneId, userId);
       message.success('Milestone removed');
@@ -514,7 +526,7 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to remove milestone'));
       console.error(error);
     }
-  }, [loadProjectDetail]);
+  }, [loadProjectDetail, resolveActor]);
 
   const updateMilestoneStatus = useCallback(async (
     projectHandle: string,
@@ -533,7 +545,7 @@ export function useProjectMutations() {
   }, [organizationId, loadProjectDetail]);
 
   const createTask = useCallback(async (projectHandle: string, values: TaskFormValues) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.createTask({ organizationId, projectHandle, createdBy: userId, ...values });
       message.success('Task added');
@@ -542,10 +554,10 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to add task'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const updateTask = useCallback(async (projectHandle: string, handle: string, values: TaskFormValues) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.updateTask({ organizationId, projectHandle, handle, modifiedBy: userId, ...values });
       message.success('Task updated');
@@ -554,10 +566,10 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to update task'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const removeTask = useCallback(async (projectHandle: string, taskHandle: string) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.removeTask(taskHandle, userId);
       message.success('Task removed');
@@ -566,14 +578,14 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to remove task'));
       console.error(error);
     }
-  }, [loadProjectDetail]);
+  }, [loadProjectDetail, resolveActor]);
 
   const updateTaskStatus = useCallback(async (
     projectHandle: string,
     taskHandle: string,
     status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED',
   ) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.updateTaskStatus({ organizationId, projectHandle, taskHandle, status, modifiedBy: userId });
       message.success('Task status updated');
@@ -582,13 +594,13 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to update task status'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const moveTaskToProject = useCallback(async (
     projectHandle: string,
     payload: { taskHandle: string; targetProjectHandle: string; moveAllocations: boolean; remarks?: string },
   ) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.moveTaskToProject({ organizationId, movedBy: userId, ...payload });
       message.success('Task moved');
@@ -598,13 +610,13 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to move task'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const mergeTasks = useCallback(async (
     projectHandle: string,
     payload: { sourceTaskHandles: string[]; targetTaskHandle: string; remarks?: string },
   ) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.mergeTasks({ organizationId, projectHandle, mergedBy: userId, ...payload });
       message.success('Tasks merged');
@@ -613,7 +625,7 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to merge tasks'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   const extendTask = useCallback(async (
     projectHandle: string,
@@ -636,7 +648,7 @@ export function useProjectMutations() {
   }, [organizationId, loadProjectDetail, reopenIfExtended]);
 
   const importTasks = useCallback(async (targetProjectHandle: string, sourceProjectHandle: string, taskHandles?: string[]) => {
-    const userId = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+    const userId = resolveActor();
     try {
       await HrmProjectService.importTasksFromProject({ organizationId, targetProjectHandle, sourceProjectHandle, taskHandles, createdBy: userId });
       message.success('Tasks imported');
@@ -645,7 +657,7 @@ export function useProjectMutations() {
       message.error(extractBackendMsg(error, 'Failed to import tasks'));
       console.error(error);
     }
-  }, [organizationId, loadProjectDetail]);
+  }, [organizationId, loadProjectDetail, resolveActor]);
 
   return {
     createProject,

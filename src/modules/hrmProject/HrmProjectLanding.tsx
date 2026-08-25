@@ -49,7 +49,9 @@ function ClientManagementDrawer({ open, onClose }: { open: boolean; onClose: () 
   const [formOpen, setFormOpen] = React.useState(false);
   const [form] = Form.useForm();
   const organizationId = getOrganizationId();
-  const user = parseCookies().rl_user_id ?? parseCookies().user ?? 'system';
+  const { employeeCode } = useEmployeeIdentity();
+  // Backend actor fields are compared against employeeCode, never the login string.
+  const user = employeeCode || parseCookies().rl_user_id || parseCookies().user || 'system';
 
   const loadClients = useCallback(async () => {
     setLoading(true);
