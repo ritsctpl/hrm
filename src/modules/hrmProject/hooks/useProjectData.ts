@@ -217,19 +217,6 @@ export function useProjectData() {
     }
   }, [organizationId]);
 
-  const loadPendingAllocations = useCallback(async () => {
-    store.setLoadingApprovals(true);
-    try {
-      // Filter to the logged-in manager's projects (BE uses managerId = employeeId)
-      const data = await HrmProjectService.getPendingApprovals(organizationId, employeeCode || undefined);
-      store.setPendingAllocations(data.map(mapAllocationResponse));
-    } catch (error) {
-      console.error('Failed to load pending allocations:', error);
-    } finally {
-      store.setLoadingApprovals(false);
-    }
-  }, [organizationId, employeeCode]);
-
   const checkCapacity = useCallback(async (
     employeeId: string,
     startDate: string,
@@ -294,7 +281,6 @@ export function useProjectData() {
     loadProjects,
     loadProjectDetail,
     loadAllocations,
-    loadPendingAllocations,
     checkCapacity,
     loadCalendar,
   };

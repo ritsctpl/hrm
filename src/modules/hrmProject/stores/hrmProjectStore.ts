@@ -40,7 +40,6 @@ interface ProjectDataState {
   projectKpis: { total: number; active: number; draft: number; onHold: number; completed: number };
   projectAllocations: ResourceAllocation[];
   allocationApprovals: AllocationApproval[];
-  pendingAllocations: ResourceAllocation[];
   capacityCheck: CapacityCheckResult | null;
   allocationVsActual: ProjectAllocationVsActual | null;
   utilizationReport: ResourceUtilizationReport | null;
@@ -50,12 +49,10 @@ interface ProjectDataState {
 interface ProjectLoadingState {
   loadingProjects: boolean;
   loadingAllocations: boolean;
-  loadingApprovals: boolean;
   loadingCapacity: boolean;
   loadingCalendar: boolean;
   savingProject: boolean;
   savingAllocation: boolean;
-  approvingAllocation: boolean;
   loadingReport: boolean;
 }
 
@@ -86,19 +83,16 @@ interface ProjectActions {
   setProjectKpis: (kpis: ProjectDataState['projectKpis']) => void;
   setProjectAllocations: (a: ResourceAllocation[]) => void;
   setAllocationApprovals: (a: AllocationApproval[]) => void;
-  setPendingAllocations: (a: ResourceAllocation[]) => void;
   setCapacityCheck: (c: CapacityCheckResult | null) => void;
   setAllocationVsActual: (r: ProjectAllocationVsActual | null) => void;
   setUtilizationReport: (r: ResourceUtilizationReport | null) => void;
   setCalendarData: (data: ResourceCalendarEmployee[]) => void;
   setLoadingProjects: (v: boolean) => void;
   setLoadingAllocations: (v: boolean) => void;
-  setLoadingApprovals: (v: boolean) => void;
   setLoadingCapacity: (v: boolean) => void;
   setLoadingCalendar: (v: boolean) => void;
   setSavingProject: (v: boolean) => void;
   setSavingAllocation: (v: boolean) => void;
-  setApprovingAllocation: (v: boolean) => void;
   setLoadingReport: (v: boolean) => void;
   updateProjectInList: (updated: Project) => void;
   removeProjectFromList: (handle: string) => void;
@@ -136,7 +130,6 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       projectKpis: { total: 0, active: 0, draft: 0, onHold: 0, completed: 0 },
       projectAllocations: [],
       allocationApprovals: [],
-      pendingAllocations: [],
       capacityCheck: null,
       allocationVsActual: null,
       utilizationReport: null,
@@ -144,12 +137,10 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
 
       loadingProjects: false,
       loadingAllocations: false,
-      loadingApprovals: false,
       loadingCapacity: false,
       loadingCalendar: false,
       savingProject: false,
       savingAllocation: false,
-      approvingAllocation: false,
       loadingReport: false,
 
       setSelectedProject: (p) => set((state) => ({
@@ -185,19 +176,16 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
       setProjectKpis: (projectKpis) => set({ projectKpis }),
       setProjectAllocations: (projectAllocations) => set({ projectAllocations }),
       setAllocationApprovals: (allocationApprovals) => set({ allocationApprovals }),
-      setPendingAllocations: (pendingAllocations) => set({ pendingAllocations }),
       setCapacityCheck: (capacityCheck) => set({ capacityCheck }),
       setAllocationVsActual: (allocationVsActual) => set({ allocationVsActual }),
       setUtilizationReport: (utilizationReport) => set({ utilizationReport }),
       setCalendarData: (calendarData) => set({ calendarData }),
       setLoadingProjects: (v) => set({ loadingProjects: v }),
       setLoadingAllocations: (v) => set({ loadingAllocations: v }),
-      setLoadingApprovals: (v) => set({ loadingApprovals: v }),
       setLoadingCapacity: (v) => set({ loadingCapacity: v }),
       setLoadingCalendar: (v) => set({ loadingCalendar: v }),
       setSavingProject: (v) => set({ savingProject: v }),
       setSavingAllocation: (v) => set({ savingAllocation: v }),
-      setApprovingAllocation: (v) => set({ approvingAllocation: v }),
       setLoadingReport: (v) => set({ loadingReport: v }),
       updateProjectInList: (updated) =>
         set((state) => ({
@@ -214,13 +202,6 @@ export const useHrmProjectStore = create<HrmProjectStore>()(
           projectAllocations: state.projectAllocations.map((a) =>
             a.handle === updated.handle ? updated : a
           ),
-          pendingAllocations: state.pendingAllocations.map((a) =>
-            a.handle === updated.handle ? updated : a
-          ),
-        })),
-      removePendingAllocation: (handle) =>
-        set((state) => ({
-          pendingAllocations: state.pendingAllocations.filter((a) => a.handle !== handle),
         })),
     }),
     { name: 'hrmProjectStore' }

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useCallback } from 'react';
-import { Tabs, Button, Modal, Badge, Drawer, Table, Input, Form, Empty, Popconfirm, message } from 'antd';
+import { Tabs, Button, Modal, Drawer, Table, Input, Form, Empty, Popconfirm, message } from 'antd';
 import { PlusOutlined, TeamOutlined, ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -13,7 +13,6 @@ import { HrmProjectService } from './services/hrmProjectService';
 import ProjectTable from './components/organisms/ProjectTable';
 import ProjectDetailPanel from './components/organisms/ProjectDetailPanel';
 import ProjectStatusBadge from './components/atoms/ProjectStatusBadge';
-import AllocationApprovalInbox from './components/organisms/AllocationApprovalInbox';
 import ProjectReportPanel from './components/organisms/ProjectReportPanel';
 import ProjectForm from './components/organisms/ProjectForm';
 import AllocationForm from './components/organisms/AllocationForm';
@@ -200,7 +199,6 @@ export default function HrmProjectLanding() {
     selectedProject,
     projects,
     loadingProjects,
-    pendingAllocations,
     filterBU,
     filterType,
     filterStatus,
@@ -208,7 +206,7 @@ export default function HrmProjectLanding() {
     searchQuery,
     setSelectedProject,
   } = useHrmProjectStore();
-  const { loadProjects, loadProjectDetail, loadPendingAllocations } = useProjectData();
+  const { loadProjects, loadProjectDetail } = useProjectData();
   // Only the project's own manager may edit it — the same rule the server enforces
   // (PRJ_038). A module-wide edit grant does not open somebody else's project.
   const { employeeCode } = useEmployeeIdentity();
@@ -220,14 +218,6 @@ export default function HrmProjectLanding() {
     loadProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterBU, filterType, filterStatus]);
-
-  // Load pending allocations when switching to approvals tab
-  useEffect(() => {
-    if (activeTab === 'approvals') {
-      loadPendingAllocations();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
@@ -245,8 +235,6 @@ export default function HrmProjectLanding() {
     loadProjectDetail(project.handle);
   };
 
-  const pendingCount = pendingAllocations.filter((a) => a.status === 'SUBMITTED').length;
-
   const tabItems = [
     perms.canAccessProjects && {
       key: 'projects',
@@ -257,19 +245,6 @@ export default function HrmProjectLanding() {
           loading={loadingProjects}
           onView={handleSelectProject}
         />
-      ),
-    },
-    perms.canAccessApprovals && {
-      key: 'approvals',
-      label: (
-        <Badge count={pendingCount} size="small" offset={[6, 0]}>
-          Allocation Approvals
-        </Badge>
-      ),
-      children: (
-        <div style={{ padding: 16 }}>
-          <AllocationApprovalInbox />
-        </div>
       ),
     },
     perms.canAccessReports && {
