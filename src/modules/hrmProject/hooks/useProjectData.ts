@@ -96,7 +96,9 @@ function mapAllocationResponse(r: AllocationResponse): ResourceAllocation {
     recurring: r.recurring,
     recurrencePattern: r.recurrencePattern as ResourceAllocation['recurrencePattern'],
     recurrenceDays: r.recurrenceDays,
-    status: r.status as ResourceAllocation['status'],
+    // Any legacy status a missed migration row still carries reads as active, so the
+    // row keeps its badge and its manager actions instead of rendering silently inert.
+    status: r.status === 'CANCELLED' ? 'CANCELLED' : 'APPROVED',
     approvalRemarks: r.approvalRemarks,
     totalAllocatedHours: r.totalAllocatedHours,
     allocationDays: r.allocationDays,

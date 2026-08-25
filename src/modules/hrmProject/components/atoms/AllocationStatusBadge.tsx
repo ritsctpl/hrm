@@ -2,9 +2,10 @@
 import React from 'react';
 import { Tag } from 'antd';
 import type { AllocationStatusBadgeProps } from '../../types/ui.types';
+import type { AllocationStatus } from '../../types/domain.types';
 import { ALLOCATION_STATUS_COLORS } from '../../utils/projectConstants';
 
-const LABELS: Record<string, string> = {
+const LABELS: Record<AllocationStatus, string> = {
   APPROVED: 'Approved', CANCELLED: 'Cancelled',
 };
 

@@ -94,7 +94,7 @@ export default function ChangeManagerModal({ open, project, onClose }: Props) {
         type="info"
         showIcon
         style={{ marginBottom: 12 }}
-        message="Pending allocation approvals on this project move to the new manager's queue."
+        message="Manager-only actions on this project — allocations, tasks and milestones — pass to the new manager."
       />
       <Form form={form} layout="vertical">
         <Form.Item label="New manager" required>

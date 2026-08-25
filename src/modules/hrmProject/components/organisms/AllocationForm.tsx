@@ -8,7 +8,6 @@ import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
 import { RECURRENCE_PATTERNS, WEEKDAYS, BOOKING_TYPES, MAX_HOURS_PER_DAY, HOURS_STEP } from '../../utils/projectConstants';
 import type { AllocationFormValues } from '../../types/ui.types';
-import Can from '../../../hrmAccess/components/Can';
 import HrmEmployeePicker from '@/components/hrm/molecules/HrmEmployeePicker';
 import { HrmEmployeeService } from '@/modules/hrmEmployee/services/hrmEmployeeService';
 import type { EmployeeDirectoryRow } from '@/modules/hrmEmployee/types/api.types';
@@ -351,11 +350,9 @@ export default function AllocationForm({ projectHandle }: Props) {
 
       <div className={styles.formActions}>
         <Button onClick={closeAllocationForm}>Cancel</Button>
-        <Can I="add">
-          <Button type="primary" htmlType="submit" loading={savingAllocation}>
-            {isTaskMode ? 'Assign Tasks' : 'Submit for Approval'}
-          </Button>
-        </Can>
+        <Button type="primary" htmlType="submit" loading={savingAllocation}>
+          {isTaskMode ? 'Assign Tasks' : 'Add Allocation'}
+        </Button>
       </div>
     </Form>
   );

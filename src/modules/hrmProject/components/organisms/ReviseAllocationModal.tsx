@@ -66,7 +66,7 @@ export default function ReviseAllocationModal({ open, allocation, projectHandle,
       title="Edit / extend allocation"
       onOk={handleOk}
       onCancel={onClose}
-      okText="Save & resubmit"
+      okText="Save"
       confirmLoading={savingAllocation}
       destroyOnClose
     >
@@ -80,7 +80,7 @@ export default function ReviseAllocationModal({ open, allocation, projectHandle,
         type="warning"
         showIcon
         style={{ marginBottom: 12 }}
-        message="Editing an approved allocation sends it back for approval. The end date cannot be earlier than days that already have logged timesheet hours."
+        message="The end date cannot be earlier than days that already have logged timesheet hours."
       />
 
       <Form form={form} layout="vertical">

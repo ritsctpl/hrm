@@ -15,7 +15,7 @@ interface ProjectUIState {
   selectedProject: Project | null;
   editingProject: Project | null;
   selectedAllocation: ResourceAllocation | null;
-  activeTab: 'projects' | 'approvals' | 'calendar' | 'reports';
+  activeTab: 'projects' | 'calendar' | 'reports';
   activeDetailTab: 'overview' | 'tasks' | 'allocations' | 'milestones' | 'attachments' | 'audit';
   isProjectFormOpen: boolean;
   isOverviewEditing: boolean;

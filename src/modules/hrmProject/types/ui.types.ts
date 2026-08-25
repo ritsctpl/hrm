@@ -1,7 +1,7 @@
 // src/modules/hrmProject/types/ui.types.ts
 import type { Project, ResourceAllocation, Milestone, MilestoneStatus, AllocationStatus, ProjectStatus } from './domain.types';
 
-export type ProjectMainTab = 'projects' | 'allocations' | 'approvals' | 'calendar' | 'reports';
+export type ProjectMainTab = 'projects' | 'allocations' | 'calendar' | 'reports';
 export type ProjectDetailTab = 'overview' | 'tasks' | 'allocations' | 'milestones' | 'attachments' | 'audit';
 export type ReportType = 'allocationVsActual' | 'utilization' | 'capacityDemand';
 
@@ -102,14 +102,6 @@ export interface ProjectListRowProps {
   onClick: (project: ProjectListItem) => void;
 }
 
-export interface AllocationRowProps {
-  allocation: ResourceAllocation;
-  onEdit?: (a: ResourceAllocation) => void;
-  onSubmit?: (a: ResourceAllocation) => void;
-  onCancel?: (a: ResourceAllocation) => void;
-  onAssignTask?: (a: ResourceAllocation) => void;
-}
-
 export interface MilestoneRowProps {
   milestone: Milestone;
   isEditing?: boolean;
@@ -117,6 +109,8 @@ export interface MilestoneRowProps {
   onStatusChange?: (milestoneId: string, status: MilestoneStatus) => void;
   onEdit?: (milestone: Milestone) => void;
   onRemove?: (milestoneId: string) => void;
+  /** Signed-in user is this project's manager. Only they may change a milestone. */
+  isProjectManager?: boolean;
 }
 
 export interface CapacityDayCellProps {

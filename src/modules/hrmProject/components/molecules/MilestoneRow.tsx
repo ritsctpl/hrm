@@ -5,14 +5,17 @@ import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { MilestoneRowProps } from '../../types/ui.types';
 import type { MilestoneStatus } from '../../types/domain.types';
 import { formatDate } from '../../utils/projectHelpers';
-import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 const { Text } = Typography;
 
 const MILESTONE_STATUSES: MilestoneStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED'];
 
-const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, taskRollup, onStatusChange, onEdit, onRemove }) => (
+/** Renders children only for the project's manager — no permission grant substitutes. */
+const PMOnly: React.FC<{ ok: boolean; children: React.ReactNode }> = ({ ok, children }) =>
+  ok ? <>{children}</> : null;
+
+const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, taskRollup, onStatusChange, onEdit, onRemove, isProjectManager = false }) => (
   <div className={styles.milestoneRow}>
     <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
       <Text ellipsis={{ tooltip: milestone.milestoneName }}>{milestone.milestoneName}</Text>
@@ -25,7 +28,7 @@ const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, taskRollup, onSt
       )}
     </span>
     <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(milestone.targetDate)}</Text>
-    {onStatusChange ? (
+    {onStatusChange && isProjectManager ? (
       <Select
         value={milestone.status}
         onChange={(v) => onStatusChange(milestone.milestoneId, v as MilestoneStatus)}
@@ -41,16 +44,16 @@ const MilestoneRow: React.FC<MilestoneRowProps> = ({ milestone, taskRollup, onSt
     </Text>
     <div style={{ textAlign: 'right' }}>
       {onEdit && (
-        <Can I="edit">
+        <PMOnly ok={isProjectManager}>
           <Tooltip title="Edit"><Button size="small" type="link" icon={<EditOutlined />} onClick={() => onEdit(milestone)} /></Tooltip>
-        </Can>
+        </PMOnly>
       )}
       {onRemove && (
-        <Can I="delete">
+        <PMOnly ok={isProjectManager}>
           <Popconfirm title="Remove this milestone?" onConfirm={() => onRemove(milestone.milestoneId)}>
             <Tooltip title="Remove"><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Tooltip>
           </Popconfirm>
-        </Can>
+        </PMOnly>
       )}
     </div>
   </div>

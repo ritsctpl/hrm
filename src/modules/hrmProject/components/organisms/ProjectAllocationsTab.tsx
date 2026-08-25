@@ -5,7 +5,6 @@ import { PlusOutlined } from '@ant-design/icons';
 import AllocationRow from '../molecules/AllocationRow';
 import ResourceMoveModal from './ResourceMoveModal';
 import ReviseAllocationModal from './ReviseAllocationModal';
-import EditAllocationModal from './EditAllocationModal';
 import TemporaryCoverModal from './TemporaryCoverModal';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { isSameEmployee, employeeCodeOf } from '@/utils/employeeIdentity';
@@ -34,12 +33,10 @@ export default function ProjectAllocationsTab() {
 
   // Resource lifecycle modals (reassign / replace / release member / revise)
   const [moveModal, setMoveModal] = useState<{ mode: 'reassign' | 'replace' | 'release'; allocation: ResourceAllocation; taskCount: number } | null>(null);
-  const [editTarget, setEditTarget] = useState<ResourceAllocation | null>(null);
   const [reviseTarget, setReviseTarget] = useState<ResourceAllocation | null>(null);
   const [coverTarget, setCoverTarget] = useState<ResourceAllocation | null>(null);
 
-  // Changing an allocation is the manager's call; adding one is open to the team and only
-  // takes effect once the manager approves it.
+  // Adding and changing an allocation are both the manager's call, and take effect immediately.
   const isProjectManager = isSameEmployee(employeeCode, selectedProject?.projectManagerId);
 
   useEffect(() => {
@@ -97,7 +94,6 @@ export default function ProjectAllocationsTab() {
     const grp = groups.find((g) => g.employeeId === employeeId);
     return grp ? grp.tasks.filter((t) => t.status !== 'CANCELLED').length : 0;
   };
-  const handleEdit = (a: ResourceAllocation) => setEditTarget(a);
   const handleDelete = (a: ResourceAllocation) => {
     if (!selectedProject) return;
     const actor = employeeCode || parseCookies().employeeCode || parseCookies().rl_user_id || parseCookies().user || '';
@@ -167,7 +163,6 @@ export default function ProjectAllocationsTab() {
                     isProjectManager={isProjectManager}
                     onDelete={handleDelete}
                     hideHours
-                    onEdit={handleEdit}
                     onCancel={handleCancel}
                     onAssignTask={handleAssignTask}
                     onReplace={handleReplace}
@@ -191,7 +186,6 @@ export default function ProjectAllocationsTab() {
                           isProjectManager={isProjectManager}
                           onDelete={handleDelete}
                           hideEmployee
-                          onEdit={handleEdit}
                           onCancel={handleCancel}
                           onReassign={handleReassign}
                           onRevise={handleRevise}
@@ -212,12 +206,6 @@ export default function ProjectAllocationsTab() {
         </div>
       )}
 
-      <EditAllocationModal
-        open={!!editTarget}
-        allocation={editTarget}
-        projectHandle={selectedProject.handle}
-        onClose={() => setEditTarget(null)}
-      />
       <ResourceMoveModal
         open={!!moveModal}
         mode={moveModal?.mode ?? 'reassign'}

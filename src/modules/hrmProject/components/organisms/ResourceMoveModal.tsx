@@ -139,7 +139,7 @@ export default function ResourceMoveModal({ open, mode, allocation, taskCount = 
         style={{ marginBottom: 12 }}
         message={
           isReassign
-            ? "Past timesheet hours stay with the current person. The remaining work moves to the new person and goes for approval."
+            ? 'Past timesheet hours stay with the current person. The remaining work moves to the new person.'
             : isRelease
               ? `This ends the membership${taskCount > 0 ? ` and ${taskCount} task allocation${taskCount === 1 ? '' : 's'}` : ''} from the effective date — no replacement. Past actuals stay with the person; future hours are freed.`
               : `This moves the membership${taskCount > 0 ? ` and ${taskCount} task allocation${taskCount === 1 ? '' : 's'}` : ''} to the new person from the effective date. Past actuals stay with the current person.`

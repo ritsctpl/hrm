@@ -7,9 +7,10 @@ import dayjs from 'dayjs';
 import { parseCookies } from 'nookies';
 import { useHrmProjectStore } from '../../stores/hrmProjectStore';
 import { useProjectMutations } from '../../hooks/useProjectMutations';
+import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdentity';
+import { isSameEmployee } from '@/utils/employeeIdentity';
 import { formatDate } from '../../utils/projectHelpers';
 import type { Milestone, MilestoneStatus } from '../../types/domain.types';
-import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 const { Text } = Typography;
@@ -21,11 +22,16 @@ const TABLE_SCROLL = { x: 'max-content' as const, y: 'calc(100vh - 320px)' };
 export default function ProjectMilestonesTab() {
   const { selectedProject } = useHrmProjectStore();
   const { updateMilestoneStatus, addMilestone, updateMilestone, removeMilestone } = useProjectMutations();
+  const { employeeCode } = useEmployeeIdentity();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editing, setEditing] = useState<Milestone | null>(null);
   const [form] = Form.useForm();
 
   if (!selectedProject) return null;
+
+  // The backend enforces requireProjectManager on every milestone mutation (PRJ_038);
+  // gate the UI on the same rule so nothing is offered that the server will reject.
+  const isPM = isSameEmployee(employeeCode, selectedProject.projectManagerId);
 
   const handleStatusChange = (milestoneId: string, status: MilestoneStatus) => {
     const userId = parseCookies().rl_user_id ?? parseCookies().user ?? '';
@@ -105,6 +111,7 @@ export default function ProjectMilestonesTab() {
         <Select
           value={m.status}
           onChange={(v) => handleStatusChange(m.milestoneId, v as MilestoneStatus)}
+          disabled={!isPM}
           style={{ width: '100%' }}
           size="small"
           options={MILESTONE_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
@@ -119,14 +126,14 @@ export default function ProjectMilestonesTab() {
       title: 'Actions', key: 'actions', width: 110, align: 'right',
       render: (_, m) => (
         <Space size={2}>
-          <Can I="edit">
+          {isPM && (
             <Tooltip title="Edit"><Button size="small" type="link" icon={<EditOutlined />} onClick={() => handleEdit(m)} /></Tooltip>
-          </Can>
-          <Can I="delete">
+          )}
+          {isPM && (
             <Popconfirm title="Remove this milestone?" onConfirm={() => handleRemove(m.milestoneId)}>
               <Tooltip title="Remove"><Button size="small" type="link" danger icon={<DeleteOutlined />} /></Tooltip>
             </Popconfirm>
-          </Can>
+          )}
         </Space>
       ),
     },
@@ -135,11 +142,11 @@ export default function ProjectMilestonesTab() {
   return (
     <div className={styles.milestonesTab}>
       <div className={styles.tabHeader}>
-        <Can I="add">
+        {isPM && (
           <Button type="primary" ghost icon={<PlusOutlined />} size="small" onClick={openCreate}>
             Add Milestone
           </Button>
-        </Can>
+        )}
       </div>
       <Table<Milestone>
         rowKey="milestoneId"
@@ -161,9 +168,7 @@ export default function ProjectMilestonesTab() {
         keyboard={false}
         footer={[
           <Button key="cancel" onClick={() => { setAddModalOpen(false); setEditing(null); }}>Cancel</Button>,
-          <Can key="ok" I={editing ? 'edit' : 'add'}>
-            <Button type="primary" onClick={handleSave}>{editing ? 'Update' : 'OK'}</Button>
-          </Can>,
+          <Button key="ok" type="primary" onClick={handleSave}>{editing ? 'Update' : 'OK'}</Button>,
         ]}
       >
         <Form form={form} layout="vertical">

@@ -11,7 +11,6 @@ const { Text } = Typography;
 
 interface AllocationRowProps {
   allocation: ResourceAllocation;
-  onEdit?: (a: ResourceAllocation) => void;
   onCancel?: (a: ResourceAllocation) => void;
   onAssignTask?: (a: ResourceAllocation) => void;
   onReassign?: (a: ResourceAllocation) => void; // move a task allocation to another person
@@ -31,6 +30,8 @@ const PMOnly: React.FC<{ ok: boolean; children: React.ReactNode }> = ({ ok, chil
   ok ? <>{children}</> : null;
 
 const isProjectLevel = (a: ResourceAllocation) => !a.taskId;
+// The status union is exactly APPROVED | CANCELLED, so this is the complement of the
+// `status === 'APPROVED'` test that gates the manager actions below.
 const isActive = (a: ResourceAllocation) => a.status !== 'CANCELLED';
 const cancelTitle = (a: ResourceAllocation) =>
   isProjectLevel(a)
@@ -38,7 +39,7 @@ const cancelTitle = (a: ResourceAllocation) =>
       + 'The rows stay visible as cancelled — use Delete to remove them.'
     : 'Cancel this task assignment? It stays visible as cancelled — use Delete to remove it.';
 
-const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onEdit, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onCover, onDelete, hideEmployee, hideHours, isProjectManager = false }) => (
+const AllocationRow: React.FC<AllocationRowProps> = ({ allocation, onCancel, onAssignTask, onReassign, onReplace, onRelease, onRevise, onCover, onDelete, hideEmployee, hideHours, isProjectManager = false }) => (
   <div style={{ padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
     <Space size={12} wrap>
       {!hideEmployee && <Text strong style={{ minWidth: 140 }}>{allocation.employeeName}</Text>}
