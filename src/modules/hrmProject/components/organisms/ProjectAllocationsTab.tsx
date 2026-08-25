@@ -15,7 +15,6 @@ import { useEmployeeIdentity } from '@/modules/hrmAccess/hooks/useEmployeeIdenti
 import { parseCookies } from 'nookies';
 import { ALLOCATION_STATUS_OPTIONS } from '../../utils/projectConstants';
 import type { ResourceAllocation } from '../../types/domain.types';
-import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/ProjectDetail.module.css';
 
 const { Text } = Typography;
@@ -30,7 +29,7 @@ export default function ProjectAllocationsTab() {
     setFilterStatus,
   } = useHrmProjectStore();
   const { loadAllocations } = useProjectData();
-  const { submitAllocation, cancelAllocation, recallAllocation , deleteAllocation} = useProjectMutations();
+  const { cancelAllocation, deleteAllocation } = useProjectMutations();
   const { employeeCode } = useEmployeeIdentity();
 
   // Resource lifecycle modals (reassign / replace / release member / revise)
@@ -79,10 +78,6 @@ export default function ProjectAllocationsTab() {
     return Array.from(map.values()).filter((g) => g.membership || g.tasks.length > 0);
   }, [filtered]);
 
-  const handleSubmit = (a: typeof projectAllocations[number]) => {
-    if (selectedProject) submitAllocation(a.handle, selectedProject.handle);
-  };
-
   const handleCancel = (a: typeof projectAllocations[number]) => {
     if (selectedProject) cancelAllocation(a.handle, selectedProject.handle);
   };
@@ -114,13 +109,6 @@ export default function ProjectAllocationsTab() {
   const handleRelease = (a: ResourceAllocation) => setMoveModal({ mode: 'release', allocation: a, taskCount: activeTaskCount(a.employeeId) });
   const handleRevise = (a: ResourceAllocation) => setReviseTarget(a);
   const handleCover = (a: ResourceAllocation) => setCoverTarget(a);
-  const handleRecall = (a: ResourceAllocation) => {
-    if (!selectedProject) return;
-    const actor = employeeCode || parseCookies().employeeCode || parseCookies().rl_user_id || parseCookies().user || '';
-    if (!actor) return;
-    recallAllocation(a.handle, selectedProject.handle, actor);
-  };
-
   const projectStatus = selectedProject?.status;
   const blockedStatuses = new Set(['ON_HOLD', 'COMPLETED', 'CANCELLED']);
   const canAddAllocation = !!projectStatus && !blockedStatuses.has(projectStatus);
@@ -151,7 +139,7 @@ export default function ProjectAllocationsTab() {
             options={ALLOCATION_STATUS_OPTIONS}
           />
         </Space>
-        <Can I="add">
+        {isProjectManager && (
           <Tooltip title={canAddAllocation ? '' : inactiveReason}>
             <Button
               type="primary"
@@ -162,7 +150,7 @@ export default function ProjectAllocationsTab() {
               Add Allocation
             </Button>
           </Tooltip>
-        </Can>
+        )}
       </div>
 
       {loadingAllocations ? (
@@ -181,13 +169,11 @@ export default function ProjectAllocationsTab() {
                     onDelete={handleDelete}
                     hideHours
                     onEdit={handleEdit}
-                    onSubmit={handleSubmit}
                     onCancel={handleCancel}
                     onAssignTask={handleAssignTask}
                     onReplace={handleReplace}
                     onRelease={handleRelease}
                     onRevise={handleRevise}
-                    onRecall={handleRecall}
                   />
                 ) : (
                   <div style={{ padding: '8px 0' }}><Text strong>{g.employeeName}</Text></div>
@@ -207,11 +193,9 @@ export default function ProjectAllocationsTab() {
                           onDelete={handleDelete}
                           hideEmployee
                           onEdit={handleEdit}
-                          onSubmit={handleSubmit}
                           onCancel={handleCancel}
                           onReassign={handleReassign}
                           onRevise={handleRevise}
-                          onRecall={handleRecall}
                           onCover={handleCover}
                         />
                       ))}
