@@ -25,7 +25,7 @@ function extractBackendMsg(error: any, fallback: string): string {
 
 export function useProjectMutations() {
   const store = useHrmProjectStore();
-  const { loadProjects, loadAllocations, loadPendingAllocations, loadProjectDetail } = useProjectData();
+  const { loadProjects, loadAllocations, loadProjectDetail } = useProjectData();
   const organizationId = getOrganizationId();
   // Backend actor fields (createdBy/modifiedBy/deletedBy/...) are compared against
   // employeeCode (e.g. project.projectManagerId), never the login string — sending the
@@ -205,18 +205,6 @@ export function useProjectMutations() {
     store.setSavingAllocation(false);
   }, [organizationId, loadAllocations]);
 
-  const submitAllocation = useCallback(async (handle: string, projectHandle: string) => {
-    const userId = resolveActor();
-    try {
-      await HrmProjectService.submitAllocation(organizationId, handle, userId);
-      message.success('Allocation submitted for approval');
-      await loadAllocations(projectHandle);
-    } catch (error: any) {
-      message.error(extractBackendMsg(error, 'Failed to submit allocation'));
-      console.error(error);
-    }
-  }, [organizationId, loadAllocations, resolveActor]);
-
   const cancelAllocation = useCallback(async (handle: string, projectHandle: string) => {
     const userId = resolveActor();
     try {
@@ -238,7 +226,7 @@ export function useProjectMutations() {
     store.setSavingAllocation(true);
     try {
       await HrmProjectService.reassignAllocation({ organizationId, reassignedBy: actor, ...payload });
-      message.success('Allocation reassigned (sent for approval)');
+      message.success('Allocation reassigned');
       await loadAllocations(projectHandle);
     } catch (error: any) {
       message.error(extractBackendMsg(error, 'Failed to reassign allocation'));
@@ -257,7 +245,7 @@ export function useProjectMutations() {
     store.setSavingAllocation(true);
     try {
       const moved = await HrmProjectService.replaceMember({ organizationId, projectHandle, replacedBy: actor, ...payload });
-      message.success(`Member replaced — ${moved.length} allocation${moved.length === 1 ? '' : 's'} moved (sent for approval)`);
+      message.success(`Member replaced — ${moved.length} allocation${moved.length === 1 ? '' : 's'} moved`);
       await loadAllocations(projectHandle);
     } catch (error: any) {
       message.error(extractBackendMsg(error, 'Failed to replace member'));
@@ -286,23 +274,7 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
-  // Recall a SUBMITTED allocation back to DRAFT.
-  const recallAllocation = useCallback(async (handle: string, projectHandle: string, actor: string) => {
-    try {
-      await HrmProjectService.recallAllocation(organizationId, handle, actor);
-      message.success('Allocation recalled to draft');
-      await loadAllocations(projectHandle);
-    } catch (error: any) {
-      message.error(extractBackendMsg(error, 'Failed to recall allocation'));
-      console.error(error);
-    }
-  }, [organizationId, loadAllocations]);
-
-  /**
-   * Correct a DRAFT or REJECTED allocation in place — no re-approval, because
-   * it was never approved. Without this the only way to fix a wrong figure on
-   * a draft was to cancel the row and add the person again.
-   */
+  /** Correct an allocation's hours/dates in place — takes effect immediately. */
   const updateAllocation = useCallback(async (
     projectHandle: string,
     payload: { handle: string; hoursPerDay: number; startDate: string; endDate: string; billableRate?: number | null },
@@ -346,7 +318,6 @@ export function useProjectMutations() {
     store.setSavingAllocation(true);
     try {
       await HrmProjectService.reviseAllocation({ organizationId, revisedBy: actor, ...payload });
-      // BE keeps rate-only edits APPROVED; hours/date edits go back to SUBMITTED. Neutral wording covers both.
       message.success('Allocation revised');
       await loadAllocations(projectHandle);
     } catch (error: any) {
@@ -357,7 +328,7 @@ export function useProjectMutations() {
     }
   }, [organizationId, loadAllocations]);
 
-  // Hand the project over to a new manager (re-routes pending approvals).
+  // Hand the project over to a new manager.
   const changeProjectManager = useCallback(async (
     handle: string,
     payload: { newProjectManagerId: string; newProjectManagerName?: string; reason?: string },
@@ -416,7 +387,7 @@ export function useProjectMutations() {
     store.setSavingAllocation(true);
     try {
       await HrmProjectService.temporaryCover({ organizationId, coveredBy: actor, ...payload });
-      message.success('Temporary cover created (sent for approval)');
+      message.success('Temporary cover created');
       await loadAllocations(projectHandle);
     } catch (error: any) {
       message.error(extractBackendMsg(error, 'Failed to create temporary cover'));
@@ -425,65 +396,6 @@ export function useProjectMutations() {
       store.setSavingAllocation(false);
     }
   }, [organizationId, loadAllocations]);
-
-  const approveAllocation = useCallback(async (
-    allocationHandle: string,
-    action: 'APPROVED' | 'REJECTED',
-    remarks: string,
-    approvedBy: string,
-  ) => {
-    store.setApprovingAllocation(true);
-    try {
-      await HrmProjectService.approveOrRejectAllocation({
-        organizationId,
-        allocationHandle,
-        action,
-        approverEmployeeId: approvedBy,
-        remarks,
-      });
-      message.success(`Allocation ${action.toLowerCase()}`);
-      await loadPendingAllocations();
-    } catch (error: any) {
-      message.error(extractBackendMsg(error, 'Failed to process approval'));
-      console.error(error);
-    } finally {
-      store.setApprovingAllocation(false);
-    }
-  }, [organizationId, loadPendingAllocations]);
-
-  // Approve/reject several allocations in one go (e.g. a membership + its task allocations)
-  const approveAllocations = useCallback(async (
-    handles: string[],
-    action: 'APPROVED' | 'REJECTED',
-    remarks: string,
-    approvedBy: string,
-  ) => {
-    if (handles.length === 0) return;
-    store.setApprovingAllocation(true);
-    let ok = 0;
-    let fail = 0;
-    let lastErr = '';
-    for (const allocationHandle of handles) {
-      try {
-        await HrmProjectService.approveOrRejectAllocation({
-          organizationId,
-          allocationHandle,
-          action,
-          approverEmployeeId: approvedBy,
-          remarks,
-        });
-        ok++;
-      } catch (error: any) {
-        fail++;
-        lastErr = extractBackendMsg(error, 'Failed to process approval');
-        console.error(error);
-      }
-    }
-    if (ok) message.success(`${ok} allocation${ok > 1 ? 's' : ''} ${action.toLowerCase()}`);
-    if (fail) message.error(`${fail} failed${lastErr ? `: ${lastErr}` : ''}`);
-    await loadPendingAllocations();
-    store.setApprovingAllocation(false);
-  }, [organizationId, loadPendingAllocations]);
 
   const addMilestone = useCallback(async (
     projectHandle: string,
@@ -668,7 +580,6 @@ export function useProjectMutations() {
     reassignAllocation,
     replaceMember,
     releaseMember,
-    recallAllocation,
     updateAllocation,
     deleteAllocation,
     reviseAllocation,
@@ -684,10 +595,7 @@ export function useProjectMutations() {
     mergeTasks,
     extendTask,
     importTasks,
-    submitAllocation,
     cancelAllocation,
-    approveAllocation,
-    approveAllocations,
     addMilestone,
     updateMilestone,
     removeMilestone,

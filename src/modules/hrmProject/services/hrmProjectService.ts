@@ -8,7 +8,6 @@ import type {
   MilestoneUpdateRequest,
   AllocationRequest,
   AllocationResponse,
-  AllocationApprovalRequest,
   AllocationReassignRequest,
   MemberReplaceRequest,
   MemberReleaseRequest,
@@ -17,8 +16,6 @@ import type {
   ProjectCloneRequest,
   ProjectArchiveRequest,
   AllocationTemporaryCoverRequest,
-  ApprovalDelegationRequest,
-  ApprovalDelegationResponse,
   CapacityCheckRequest,
   CapacityCheckResponse,
   ProjectAllocationVsActualReport,
@@ -118,21 +115,6 @@ export class HrmProjectService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async getPendingApprovals(organizationId: string, managerId?: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { organizationId, managerId });
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  static async submitAllocation(organizationId: string, handle: string, submittedBy: string): Promise<AllocationResponse> {
-    const res = await api.post(`${BASE}/allocation/submit`, { organizationId, handle, submittedBy });
-    return res.data;
-  }
-
-  static async approveOrRejectAllocation(payload: AllocationApprovalRequest): Promise<AllocationResponse> {
-    const res = await api.post(`${BASE}/allocation/approve`, payload);
-    return res.data;
-  }
-
   static async cancelAllocation(organizationId: string, handle: string, cancelledBy: string): Promise<void> {
     await api.post(`${BASE}/allocation/cancel`, { organizationId, handle, cancelledBy });
   }
@@ -155,20 +137,7 @@ export class HrmProjectService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  // Recall a SUBMITTED allocation back to DRAFT before the PM decides.
-  static async recallAllocation(organizationId: string, handle: string, recalledBy: string): Promise<AllocationResponse> {
-    const res = await api.post(`${BASE}/allocation/recall`, { organizationId, handle, recalledBy });
-    return res.data;
-  }
-
-  /**
-   * Edit an allocation that has not been approved yet.
-   *
-   * Distinct from `reviseAllocation`: the server accepts this only for DRAFT
-   * or REJECTED rows and simply saves the change, where a revise sends an
-   * approved allocation back round for re-approval. Correcting a draft should
-   * not submit it.
-   */
+  /** Edit an allocation's hours/dates/rate in place. */
   static async updateAllocation(payload: {
     organizationId: string;
     handle: string;
@@ -193,7 +162,7 @@ export class HrmProjectService {
     return res.data;
   }
 
-  // Hand the project over to a new manager (re-routes pending approvals).
+  // Hand the project over to a new manager.
   static async changeProjectManager(payload: ProjectManagerChangeRequest): Promise<ProjectResponse> {
     const res = await api.post(`${BASE}/changeManager`, payload);
     return res.data;
@@ -219,21 +188,6 @@ export class HrmProjectService {
   static async temporaryCover(payload: AllocationTemporaryCoverRequest): Promise<AllocationResponse> {
     const res = await api.post(`${BASE}/allocation/temporaryCover`, payload);
     return res.data;
-  }
-
-  // Approval delegation (PM on leave → delegate).
-  static async createDelegation(payload: ApprovalDelegationRequest): Promise<ApprovalDelegationResponse> {
-    const res = await api.post(`${BASE}/approval/delegate`, payload);
-    return res.data;
-  }
-
-  static async listDelegations(organizationId: string, employeeId: string): Promise<ApprovalDelegationResponse[]> {
-    const res = await api.post(`${BASE}/approval/delegate/list`, { organizationId, employeeId });
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  static async cancelDelegation(organizationId: string, delegationId: string, cancelledBy: string): Promise<void> {
-    await api.post(`${BASE}/approval/delegate/cancel`, { organizationId, delegationId, cancelledBy });
   }
 
   static async checkCapacity(payload: CapacityCheckRequest): Promise<CapacityCheckResponse> {
@@ -281,11 +235,6 @@ export class HrmProjectService {
   static async getProjectKpis(organizationId: string): Promise<{ total: number; active: number; draft: number; onHold: number; completed: number }> {
     const res = await api.post(`${BASE}/kpis`, { organizationId });
     return res.data;
-  }
-
-  static async getPendingAllocations(organizationId: string): Promise<AllocationResponse[]> {
-    const res = await api.post(`${BASE}/allocation/pending`, { organizationId });
-    return Array.isArray(res.data) ? res.data : [];
   }
 
   static async getResourceCalendar(
