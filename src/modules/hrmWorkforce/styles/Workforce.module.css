@@ -308,3 +308,252 @@
   gap: 12px;
   padding-block-start: 4px;
 }
+
+/* ========== Reports tab ========== */
+
+/* Same construction as `.fleetBar`/`.attBar` — the bar sits directly on the panel it queries and
+   carries the surface and the hairline. It holds the section toggle as well as the query, because
+   the two are one question: which report, over which window, for whom. */
+.repBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.repBarRight {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A failed refresh that left the previous rows on screen has no empty state to speak from, so the
+   verdict is said above the table too. Tinted, not toast-shaped: it stays until the next run
+   answers, and an operator who missed the toast still finds it. */
+.repError {
+  padding: 8px 12px;
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-error, #ef4444);
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+/* The expanded row. Sits on the secondary surface so an opened row reads as a drawer under its
+   summary rather than as more table. */
+.repDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 2px 8px;
+}
+
+/* Auto-fit rather than a fixed column count: the same detail has to hold four rollups on a wide
+   screen and stack them on a narrow one, and a fixed grid would clip the fourth. */
+.repGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.repSection {
+  min-width: 0;
+}
+
+.repSectionTitle {
+  margin: 0 0 6px;
+  font-size: var(--hrm-font-size-xs, 11px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+/* The true total next to a truncated list's heading — "Applications · 47" above the 10 that fit. */
+.repSectionCount {
+  font-weight: var(--hrm-font-weight-normal, 400);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Says which of the many empty cases this one is (see the panels' hints) — never a bare "no data",
+   which is indistinguishable from a query that simply did not ask for it. */
+.sectionHint {
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+  line-height: 1.45;
+}
+
+/* Working-hours header: one stat per `*Minutes` field the response carried, wrapped rather than
+   scrolled so a backend that adds a field does not push an existing one off the edge. */
+.statRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border: 1px solid var(--hrm-border-light, #e2e8f0);
+  border-radius: 6px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 78px;
+}
+
+.statValue {
+  font-size: var(--hrm-font-size-lg, 16px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  line-height: 1.25;
+  color: var(--hrm-text-primary, #0f172a);
+}
+
+.statLabel {
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+  line-height: 1.2;
+}
+
+/* ========== Rollup lists (apps / domains / machines) ========== */
+
+.listPlain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.listName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-text-primary, #0f172a);
+}
+
+.listMeta {
+  flex: 0 0 auto;
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+  white-space: nowrap;
+}
+
+/* A proportional bar against the biggest entry in its own list, so the shape of a person's day is
+   readable without comparing four-digit minute counts. Fixed track width: a bar that resized with
+   the label would make two rows incomparable, which is the only thing it is for. */
+.listBarTrack {
+  flex: 0 0 auto;
+  display: block;
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+}
+
+.listBar {
+  display: block;
+  height: 100%;
+  background: var(--hrm-text-tertiary, #94a3b8);
+}
+
+/* The backend owns the taxonomy — this is a neutral chip so a category it invents tomorrow still
+   renders, rather than falling through a colour map that has never heard of it. */
+.catTag {
+  margin-inline-end: 0;
+  font-size: var(--hrm-font-size-xs, 11px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* "and 37 more applications not shown" — a truncated list that does not say it is truncated reads
+   as the whole answer. */
+.truncNote {
+  margin-top: 4px;
+  font-size: var(--hrm-font-size-xs, 11px);
+  font-style: italic;
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+/* ========== Health tiles & issues ========== */
+
+.metricRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border: 1px solid var(--hrm-border-light, #e2e8f0);
+  border-radius: 6px;
+}
+
+.issueItem {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.issueItem:last-child {
+  border-bottom: none;
+}
+
+.issueHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.issueType {
+  font-size: var(--hrm-font-size-sm, 12px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  color: var(--hrm-text-primary, #0f172a);
+}
+
+/* The detector's own sentence, wrapped rather than truncated: it is the only part of an issue that
+   says what is actually wrong with the machine. */
+.issueDetail {
+  margin-top: 2px;
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-text-secondary, #475569);
+  line-height: 1.45;
+}
+
+.issueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+.ticketLink {
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-accent, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Faults on machines the windowed report never returned. Set apart from the table above with its
+   own surface, because it answers a question the table cannot: what is broken on a device that has
+   stopped reporting altogether. */
+.orphanSection {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border: 1px solid var(--hrm-border-light, #e2e8f0);
+  border-radius: 6px;
+}
