@@ -1,0 +1,145 @@
+/* ================================================================
+   Workforce module — shared presentational styles
+   ================================================================
+
+   Theming follows the app's existing approach and adds nothing of its own: every colour is a
+   `var(--hrm-*, fallback)` off `src/styles/hrm-tokens.css`, which is where light and dark are
+   already decided (`[data-theme="dark"]` re-declares the same names), and the AntD parts of
+   these components inherit dark from the ConfigProvider in `src/components/ThemeContext.tsx`.
+   The fallbacks are the light values, so a screen rendered before the token sheet loads is
+   plain rather than invisible.
+
+   Nothing here uses the accent (`--hrm-accent`). A machine's condition and a person's
+   whereabouts are facts, not branding: an accent-green chip on an OFFLINE row reads as
+   "fine", which is the one thing the fleet screen must never say.
+
+   Not a `:root` block anywhere below — Next compiles `.module.css` in css-loader's *pure*
+   mode and rejects any selector without a local class.
+   ================================================================ */
+
+/* ========== Liveness ========== */
+
+/* The chip is an AntD <Tag> (so it picks up dark from the ConfigProvider); this is only the
+   leading dot, which is what carries the meaning for anyone reading the colour rather than
+   the word. Class names come from LIVENESS_META.className — keep them in step. */
+.liveDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-inline-end: 5px;
+  vertical-align: middle;
+  background: currentColor;
+}
+
+.liveOn     { color: var(--hrm-success, #10b981); }
+.liveDelay  { color: var(--hrm-warning, #f59e0b); }
+.liveStale  { color: var(--hrm-text-tertiary, #94a3b8); }
+.liveOff    { color: var(--hrm-error, #ef4444); }
+
+.livenessChip {
+  margin-inline-end: 0;
+  font-size: var(--hrm-font-size-sm, 12px);
+}
+
+/* ========== Attribution ========== */
+
+.attributionTag {
+  margin-inline-end: 0;
+  font-size: var(--hrm-font-size-sm, 12px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A device nobody holds is the fleet screen's most actionable row — the asset register has
+   drifted from the device registry and that machine's activity will reach no one's
+   attendance. Amber, not grey: it is a gap to close, not a blank to skim past. */
+.unattributed {
+  margin-inline-end: 0;
+  font-size: var(--hrm-font-size-sm, 12px);
+  font-style: italic;
+}
+
+/* ========== Health metric ========== */
+
+.healthMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+}
+
+.healthLabel {
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+  line-height: 1.2;
+}
+
+.healthValue {
+  font-size: var(--hrm-font-size-lg, 16px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--hrm-text-primary, #0f172a);
+}
+
+.healthUnit {
+  font-size: var(--hrm-font-size-sm, 12px);
+  font-weight: var(--hrm-font-weight-normal, 400);
+  margin-inline-start: 2px;
+  color: var(--hrm-text-secondary, #475569);
+}
+
+/* `ok` deliberately stays the ordinary text colour rather than turning green: on a wall of
+   tiles, green-everywhere makes the one red tile harder to find, not easier. */
+.sevOk   { color: var(--hrm-text-primary, #0f172a); }
+.sevWarn { color: var(--hrm-warning, #f59e0b); }
+.sevCrit { color: var(--hrm-error, #ef4444); }
+
+/* An absent reading is not a reading: it renders as an em dash in the muted text colour and
+   never takes a severity tint, because a fabricated alarm is worse than a missing number. */
+.healthAbsent {
+  color: var(--hrm-text-tertiary, #94a3b8);
+  font-weight: var(--hrm-font-weight-normal, 400);
+}
+
+/* ========== WFO / WFH bar ========== */
+
+.wfoBar {
+  display: flex;
+  width: 100%;
+  min-width: 80px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+}
+
+.wfoSeg {
+  display: block;
+  height: 100%;
+  min-width: 0;
+}
+
+/* Location is a category, not a verdict — so these are four distinguishable hues rather than
+   the good/bad ramp used above, and none of them is the accent. Mid-tones on purpose: they
+   read on both the light and the dark page background. */
+.segOffice { background: #2563eb; }
+.segHome   { background: #7c3aed; }
+.segClient { background: #0d9488; }
+.segOther  { background: var(--hrm-text-tertiary, #94a3b8); }
+
+/* A day with no minutes at all (a holiday, a leave day, a person whose machines never
+   reported) draws an empty track. It must still occupy the row so the column does not
+   collapse and so "no time" is visibly different from "column not rendered". */
+.wfoEmpty {
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.wfoLegend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-secondary, #475569);
+}
