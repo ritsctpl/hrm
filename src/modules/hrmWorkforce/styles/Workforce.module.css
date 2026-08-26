@@ -208,7 +208,7 @@
 /* ========== Shared table cells ========== */
 
 .cellPrimary {
-  font-size: var(--hrm-font-size-sm, 13px);
+  font-size: var(--hrm-font-size-sm, 12px);
   font-weight: var(--hrm-font-weight-semi, 600);
   color: var(--hrm-text-primary, #0f172a);
   line-height: 1.3;

@@ -117,6 +117,13 @@ const FleetTable: React.FC<Props> = ({ onRefresh }) => {
   const counts = useMemo(() => countFleet(fleet), [fleet]);
   const rows = useMemo(() => filterFleet(fleet, filter), [fleet, filter]);
 
+  // The summary strip sits outside the Table, so it is not covered by the Table's spinner. Before
+  // the first response lands `countFleet([])` is a row of honest-looking zeros — "0 Devices, 0
+  // Online" is a statement about the estate, and it is indistinguishable from a site that has
+  // genuinely enrolled nothing. The strip keeps its layout (so nothing jumps when the numbers
+  // arrive) and shows em dashes instead: no reading yet, rather than a reading of zero.
+  const awaitingFirstLoad = loading && fleet.length === 0;
+
   const columns: ColumnsType<FleetDeviceView> = [
     {
       title: 'Device',
@@ -233,11 +240,16 @@ const FleetTable: React.FC<Props> = ({ onRefresh }) => {
         loading={loading}
       />
 
-      <div className={styles.fleetSummary}>
+      <div className={styles.fleetSummary} aria-busy={awaitingFirstLoad || undefined}>
         {SUMMARY_ITEMS.map((item) => (
           <span key={item.key} className={styles.fleetCount}>
-            <span className={`${styles.fleetCountValue} ${(item.cls && styles[item.cls]) || ''}`}>
-              {counts[item.key]}
+            <span
+              className={`${styles.fleetCountValue} ${
+                // No severity tint on a placeholder — an amber em dash would read as a verdict.
+                awaitingFirstLoad ? styles.cellMuted : (item.cls && styles[item.cls]) || ''
+              }`}
+            >
+              {awaitingFirstLoad ? '\u2014' : counts[item.key]}
             </span>
             <span className={styles.fleetCountLabel}>{item.label}</span>
           </span>
@@ -245,7 +257,9 @@ const FleetTable: React.FC<Props> = ({ onRefresh }) => {
       </div>
 
       <Table<FleetDeviceView>
-        rowKey={(row) => row.deviceId || row.serialNumber}
+        // A row with neither id nor serial would key as '' — and two of them would collide into
+        // one React key, so the second would never render. The index is the last resort.
+        rowKey={(row, index) => row.deviceId || row.serialNumber || `row-${index ?? 0}`}
         size="small"
         columns={columns}
         dataSource={rows}
