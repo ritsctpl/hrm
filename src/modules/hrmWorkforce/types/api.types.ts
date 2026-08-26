@@ -45,8 +45,15 @@ export interface IssuesRequest extends WorkforceBaseRequest {
 }
 
 /**
- * The MessageModel envelope. Read `response`; on the `errorCode` shape throw so the hook can
- * surface `message` through `message.error` instead of rendering an error object as data.
+ * The MessageModel envelope as hrm-service puts it on the wire.
+ *
+ * ⚠ The service layer never sees this shape. `src/services/api.ts`'s response interceptor unwraps
+ * every `/hrm-service/` body — `response.data = data.response ?? []` — and rejects any body
+ * carrying `errorCode` (or `message_details.msg_type === 'E'`) before the promise resolves. So a
+ * workforce service method reads `res.data` as the payload directly, and the error envelope
+ * reaches `useHrmWorkforceData`'s `catch` as a thrown `Error` alongside the HTTP errors. Kept here
+ * because it documents what the backend actually sends, and because that is what a future
+ * interceptor change would have to keep honouring.
  */
 export interface MessageModel<T> {
   site?: string;

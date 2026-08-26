@@ -8,6 +8,19 @@
 // a person explicitly asked for, and one (`finalize`) rewrites attendance rows. A transparent
 // retry on that would re-run a day's derivation nobody asked to re-run, and a cache would answer
 // "is this machine online?" with a stale yes. Freshness and exactly-once are the features.
+//
+// ⚠ WHAT `res.data` IS HERE. `api`'s response interceptor (`src/services/api.ts`) already unwraps
+// the MessageModel envelope for every `/hrm-service/` URL: it sets `response.data = data.response`
+// when the body carries both `response` and `message_details`, which every workforce controller
+// sends (`MessageModel.builder().site(..).message_details(..).response(..)`). So `res.data` IS the
+// payload — reading `res.data.response` here would look for `response.response` and find nothing,
+// turning every list into `[]` and every finalize into `undefined` against a perfectly good
+// backend. Verified against `FleetController`/`ReportController`/`AttendanceController` on
+// `feat/workforce-collector` and pinned by `tests/unit/workforce-service-shape.spec.ts`.
+//
+// The same interceptor REJECTS a 2xx whose body carries `errorCode` (or `message_details.msg_type
+// === 'E'`) before it reaches this file, so the 200-envelope error and the HTTP error arrive at the
+// hook down one path — its `catch`. No `errorCode` check is needed, or possible, below.
 
 import api from '@/services/api';
 import type {
@@ -53,8 +66,8 @@ export class HrmWorkforceService {
    */
   static async listFleet(site: string, userId?: string): Promise<FleetDeviceView[]> {
     const body: FleetListRequest = { site, userId };
-    const res = await api.post(WORKFORCE_ENDPOINTS.fleetList, body);
-    return res.data.response ?? [];
+    const res = await api.post<FleetDeviceView[]>(WORKFORCE_ENDPOINTS.fleetList, body);
+    return Array.isArray(res.data) ? res.data : [];
   }
 
   /**
@@ -65,16 +78,24 @@ export class HrmWorkforceService {
    * substituting a zero-filled object would render as "0 devices read" — a wrong diagnosis
    * indistinguishable from a real one.
    */
-  static async finalizeDay(site: string, date: string, userId?: string): Promise<FinalizeResult> {
+  static async finalizeDay(
+    site: string,
+    date: string,
+    userId?: string,
+  ): Promise<FinalizeResult | undefined> {
     const body: FinalizeRequest = { site, date, userId };
-    const res = await api.post(WORKFORCE_ENDPOINTS.finalize, body);
-    return res.data.response;
+    const res = await api.post<FinalizeResult>(WORKFORCE_ENDPOINTS.finalize, body);
+    const result = res.data;
+    // The interceptor substitutes `[]` for an absent `response`, so "no result" arrives as an empty
+    // array, not as undefined. Both are failures and neither is a FinalizeResult — say so, rather
+    // than handing back something the caller will read `.devicesRead` off.
+    return result && !Array.isArray(result) && typeof result === 'object' ? result : undefined;
   }
 
   /** Derived employee-days in the window. `employeeId` narrows it to one person. */
   static async listAttendance(q: AttendanceListRequest): Promise<AttendanceDaily[]> {
-    const res = await api.post(WORKFORCE_ENDPOINTS.attendanceList, q);
-    return res.data.response ?? [];
+    const res = await api.post<AttendanceDaily[]>(WORKFORCE_ENDPOINTS.attendanceList, q);
+    return Array.isArray(res.data) ? res.data : [];
   }
 
   /**
@@ -82,14 +103,14 @@ export class HrmWorkforceService {
    * `days`; without one the backend returns totals and rollups with an empty `days` list.
    */
   static async utilization(q: UtilizationRequest): Promise<EmployeeUtilizationView[]> {
-    const res = await api.post(WORKFORCE_ENDPOINTS.utilization, q);
-    return res.data.response ?? [];
+    const res = await api.post<EmployeeUtilizationView[]>(WORKFORCE_ENDPOINTS.utilization, q);
+    return Array.isArray(res.data) ? res.data : [];
   }
 
   /** Per machine-day health for the window, with the asset holder and open issues joined in. */
   static async fleetHealth(q: FleetHealthRequest): Promise<DeviceHealthRow[]> {
-    const res = await api.post(WORKFORCE_ENDPOINTS.fleetHealth, q);
-    return res.data.response ?? [];
+    const res = await api.post<DeviceHealthRow[]>(WORKFORCE_ENDPOINTS.fleetHealth, q);
+    return Array.isArray(res.data) ? res.data : [];
   }
 
   /**
@@ -99,9 +120,7 @@ export class HrmWorkforceService {
    */
   static async issues(site: string, status?: string, userId?: string): Promise<DeviceIssue[]> {
     const body: IssuesRequest = { site, status, userId };
-    const res = await api.post(WORKFORCE_ENDPOINTS.issues, body);
-    return res.data.response ?? [];
+    const res = await api.post<DeviceIssue[]>(WORKFORCE_ENDPOINTS.issues, body);
+    return Array.isArray(res.data) ? res.data : [];
   }
 }
-
-export default HrmWorkforceService;
