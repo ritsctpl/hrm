@@ -143,3 +143,122 @@
   font-size: var(--hrm-font-size-xs, 11px);
   color: var(--hrm-text-secondary, #475569);
 }
+
+/* ========== Fleet tab ========== */
+
+/* The filter bar sits directly on top of the table, so it carries the surface and the hairline
+   rather than floating in the tab's padding — same construction as `TicketFilterBar`. */
+.fleetBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.fleetBarRight {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Counts are read off the FULL fleet, never the filtered view — a summary that moved with the
+   search box would answer "how many rows am I looking at", which the pagination already says,
+   instead of "how big is the estate and how much of it is dark". */
+.fleetSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 12px;
+  background: var(--hrm-bg-secondary, #f1f5f9);
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.fleetCount {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.fleetCountValue {
+  font-size: var(--hrm-font-size-base, 14px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  font-variant-numeric: tabular-nums;
+  color: var(--hrm-text-primary, #0f172a);
+}
+
+.fleetCountLabel {
+  font-size: var(--hrm-font-size-xs, 11px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+/* Only the counts that carry a verdict are tinted, and only the value — a fully coloured chip row
+   makes the one number worth acting on no easier to find than the six that are not. */
+.countOn   { color: var(--hrm-success, #10b981); }
+.countOff  { color: var(--hrm-error, #ef4444); }
+.countGap  { color: var(--hrm-warning, #f59e0b); }
+
+/* ========== Shared table cells ========== */
+
+.cellPrimary {
+  font-size: var(--hrm-font-size-sm, 13px);
+  font-weight: var(--hrm-font-weight-semi, 600);
+  color: var(--hrm-text-primary, #0f172a);
+  line-height: 1.3;
+}
+
+.cellSub {
+  font-size: var(--hrm-font-size-xs, 11px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+  line-height: 1.3;
+}
+
+/* Serials are compared character by character ("PF5GJT06" against a sticker), so they get a
+   monospaced face and tabular figures — a proportional 0/O next to each other is a support call. */
+.mono {
+  font-family: var(--hrm-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: var(--hrm-font-size-sm, 12px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.cellMuted {
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+/* A revoked device is still enrolled and still listed — the row is dimmed rather than dropped,
+   because "the machine we turned off last month is still reporting" is a finding. */
+.rowRevoked {
+  opacity: 0.62;
+}
+
+/* ========== Empty states ========== */
+
+.emptyState {
+  padding: 28px 12px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: var(--hrm-font-size-base, 14px);
+  color: var(--hrm-text-secondary, #475569);
+}
+
+.emptyHint {
+  margin-top: 6px;
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-text-tertiary, #94a3b8);
+}
+
+.emptyError {
+  margin-top: 6px;
+  font-size: var(--hrm-font-size-sm, 12px);
+  color: var(--hrm-error, #ef4444);
+}
