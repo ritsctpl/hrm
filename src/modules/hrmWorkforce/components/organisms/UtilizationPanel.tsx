@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import WfoWfhBar from '../molecules/WfoWfhBar';
 import ReportQueryBar from '../molecules/ReportQueryBar';
 import { useHrmWorkforceData } from '../../hooks/useHrmWorkforceData';
-import { useHrmWorkforceStore } from '../../stores/hrmWorkforceStore';
+import { reportSignature, useHrmWorkforceStore } from '../../stores/hrmWorkforceStore';
 import type {
   AppMinutes,
   DomainMinutes,
@@ -486,13 +486,26 @@ const UtilizationPanel: React.FC<Props> = ({ section, onSectionChange, onRefresh
   // First look at this section fetches it. Deliberately self-loading rather than waiting to be
   // driven: the alternative is a parent that loads the three report slots one after another, and
   // because each loader clears `error` on entry, a sequential drive silently erases the first
-  // failure. A slot that already holds rows is left alone, so toggling back is instant.
+  // failure.
+  //
+  // <b>"Already loaded" is a question about the QUERY, not about the rows.</b> This panel unmounts
+  // whenever the section toggle moves away from it, so `started` resets while the store slot stays
+  // full — and the range in `reportQuery` is shared with the other section, which is free to widen
+  // it while this panel is not on screen. Skipping the load merely because rows exist therefore
+  // showed the old window's answer under the new window's bar. Comparing the slot's signature
+  // against the bar's asks again exactly when the question has changed, and stays silent (no
+  // double-fetch) when it has not — including for a query that legitimately answered with zero rows.
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if ((rows?.length ?? 0) === 0) void run();
-    // Mount only — a dependency on `rows` would re-fire this on every load it performs.
+    // Read through `getState()` rather than the subscribed values: this effect must not carry
+    // `reportQuery` in its dependency list (that would re-fire it on every load it performs), and a
+    // closure over the first render's values would be exactly as stale as the bug it is fixing.
+    const state = useHrmWorkforceStore.getState();
+    const stale = state.utilizationLoadedFor !== reportSignature(state.reportQuery, 'utilization');
+    if ((state.utilization?.length ?? 0) === 0 || stale) void run();
+    // Mount only — see above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

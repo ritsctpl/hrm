@@ -32,6 +32,35 @@ import type { AttendanceQuery, ReportQuery } from '../types/ui.types';
 export const isoDay = (daysAgo = 0): string => dayjs().subtract(daysAgo, 'day').format('YYYY-MM-DD');
 
 /**
+ * The query a report slot was last *successfully* loaded for, as one comparable string.
+ *
+ * <b>Why a signature at all.</b> Each report panel unmounts when the section toggle switches away
+ * from it, so its "have I loaded yet?" ref resets while the store slot stays populated — and the
+ * range lives in a `reportQuery` that is shared with the other section. Widening the range on
+ * Utilization and switching back to Fleet Health therefore showed the OLD window's rows under the
+ * NEW window's bar: a table that quietly answers a question nobody asked any more. Comparing what
+ * a slot holds against what the bar is asking closes that without a re-fetch on every remount.
+ *
+ * <b>Why it is per-slot and not one shared string.</b> The two endpoints read different fields:
+ * `employee-utilization` sends `employeeId` and never `serialNumber`, `fleet-health` the reverse.
+ * A single four-field signature would make picking a device on the health section invalidate the
+ * utilization slot — a re-fetch that provably cannot change a single row. So the field the request
+ * does not send is blanked, and the shape stays the same four `|`-separated parts either way.
+ *
+ * Missing bounds collapse to the empty string rather than `undefined`, so a half-built query has
+ * one spelling and cannot accidentally equal a different half-built one.
+ */
+export type ReportScope = 'utilization' | 'health';
+
+export function reportSignature(query: Partial<ReportQuery> | undefined, scope: ReportScope): string {
+  const from = query?.from ?? '';
+  const to = query?.to ?? '';
+  const employeeId = (scope === 'utilization' ? query?.employeeId : '') ?? '';
+  const serialNumber = (scope === 'health' ? query?.serialNumber : '') ?? '';
+  return `${from}|${to}|${employeeId}|${serialNumber}`;
+}
+
+/**
  * The last 7 days, inclusive — the default window for both query bars.
  *
  * Deliberately not "this month": a month-to-date range on the 1st is a one-day report, and on the
@@ -57,6 +86,19 @@ interface HrmWorkforceState {
   reportLoading: boolean;
 
   /**
+   * `reportSignature` of the query each report slot currently holds an answer for, or null when it
+   * holds nothing trustworthy (never loaded, or the last load failed). A panel compares its slot's
+   * signature against the bar's on mount; null and a mismatch both mean "ask again".
+   *
+   * Deliberately not derived from the rows: an empty result is a real answer to a real query, and
+   * re-fetching it on every section switch is exactly the double-fetch this is meant to avoid.
+   * `issues` has no signature — it is site-scoped and carries no range, so nothing in the bar can
+   * invalidate it.
+   */
+  utilizationLoadedFor: string | null;
+  fleetHealthLoadedFor: string | null;
+
+  /**
    * The last failure's message, kept so a tab can render an inline empty-state that says *why* it
    * is empty. The transient toast is raised by the hook; this is the durable copy — an operator who
    * missed the toast must still be able to tell a failed load from a genuinely empty fleet.
@@ -73,6 +115,8 @@ interface HrmWorkforceState {
   setReportQuery: (patch: Partial<ReportQuery>) => void;
   setUtilization: (utilization: EmployeeUtilizationView[]) => void;
   setFleetHealth: (fleetHealth: DeviceHealthRow[]) => void;
+  setUtilizationLoadedFor: (signature: string | null) => void;
+  setFleetHealthLoadedFor: (signature: string | null) => void;
   setIssues: (issues: DeviceIssue[]) => void;
   setReportLoading: (v: boolean) => void;
 
@@ -93,6 +137,9 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
   issues: [],
   reportLoading: false,
 
+  utilizationLoadedFor: null,
+  fleetHealthLoadedFor: null,
+
   error: null,
 
   setFleet: (fleet) => set({ fleet }),
@@ -109,6 +156,8 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
   setReportQuery: (patch) => set((state) => ({ reportQuery: { ...state.reportQuery, ...patch } })),
   setUtilization: (utilization) => set({ utilization }),
   setFleetHealth: (fleetHealth) => set({ fleetHealth }),
+  setUtilizationLoadedFor: (utilizationLoadedFor) => set({ utilizationLoadedFor }),
+  setFleetHealthLoadedFor: (fleetHealthLoadedFor) => set({ fleetHealthLoadedFor }),
   setIssues: (issues) => set({ issues }),
   setReportLoading: (reportLoading) => set({ reportLoading }),
 

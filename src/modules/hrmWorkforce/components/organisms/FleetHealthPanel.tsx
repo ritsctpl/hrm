@@ -9,7 +9,7 @@ import HealthMetric, { healthSeverity } from '../atoms/HealthMetric';
 import AttributionTag from '../atoms/AttributionTag';
 import ReportQueryBar from '../molecules/ReportQueryBar';
 import { useHrmWorkforceData } from '../../hooks/useHrmWorkforceData';
-import { useHrmWorkforceStore } from '../../stores/hrmWorkforceStore';
+import { reportSignature, useHrmWorkforceStore } from '../../stores/hrmWorkforceStore';
 import type { DeviceHealthRow, DeviceIssue, HealthDayRow } from '../../types/domain.types';
 import type { HealthSeverity, ReportQuery, ReportSectionKey } from '../../types/ui.types';
 import { fmtPct, fromNowSafe } from '../../utils/workforceFormat';
@@ -460,11 +460,18 @@ const FleetHealthPanel: React.FC<Props> = ({ section, onSectionChange, onRefresh
     runRef.current = run;
   }, [run]);
 
+  // Loads on mount when the slot is empty OR when what it holds answers a different query than the
+  // bar is asking — this panel unmounts on every section switch while the shared `reportQuery` can
+  // be changed by the other section in the meantime. See `UtilizationPanel` for the full reasoning.
+  // `loadIssues` needs no such check: it is site-scoped and carries no range, so nothing in the bar
+  // can invalidate it.
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if ((rows?.length ?? 0) === 0) void run();
+    const state = useHrmWorkforceStore.getState();
+    const stale = state.fleetHealthLoadedFor !== reportSignature(state.reportQuery, 'health');
+    if ((state.fleetHealth?.length ?? 0) === 0 || stale) void run();
     // Mount only — see UtilizationPanel for why this panel loads itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

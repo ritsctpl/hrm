@@ -6,7 +6,7 @@ import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import { extractBackendMsg } from '@/modules/hrmTimesheet/utils/backendMessage';
 import { HrmWorkforceService } from '../services/hrmWorkforceService';
-import { useHrmWorkforceStore } from '../stores/hrmWorkforceStore';
+import { reportSignature, useHrmWorkforceStore } from '../stores/hrmWorkforceStore';
 import type { FinalizeResult, FleetDeviceView } from '../types/domain.types';
 import type { AttendanceQuery, FleetFilter, ReportQuery } from '../types/ui.types';
 
@@ -75,6 +75,19 @@ export function useCurrentActor(): string {
  * <b>On failure the slot is cleared.</b> Leaving the previous rows on screen under a fresh error
  * toast is how a stale fleet gets read as the current one.
  */
+/**
+ * Per-loader issue counters, module-scoped so they outlive the component that started a load.
+ *
+ * They exist for one job: a superseded run must not stamp a "loaded for" signature. Two report
+ * requests can resolve in either order, and a slow older run finishing last would otherwise mark
+ * the slot as holding an answer to ITS query — after which a remount compares the bar against the
+ * wrong signature and skips the reload the screen actually needs. The counters are read only around
+ * the signature stamp; the rows themselves are still written by whichever run resolves last, and
+ * the panels' own run token repairs that case (see `UtilizationPanel`).
+ */
+let utilizationSeq = 0;
+let healthSeq = 0;
+
 export function useHrmWorkforceData() {
   const site = getOrganizationId();
   const userId = useCurrentActor();
@@ -198,6 +211,7 @@ export function useHrmWorkforceData() {
       if (q) store.setReportQuery(q);
       const query = q ?? store.reportQuery;
 
+      const seq = ++utilizationSeq;
       store.setReportLoading(true);
       store.setError(null);
       try {
@@ -209,9 +223,17 @@ export function useHrmWorkforceData() {
           employeeId: query.employeeId || undefined,
         });
         useHrmWorkforceStore.getState().setUtilization(rows);
+        // Only the newest issue stamps the slot. An older run landing late would otherwise claim
+        // the slot answers ITS query, and the next remount would trust that and skip its reload.
+        if (seq === utilizationSeq) {
+          useHrmWorkforceStore.getState().setUtilizationLoadedFor(reportSignature(query, 'utilization'));
+        }
       } catch (error) {
         fail(error, 'Failed to load employee utilization');
         useHrmWorkforceStore.getState().setUtilization([]);
+        // A failed load holds no answer to anything — clearing the signature is what makes the next
+        // mount retry instead of trusting an empty slot.
+        if (seq === utilizationSeq) useHrmWorkforceStore.getState().setUtilizationLoadedFor(null);
       } finally {
         useHrmWorkforceStore.getState().setReportLoading(false);
       }
@@ -225,6 +247,7 @@ export function useHrmWorkforceData() {
       if (q) store.setReportQuery(q);
       const query = q ?? store.reportQuery;
 
+      const seq = ++healthSeq;
       store.setReportLoading(true);
       store.setError(null);
       try {
@@ -236,9 +259,13 @@ export function useHrmWorkforceData() {
           serialNumber: query.serialNumber || undefined,
         });
         useHrmWorkforceStore.getState().setFleetHealth(rows);
+        if (seq === healthSeq) {
+          useHrmWorkforceStore.getState().setFleetHealthLoadedFor(reportSignature(query, 'health'));
+        }
       } catch (error) {
         fail(error, 'Failed to load fleet health');
         useHrmWorkforceStore.getState().setFleetHealth([]);
+        if (seq === healthSeq) useHrmWorkforceStore.getState().setFleetHealthLoadedFor(null);
       } finally {
         useHrmWorkforceStore.getState().setReportLoading(false);
       }
