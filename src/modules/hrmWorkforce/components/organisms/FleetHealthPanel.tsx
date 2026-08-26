@@ -416,19 +416,49 @@ const FleetHealthPanel: React.FC<Props> = ({ section, onSectionChange, onRefresh
   const [busy, setBusy] = useState(false);
   const [lastRun, setLastRun] = useState<{ error: string | null } | null>(null);
 
+  /**
+   * Which run is the current one, and which is the newest to have finished — see the identical
+   * guard in `UtilizationPanel`. Every picker change fires a run and two can resolve in either
+   * order; the token makes the last query ISSUED win rather than the last to RESOLVE.
+   *
+   * The pair inside `Promise.all` shares one token: they are one question ("this window, this
+   * device"), and half of an answer from an older query mixed with half from a newer one is worse
+   * than either.
+   */
+  const runToken = useRef(0);
+  const settledToken = useRef(0);
+  /** Always the current `run`, so the resync below can call it without a circular dependency. */
+  const runRef = useRef<(q?: ReportQuery) => Promise<void>>(async () => {});
+
   const run = useCallback(
     async (q?: ReportQuery) => {
+      const token = ++runToken.current;
       setBusy(true);
       try {
         // Started together, not one after the other — see the component note above.
         await Promise.all([loadHealth(q), loadIssues()]);
       } finally {
-        setLastRun({ error: useHrmWorkforceStore.getState().error });
-        setBusy(false);
+        const superseded = token !== runToken.current;
+        const newerAlreadySettled = settledToken.current > token;
+        if (settledToken.current < token) settledToken.current = token;
+
+        if (!superseded) {
+          setLastRun({ error: useHrmWorkforceStore.getState().error });
+          setBusy(false);
+        } else if (newerAlreadySettled) {
+          // A slow run outlived a faster newer one and has just overwritten its rows in the store
+          // (the write lives inside the hook's loaders, which this panel cannot cancel). Re-ask for
+          // the query that is actually in the bar; the new run carries a fresh token, so no loop.
+          void runRef.current();
+        }
       }
     },
     [loadHealth, loadIssues],
   );
+
+  useEffect(() => {
+    runRef.current = run;
+  }, [run]);
 
   const started = useRef(false);
   useEffect(() => {

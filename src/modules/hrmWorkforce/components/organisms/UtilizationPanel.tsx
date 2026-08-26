@@ -74,9 +74,18 @@ function minuteStats(totals: RangeTotals | undefined): MinuteStat[] {
     return i === -1 ? TOTAL_ORDER.length : i;
   };
   return Object.entries(totals ?? {})
-    .filter(([key, value]) => key.endsWith('Minutes') && typeof value === 'number')
+    // `null` counts as a field that arrived. A `*Minutes` key the backend sent as null is a number
+    // it could not compute, not a field it does not have — dropping it would take the LABEL off the
+    // header too, so an operator would see six stats where the row has seven and never know which
+    // one went missing. It renders as `0:00`, which is what `fmtMinutes` makes of an absent count
+    // anyway; the point of keeping it is that the header stays complete.
+    .filter(([key, value]) => key.endsWith('Minutes') && (typeof value === 'number' || value === null))
     .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
-    .map(([key, value]) => ({ key, label: TOTAL_LABELS[key] ?? humanize(key), minutes: value as number }));
+    .map(([key, value]) => ({
+      key,
+      label: TOTAL_LABELS[key] ?? humanize(key),
+      minutes: typeof value === 'number' ? value : 0,
+    }));
 }
 
 /** A proportional width, guarded: an all-zero list must not divide by zero and print `NaN%`. */
@@ -106,8 +115,11 @@ const clock = (iso: string | null): string => {
 const UtilizationDetail: React.FC<{ row: EmployeeUtilizationView }> = ({ row }) => {
   const stats = minuteStats(row.totals);
   const categories = Object.entries(row.categoryMinutes ?? {})
-    .filter(([, minutes]) => typeof minutes === 'number')
-    .sort((a, b) => (b[1] as number) - (a[1] as number));
+    // Same reasoning as `minuteStats`: a category whose minutes came back null is a category that
+    // was seen, and hiding it hides the category name as well as the number.
+    .filter(([, minutes]) => typeof minutes === 'number' || minutes === null)
+    .map(([category, minutes]): [string, number] => [category, typeof minutes === 'number' ? minutes : 0])
+    .sort((a, b) => b[1] - a[1]);
   const apps: AppMinutes[] = row.apps ?? [];
   const domains: DomainMinutes[] = row.domains ?? [];
   const machines: NamedMinutes[] = row.machines ?? [];
@@ -229,7 +241,7 @@ const UtilizationDetail: React.FC<{ row: EmployeeUtilizationView }> = ({ row }) 
             <div className={styles.flagTags}>
               {categories.map(([category, minutes]) => (
                 <Tag key={category} className={styles.catTag}>
-                  {category} · <span className={styles.numCell}>{fmtMinutes(minutes as number)}</span>
+                  {category} · <span className={styles.numCell}>{fmtMinutes(minutes)}</span>
                 </Tag>
               ))}
             </div>
@@ -421,20 +433,55 @@ const UtilizationPanel: React.FC<Props> = ({ section, onSectionChange, onRefresh
   // Once it has run, its own outcome is the truthful one for this table.
   const [lastRun, setLastRun] = useState<{ error: string | null } | null>(null);
 
+  /**
+   * Which run is the current one, and which is the newest to have finished.
+   *
+   * Every picker change fires a run, and two requests in flight can resolve in either order. The
+   * token makes the last query ISSUED the one that wins rather than the last to RESOLVE: a run that
+   * finds a newer token in the ref when it returns has been superseded and must not speak for the
+   * screen — it neither records its verdict nor stops the spinner the newer run is still owed.
+   */
+  const runToken = useRef(0);
+  const settledToken = useRef(0);
+  /** Always the current `run`, so the resync below can call it without a circular dependency. */
+  const runRef = useRef<(q?: ReportQuery) => Promise<void>>(async () => {});
+
   const run = useCallback(
     async (q?: ReportQuery) => {
+      const token = ++runToken.current;
       setBusy(true);
       try {
         await loadUtilization(q);
       } finally {
-        // Read *after* the load: every loader sets `error` to null on entry, so whatever is in the
-        // slot now is this run's own outcome.
-        setLastRun({ error: useHrmWorkforceStore.getState().error });
-        setBusy(false);
+        const superseded = token !== runToken.current;
+        // Did a NEWER run already finish before this stale one came back? If so its rows were in
+        // the store and this one has just overwritten them.
+        const newerAlreadySettled = settledToken.current > token;
+        if (settledToken.current < token) settledToken.current = token;
+
+        if (!superseded) {
+          // Read *after* the load: every loader sets `error` to null on entry, so whatever is in
+          // the slot now is this run's own outcome.
+          setLastRun({ error: useHrmWorkforceStore.getState().error });
+          setBusy(false);
+        } else if (newerAlreadySettled) {
+          // The rows are now the superseded query's answer — the store write happens inside the
+          // hook's loader, which this panel cannot cancel, so discarding the result here is not
+          // enough to undo it. Re-ask for the query that is actually in the bar. This can only fire
+          // when a slow run outlives a faster newer one, and the run it issues carries a fresh
+          // token, so it cannot loop.
+          void runRef.current();
+        }
+        // The remaining case — superseded while the newer run is still in flight — is a plain
+        // discard: that run owns the spinner and will write the rows that match the bar.
       }
     },
     [loadUtilization],
   );
+
+  useEffect(() => {
+    runRef.current = run;
+  }, [run]);
 
   // First look at this section fetches it. Deliberately self-loading rather than waiting to be
   // driven: the alternative is a parent that loads the three report slots one after another, and
