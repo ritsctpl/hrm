@@ -262,3 +262,49 @@
   font-size: var(--hrm-font-size-sm, 12px);
   color: var(--hrm-error, #ef4444);
 }
+
+/* ========== Attendance tab ========== */
+
+/* Same construction as `.fleetBar` — the bar sits directly on the table and carries the surface
+   and the hairline. Declared separately rather than shared: every control in this one is a server
+   query (the fleet's are client-side filters), so the two bars are free to diverge without one
+   quietly restyling the other. */
+.attBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--hrm-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--hrm-border-light, #e2e8f0);
+}
+
+.attBarRight {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Durations are compared down the column, not read one at a time, so the digits have to occupy
+   the same width in every row — `7:09` above `10:41` is only a comparison if the colons line up. */
+.numCell {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Holiday / Leave / Locked sit in one cell and there may be all three — they wrap rather than
+   widening the column or clipping the third. */
+.flagTags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ========== Finalize-day modal ========== */
+
+.finalizeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block-start: 4px;
+}
