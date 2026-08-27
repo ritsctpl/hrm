@@ -603,3 +603,21 @@
 .wfNotice {
   padding: var(--hrm-space-sm, 8px) var(--hrm-space-base, 16px) 0;
 }
+
+/* ========== Office Networks tab ========== */
+
+/* Each fingerprint cell holds a variable number of tags — a location may be identified by one MAC
+   or by a dozen egress IPs — so they wrap within the cell rather than widening the column or
+   clipping the overflow. Also carries the two-action group in the row's Actions cell. */
+.tagList {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The form's own vertical rhythm — AntD's Form.Item margins already space the fields; this only
+   trims the trailing gap so the inline validation Alert sits close to the last textarea. */
+.netFormBody :global(.ant-form-item:last-child) {
+  margin-bottom: 0;
+}
