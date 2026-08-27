@@ -61,11 +61,10 @@ export interface OfficeNetwork {
   gatewayMacs: string[];
   bssids: string[];
   egressIps: string[];
-  active?: number;
-  createdBy?: string;
-  createdDateTime?: string;
-  modifiedBy?: string;
-  modifiedDateTime?: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
 /**
