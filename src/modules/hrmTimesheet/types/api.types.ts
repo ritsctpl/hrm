@@ -140,6 +140,8 @@ export interface TeamTimesheetSummaryResponse {
     colorCode: 'GREEN' | 'YELLOW' | 'RED' | 'GREY';
     status: string;
     timesheetHandle?: string;
+    leaveDay: boolean;
+    leaveType?: string;
   }[];
 }
 

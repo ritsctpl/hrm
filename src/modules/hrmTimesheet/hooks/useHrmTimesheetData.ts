@@ -212,6 +212,8 @@ export function useHrmTimesheetData() {
             colorCode: (d.colorCode ?? 'GREY') as TimesheetHeader['colorCode'],
             status: d.status,
             timesheetHandle: d.timesheetHandle,
+            leaveDay: !!d.leaveDay,
+            leaveType: d.leaveType,
           });
         });
       }

@@ -11,7 +11,8 @@ export type ManagerStatusFilter =
   | 'REJECTED'
   | 'BLOCKED'
   | 'ENABLED'
-  | 'APPROVED';
+  | 'APPROVED'
+  | 'ON_LEAVE';
 
 /** Reporting scope for the manager dashboard. `all` includes indirect (2nd-level) reports — backend-dependent. */
 export type ManagerScope = 'direct' | 'all';

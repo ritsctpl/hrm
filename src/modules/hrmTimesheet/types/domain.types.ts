@@ -65,6 +65,8 @@ export interface TeamTimesheetDay {
   colorCode: DayColorCode;
   status: string;
   timesheetHandle?: string;
+  leaveDay: boolean;
+  leaveType?: string;
 }
 
 export interface TeamTimesheetSummary {
