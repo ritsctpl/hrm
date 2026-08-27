@@ -45,7 +45,7 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
         </Typography.Title>
         <Row gutter={[12, 12]}>
           {policies.map((policy) => (
-            <Col key={policy.handle} xs={24} sm={12} md={8} lg={6} xl={4}>
+            <Col key={policy.handle} xs={24} sm={12} md={8} lg={8} xl={6}>
               <PolicyCard policy={policy} onClick={onPolicyClick} />
             </Col>
           ))}
@@ -79,7 +79,7 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
           </Typography.Title>
           <Row gutter={[12, 12]}>
             {categoryPolicies.map((policy) => (
-              <Col key={policy.handle} xs={24} sm={12} md={8} lg={6} xl={4}>
+              <Col key={policy.handle} xs={24} sm={12} md={8} lg={8} xl={6}>
                 <PolicyCard policy={policy} onClick={onPolicyClick} />
               </Col>
             ))}
@@ -93,7 +93,7 @@ const PolicyLibraryGrid: React.FC<PolicyLibraryGridProps> = ({
           </Typography.Title>
           <Row gutter={[12, 12]}>
             {uncategorized.map((policy) => (
-              <Col key={policy.handle} xs={24} sm={12} md={8} lg={6} xl={4}>
+              <Col key={policy.handle} xs={24} sm={12} md={8} lg={8} xl={6}>
                 <PolicyCard policy={policy} onClick={onPolicyClick} />
               </Col>
             ))}
