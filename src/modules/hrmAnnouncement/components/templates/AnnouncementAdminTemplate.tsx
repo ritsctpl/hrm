@@ -126,7 +126,10 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
       width: 200,
       render: (_, record) => (
         <Space size={4}>
-          <Can I="edit">
+          {/* Scoped to the record it edits, like Delete below. Unscoped this resolved
+              against the module root ("Module Access"), a different grant from the one
+              the Admin tab itself is gated on. */}
+          <Can I="edit" object="announcement_record">
             <Button
               size="small"
               icon={<EditOutlined />}
@@ -138,20 +141,25 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
           </Can>
           <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
           {record.status === "DRAFT" && (
-            // Publishing is an "add" — it creates the published announcement.
-            // No object named, so this resolves to Module Access, matching what
-            // the server now accepts. Gating it on "edit" was wrong in both
-            // models: edit rights are not publish rights.
-            <Can I="add">
+            // Publishing is an "add" — it creates the published announcement — and the
+            // grant it needs is `announcement_publish` ("Publish (General)"), because that
+            // is what the server checks: publish() requires PUBLISH_GENERAL to go straight
+            // from a draft. It is deliberately NOT announcement_record: edit rights are not
+            // publish rights, and neither is Module Access, which is where this resolved
+            // while it named no object. Same grant the composer's own Publish button reads
+            // through useAnnouncementPermissions().publishGeneral.
+            <Can I="add" object="announcement_publish">
               <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
                 <Button size="small" icon={<SendOutlined />} type="primary" />
               </Popconfirm>
             </Can>
           )}
           {record.status === "PUBLISHED" && (
-            <Can I="edit">
+            <Can I="edit" object="announcement_record">
               {/* Opens WithdrawConfirmModal — withdrawing needs a reason for the
-                  audit trail, which a Popconfirm can't collect. */}
+                  audit trail, which a Popconfirm can't collect. The server has no
+                  permission check on withdraw beyond the status, so this gate is
+                  usability: it puts the control with the people who own the record. */}
               <Button
                 size="small"
                 icon={<StopOutlined />}
@@ -164,7 +172,13 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
             // Only where the server would accept it — DELETABLE_STATUSES mirrors its set.
             // Delete is soft and audited, so a Popconfirm is proportionate; unlike Withdraw
             // it collects no reason, because nothing was published to explain away.
-            <Can I="delete">
+            //
+            // Scoped to `announcement_record`, the object this button actually deletes, and the
+            // same object the Admin tab itself is gated on. Left unscoped it resolved against
+            // the module root (`announcement_module`, "Module Access") instead, so an admin
+            // granted Announcements → Delete but not Module Access → Delete reached the tab and
+            // the Edit button yet never saw a Delete control at all.
+            <Can I="delete" object="announcement_record">
               <Popconfirm
                 title="Delete this announcement?"
                 description={`"${record.title}" will be removed from the list.`}
