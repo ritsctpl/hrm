@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Form, Input, Modal, Select } from 'antd';
 import { parseFingerprintList, useHrmWorkforceData } from '../../hooks/useHrmWorkforceData';
-import { useHrmWorkforceStore } from '../../stores/hrmWorkforceStore';
 import type { OfficeNetwork, OfficeNetworkSaveRequest } from '../../types/api.types';
 import styles from '../../styles/Workforce.module.css';
 
@@ -109,12 +108,13 @@ const OfficeNetworkFormModal: React.FC<Props> = ({ open, editing, onClose }) => 
       bssids,
       egressIps,
     };
-    await saveOfficeNetwork(payload);
+    const saved = await saveOfficeNetwork(payload);
     setSubmitting(false);
 
-    // The hook clears `store.error` on entry and only sets it on failure, so a null here is the
-    // save's success signal — the list is already reloaded and the success toast already shown.
-    if (useHrmWorkforceStore.getState().error) return;
+    // Close on the save's own outcome, not the shared error slot: a post-save list-reload
+    // failure stamps `store.error` but the record already landed, so keeping the modal open
+    // there would invite a duplicate re-submit.
+    if (!saved) return;
     onClose();
   };
 

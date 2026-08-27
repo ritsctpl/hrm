@@ -342,19 +342,25 @@ export function useHrmWorkforceData() {
    * rather than the pre-save state. `site`/`userId` are stamped here so callers pass only the form.
    */
   const saveOfficeNetwork = useCallback(
-    async (req: Omit<OfficeNetworkSaveRequest, 'site' | 'userId'>) => {
+    async (req: Omit<OfficeNetworkSaveRequest, 'site' | 'userId'>): Promise<boolean> => {
       const store = useHrmWorkforceStore.getState();
       store.setOfficeNetworksLoading(true);
       store.setError(null);
+      let saved = false;
       try {
         await HrmWorkforceService.saveOfficeNetwork({ ...req, site, userId });
+        saved = true;
         message.success('Office network saved');
+        // The reload is best-effort: if the list call fails it stamps the list error, but the
+        // save already landed — reporting that as a save failure would invite a duplicate
+        // re-submit, so success is gated on the save call alone (the returned boolean).
         await loadOfficeNetworks();
       } catch (error) {
-        fail(error, 'Failed to save the office network');
+        if (!saved) fail(error, 'Failed to save the office network');
       } finally {
         useHrmWorkforceStore.getState().setOfficeNetworksLoading(false);
       }
+      return saved;
     },
     [site, userId, fail, loadOfficeNetworks],
   );
