@@ -348,6 +348,22 @@ export class HrmAssetService {
     return res.data;
   }
 
+  /**
+   * The bytes of one attachment, fetched when someone actually opens it.
+   *
+   * Asset responses carry attachment metadata only — file name, type, size — because the
+   * content is the whole file and an asset holds several, which made "my assets" a
+   * multi-megabyte download to draw a list. This is the per-file read that replaces it.
+   * Returns a Blob, so preview and download can hand it straight to an object URL without
+   * a base64 round trip.
+   */
+  static async getAttachmentContent(attachmentId: string): Promise<Blob> {
+    const res = await api.get(`${this.BASE}/asset/attachment/${attachmentId}/content`, {
+      responseType: 'blob',
+    });
+    return res.data as Blob;
+  }
+
   static async deleteAttachment(
     organizationId: string,
     assetId: string,
