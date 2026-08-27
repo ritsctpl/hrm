@@ -1,8 +1,8 @@
 // src/modules/hrmWorkforce/types/ui.types.ts
 import type { Liveness } from './domain.types';
 
-/** The three top-level tabs. Which ones exist at all is decided by the access grants. */
-export type WorkforceTabKey = 'fleet' | 'attendance' | 'reports';
+/** The top-level tabs. Which ones exist at all is decided by the access grants. */
+export type WorkforceTabKey = 'fleet' | 'attendance' | 'reports' | 'networks';
 
 /** The Reports tab's inner segmented control. */
 export type ReportSectionKey = 'utilization' | 'health';
