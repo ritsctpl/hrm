@@ -45,6 +45,45 @@ export interface IssuesRequest extends WorkforceBaseRequest {
 }
 
 /**
+ * An office-network fingerprint: the set of network identities (gateway MACs, Wi-Fi BSSIDs and
+ * public egress IPs) that mark a device as being *at* a known location, so on-site activity can be
+ * told from off-site. Returned by `/workforce/office-networks/list` as the registry holds it, with
+ * the server-managed identity and audit fields joined in. The three fingerprint lists are always
+ * present as arrays — empty, never null — so the form can bind a textarea to each without a guard.
+ */
+export interface OfficeNetwork {
+  id: string;
+  site: string;
+  /** The location this fingerprint belongs to, when it is tied to one; null for a site-wide rule. */
+  locationId?: string;
+  locationType: string;
+  label: string;
+  gatewayMacs: string[];
+  bssids: string[];
+  egressIps: string[];
+  active?: number;
+  createdBy?: string;
+  createdDateTime?: string;
+  modifiedBy?: string;
+  modifiedDateTime?: string;
+}
+
+/**
+ * `/workforce/office-networks/save` — create when `id` is absent, update when it is present. The
+ * three fingerprint lists arrive from the form already split and de-duplicated (see
+ * `parseFingerprintList`); an empty list is a legitimate "this dimension is not fingerprinted".
+ */
+export interface OfficeNetworkSaveRequest extends WorkforceBaseRequest {
+  id?: string;
+  locationId?: string;
+  locationType: string;
+  label: string;
+  gatewayMacs: string[];
+  bssids: string[];
+  egressIps: string[];
+}
+
+/**
  * The MessageModel envelope as hrm-service puts it on the wire.
  *
  * ⚠ The service layer never sees this shape. `src/services/api.ts`'s response interceptor unwraps

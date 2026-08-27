@@ -29,7 +29,10 @@ import type {
   FleetHealthRequest,
   FleetListRequest,
   IssuesRequest,
+  OfficeNetwork,
+  OfficeNetworkSaveRequest,
   UtilizationRequest,
+  WorkforceBaseRequest,
 } from '../types/api.types';
 import type {
   AttendanceDaily,
@@ -55,6 +58,9 @@ export const WORKFORCE_ENDPOINTS = {
   utilization: '/hrm-service/workforce/reports/employee-utilization',
   fleetHealth: '/hrm-service/workforce/reports/fleet-health',
   issues: '/hrm-service/workforce/reports/issues',
+  officeNetworksList: '/hrm-service/workforce/office-networks/list',
+  officeNetworksSave: '/hrm-service/workforce/office-networks/save',
+  officeNetworksDeactivate: '/hrm-service/workforce/office-networks/deactivate',
 } as const;
 
 export class HrmWorkforceService {
@@ -122,5 +128,24 @@ export class HrmWorkforceService {
     const body: IssuesRequest = { site, status, userId };
     const res = await api.post<DeviceIssue[]>(WORKFORCE_ENDPOINTS.issues, body);
     return Array.isArray(res.data) ? res.data : [];
+  }
+
+  /** The office-network fingerprints enrolled at this site, active ones only. */
+  static async listOfficeNetworks(site: string, userId?: string): Promise<OfficeNetwork[]> {
+    const body: WorkforceBaseRequest = { site, userId };
+    const res = await api.post<OfficeNetwork[]>(WORKFORCE_ENDPOINTS.officeNetworksList, body);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  /** Creates (no `id`) or updates (`id` present) one fingerprint; returns the saved row. */
+  static async saveOfficeNetwork(req: OfficeNetworkSaveRequest): Promise<OfficeNetwork> {
+    const res = await api.post<OfficeNetwork>(WORKFORCE_ENDPOINTS.officeNetworksSave, req);
+    return res.data;
+  }
+
+  /** Soft-deletes one fingerprint by `id` (IMES never hard-deletes). */
+  static async deactivateOfficeNetwork(site: string, id: string, userId?: string): Promise<void> {
+    const body = { site, id, userId };
+    await api.post(WORKFORCE_ENDPOINTS.officeNetworksDeactivate, body);
   }
 }

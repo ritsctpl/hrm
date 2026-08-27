@@ -8,6 +8,7 @@ import type {
   EmployeeUtilizationView,
   FleetDeviceView,
 } from '../types/domain.types';
+import type { OfficeNetwork } from '../types/api.types';
 import type { AttendanceQuery, ReportQuery } from '../types/ui.types';
 
 /**
@@ -98,6 +99,10 @@ interface HrmWorkforceState {
   utilizationLoadedFor: string | null;
   fleetHealthLoadedFor: string | null;
 
+  // ── Office Networks tab ──────────────────────────────────────────────
+  officeNetworks: OfficeNetwork[];
+  officeNetworksLoading: boolean;
+
   /**
    * The last failure's message, kept so a tab can render an inline empty-state that says *why* it
    * is empty. The transient toast is raised by the hook; this is the durable copy — an operator who
@@ -120,6 +125,9 @@ interface HrmWorkforceState {
   setIssues: (issues: DeviceIssue[]) => void;
   setReportLoading: (v: boolean) => void;
 
+  setOfficeNetworks: (officeNetworks: OfficeNetwork[]) => void;
+  setOfficeNetworksLoading: (v: boolean) => void;
+
   setError: (error: string | null) => void;
 }
 
@@ -139,6 +147,9 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
 
   utilizationLoadedFor: null,
   fleetHealthLoadedFor: null,
+
+  officeNetworks: [],
+  officeNetworksLoading: false,
 
   error: null,
 
@@ -160,6 +171,9 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
   setFleetHealthLoadedFor: (fleetHealthLoadedFor) => set({ fleetHealthLoadedFor }),
   setIssues: (issues) => set({ issues }),
   setReportLoading: (reportLoading) => set({ reportLoading }),
+
+  setOfficeNetworks: (officeNetworks) => set({ officeNetworks }),
+  setOfficeNetworksLoading: (officeNetworksLoading) => set({ officeNetworksLoading }),
 
   setError: (error) => set({ error }),
 }));

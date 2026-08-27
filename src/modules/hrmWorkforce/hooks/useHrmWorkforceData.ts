@@ -8,7 +8,32 @@ import { extractBackendMsg } from '@/modules/hrmTimesheet/utils/backendMessage';
 import { HrmWorkforceService } from '../services/hrmWorkforceService';
 import { reportSignature, useHrmWorkforceStore } from '../stores/hrmWorkforceStore';
 import type { FinalizeResult, FleetDeviceView } from '../types/domain.types';
+import type { OfficeNetworkSaveRequest } from '../types/api.types';
 import type { AttendanceQuery, FleetFilter, ReportQuery } from '../types/ui.types';
+
+/**
+ * Turns a textarea of fingerprints into the de-duplicated array the save request carries — pure,
+ * exported and unit-tested in `tests/unit/workforce-fingerprint.spec.ts`.
+ *
+ * The Office Networks form lets an admin paste gateway MACs, BSSIDs or egress IPs however they have
+ * them to hand — comma-separated from a spreadsheet cell, one-per-line from a config dump, or a
+ * mix — and each of the three textareas becomes one `string[]` on the wire. Splitting on commas and
+ * newlines, trimming, and dropping blanks turns any of those shapes into the same list; a trailing
+ * newline or a doubled separator therefore adds no empty entry. De-duplication is first-seen order
+ * so the list a person reads back matches the order they typed, and a value pasted twice (the same
+ * MAC copied from two rows) collapses to one rather than being saved as a phantom second device.
+ */
+export function parseFingerprintList(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of (text ?? '').split(/[\n,]/)) {
+    const value = raw.trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
 
 /**
  * The Fleet tab's client-side filter — pure, exported, and unit-tested in
@@ -295,5 +320,73 @@ export function useHrmWorkforceData() {
     }
   }, [site, userId, fail]);
 
-  return { refreshFleet, loadAttendance, finalize, loadUtilization, loadHealth, loadIssues };
+  // ── Office Networks ─────────────────────────────────────────────────
+
+  /** The site's active office-network fingerprints. Clears the slot on failure, like the others. */
+  const loadOfficeNetworks = useCallback(async () => {
+    const store = useHrmWorkforceStore.getState();
+    store.setOfficeNetworksLoading(true);
+    store.setError(null);
+    try {
+      store.setOfficeNetworks(await HrmWorkforceService.listOfficeNetworks(site, userId));
+    } catch (error) {
+      fail(error, 'Failed to load office networks');
+      useHrmWorkforceStore.getState().setOfficeNetworks([]);
+    } finally {
+      useHrmWorkforceStore.getState().setOfficeNetworksLoading(false);
+    }
+  }, [site, userId, fail]);
+
+  /**
+   * Creates or updates one fingerprint, then reloads the list so the table shows the saved row
+   * rather than the pre-save state. `site`/`userId` are stamped here so callers pass only the form.
+   */
+  const saveOfficeNetwork = useCallback(
+    async (req: OfficeNetworkSaveRequest) => {
+      const store = useHrmWorkforceStore.getState();
+      store.setOfficeNetworksLoading(true);
+      store.setError(null);
+      try {
+        await HrmWorkforceService.saveOfficeNetwork({ ...req, site, userId });
+        message.success('Office network saved');
+        await loadOfficeNetworks();
+      } catch (error) {
+        fail(error, 'Failed to save the office network');
+      } finally {
+        useHrmWorkforceStore.getState().setOfficeNetworksLoading(false);
+      }
+    },
+    [site, userId, fail, loadOfficeNetworks],
+  );
+
+  /** Soft-deletes one fingerprint by id, then reloads the list. */
+  const deactivateOfficeNetwork = useCallback(
+    async (id: string) => {
+      const store = useHrmWorkforceStore.getState();
+      store.setOfficeNetworksLoading(true);
+      store.setError(null);
+      try {
+        await HrmWorkforceService.deactivateOfficeNetwork(site, id, userId);
+        message.success('Office network deactivated');
+        await loadOfficeNetworks();
+      } catch (error) {
+        fail(error, 'Failed to deactivate the office network');
+      } finally {
+        useHrmWorkforceStore.getState().setOfficeNetworksLoading(false);
+      }
+    },
+    [site, userId, fail, loadOfficeNetworks],
+  );
+
+  return {
+    refreshFleet,
+    loadAttendance,
+    finalize,
+    loadUtilization,
+    loadHealth,
+    loadIssues,
+    loadOfficeNetworks,
+    saveOfficeNetwork,
+    deactivateOfficeNetwork,
+  };
 }
