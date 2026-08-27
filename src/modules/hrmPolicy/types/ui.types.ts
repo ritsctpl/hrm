@@ -45,6 +45,8 @@ export interface PolicyAdminTableProps {
   policies: PolicyDocument[];
   loading: boolean;
   onEdit: (policy: PolicyDocument) => void;
+  /** Row whose full record is being fetched before the editor opens. */
+  openingEditHandle?: string | null;
   onPublish: (policyId: string) => void;
   onArchive: (policyId: string) => void;
   onDelete: (policyId: string) => void;
