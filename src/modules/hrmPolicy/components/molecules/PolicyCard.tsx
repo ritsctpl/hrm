@@ -26,22 +26,17 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onClick }) => {
           <Text style={{ fontSize: 11, color: '#bfbfbf' }}>v{policy.currentVersion}</Text>
         </div>
 
-        {/* The name is what the card is for, so it gets the spare room and the
-            description yields. Two rows still cannot hold every policy name — a real
-            one runs to five — so the full text stays reachable on hover rather than
-            being lost to the clamp. */}
-        <Title
-          level={5}
-          className={styles.policyCardTitle}
-          ellipsis={{ rows: 3, tooltip: policy.title }}
-        >
+        {/* Not clamped. The card grows to fit the name instead of the name being cut to
+            fit the card, so there is no truncation to recover from and no tooltip to
+            need. */}
+        <Title level={5} className={styles.policyCardTitle}>
           {policy.title}
         </Title>
 
         {policy.description && (
           <Text
             type="secondary"
-            style={{ fontSize: 12, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            style={{ fontSize: 12, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {policy.description}
           </Text>
