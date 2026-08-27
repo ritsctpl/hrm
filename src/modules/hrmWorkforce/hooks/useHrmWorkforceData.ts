@@ -342,7 +342,7 @@ export function useHrmWorkforceData() {
    * rather than the pre-save state. `site`/`userId` are stamped here so callers pass only the form.
    */
   const saveOfficeNetwork = useCallback(
-    async (req: OfficeNetworkSaveRequest) => {
+    async (req: Omit<OfficeNetworkSaveRequest, 'site' | 'userId'>) => {
       const store = useHrmWorkforceStore.getState();
       store.setOfficeNetworksLoading(true);
       store.setError(null);

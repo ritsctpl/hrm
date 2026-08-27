@@ -97,9 +97,9 @@ const OfficeNetworkFormModal: React.FC<Props> = ({ open, editing, onClose }) => 
 
     setSubmitting(true);
     // `site`/`userId` are stamped inside the hook (see `saveOfficeNetwork`), so the form supplies
-    // only these fields. `OfficeNetworkSaveRequest` still declares `site` as required, so the
-    // payload is built against the `Omit` and cast at the boundary — the hook overwrites `site`
-    // regardless of what is passed.
+    // only these fields; the hook stamps `site`/`userId` itself and its parameter type is the
+    // matching `Omit`, so no cast is needed and a future required field would surface as a real
+    // compile error here.
     const payload: Omit<OfficeNetworkSaveRequest, 'site' | 'userId'> = {
       id: editing?.id,
       locationId: values.locationId?.trim() || undefined,
@@ -109,7 +109,7 @@ const OfficeNetworkFormModal: React.FC<Props> = ({ open, editing, onClose }) => 
       bssids,
       egressIps,
     };
-    await saveOfficeNetwork(payload as OfficeNetworkSaveRequest);
+    await saveOfficeNetwork(payload);
     setSubmitting(false);
 
     // The hook clears `store.error` on entry and only sets it on failure, so a null here is the
