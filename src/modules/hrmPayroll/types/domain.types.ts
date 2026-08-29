@@ -148,3 +148,40 @@ export interface StatutoryConfig {
   createdBy: string;
   modifiedBy?: string;
 }
+
+/** One parsed row of a history CSV, with the verdict on it. be-spec §11. */
+export interface PayrollHistoryRow {
+  rowNumber: number;
+  employeeCode: string | null;
+  employeeName: string | null;
+  payrollYear: number | null;
+  payrollMonth: number | null;
+  payPeriodLabel: string | null;
+  payableDays: number | null;
+  lopDays: number | null;
+  grossEarnings: number | null;
+  grossDeductions: number | null;
+  netPay: number | null;
+  status: 'OK' | 'WARN' | 'ERROR';
+  message: string | null;
+}
+
+export interface PayrollHistoryPreview {
+  uploadRef: string;
+  totalRows: number;
+  okCount: number;
+  warnCount: number;
+  errorCount: number;
+  periods: string[] | null;
+  rows: PayrollHistoryRow[] | null;
+  /** Always true on a preview — the screen says it out loud. */
+  nothingWritten: boolean;
+}
+
+export interface PayrollHistoryCommitResult {
+  runsCreated: number;
+  payslipsCreated: number;
+  rowsSkipped: number;
+  periods: string[] | null;
+  messages: string[] | null;
+}
