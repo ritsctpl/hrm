@@ -8,6 +8,7 @@ import { useHrmPayslipStore } from "../../stores/payslipStore";
 import MonthNavigator from "../molecules/MonthNavigator";
 import PayslipRenderer from "./PayslipRenderer";
 import { payslipPeriod } from "../../utils/payslipFormat";
+import { payslipPasswordHint } from "../../utils/payslipPdf";
 
 /**
  * The employee's own payslips. fe-spec §1.
@@ -98,9 +99,11 @@ const EmployeePayslipView: React.FC = () => {
           >
             Download PDF
           </Button>
-          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
-            Opens with your PAN&apos;s first 4 letters followed by your date of birth (ddmm).
-          </Typography.Paragraph>
+          {snapshot && payslipPasswordHint(snapshot) && (
+            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+              {payslipPasswordHint(snapshot)}
+            </Typography.Paragraph>
+          )}
         </Card>
       </div>
 
