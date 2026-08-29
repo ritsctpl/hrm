@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect } from 'react';
-import {
+import { Alert,
   Form,
   Input,
   Select,
@@ -158,13 +158,32 @@ const PayComponentForm: React.FC = () => {
           </div>
         )}
 
+        {calcMethod === 'PERCENT_OF_CTC' && (
+          <Form.Item
+            name="percentage"
+            label="Percentage (%)"
+            extra="Taken from the employee's annual CTC, not from another component."
+          >
+            <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="40" />
+          </Form.Item>
+        )}
+
+        {calcMethod === 'BALANCE' && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="This component absorbs whatever is left of the CTC after all other components. Only one Balance component is allowed per structure, and it cannot have a cap or a minimum."
+          />
+        )}
+
         {calcMethod === 'FORMULA' && (
           <Form.Item name="formula" label="Formula">
             <FormulaEditor value={form.getFieldValue('formula') ?? ''} onChange={(v) => form.setFieldValue('formula', v)} />
           </Form.Item>
         )}
 
-        <div className={formStyles.formRow}>
+        <div className={formStyles.formRow} style={{ display: calcMethod === 'BALANCE' ? 'none' : undefined }}>
           <Form.Item name="cap" label="Cap Amount">
             <InputNumber min={0} style={{ width: '100%' }} placeholder="(optional)" />
           </Form.Item>

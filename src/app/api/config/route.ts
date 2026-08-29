@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 
+// Inside a session preview the platform sets BE_PREVIEW_ORIGIN. Serving a *relative*
+// API base then routes every call through the rewrite in next.config.mjs, which reaches
+// this worktree's own backend — same-origin, so no CORS, and multipart bodies survive.
+const sessionApiBase = process.env.BE_PREVIEW_ORIGIN ? '/hrm/session-api' : undefined;
+
 export async function GET() {
   return NextResponse.json({
     NEXT_PUBLIC_HOST: process.env.NEXT_PUBLIC_HOST || "192.168.147.129",
@@ -10,8 +15,8 @@ export async function GET() {
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || "rmfg-init-client",
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL || "http://192.168.147.129:8181",
     NEXT_PUBLIC_REDIRECT_URI: process.env.NEXT_PUBLIC_REDIRECT_URI || "http://192.168.147.129:8687/hrm",
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.147.129:8080/app/v1",
-    NEXT_PUBLIC_ENCRYPTION_KEY: process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "fcde2b2e9076d5276fb63525ec1ae7ad5276fb63525ec1ae7ad5276fb63525ec",
+    NEXT_PUBLIC_API_BASE_URL:
+      sessionApiBase || process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.147.129:8080/app/v1",
   });
 }
 

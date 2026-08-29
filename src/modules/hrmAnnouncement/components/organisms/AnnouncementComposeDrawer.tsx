@@ -108,6 +108,11 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         content: editAnnouncement.content,
         priority: p,
         category: editAnnouncement.category,
+        // Every field the editor offers is restored here, including this one.
+        // The drawer is not destroyed on close and the edit branch does not
+        // reset, so a field left out of this call does not merely show blank —
+        // it shows whatever the previous compose session left in the form.
+        acknowledgmentRequired: editAnnouncement.acknowledgmentRequired ?? false,
         pinToTop: editAnnouncement.pinToTop,
         // The picker works in local time; the server's value is zoneless UTC.
         // Saving sends `.toISOString()` back, so the round trip stays honest.

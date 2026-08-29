@@ -888,15 +888,16 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   const negativeWarning = goesNegative && !exceedsBalance;
 
   // ── Backdated handling (item 16) ───────────────────────────────────
-  // Past-dated leave is allowed, but non-HR users may only backdate up to 30
-  // days from today; earlier dates must be routed through HR.
+  // Past-dated leave is allowed. Non-HR users may freely backdate anywhere
+  // within the current calendar month, plus the last 10 days of the
+  // previous month; earlier dates must be routed through HR.
   const isBackdated =
     !!leaveFormState.startDate &&
     dayjs(leaveFormState.startDate).isBefore(dayjs(), "day");
   const daysBackdated = isBackdated
     ? dayjs().diff(dayjs(leaveFormState.startDate), "day")
     : 0;
-  const earliestAllowed = dayjs().subtract(30, "day");
+  const earliestAllowed = dayjs().startOf("month").subtract(10, "day");
   const tooOld =
     !!leaveFormState.startDate &&
     dayjs(leaveFormState.startDate).isBefore(earliestAllowed, "day");
@@ -920,7 +921,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     !exceedsBalance &&
     !hasBlockingDuplicate &&
     requestPerms.canAdd &&
-    // Block non-HR users from backdating more than 30 days in the past
+    // Block non-HR users from backdating before the allowed window
+    // (current month + last 10 days of the previous month)
     !backdatedBlocked &&
     // Block non-HR users from submitting during a blackout period
     !(overlappingBlackout && !isHrUser) &&
@@ -1190,7 +1192,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                     // : hasBlockingDuplicate
                     //   ? "Duplicate Request Exists"
                       : backdatedBlocked
-                        ? "Older Than 30 Days"
+                        ? "Backdated Beyond Allowed Window"
                         : overlappingBlackout && !isHrUser
                           ? "Blackout Period"
                           : "Submit Request"}
@@ -1305,16 +1307,18 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
             />
 
             {/* Backdated leave warnings (item 16).
-                Non-HR users may backdate up to 30 days; earlier dates are
-                blocked and must be routed through HR. HR users get an override
-                notice but can still submit. Requests within the window submit
-                normally and any HR-approval routing happens in the backend. */}
+                Non-HR users may backdate anywhere within the current month
+                plus the last 10 days of the previous month; earlier dates
+                are blocked and must be routed through HR. HR users get an
+                override notice but can still submit. Requests within the
+                window submit normally and any HR-approval routing happens
+                in the backend. */}
             {tooOld && !isHrUser && (
               <Alert
                 type="error"
                 showIcon
                 message="Backdated Request Not Allowed"
-                description="Backdated leave is only allowed up to 30 days in the past. Please contact HR for earlier dates."
+                description="Backdated leave is only allowed within the current month or the last 10 days of the previous month. Please contact HR for earlier dates."
                 style={{ marginTop: 8 }}
               />
             )}
@@ -1324,7 +1328,7 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
                 type="warning"
                 showIcon
                 message="Backdated Leave Request (HR Override)"
-                description={`This request is ${daysBackdated} day(s) in the past, more than 30 days back. Submitting as HR.`}
+                description={`This request is ${daysBackdated} day(s) in the past, beyond the current month and last 10 days of the previous month. Submitting as HR.`}
                 style={{ marginTop: 8 }}
               />
             )}

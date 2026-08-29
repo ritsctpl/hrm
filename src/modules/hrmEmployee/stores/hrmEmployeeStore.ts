@@ -28,6 +28,11 @@ interface DirectoryState {
   /** Appending the next page in card view — distinct from a fresh load, which
       blanks the grid. */
   isLoadingMore: boolean;
+  /** The server has stopped handing back new rows, so there is no page after the
+      ones already loaded. Needed because totalCount alone cannot say so: a count
+      that outruns what the server actually serves would otherwise keep the scroll
+      sentinel asking forever, walking currentPage past the end of the results. */
+  endReached: boolean;
   viewMode: DirectoryViewMode;
   searchKeyword: string;
   departmentFilter: string | null;
@@ -59,6 +64,8 @@ export interface HrmEmployeeState {
 
   // Directory actions
   fetchDirectory: (options?: { append?: boolean }) => Promise<void>;
+  /** The Refresh button: reload the directory from the top. */
+  refreshDirectory: () => Promise<void>;
   /** Card view: pull the next page and add it to what is already on screen. */
   loadMoreEmployees: () => Promise<void>;
   setViewMode: (mode: DirectoryViewMode) => void;
@@ -98,6 +105,7 @@ const initialDirectory: DirectoryState = {
   pageSize: DEFAULT_PAGE_SIZE,
   isLoading: false,
   isLoadingMore: false,
+  endReached: false,
   viewMode: 'card',
   searchKeyword: '',
   departmentFilter: null,
@@ -153,13 +161,6 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
       const { searchKeyword, departmentFilter, statusFilter, buFilter, currentPage, pageSize } =
         get().directory;
 
-      // [DEBUG-ORG-ID] Trace the cookie value being sent to the directory
-      // endpoint. Remove once the "why RITS" investigation is closed.
-      console.log('[DEBUG-ORG-ID] fetchDirectory using organizationId from cookie', {
-        organizationId,
-        cookieRaw: typeof document !== 'undefined' ? document.cookie : '(no document)',
-      });
-
       // Always use the paginated directory endpoint so keyword and the
       // dropdown filters (department / status / BU) apply together. The
       // previous short-circuit to searchByKeyword silently dropped every
@@ -174,14 +175,6 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
         size: pageSize,        // Backend expects 'size' not 'pageSize'
       });
 
-      // [DEBUG-ORG-ID] Show what came back so you can correlate with the
-      // organizationId sent above.
-      console.log('[DEBUG-ORG-ID] fetchDirectory response', {
-        organizationIdSent: organizationId,
-        totalCount: response.totalCount,
-        returned: response.employees?.length ?? 0,
-      });
-
       const employees = (response.employees || []).map(mapDirectoryRowToSummary);
       const existing = append ? get().directory.employees : [];
       // Dedupe on handle: a record added or reordered server-side between two
@@ -194,6 +187,9 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
           ...get().directory,
           employees: merged,
           totalCount: response.totalCount ?? merged.length,
+          // An append that adds nothing is the end of the results, whatever
+          // totalCount claims. A fresh load starts the question over.
+          endReached: append ? merged.length === existing.length : false,
           isLoading: false,
           isLoadingMore: false,
         },
@@ -205,15 +201,34 @@ export const useHrmEmployeeStore = create<HrmEmployeeState>((set, get) => ({
     }
   },
 
+  /**
+   * The Refresh button. Always reloads from page one: the tile view walks
+   * currentPage forward as you scroll, and a refresh that kept that number
+   * would replace the whole grid with one mid-list slice — or, once the count
+   * had run past the last page, with nothing at all.
+   */
+  refreshDirectory: async () => {
+    set({ directory: { ...get().directory, currentPage: 1, endReached: false } });
+    await get().fetchDirectory();
+  },
+
   loadMoreEmployees: async () => {
     const d = get().directory;
     if (d.isLoading || d.isLoadingMore) return;
     // Nothing further to ask for. totalCount is the server's count, so this
     // also stops a short final page from triggering an endless fetch loop.
     if (d.totalCount > 0 && d.employees.length >= d.totalCount) return;
+    // ...and this stops the same loop when the count and what the server will
+    // actually serve disagree, which totalCount alone cannot detect.
+    if (d.endReached) return;
 
     set({ directory: { ...d, currentPage: d.currentPage + 1 } });
     await get().fetchDirectory({ append: true });
+    // The page we just asked for brought nothing back, so give it up rather
+    // than leaving currentPage pointing past the end of the results.
+    if (get().directory.endReached) {
+      set({ directory: { ...get().directory, currentPage: d.currentPage } });
+    }
   },
 
   setViewMode: (mode) => {

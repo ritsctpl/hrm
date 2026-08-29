@@ -407,6 +407,11 @@
   font-weight: 600;
 }
 
+.mgrStatusOnLeave {
+  color: #d46b08;
+  font-weight: 600;
+}
+
 .mgrCardActions {
   display: flex;
   gap: 8px;

@@ -26,7 +26,10 @@ const PolicyCard: React.FC<PolicyCardProps> = ({ policy, onClick }) => {
           <Text style={{ fontSize: 11, color: '#bfbfbf' }}>v{policy.currentVersion}</Text>
         </div>
 
-        <Title level={5} className={styles.policyCardTitle} ellipsis={{ rows: 2 }}>
+        {/* Not clamped. The card grows to fit the name instead of the name being cut to
+            fit the card, so there is no truncation to recover from and no tooltip to
+            need. */}
+        <Title level={5} className={styles.policyCardTitle}>
           {policy.title}
         </Title>
 

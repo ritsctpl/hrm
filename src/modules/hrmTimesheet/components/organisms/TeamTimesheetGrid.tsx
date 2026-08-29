@@ -71,6 +71,15 @@ export default function TeamTimesheetGrid() {
                       </td>
                     );
                   }
+                  if (day.leaveDay) {
+                    return (
+                      <td key={date} className={styles.dayCell}>
+                        <span className={styles.leaveCell}>
+                          Leave{day.leaveType ? `: ${day.leaveType}` : ''}
+                        </span>
+                      </td>
+                    );
+                  }
                   return (
                     <td key={date} className={styles.dayCell}>
                       <div

@@ -11,6 +11,7 @@ interface PayrollTabLayoutProps {
   wizardContent: React.ReactNode;
   reviewContent: React.ReactNode;
   taxConfigContent: React.ReactNode;
+  importContent: React.ReactNode;
 }
 
 const TAB_ITEMS = [
@@ -18,6 +19,7 @@ const TAB_ITEMS = [
   { key: 'run', label: 'Run Payroll' },
   { key: 'review', label: 'Review' },
   { key: 'taxconfig', label: 'Tax Config' },
+  { key: 'import', label: 'Import History' },
 ] as const;
 
 const PayrollTabLayout: React.FC<PayrollTabLayoutProps> = ({
@@ -27,12 +29,14 @@ const PayrollTabLayout: React.FC<PayrollTabLayoutProps> = ({
   wizardContent,
   reviewContent,
   taxConfigContent,
+  importContent,
 }) => {
   const items = [
     { key: 'dashboard', label: 'Dashboard', children: dashboardContent },
     { key: 'run', label: 'Run Payroll', children: wizardContent },
     { key: 'review', label: 'Review', children: reviewContent },
     { key: 'taxconfig', label: 'Tax Config', children: taxConfigContent },
+    { key: 'import', label: 'Import History', children: importContent },
   ];
 
   return (

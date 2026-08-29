@@ -24,6 +24,7 @@ export function useEmployeeDirectory() {
   const {
     directory,
     fetchDirectory,
+    refreshDirectory,
     loadMoreEmployees,
     setViewMode,
     setSearchKeyword,
@@ -75,14 +76,14 @@ export function useEmployeeDirectory() {
     ...directory,
     // Card view pages by scrolling rather than by page numbers, so it needs to
     // know whether anything is left to fetch.
-    hasMore: directory.employees.length < directory.totalCount,
+    hasMore: !directory.endReached && directory.employees.length < directory.totalCount,
     loadMore: loadMoreEmployees,
     setViewMode,
     setPage,
     handleSearch,
     handleFilterChange,
     openOnboarding,
-    refresh: fetchDirectory,
+    refresh: refreshDirectory,
   };
 }
 

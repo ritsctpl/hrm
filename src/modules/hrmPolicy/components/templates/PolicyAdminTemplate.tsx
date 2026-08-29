@@ -25,6 +25,8 @@ interface PolicyAdminTemplateProps {
   filterDocType?: string;
   filterStatus?: string;
   onEdit: (policy: PolicyDocument) => void;
+  /** Row whose full record is being fetched before the editor opens. */
+  openingEditHandle?: string | null;
   onPublish: (policyId: string) => void;
   onArchive: (policyId: string) => void;
   onDelete: (policyId: string) => void;
@@ -53,6 +55,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
   filterDocType = "",
   filterStatus = "",
   onEdit,
+  openingEditHandle,
   onPublish,
   onArchive,
   onDelete,
@@ -173,6 +176,7 @@ const PolicyAdminTemplate: React.FC<PolicyAdminTemplateProps> = ({
       policies={filteredPolicies}
       loading={loading}
       onEdit={onEdit}
+      openingEditHandle={openingEditHandle}
       onPublish={onPublish}
       onArchive={onArchive}
       onDelete={onDelete}

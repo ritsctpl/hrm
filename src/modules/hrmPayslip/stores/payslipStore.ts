@@ -5,6 +5,9 @@ import { parseCookies } from "nookies";
 import { message } from "antd";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
+import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
+import { payslipFileName } from "../utils/payslipFormat";
+import type { PayslipSnapshot } from "../types/domain.types";
 import type {
   PayslipListItem,
   PayslipTemplate,
@@ -45,6 +48,11 @@ interface PayslipState {
 
   myPayslipYear: number;
   myPayslipMonth: number;
+  snapshot: PayslipSnapshot | null;
+  snapshotLoading: boolean;
+  snapshotError: string | null;
+  pdfGenerating: boolean;
+  bulkProgress: { done: number; total: number } | null;
   myPayslipList: PayslipListItem[];
   myPayslipRenderData: PayslipRenderData | null;
   myPayslipLoading: boolean;
@@ -54,6 +62,7 @@ interface PayslipState {
   loadMyPayslips: () => Promise<void>;
   loadMyPayslipData: (year: number, month: number) => Promise<void>;
   downloadMyPayslip: (year: number, month: number) => Promise<void>;
+  loadMySnapshot: (year: number, month: number) => Promise<void>;
 
   repositoryYear: number | null;
   repositoryMonth: number | null;
@@ -87,10 +96,24 @@ interface PayslipState {
 }
 
 const getUser = () => parseCookies().user ?? "";
-const getEmployeeId = () => parseCookies().employeeId ?? "";
+/**
+ * The signed-in employee.
+ *
+ * This read `employeeId`, a cookie the app never sets — it sets `employeeCode` (7 other call sites
+ * use that name). Every payslip request therefore went out with an empty employee id, and the
+ * screen could not have worked for anyone. Falls back to the old name so nothing regresses if some
+ * deployment does set it.
+ */
+const getEmployeeId = () => {
+  const cookies = parseCookies();
+  return cookies.employeeCode ?? cookies.employeeId ?? "";
+};
 
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth() + 1;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   activeTab: "myPayslips",
@@ -179,9 +202,8 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
 
   downloadOne: async (employeeId, payrollYear, payrollMonth) => {
     try {
-      // Note: downloadPayslipByHr uses handle-based lookup per API.
-      // If only employeeId is available, use downloadMyPayslip instead.
-      const blob = await HrmPayslipService.downloadMyPayslip({
+      // The server returns the frozen snapshot; the PDF is built here. be-spec §12.
+      const snapshot = await HrmPayslipService.downloadMyPayslip({
         organizationId: getOrganizationId(),
         employeeId,
         payrollYear,
@@ -189,37 +211,60 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
         requestedBy: getUser(),
         accessType: "DOWNLOAD",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `payslip_${employeeId}_${payrollYear}_${String(payrollMonth).padStart(2, "0")}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
     } catch {
       message.error("Failed to download payslip");
     }
   },
 
+  /**
+   * HR bulk download. The server has no archive to send — it returns the snapshots and the browser
+   * renders each PDF and zips them. be-spec §15.2.
+   */
   downloadAllZip: async () => {
     const { generationYear, generationMonth, generationRunId } = get();
+    set({ bulkProgress: { done: 0, total: 0 } });
     try {
-      const blob = await HrmPayslipService.downloadAllPayslipsZip({
+      const snapshots = await HrmPayslipService.fetchRunSnapshots({
         organizationId: getOrganizationId(),
         payrollRunId: generationRunId ?? "",
       });
-      const url = URL.createObjectURL(blob);
+      if (snapshots.length === 0) {
+        message.info("No payslips to download for this run");
+        set({ bulkProgress: null });
+        return;
+      }
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+      for (let i = 0; i < snapshots.length; i += 1) {
+        const snap = snapshots[i];
+        // eslint-disable-next-line no-await-in-loop
+        const blob = await payslipPdfBlob(snap, buildPayslipPassword(snap));
+        zip.file(payslipFileName(snap.employeeId, snap.payrollYear, snap.payrollMonth), blob);
+        set({ bulkProgress: { done: i + 1, total: snapshots.length } });
+      }
+      const archive = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(archive);
       const a = document.createElement("a");
       a.href = url;
       a.download = `payslips_${generationYear}_${String(generationMonth).padStart(2, "0")}.zip`;
       a.click();
       URL.revokeObjectURL(url);
+      message.success(`${snapshots.length} payslips downloaded`);
     } catch {
       message.error("Failed to download ZIP");
+    } finally {
+      set({ bulkProgress: null });
     }
   },
 
   myPayslipYear: currentYear,
   myPayslipMonth: currentMonth,
+  snapshot: null,
+  snapshotLoading: false,
+  snapshotError: null,
+  pdfGenerating: false,
+  bulkProgress: null,
   myPayslipList: [],
   myPayslipRenderData: null,
   myPayslipLoading: false,
@@ -242,25 +287,55 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     set({ myPayslipLoading: false, myPayslipRenderData: null });
   },
 
-  downloadMyPayslip: async (year, month) => {
+  /** Loads the frozen snapshot for a month and renders the preview from it. */
+  loadMySnapshot: async (year, month) => {
+    set({ snapshotLoading: true, snapshotError: null });
     try {
-      const blob = await HrmPayslipService.downloadMyPayslip({
+      const snapshot = await HrmPayslipService.downloadMyPayslip({
         organizationId: getOrganizationId(),
         employeeId: getEmployeeId(),
         payrollYear: year,
         payrollMonth: month,
         requestedBy: getUser(),
         ipAddress: "",
-        accessType: "DOWNLOAD",
+        accessType: "VIEW",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `my_payslip_${year}_${String(month).padStart(2, "0")}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      set({ snapshot, snapshotLoading: false });
+    } catch {
+      set({
+        snapshot: null,
+        snapshotLoading: false,
+        snapshotError: `We couldn't load your payslip for ${MONTHS[month - 1]}-${year}. `
+          + "Try again, or contact HR if this continues.",
+      });
+    }
+  },
+
+  downloadMyPayslip: async (year, month) => {
+    set({ pdfGenerating: true });
+    try {
+      // Render from the snapshot already on screen when we have it, so the file and the preview
+      // are provably the same data. Only fetch when the user downloads without viewing.
+      const existing = get().snapshot;
+      const snapshot = existing && existing.payrollYear === year && existing.payrollMonth === month
+        ? existing
+        : await HrmPayslipService.downloadMyPayslip({
+            organizationId: getOrganizationId(),
+            employeeId: getEmployeeId(),
+            payrollYear: year,
+            payrollMonth: month,
+            requestedBy: getUser(),
+            ipAddress: "",
+            accessType: "DOWNLOAD",
+          });
+      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
+      message.success(buildPayslipPassword(snapshot)
+        ? "Payslip downloaded. Open it with the password shown on screen."
+        : "Payslip downloaded.");
     } catch {
       message.error("Failed to download payslip");
+    } finally {
+      set({ pdfGenerating: false });
     }
   },
 

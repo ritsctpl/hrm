@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
+  Alert,
+  InputNumber,
   Select,
   DatePicker,
   Input,
@@ -16,7 +18,7 @@ import {
 import dayjs from 'dayjs';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import { HrmCompensationService } from '../../services/compensationService';
-import type { CompensationComponent, EmployeeCompensationResponse } from '../../types/domain.types';
+import type { CompensationComponent, CtcReconciliation, EmployeeCompensationResponse } from '../../types/domain.types';
 import type { EmployeeCompensationRequest } from '../../types/api.types';
 import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
@@ -45,6 +47,9 @@ const EmployeeCompensationForm: React.FC = () => {
   } = useHrmCompensationStore();
 
   const [structureCode, setStructureCode] = useState<string>('');
+  const [annualCTC, setAnnualCTC] = useState<number | null>(null);
+  const [roundingAdjustment, setRoundingAdjustment] = useState<number>(0);
+  const [reconciliation, setReconciliation] = useState<CtcReconciliation | null>(null);
   const [effectiveFrom, setEffectiveFrom] = useState<string>('');
   const [remarks, setRemarks] = useState<string>('');
   const [earningComponents, setEarningComponents] = useState<CompensationComponent[]>([]);
@@ -111,6 +116,8 @@ const EmployeeCompensationForm: React.FC = () => {
       employeeId: selectedEmployeeId ?? '',
       effectiveFrom,
       structureCode,
+      annualCTC,
+      roundingAdjustment,
       components: earningComponents.map((c) => ({
         componentCode: c.componentCode,
         calculationMethod: c.calculationMethod,
@@ -121,7 +128,25 @@ const EmployeeCompensationForm: React.FC = () => {
       remarks,
       createdBy: cookies.rl_user_id ?? '',
     };
-  }, [selectedEmployeeId, effectiveFrom, structureCode, earningComponents, remarks]);
+  }, [selectedEmployeeId, effectiveFrom, structureCode, annualCTC, roundingAdjustment,
+      earningComponents, remarks]);
+
+  /**
+   * The screen's centrepiece: does the split add back to the CTC? Debounced because it fires on
+   * every keystroke in the CTC field. Runs on ANNUAL values server-side — never monthly x 12.
+   */
+  useEffect(() => {
+    if (!annualCTC || earningComponents.length === 0) {
+      setReconciliation(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      HrmCompensationService.validateCtcReconciliation(buildRequest())
+        .then(setReconciliation)
+        .catch(() => setReconciliation(null));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [annualCTC, roundingAdjustment, structureCode, earningComponents, buildRequest]);
 
   const handlePreview = useCallback(async () => {
     await runPreview(buildRequest());
@@ -237,6 +262,33 @@ const EmployeeCompensationForm: React.FC = () => {
               style={{ width: '100%' }}
             />
           </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>
+              Annual CTC <span style={{ color: '#ff4d4f' }}>*</span>
+            </div>
+            <InputNumber
+              value={annualCTC ?? undefined}
+              onChange={(v) => setAnnualCTC(typeof v === 'number' ? v : null)}
+              style={{ width: '100%' }}
+              min={0}
+              placeholder="3100000"
+              formatter={(v) => (v ? Number(v).toLocaleString('en-IN') : '')}
+              parser={(v) => Number((v ?? '').replace(/,/g, ''))}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Rounding adjustment</div>
+            <InputNumber
+              value={roundingAdjustment}
+              onChange={(v) => setRoundingAdjustment(typeof v === 'number' ? v : 0)}
+              style={{ width: '100%' }}
+              min={-9}
+              max={9}
+            />
+            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+              Adjusts the balancing component only. Not shown on the payslip.
+            </div>
+          </div>
           <div style={{ flex: 1, minWidth: 180 }}>
             <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>
               Effective From <span style={{ color: '#ff4d4f' }}>*</span>
@@ -250,6 +302,35 @@ const EmployeeCompensationForm: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Reconciliation — the question this screen exists to answer. be-spec §7.1. */}
+      {annualCTC ? (
+        reconciliation ? (
+          <Alert
+            type={reconciliation.balanced ? 'success' : 'error'}
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={
+              reconciliation.balanced
+                ? `Components total ₹${Number(reconciliation.componentTotal ?? 0).toLocaleString('en-IN')}`
+                  + ` = CTC ₹${Number(reconciliation.annualCTC ?? 0).toLocaleString('en-IN')}`
+                  + (roundingAdjustment ? ` + adjustment ₹${roundingAdjustment}` : '')
+                : `Components total ₹${Number(reconciliation.componentTotal ?? 0).toLocaleString('en-IN')},`
+                  + ` which is ₹${Math.abs(Number(reconciliation.difference ?? 0)).toLocaleString('en-IN')}`
+                  + ` ${Number(reconciliation.difference ?? 0) < 0 ? 'short of' : 'over'}`
+                  + ` CTC ₹${Number(reconciliation.annualCTC ?? 0).toLocaleString('en-IN')}.`
+                  + ' Add a Balance component to the structure, or correct the percentages.'
+            }
+          />
+        ) : null
+      ) : (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Enter the annual CTC to see the split."
+        />
+      )}
 
       {/* Earnings */}
       {earningComponents.length > 0 && (

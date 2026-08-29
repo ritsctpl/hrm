@@ -15,6 +15,7 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
   policies,
   loading,
   onEdit,
+  openingEditHandle,
   onPublish,
   onArchive,
   onDelete,
@@ -112,7 +113,14 @@ const PolicyAdminTable: React.FC<PolicyAdminTableProps> = ({
           {(record.status === "DRAFT" || record.status === "REVIEW") && (
             <Can I="edit">
               <Tooltip title="Edit Policy">
-                <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  // Opening now reads the full policy first (the list row carries no body), so
+                  // the click is no longer instant — say so rather than looking like a no-op.
+                  loading={openingEditHandle === record.handle}
+                  onClick={() => onEdit(record)}
+                />
               </Tooltip>
             </Can>
           )}

@@ -1,136 +1,133 @@
 'use client';
 
 import React from "react";
-import { Descriptions } from "antd";
 import styles from "../../styles/PayslipRenderer.module.css";
-import { formatCurrency, formatDate, maskAccountNumber } from "../../utils/payslipFormatters";
-import type { PayslipRendererProps } from "../../types/ui.types";
+import type { PayslipSnapshot } from "../../types/domain.types";
+import {
+  payslipAmount,
+  payslipAmountInWords,
+  payslipDate,
+  payslipNetAmount,
+  payslipPeriod,
+} from "../../utils/payslipFormat";
 
-const PayslipRenderer: React.FC<PayslipRendererProps> = ({ data }) => {
-  const {
-    companyName, companyAddress, companyLogoPath, cin, gstin,
-    payPeriodLabel, employeeName, employeeNumber, designation,
-    department, location, dateOfJoining, bankAccountNumber, bankIfscCode,
-    workingDays, paidDays, lopDays,
-    earnings, grossEarnings, deductions, totalDeductions, netPay, netPayInWords,
-    earningsSectionLabel, deductionsSectionLabel,
-    showAttendanceSection, showNetPayInWords, showFooterSignature,
-    footerNote, signatureLabel,
-  } = data;
+/**
+ * The payslip, on screen. be-spec §12 / fe-spec §1.
+ *
+ * Renders the frozen snapshot in the RITS layout — the same object `payslipPdf.ts` turns into the
+ * downloadable file, so what the employee sees and what they download cannot diverge.
+ *
+ * Format rules here are copied from `R10197_Jul-2026.pdf`, not chosen: a zero prints as `-`,
+ * amounts carry Indian digit grouping rounded to whole rupees, and PAN and account number arrive
+ * already masked from the server.
+ */
+interface Props {
+  snapshot: PayslipSnapshot;
+}
+
+const PayslipRenderer: React.FC<Props> = ({ snapshot: s }) => {
+  const period = payslipPeriod(s.payrollYear, s.payrollMonth, s.payPeriodLabel);
+  const earnings = s.earnings ?? [];
+  const deductions = s.deductions ?? [];
+  const rows = Math.max(earnings.length, deductions.length, 1);
 
   return (
-    <div className={styles.payslipPage}>
+    <div className={styles.payslip} data-testid="payslip-render">
       <div className={styles.header}>
-        {companyLogoPath && (
-          <img src={companyLogoPath} alt="Company Logo" className={styles.logo} />
+        {s.companyLogoPath ? (
+          <img src={s.companyLogoPath} alt="" className={styles.logo} />
+        ) : (
+          <div className={styles.logoPlaceholder} aria-hidden="true" />
         )}
-        <div className={styles.companyDetails}>
-          <h2 className={styles.companyName}>{companyName}</h2>
-          <p className={styles.companyMeta}>{companyAddress}</p>
-          <p className={styles.companyMeta}>CIN: {cin} | GSTIN: {gstin}</p>
+        <div>
+          <div className={styles.companyName}>{s.companyName}</div>
+          <div className={styles.companyAddress}>{s.companyAddress}</div>
         </div>
       </div>
 
-      <div className={styles.title}>PAYSLIP</div>
-      <p className={styles.period}>For the month of: {payPeriodLabel}</p>
+      <div className={styles.periodBand}>Pay Slip&nbsp; :&nbsp; {period}</div>
 
-      <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
-        <Descriptions.Item label="Name">{employeeName}</Descriptions.Item>
-        <Descriptions.Item label="Emp No">{employeeNumber}</Descriptions.Item>
-        <Descriptions.Item label="Designation">{designation}</Descriptions.Item>
-        <Descriptions.Item label="Department">{department}</Descriptions.Item>
-        <Descriptions.Item label="Location">{location}</Descriptions.Item>
-        <Descriptions.Item label="DOJ">{formatDate(dateOfJoining)}</Descriptions.Item>
-        <Descriptions.Item label="Bank A/C">
-          {maskAccountNumber(bankAccountNumber)}
-        </Descriptions.Item>
-        <Descriptions.Item label="IFSC">{bankIfscCode}</Descriptions.Item>
-      </Descriptions>
+      <table className={styles.infoGrid}>
+        <tbody>
+          <tr>
+            <th>Employee Name</th><td className={styles.strong}>{s.employeeName}</td>
+            <th>Employee ID</th><td className={styles.strong}>{s.employeeId}</td>
+          </tr>
+          <tr>
+            <th>Designation</th><td>{s.designation}</td>
+            <th>Department</th><td>{s.department}</td>
+          </tr>
+          <tr>
+            <th>Date of joining</th><td>{payslipDate(s.dateOfJoining)}</td>
+            <th>Gender</th><td>{s.gender}</td>
+          </tr>
+          <tr>
+            <th>PAN</th><td>{s.panMasked}</td>
+            <th>UAN</th><td>{s.uan}</td>
+          </tr>
+          <tr>
+            <th>Payable days</th><td>{s.payableDays}</td>
+            <th>Bank IFSC</th><td>{s.bankIfsc}</td>
+          </tr>
+          <tr>
+            <th>LOP Days</th><td>{s.lopDays ?? 0}</td>
+            <th>Account Number</th><td>{s.accountNumberMasked}</td>
+          </tr>
+        </tbody>
+      </table>
 
-      {showAttendanceSection && (
-        <Descriptions bordered size="small" column={3} style={{ marginBottom: 16 }}>
-          <Descriptions.Item label="Working Days">{workingDays}</Descriptions.Item>
-          <Descriptions.Item label="Paid Days">{paidDays}</Descriptions.Item>
-          <Descriptions.Item label="LOP Days">
-            <span style={{ color: lopDays > 0 ? "#c62828" : undefined }}>{lopDays}</span>
-          </Descriptions.Item>
-        </Descriptions>
-      )}
+      <table className={styles.components}>
+        <thead>
+          <tr className={styles.sectionBand}>
+            <th colSpan={2}>EARNINGS</th>
+            <th colSpan={2}>DEDUCTIONS</th>
+          </tr>
+          <tr className={styles.columnHeads}>
+            <th>Component</th><th className={styles.right}>Amount</th>
+            <th>Component</th><th className={styles.right}>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i}>
+              <td>{earnings[i]?.componentName ?? ""}</td>
+              <td className={styles.right}>
+                {earnings[i] ? payslipAmount(earnings[i].amount) : ""}
+              </td>
+              <td>{deductions[i]?.componentName ?? ""}</td>
+              <td className={styles.right}>
+                {deductions[i] ? payslipAmount(deductions[i].amount) : ""}
+              </td>
+            </tr>
+          ))}
+          <tr className={styles.totals}>
+            <td>Gross earnings</td>
+            <td className={styles.right}>{payslipAmount(s.grossEarnings)}</td>
+            <td>Gross deductions</td>
+            <td className={styles.right}>{payslipAmount(s.grossDeductions)}</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <div className={styles.payComponents}>
-        <div>
-          <div className={`${styles.sectionHeader} ${styles.earningHeader}`}>
-            {earningsSectionLabel || "EARNINGS"}
-          </div>
-          <table className={styles.payTable}>
-            <thead>
-              <tr>
-                <th>Component</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {earnings.map((e) => (
-                <tr key={e.componentCode}>
-                  <td>{e.componentName}</td>
-                  <td style={{ textAlign: "right" }}>{formatCurrency(e.proratedAmount)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Total Earnings</td>
-                <td className={styles.earningTotal} style={{ textAlign: "right" }}>
-                  {formatCurrency(grossEarnings)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div>
-          <div className={`${styles.sectionHeader} ${styles.deductionHeader}`}>
-            {deductionsSectionLabel || "DEDUCTIONS"}
-          </div>
-          <table className={styles.payTable}>
-            <thead>
-              <tr>
-                <th>Component</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deductions.map((d) => (
-                <tr key={d.componentCode}>
-                  <td>{d.componentName}</td>
-                  <td style={{ textAlign: "right" }}>{formatCurrency(d.proratedAmount)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Total Deductions</td>
-                <td className={styles.deductionTotal} style={{ textAlign: "right" }}>
-                  {formatCurrency(totalDeductions)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      <div className={styles.netBand}>
+        <span className={styles.netLabel}>NET PAY</span>
+        <span className={styles.netSymbol}>₹</span>
+        <span className={styles.netAmount}>{payslipNetAmount(s.netPay)}</span>
+        <span className={styles.netWords}>{payslipAmountInWords(s.netPay)}</span>
       </div>
 
-      <div className={styles.netPay}>NET PAY: Rs. {formatCurrency(netPay)}</div>
-
-      {showNetPayInWords && (
-        <p className={styles.netPayWords}>In Words: {netPayInWords}</p>
+      {s.showLeaveBalance !== false && (
+        <table className={styles.leave}>
+          <tbody>
+            <tr>
+              <th>Leave Balance (Days)</th>
+              <td>Casual Leave&nbsp;&nbsp;&nbsp;{s.casualLeaveBalance ?? 0}</td>
+            </tr>
+          </tbody>
+        </table>
       )}
 
-      {showFooterSignature && (
-        <div className={styles.footer}>
-          <span>{footerNote || "This is a computer-generated payslip."}</span>
-          <span>{signatureLabel || "Authorized Signatory"}</span>
-        </div>
-      )}
+      <div className={styles.footer}>{s.footerNote}</div>
     </div>
   );
 };

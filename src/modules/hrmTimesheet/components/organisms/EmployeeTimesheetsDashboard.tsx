@@ -15,7 +15,7 @@ import styles from '../../styles/TimesheetCalendar.module.css';
 
 const { Text } = Typography;
 
-type CardStatus = 'FOR_APPROVAL' | 'NO_ENTRY' | 'APPROVED' | 'REJECTED' | 'DRAFT';
+type CardStatus = 'FOR_APPROVAL' | 'NO_ENTRY' | 'APPROVED' | 'REJECTED' | 'DRAFT' | 'ON_LEAVE';
 
 const STATUS_OPTIONS: { label: string; value: ManagerStatusFilter }[] = [
   { label: 'All', value: 'ALL' },
@@ -24,6 +24,7 @@ const STATUS_OPTIONS: { label: string; value: ManagerStatusFilter }[] = [
   { label: 'Blocked', value: 'BLOCKED' },
   { label: 'Enabled', value: 'ENABLED' },
   { label: 'Approved', value: 'APPROVED' },
+  { label: 'On Leave', value: 'ON_LEAVE' },
 ];
 
 function deriveStatus(emp: TeamTimesheetSummary): CardStatus {
@@ -32,7 +33,12 @@ function deriveStatus(emp: TeamTimesheetSummary): CardStatus {
   if (days.some((d) => d.status === 'SUBMITTED')) return 'FOR_APPROVAL';
   if (days.some((d) => d.status === 'REJECTED')) return 'REJECTED';
   if (withHours.length > 0 && withHours.every((d) => d.status === 'APPROVED')) return 'APPROVED';
-  if (withHours.length === 0) return 'NO_ENTRY';
+  if (withHours.length === 0) {
+    // Every day in the period is a synthesized leave placeholder — the employee
+    // was out the whole time, not simply missing entries.
+    if (days.length > 0 && days.every((d) => d.leaveDay)) return 'ON_LEAVE';
+    return 'NO_ENTRY';
+  }
   return 'DRAFT';
 }
 
@@ -42,6 +48,7 @@ const STATUS_LABEL: Record<CardStatus, { text: string; cls: string }> = {
   APPROVED: { text: 'Approved', cls: styles.mgrStatusApproved },
   REJECTED: { text: 'Rejected', cls: styles.mgrStatusRejected },
   DRAFT: { text: 'Draft', cls: styles.mgrStatusDraft },
+  ON_LEAVE: { text: 'On Leave', cls: styles.mgrStatusOnLeave },
 };
 
 function matchesFilter(status: CardStatus, filter: ManagerStatusFilter): boolean {
@@ -56,6 +63,8 @@ function matchesFilter(status: CardStatus, filter: ManagerStatusFilter): boolean
       return status === 'APPROVED';
     case 'ENABLED':
       return status === 'NO_ENTRY' || status === 'DRAFT';
+    case 'ON_LEAVE':
+      return status === 'ON_LEAVE';
     case 'BLOCKED':
       return false; // locked-period gating is a backend concern (flagged)
     default:
@@ -207,7 +216,7 @@ export default function EmployeeTimesheetsDashboard() {
                   <span className={label.cls}>{label.text}</span>
                   <span className={styles.mgrCardHours}>{decimalToHHMM(totalHours)}</span>
                 </div>
-                {status !== 'NO_ENTRY' && (
+                {status !== 'NO_ENTRY' && status !== 'ON_LEAVE' && (
                   <span
                     className={styles.mgrViewLink}
                     onClick={() =>

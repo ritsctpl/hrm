@@ -72,8 +72,9 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   };
 
   const buildHref = (att: AssetAttachment): string => {
-    // Prefer the base64 content returned on upload / asset-retrieve — lets us
-    // preview + download with no extra call and no conversion logic.
+    // Only the legacy shapes are resolvable synchronously now. Asset responses no longer
+    // carry the file bytes, so the normal path is resolveContentUrl below, which asks the
+    // server for this one attachment.
     if (att.contentBase64) {
       const c = att.contentBase64;
       return c.startsWith('data:') ? c : `data:${resolveMime(att)};base64,${c}`;
@@ -94,25 +95,39 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   };
 
   /**
-   * Open the document in a new tab. Data URIs are materialised as a Blob first
-   * (large data: URLs can't be opened directly), plain URLs open as-is.
+   * An object URL for one attachment's bytes, fetched on demand.
+   *
+   * Returns `{ url, revoke }` — revoke is null for a plain http(s) link, which is not ours to
+   * release. Falls back to the legacy inline shapes so records that still carry their own
+   * content keep working without a round trip.
    */
-  const handlePreview = (att: AssetAttachment) => {
-    const href = buildHref(att);
-    if (!href) {
-      message.warning('No file available for this attachment');
-      return;
+  const resolveContentUrl = async (
+    att: AssetAttachment,
+  ): Promise<{ url: string; revoke: string | null }> => {
+    const legacy = buildHref(att);
+    if (legacy) {
+      if (legacy.startsWith('data:')) {
+        const url = URL.createObjectURL(dataURItoBlob(legacy));
+        return { url, revoke: url };
+      }
+      if (/^https?:\/\//i.test(legacy)) return { url: legacy, revoke: null };
     }
+    const blob = await HrmAssetService.getAttachmentContent(att.attachmentId);
+    // The server sends the stored MIME; fall back to our own guess if it sent none.
+    const typed = blob.type ? blob : new Blob([blob], { type: resolveMime(att) });
+    const url = URL.createObjectURL(typed);
+    return { url, revoke: url };
+  };
+
+  /**
+   * Open the document in a new tab, fetching its bytes first.
+   */
+  const handlePreview = async (att: AssetAttachment) => {
     setBusyAttachmentId(att.attachmentId);
     try {
-      if (href.startsWith('data:')) {
-        const blob = dataURItoBlob(href);
-        const blobURL = URL.createObjectURL(blob);
-        window.open(blobURL, '_blank', 'noopener,noreferrer');
-        setTimeout(() => URL.revokeObjectURL(blobURL), 60_000);
-      } else {
-        window.open(href, '_blank', 'noopener,noreferrer');
-      }
+      const { url, revoke } = await resolveContentUrl(att);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      if (revoke) setTimeout(() => URL.revokeObjectURL(revoke), 60_000);
     } catch (error) {
       console.error('Preview error:', error);
       message.error('Failed to preview attachment');
@@ -124,21 +139,10 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
   /**
    * Download the document, materialising data URIs as a Blob first.
    */
-  const handleDownload = (att: AssetAttachment) => {
-    const href = buildHref(att);
-    if (!href) {
-      message.warning('No file available for this attachment');
-      return;
-    }
+  const handleDownload = async (att: AssetAttachment) => {
     setBusyAttachmentId(att.attachmentId);
     try {
-      let linkHref = href;
-      let revoke: string | null = null;
-      if (href.startsWith('data:')) {
-        const blob = dataURItoBlob(href);
-        linkHref = URL.createObjectURL(blob);
-        revoke = linkHref;
-      }
+      const { url: linkHref, revoke } = await resolveContentUrl(att);
       const link = document.createElement('a');
       link.href = linkHref;
       link.download = att.fileName;
@@ -268,7 +272,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
                 type="text"
                 size="small"
                 icon={<VisibilityIcon style={{ fontSize: 16 }} />}
-                disabled={!att.filePath && !att.contentBase64}
+                disabled={!att.attachmentId && !att.filePath && !att.contentBase64}
                 loading={busyAttachmentId === att.attachmentId}
                 onClick={() => handlePreview(att)}
               />
@@ -278,7 +282,7 @@ export default function AssetAttachmentsTab({ asset, canUpload }: AssetAttachmen
                 type="text"
                 size="small"
                 icon={<DownloadIcon style={{ fontSize: 16 }} />}
-                disabled={!att.filePath && !att.contentBase64}
+                disabled={!att.attachmentId && !att.filePath && !att.contentBase64}
                 loading={busyAttachmentId === att.attachmentId}
                 onClick={() => handleDownload(att)}
               />

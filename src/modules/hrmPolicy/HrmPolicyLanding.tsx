@@ -77,10 +77,41 @@ const HrmPolicyLanding: React.FC = () => {
 
   const { loadCategories, loadPolicies, loadAdminPolicies } = useHrmPolicyData();
 
+  /** Row whose full record is being fetched before the editor opens — see handleEditPolicy. */
+  const [openingEditHandle, setOpeningEditHandle] = React.useState<string | null>(null);
+
   // Fetch effective permissions when module loads
   useEffect(() => {
     fetchEffectivePermissions(organizationId, userId, 'HRM_POLICY');
   }, [organizationId, userId]);
+
+  /**
+   * Opens a policy for editing, with its body.
+   *
+   * `listPolicies` answers with the document metadata only — `textContent` and `pdfBase64` are
+   * the whole file inline, so the list deliberately leaves them out. The form drawer edits both,
+   * so it has to open on the full record; opening on the list row would present an empty Content
+   * box and silently drop the attached PDF on save.
+   *
+   * On failure the drawer stays shut. A blank editor over a policy we never loaded is worse than
+   * no editor, because saving it would overwrite the real one.
+   */
+  const handleEditPolicy = async (policy: PolicyDocument) => {
+    if (openingEditHandle) return;
+    setOpeningEditHandle(policy.handle);
+    try {
+      const fullPolicy = await HrmPolicyService.getPolicyDetail({
+        organizationId,
+        policyHandle: policy.handle,
+      });
+      openFormDrawer(fullPolicy ?? policy);
+    } catch (error) {
+      message.error("Could not open this policy for editing");
+      console.error("Error loading policy for edit:", error);
+    } finally {
+      setOpeningEditHandle(null);
+    }
+  };
 
   // Fetch full policy details when opening viewer
   const handlePolicyClick = async (policy: PolicyDocument) => {
@@ -287,7 +318,8 @@ const HrmPolicyLanding: React.FC = () => {
           filterCategoryId={adminFilterCategoryId}
           filterDocType={adminFilterDocType}
           filterStatus={adminFilterStatus}
-          onEdit={(policy: PolicyDocument) => openFormDrawer(policy)}
+          onEdit={handleEditPolicy}
+          openingEditHandle={openingEditHandle}
           onPublish={handlePublish}
           onArchive={handleArchive}
           onDelete={handleDelete}

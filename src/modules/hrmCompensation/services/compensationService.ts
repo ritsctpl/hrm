@@ -4,6 +4,7 @@
  */
 
 import api from '@/services/api';
+import type { CtcReconciliation } from '../types/domain.types';
 import type {
   PayComponentRequest,
   DeactivateComponentRequest,
@@ -98,6 +99,17 @@ export class HrmCompensationService {
       employeeId,
     });
     return res.data;
+  }
+
+  /**
+   * Live reconciliation report. Always returns a report — an unbalanced structure is a 200 with
+   * balanced=false, not an error, because the user is still typing. be-spec §15.5.
+   */
+  static async validateCtcReconciliation(
+    payload: EmployeeCompensationRequest,
+  ): Promise<CtcReconciliation> {
+    const res = await api.post(`${BASE}/validateCtcReconciliation`, payload);
+    return (res.data?.response ?? res.data) as CtcReconciliation;
   }
 
   static async previewCompensation(
