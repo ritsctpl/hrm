@@ -156,6 +156,13 @@ export interface PayslipSnapshot {
   templateHandle: string | null;
   templateVersion: number | null;
   showLeaveBalance: boolean | null;
+
+  /** Inputs the client derives the PDF password from. be-spec §12. */
+  passwordEnabled: boolean | null;
+  passwordPattern: string | null;
+  passwordPanPrefix: string | null;
+  passwordDobDdmm: string | null;
+  passwordDobDdmmyyyy: string | null;
 }
 
 export interface PayslipPasswordConfig {

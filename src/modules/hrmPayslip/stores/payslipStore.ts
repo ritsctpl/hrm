@@ -5,7 +5,7 @@ import { parseCookies } from "nookies";
 import { message } from "antd";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
-import { downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
+import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
 import { payslipFileName } from "../utils/payslipFormat";
 import type { PayslipSnapshot } from "../types/domain.types";
 import type {
@@ -211,7 +211,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
         requestedBy: getUser(),
         accessType: "DOWNLOAD",
       });
-      await downloadPayslipPdf(snapshot);
+      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
     } catch {
       message.error("Failed to download payslip");
     }
@@ -239,7 +239,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       for (let i = 0; i < snapshots.length; i += 1) {
         const snap = snapshots[i];
         // eslint-disable-next-line no-await-in-loop
-        const blob = await payslipPdfBlob(snap);
+        const blob = await payslipPdfBlob(snap, buildPayslipPassword(snap));
         zip.file(payslipFileName(snap.employeeId, snap.payrollYear, snap.payrollMonth), blob);
         set({ bulkProgress: { done: i + 1, total: snapshots.length } });
       }
@@ -328,8 +328,10 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
             ipAddress: "",
             accessType: "DOWNLOAD",
           });
-      await downloadPayslipPdf(snapshot);
-      message.success("Payslip downloaded.");
+      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
+      message.success(buildPayslipPassword(snapshot)
+        ? "Payslip downloaded. Open it with the password shown on screen."
+        : "Payslip downloaded.");
     } catch {
       message.error("Failed to download payslip");
     } finally {

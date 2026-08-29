@@ -1,4 +1,4 @@
-import type { PayslipSnapshot, PayslipPasswordConfig } from "../types/domain.types";
+import type { PayslipSnapshot } from "../types/domain.types";
 import {
   payslipAmount,
   payslipAmountInWords,
@@ -191,32 +191,40 @@ export function buildPayslipDocDefinition(s: PayslipSnapshot, userPassword?: str
   if (userPassword) {
     doc.userPassword = userPassword;
     doc.permissions = { printing: "highResolution", copying: false, modifying: false };
+    // Without this pdfmake encrypts with RC4 40-bit — the obsolete cipher this design rejected
+    // jsPDF for. PDF 1.7ext3 is what selects AES-256 (pdfmake Printer.js:58 maps `version` to
+    // PDFKit's pdfVersion). Verified on the downloaded file: /AESV3 present, V=5 R=6.
+    doc.version = "1.7ext3";
   }
   return doc;
 }
 
 /**
- * Derives the password the employee will type.
+ * Derives the password the employee types to open the file.
  *
- * Pattern per be-spec §12: PAN's first four characters plus date of birth `ddmm`, falling back to
- * employee id plus `ddmmyyyy` for anyone with no PAN on record. The PAN held in the snapshot is
- * masked, so a caller that wants the PAN-based pattern must pass the unmasked prefix explicitly.
+ * Pattern and inputs both come from the snapshot (be-spec §12): PAN's first four characters plus
+ * date of birth `ddmm`, or employee id plus `ddmmyyyy` for anyone with no PAN on record. Returns
+ * undefined when the site has password protection switched off, so the file downloads unencrypted
+ * rather than with a password nobody was told about.
  */
-export function buildPayslipPassword(
-  snapshot: PayslipSnapshot,
-  config: PayslipPasswordConfig | null,
-  panPrefix?: string | null,
-  dateOfBirth?: string | null,
-): string | undefined {
-  if (!config?.enabled) return undefined;
-  const dob = dateOfBirth ? new Date(dateOfBirth) : null;
-  const dd = dob ? String(dob.getDate()).padStart(2, "0") : "";
-  const mm = dob ? String(dob.getMonth() + 1).padStart(2, "0") : "";
-  const yyyy = dob ? String(dob.getFullYear()) : "";
-
-  if (panPrefix && dd && mm) return `${panPrefix.slice(0, 4).toUpperCase()}${dd}${mm}`;
-  if (dd && mm && yyyy) return `${snapshot.employeeId ?? ""}${dd}${mm}${yyyy}`;
+export function buildPayslipPassword(snapshot: PayslipSnapshot): string | undefined {
+  if (!snapshot.passwordEnabled) return undefined;
+  if (snapshot.passwordPattern === "PAN_DOB"
+      && snapshot.passwordPanPrefix && snapshot.passwordDobDdmm) {
+    return `${snapshot.passwordPanPrefix.toUpperCase()}${snapshot.passwordDobDdmm}`;
+  }
+  if (snapshot.employeeId && snapshot.passwordDobDdmmyyyy) {
+    return `${snapshot.employeeId}${snapshot.passwordDobDdmmyyyy}`;
+  }
   return undefined;
+}
+
+/** The sentence shown beside the download button, matching whichever pattern applies. */
+export function payslipPasswordHint(snapshot: PayslipSnapshot | null): string | null {
+  if (!snapshot?.passwordEnabled) return null;
+  return snapshot.passwordPattern === "PAN_DOB"
+    ? "Opens with your PAN's first 4 letters followed by your date of birth (ddmm)."
+    : "Opens with your employee ID followed by your date of birth (ddmmyyyy).";
 }
 
 /** Renders and saves the PDF. Imported lazily: pdfmake is browser-only and heavy. */
