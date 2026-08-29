@@ -293,6 +293,9 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
         role: values.role,
         designation: values.designation,
         grade: values.grade,
+        bankAccountNumber: values.bankAccountNumber,
+        bankIfsc: values.bankIfsc,
+        uan: values.uan,
         reportingManager: values.reportingManager,
         reportingManagerName: officialDetails.reportingManagerName, // Preserve existing name
         location: values.location,
@@ -541,6 +544,36 @@ const OfficialDetailsTab = forwardRef<OfficialDetailsTabHandle, ProfileTabProps>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               />
+            </Form.Item>
+
+            {/* Payroll details — the three values the payslip prints. Without these fields they
+                cannot be entered at all, and the payslip's Bank IFSC, Account Number and UAN boxes
+                stay blank. be-spec §4.4 / fe-spec §8. */}
+            <Form.Item
+              name="bankAccountNumber"
+              label="Bank account number"
+              rules={[{ pattern: /^\d*$/, message: 'Digits only' }]}
+            >
+              <Input placeholder="918010082267323" maxLength={20} />
+            </Form.Item>
+            <Form.Item
+              name="bankIfsc"
+              label="Bank IFSC"
+              normalize={(v?: string) => (v ? v.toUpperCase() : v)}
+              rules={[{
+                pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+                message: "That doesn't look like an IFSC code — 4 letters, a zero, then 6 characters.",
+              }]}
+            >
+              <Input placeholder="UTIB0000535" maxLength={11} />
+            </Form.Item>
+            <Form.Item
+              name="uan"
+              label="UAN"
+              extra="Shown on the payslip. The account number is masked to its last 4 digits there."
+              rules={[{ pattern: /^\d{12}$/, message: 'A UAN is 12 digits' }]}
+            >
+              <Input placeholder="100548779731" maxLength={12} />
             </Form.Item>
             <Form.Item name="reportingManager" label="Reporting Manager">
               <Select

@@ -10,9 +10,7 @@ interface StatusPipelineProps {
 }
 
 const STATUS_STEPS: { key: PayrollRunStatus; label: string }[] = [
-  { key: 'DRAFT', label: 'Draft' },
-  { key: 'PROCESSING', label: 'Processing' },
-  { key: 'COMPUTED', label: 'Computed' },
+  { key: 'CREATED', label: 'Created' },
   { key: 'APPROVED', label: 'Approved' },
   { key: 'PAID', label: 'Paid' },
   { key: 'LOCKED', label: 'Locked' },
