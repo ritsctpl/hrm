@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 import CommonAppBar from '@/components/CommonAppBar';
+import SalaryRevealControl from '@/components/SalaryRevealControl';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import CompensationTabLayout from './components/templates/CompensationTabLayout';
 import { useHrmCompensationStore } from './stores/compensationStore';
@@ -27,6 +29,9 @@ const HrmCompensationLanding: React.FC = () => {
     <ModuleAccessGate moduleCode="HRM_COMPENSATION" appTitle="Compensation Management">
       <div className={`hrm-module-root ${styles.compensationPage}`}>
         <CommonAppBar appTitle="Compensation Management" />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 16px 0' }}>
+          <SalaryRevealControl organizationId={getOrganizationId()} />
+        </div>
         <div className={styles.tabsWrapper}>
           <CompensationTabLayout />
         </div>

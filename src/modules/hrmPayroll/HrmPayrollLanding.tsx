@@ -3,6 +3,8 @@
 import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import CommonAppBar from '@/components/CommonAppBar';
+import SalaryRevealControl from '@/components/SalaryRevealControl';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import { useHrmPayrollStore } from './stores/payrollStore';
 import PayrollTabLayout from './components/templates/PayrollTabLayout';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
@@ -41,6 +43,9 @@ const HrmPayrollLanding: React.FC = () => {
     <ModuleAccessGate moduleCode="HRM_PAYROLL" appTitle="Payroll Processing">
       <div className={`hrm-module-root ${styles.payrollRoot}`}>
         <CommonAppBar appTitle="Payroll Processing" />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 16px 0' }}>
+          <SalaryRevealControl organizationId={getOrganizationId()} />
+        </div>
         <div className={styles.payrollContent}>
           <PayrollTabLayout
             activeTab={store.activeTab}
