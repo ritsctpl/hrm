@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Alert, Button, Card, Empty, Skeleton, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
@@ -31,7 +31,10 @@ const EmployeePayslipView: React.FC = () => {
   } = useHrmPayslipStore();
 
   const searchParams = useSearchParams();
-  const deepLinkApplied = useRef(false);
+  // State, not a ref: the snapshot effect below must not run until the deep-linked month has
+  // actually landed in the store. With a ref it fired once with the stale default month, so two
+  // requests raced and the failure message named the wrong month.
+  const [linkResolved, setLinkResolved] = useState(false);
 
   /**
    * The email sent when a run is marked Paid links to
@@ -41,15 +44,21 @@ const EmployeePayslipView: React.FC = () => {
    * different month, which would show someone a payslip other than the one they clicked for.
    */
   useEffect(() => {
-    if (deepLinkApplied.current) return;
-    const year = Number(searchParams?.get("year"));
-    const month = Number(searchParams?.get("month"));
+    if (linkResolved) return;
+    // useSearchParams can be empty on the first client render, and marking the link "applied" then
+    // would swallow it for good — which is exactly what happened: a link to Jul-2026 landed on the
+    // default month. window.location.search is authoritative here and available as soon as this
+    // effect runs in the browser.
+    const query = typeof window !== "undefined" ? window.location.search : "";
+    const params = new URLSearchParams(query || searchParams?.toString() || "");
+    const year = Number(params.get("year"));
+    const month = Number(params.get("month"));
     if (year >= 1970 && month >= 1 && month <= 12) {
       setMyPayslipYear(year);
       setMyPayslipMonth(month);
     }
-    deepLinkApplied.current = true;
-  }, [searchParams, setMyPayslipYear, setMyPayslipMonth]);
+    setLinkResolved(true);
+  }, [linkResolved, searchParams, setMyPayslipYear, setMyPayslipMonth]);
 
   useEffect(() => {
     loadMyPayslips();
@@ -57,10 +66,10 @@ const EmployeePayslipView: React.FC = () => {
   }, [myPayslipYear]);
 
   useEffect(() => {
-    if (!deepLinkApplied.current) return;
+    if (!linkResolved) return;
     loadMySnapshot(myPayslipYear, myPayslipMonth);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myPayslipYear, myPayslipMonth]);
+  }, [linkResolved, myPayslipYear, myPayslipMonth]);
 
   const availableMonths = myPayslipList.map((p) => p.payrollMonth);
   const revoked = myPayslipList.find(
