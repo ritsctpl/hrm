@@ -7,7 +7,6 @@ import { WIZARD_STEPS } from '../../utils/payrollConstants';
 import WizardStepSelectMonth from './WizardStepSelectMonth';
 import WizardStepSelectGroup from './WizardStepSelectGroup';
 import WizardStepReviewInputs from './WizardStepReviewInputs';
-import WizardStepProcess from './WizardStepProcess';
 import WizardStepReviewResults from './WizardStepReviewResults';
 import WizardStepApprove from './WizardStepApprove';
 import WizardNavigation from '../molecules/WizardNavigation';
@@ -17,7 +16,6 @@ const STEP_COMPONENTS: React.FC[] = [
   WizardStepSelectMonth,
   WizardStepSelectGroup,
   WizardStepReviewInputs,
-  WizardStepProcess,
   WizardStepReviewResults,
   WizardStepApprove,
 ];
@@ -27,20 +25,20 @@ const PayrollWizard: React.FC = () => {
   const { wizardStep, setWizardStep } = store;
 
   const canGoNext = (): boolean => {
+    // Creating the run computes it, so the only gate is that a run exists.
     if (wizardStep === 0) return !!store.wizardRunId;
-    if (wizardStep === 3) return store.computationProgress === 100;
     return true;
   };
 
   const handleNext = () => {
-    if (wizardStep < 5 && canGoNext()) {
-      setWizardStep((wizardStep + 1) as 0 | 1 | 2 | 3 | 4 | 5);
+    if (wizardStep < WIZARD_STEPS.length - 1 && canGoNext()) {
+      setWizardStep((wizardStep + 1) as 0 | 1 | 2 | 3 | 4);
     }
   };
 
   const handleBack = () => {
     if (wizardStep > 0) {
-      setWizardStep((wizardStep - 1) as 0 | 1 | 2 | 3 | 4 | 5);
+      setWizardStep((wizardStep - 1) as 0 | 1 | 2 | 3 | 4);
     }
   };
 

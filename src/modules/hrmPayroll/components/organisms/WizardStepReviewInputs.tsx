@@ -9,6 +9,7 @@ import AdjustmentRow from '../molecules/AdjustmentRow';
 import { ADJUSTMENT_TYPES } from '../../utils/payrollConstants';
 import type { AdjustmentType } from '../../types/api.types';
 import Can from '../../../hrmAccess/components/Can';
+import MonthlyInputsGrid from './MonthlyInputsGrid';
 import styles from '../../styles/PayrollWizard.module.css';
 
 const { Text } = Typography;
@@ -98,6 +99,8 @@ const WizardStepReviewInputs: React.FC = () => {
           ))}
         </div>
       </Card>
+
+      <MonthlyInputsGrid />
 
       {/* LOP Table */}
       <Card title="LOP & Adjustments" className={styles.stepCard} style={{ marginBottom: 12 }}>
