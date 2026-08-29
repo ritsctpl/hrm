@@ -96,7 +96,18 @@ interface PayslipState {
 }
 
 const getUser = () => parseCookies().user ?? "";
-const getEmployeeId = () => parseCookies().employeeId ?? "";
+/**
+ * The signed-in employee.
+ *
+ * This read `employeeId`, a cookie the app never sets — it sets `employeeCode` (7 other call sites
+ * use that name). Every payslip request therefore went out with an empty employee id, and the
+ * screen could not have worked for anyone. Falls back to the old name so nothing regresses if some
+ * deployment does set it.
+ */
+const getEmployeeId = () => {
+  const cookies = parseCookies();
+  return cookies.employeeCode ?? cookies.employeeId ?? "";
+};
 
 const currentYear = new Date().getFullYear();
 const currentMonth = new Date().getMonth() + 1;
