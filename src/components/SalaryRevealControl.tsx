@@ -60,7 +60,7 @@ export default function SalaryRevealControl({ organizationId }: { organizationId
         onOk={() => void submit()}
         okText="Reveal"
         confirmLoading={loading}
-        destroyOnClose
+        destroyOnHidden
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
           Salary figures stay hidden until you re-enter your password. Access is recorded.
