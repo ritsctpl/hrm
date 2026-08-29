@@ -24,6 +24,8 @@
 
 import api from '@/services/api';
 import type {
+  AppCategory,
+  AppCategorySaveRequest,
   AttendanceListRequest,
   FinalizeRequest,
   FleetHealthRequest,
@@ -61,6 +63,9 @@ export const WORKFORCE_ENDPOINTS = {
   officeNetworksList: '/hrm-service/workforce/office-networks/list',
   officeNetworksSave: '/hrm-service/workforce/office-networks/save',
   officeNetworksDeactivate: '/hrm-service/workforce/office-networks/deactivate',
+  appCategoriesList: '/hrm-service/workforce/app-categories/list',
+  appCategoriesSave: '/hrm-service/workforce/app-categories/save',
+  appCategoriesDeactivate: '/hrm-service/workforce/app-categories/deactivate',
 } as const;
 
 export class HrmWorkforceService {
@@ -147,5 +152,24 @@ export class HrmWorkforceService {
   static async deactivateOfficeNetwork(site: string, id: string, userId?: string): Promise<void> {
     const body = { site, id, userId };
     await api.post(WORKFORCE_ENDPOINTS.officeNetworksDeactivate, body);
+  }
+
+  /** The app-category classification rules enrolled at this site, active ones only. */
+  static async listAppCategories(site: string, userId?: string): Promise<AppCategory[]> {
+    const body: WorkforceBaseRequest = { site, userId };
+    const res = await api.post<AppCategory[]>(WORKFORCE_ENDPOINTS.appCategoriesList, body);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  /** Creates (no `id`) or updates (`id` present) one app-category rule; returns the saved row. */
+  static async saveAppCategory(req: AppCategorySaveRequest): Promise<AppCategory> {
+    const res = await api.post<AppCategory>(WORKFORCE_ENDPOINTS.appCategoriesSave, req);
+    return res.data;
+  }
+
+  /** Soft-deletes one app-category rule by `id` (IMES never hard-deletes). */
+  static async deactivateAppCategory(site: string, id: string, userId?: string): Promise<void> {
+    const body = { site, id, userId };
+    await api.post(WORKFORCE_ENDPOINTS.appCategoriesDeactivate, body);
   }
 }

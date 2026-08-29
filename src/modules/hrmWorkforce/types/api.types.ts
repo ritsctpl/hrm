@@ -83,6 +83,32 @@ export interface OfficeNetworkSaveRequest extends WorkforceBaseRequest {
 }
 
 /**
+ * An app-category rule: a pattern that classifies an application (by its window title, process name
+ * or URL) into a named category, so raw activity can be rolled up into work categories. Returned by
+ * `/workforce/app-categories/list` as the registry holds it, active ones only, with the
+ * server-managed identity and audit fields joined in.
+ */
+export interface AppCategory {
+  id: string;
+  site: string;
+  pattern: string;
+  category: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+/**
+ * `/workforce/app-categories/save` — create when `id` is absent, update when it is present.
+ */
+export interface AppCategorySaveRequest extends WorkforceBaseRequest {
+  id?: string;
+  pattern: string;
+  category: string;
+}
+
+/**
  * The MessageModel envelope as hrm-service puts it on the wire.
  *
  * ⚠ The service layer never sees this shape. `src/services/api.ts`'s response interceptor unwraps

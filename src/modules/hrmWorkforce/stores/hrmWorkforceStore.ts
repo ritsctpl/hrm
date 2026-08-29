@@ -8,7 +8,7 @@ import type {
   EmployeeUtilizationView,
   FleetDeviceView,
 } from '../types/domain.types';
-import type { OfficeNetwork } from '../types/api.types';
+import type { AppCategory, OfficeNetwork } from '../types/api.types';
 import type { AttendanceQuery, ReportQuery } from '../types/ui.types';
 
 /**
@@ -103,6 +103,10 @@ interface HrmWorkforceState {
   officeNetworks: OfficeNetwork[];
   officeNetworksLoading: boolean;
 
+  // ── App Categories tab ───────────────────────────────────────────────
+  appCategories: AppCategory[];
+  appCategoriesLoading: boolean;
+
   /**
    * The last failure's message, kept so a tab can render an inline empty-state that says *why* it
    * is empty. The transient toast is raised by the hook; this is the durable copy — an operator who
@@ -128,6 +132,9 @@ interface HrmWorkforceState {
   setOfficeNetworks: (officeNetworks: OfficeNetwork[]) => void;
   setOfficeNetworksLoading: (v: boolean) => void;
 
+  setAppCategories: (appCategories: AppCategory[]) => void;
+  setAppCategoriesLoading: (v: boolean) => void;
+
   setError: (error: string | null) => void;
 }
 
@@ -150,6 +157,9 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
 
   officeNetworks: [],
   officeNetworksLoading: false,
+
+  appCategories: [],
+  appCategoriesLoading: false,
 
   error: null,
 
@@ -174,6 +184,9 @@ export const useHrmWorkforceStore = create<HrmWorkforceState>((set) => ({
 
   setOfficeNetworks: (officeNetworks) => set({ officeNetworks }),
   setOfficeNetworksLoading: (officeNetworksLoading) => set({ officeNetworksLoading }),
+
+  setAppCategories: (appCategories) => set({ appCategories }),
+  setAppCategoriesLoading: (appCategoriesLoading) => set({ appCategoriesLoading }),
 
   setError: (error) => set({ error }),
 }));

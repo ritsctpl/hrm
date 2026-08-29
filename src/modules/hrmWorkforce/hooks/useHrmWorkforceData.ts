@@ -8,7 +8,7 @@ import { extractBackendMsg } from '@/modules/hrmTimesheet/utils/backendMessage';
 import { HrmWorkforceService } from '../services/hrmWorkforceService';
 import { reportSignature, useHrmWorkforceStore } from '../stores/hrmWorkforceStore';
 import type { FinalizeResult, FleetDeviceView } from '../types/domain.types';
-import type { OfficeNetworkSaveRequest } from '../types/api.types';
+import type { AppCategorySaveRequest, OfficeNetworkSaveRequest } from '../types/api.types';
 import type { AttendanceQuery, FleetFilter, ReportQuery } from '../types/ui.types';
 
 /**
@@ -33,6 +33,42 @@ export function parseFingerprintList(text: string): string[] {
     out.push(value);
   }
   return out;
+}
+
+/**
+ * The fixed palette an app category is coloured from. AntD `Tag` colour tokens, kept short and
+ * distinct so adjacent categories in a table stay visually separable.
+ */
+const CATEGORY_PALETTE = [
+  'blue',
+  'green',
+  'cyan',
+  'geekblue',
+  'purple',
+  'magenta',
+  'orange',
+  'gold',
+  'lime',
+  'volcano',
+] as const;
+
+/**
+ * A stable Tag colour for a category name — pure, exported and unit-tested in
+ * `tests/unit/workforce-category-color.spec.ts`.
+ *
+ * The same category must always render in the same colour, wherever it appears, so the eye can
+ * track "Engineering" down a column without reading every cell. A backend colour field would be one
+ * more thing to keep in sync for zero gain, so the colour is *derived*: lowercase the name (so
+ * casing never splits one category across two colours), sum its char codes into a deterministic
+ * hash, and index the fixed palette by `hash % length`. Deterministic, collision-tolerant (two
+ * names sharing a colour is only cosmetic), and total — the empty string hashes to 0 and returns a
+ * real palette colour rather than an empty string that would render as an uncoloured tag.
+ */
+export function categoryColor(category: string): string {
+  const key = (category ?? '').toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash += key.charCodeAt(i);
+  return CATEGORY_PALETTE[hash % CATEGORY_PALETTE.length];
 }
 
 /**
@@ -384,6 +420,70 @@ export function useHrmWorkforceData() {
     [site, userId, fail, loadOfficeNetworks],
   );
 
+  // ── App Categories ──────────────────────────────────────────────────
+
+  /** The site's active app-category rules. Clears the slot on failure, like the others. */
+  const loadAppCategories = useCallback(async () => {
+    const store = useHrmWorkforceStore.getState();
+    store.setAppCategoriesLoading(true);
+    store.setError(null);
+    try {
+      store.setAppCategories(await HrmWorkforceService.listAppCategories(site, userId));
+    } catch (error) {
+      fail(error, 'Failed to load app categories');
+      useHrmWorkforceStore.getState().setAppCategories([]);
+    } finally {
+      useHrmWorkforceStore.getState().setAppCategoriesLoading(false);
+    }
+  }, [site, userId, fail]);
+
+  /**
+   * Creates or updates one app-category rule, then reloads the list so the table shows the saved
+   * row rather than the pre-save state. `site`/`userId` are stamped here so callers pass only the
+   * form. Returns whether the save landed — the reload is best-effort and does not gate success, so
+   * a failed reload after a good save is not reported as a save failure (which would invite a
+   * duplicate re-submit).
+   */
+  const saveAppCategory = useCallback(
+    async (req: Omit<AppCategorySaveRequest, 'site' | 'userId'>): Promise<boolean> => {
+      const store = useHrmWorkforceStore.getState();
+      store.setAppCategoriesLoading(true);
+      store.setError(null);
+      let saved = false;
+      try {
+        await HrmWorkforceService.saveAppCategory({ ...req, site, userId });
+        saved = true;
+        message.success('App category saved');
+        await loadAppCategories();
+      } catch (error) {
+        if (!saved) fail(error, 'Failed to save the app category');
+      } finally {
+        useHrmWorkforceStore.getState().setAppCategoriesLoading(false);
+      }
+      return saved;
+    },
+    [site, userId, fail, loadAppCategories],
+  );
+
+  /** Soft-deletes one app-category rule by id, then reloads the list. */
+  const deactivateAppCategory = useCallback(
+    async (id: string) => {
+      const store = useHrmWorkforceStore.getState();
+      store.setAppCategoriesLoading(true);
+      store.setError(null);
+      try {
+        await HrmWorkforceService.deactivateAppCategory(site, id, userId);
+        message.success('App category deactivated');
+        await loadAppCategories();
+      } catch (error) {
+        fail(error, 'Failed to deactivate the app category');
+      } finally {
+        useHrmWorkforceStore.getState().setAppCategoriesLoading(false);
+      }
+    },
+    [site, userId, fail, loadAppCategories],
+  );
+
   return {
     refreshFleet,
     loadAttendance,
@@ -394,5 +494,8 @@ export function useHrmWorkforceData() {
     loadOfficeNetworks,
     saveOfficeNetwork,
     deactivateOfficeNetwork,
+    loadAppCategories,
+    saveAppCategory,
+    deactivateAppCategory,
   };
 }
