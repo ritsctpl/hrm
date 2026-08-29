@@ -24,6 +24,10 @@ const TaxConfigPanel = dynamic(
   () => import('./components/organisms/TaxConfigPanel'),
   { ssr: false }
 );
+const PayrollHistoryImport = dynamic(
+  () => import('./components/organisms/PayrollHistoryImport'),
+  { ssr: false }
+);
 
 const HrmPayrollLanding: React.FC = () => {
   const store = useHrmPayrollStore();
@@ -45,6 +49,7 @@ const HrmPayrollLanding: React.FC = () => {
             wizardContent={<PayrollWizard />}
             reviewContent={<PayrollReviewPanel />}
             taxConfigContent={<TaxConfigPanel />}
+            importContent={<PayrollHistoryImport />}
           />
         </div>
       </div>

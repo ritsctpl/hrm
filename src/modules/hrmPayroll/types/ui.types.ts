@@ -1,6 +1,6 @@
 import type { PayrollRunSummary, PayrollEntry, TaxSlab, ProfessionalTaxSlab } from './domain.types';
 
-export type PayrollTabKey = 'dashboard' | 'run' | 'review' | 'taxconfig';
+export type PayrollTabKey = 'dashboard' | 'run' | 'review' | 'taxconfig' | 'import';
 
 export interface DashboardAlerts {
   missingCompensation: number;

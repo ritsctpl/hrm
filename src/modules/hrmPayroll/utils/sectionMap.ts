@@ -10,4 +10,5 @@ export const hrmPayrollSectionMap: Record<string, string> = {
   statutoryConfig: 'payroll_statutory',
   ptSlab: 'payroll_pt_slab',
   alerts: 'payroll_alert',
+  import: 'payroll_import',
 };
