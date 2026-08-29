@@ -1,7 +1,7 @@
+/** be-spec §9: CREATED -> APPROVED -> PAID -> LOCKED. Creation now computes, so the separate
+ *  DRAFT/PROCESSING/COMPUTED states no longer exist. */
 export type PayrollRunStatus =
-  | 'DRAFT'
-  | 'PROCESSING'
-  | 'COMPUTED'
+  | 'CREATED'
   | 'APPROVED'
   | 'PAID'
   | 'LOCKED';
@@ -10,6 +10,8 @@ export type PayrollEntryStatus = 'COMPUTED' | 'ERROR' | 'ADJUSTED' | 'LOCKED';
 
 export interface PayrollRunSummary {
   handle: string;
+  /** COMPUTED by the engine, or IMPORT from the history back-load. be-spec §4.6. */
+  origin?: string | null;
   runId: string;
   site?: string;
   company?: string;

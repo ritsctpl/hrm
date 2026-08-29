@@ -186,11 +186,9 @@ export const useHrmPayrollStore = create<PayrollState>((set, get) => ({
     const { wizardRunId } = get();
     if (!wizardRunId) return;
     set({ computationProgress: 0, processedCount: 0, errorCount: 0 });
-    const summary = await HrmPayrollService.runCalculation({
-      organizationId: getOrganizationId(),
-      payrollRunId: wizardRunId,
-      performedBy: getUser(),
-    });
+    // be-spec §9: createPayrollRun already computed the entries. There is no separate calculate
+    // call any more, so this reads the run rather than triggering a second pass.
+    const summary = await HrmPayrollService.getPayrollRun(getOrganizationId(), wizardRunId);
     set({
       wizardRunSummary: summary,
       computationProgress: 100,

@@ -180,6 +180,10 @@ export interface OfficialDetails {
   designation?: string;
   /** Configurable GRADE lookup value; required going forward. */
   grade?: string;
+  /** Payroll details printed on the payslip. be-spec §4.4 / fe-spec §8. */
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  uan?: string;
   reportingManager?: string;
   reportingManagerName?: string;
   employeeCode?: string;
