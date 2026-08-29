@@ -73,8 +73,13 @@ export interface EmployeeCompensationRequest {
   organizationId: string;
   employeeId: string;
   effectiveFrom: string;
+  /** Optional: when omitted the backend resolves it from the employee's grade. be-spec §8. */
   structureCode: string;
   components: CompensationComponentRequest[];
+  /** CTC is an INPUT now — every component is derived from it. be-spec §4.2. */
+  annualCTC?: number | null;
+  /** Annual plug applied to the BALANCE component only, -9..+9. be-spec §7.3. */
+  roundingAdjustment?: number | null;
   remarks: string;
   createdBy: string;
 }

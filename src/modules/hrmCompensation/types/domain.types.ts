@@ -121,3 +121,24 @@ export interface SalaryRevisionRow {
   effectiveFrom: string;
   status: CompensationStatus;
 }
+
+
+/** Reconciliation report for a proposed structure + CTC. All amounts are ANNUAL. be-spec §7.1. */
+export interface CtcReconciliationLine {
+  componentCode: string;
+  componentName: string;
+  componentType: string;
+  calculationMethod: string;
+  annualAmount: number | null;
+  monthlyAmount: number | null;
+}
+
+export interface CtcReconciliation {
+  balanced: boolean;
+  componentTotal: number | null;
+  expected: number | null;
+  difference: number | null;
+  annualCTC: number | null;
+  roundingAdjustment: number | null;
+  lines: CtcReconciliationLine[] | null;
+}
