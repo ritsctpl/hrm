@@ -1,81 +1,129 @@
 'use client';
 
-import React, { useEffect } from "react";
-import { Button, Empty, Skeleton, Typography } from "antd";
+import React, { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { Alert, Button, Card, Empty, Skeleton, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
 import MonthNavigator from "../molecules/MonthNavigator";
 import PayslipRenderer from "./PayslipRenderer";
-import { formatPeriodLabel } from "../../utils/payslipFormatters";
+import { payslipPeriod } from "../../utils/payslipFormat";
 
+/**
+ * The employee's own payslips. fe-spec §1.
+ *
+ * The PDF is produced here in the browser from the frozen snapshot; the server stores none.
+ */
 const EmployeePayslipView: React.FC = () => {
   const {
     myPayslipYear,
     myPayslipMonth,
     myPayslipList,
-    myPayslipRenderData,
-    myPayslipLoading,
+    snapshot,
+    snapshotLoading,
+    snapshotError,
+    pdfGenerating,
     setMyPayslipYear,
     setMyPayslipMonth,
-    loadMyPayslipData,
+    loadMyPayslips,
+    loadMySnapshot,
     downloadMyPayslip,
   } = useHrmPayslipStore();
 
-  const availableMonths = myPayslipList.map((p) => p.payrollMonth);
+  const searchParams = useSearchParams();
+  const deepLinkApplied = useRef(false);
+
+  /**
+   * The email sent when a run is marked Paid links to
+   * `/rits/hrm_payslip_app?year=2026&month=7`. Without honouring those parameters the employee
+   * would land on whatever month happened to be selected, and the link would be decorative.
+   * A month that is not issued shows its own empty state — it must never quietly fall back to a
+   * different month, which would show someone a payslip other than the one they clicked for.
+   */
+  useEffect(() => {
+    if (deepLinkApplied.current) return;
+    const year = Number(searchParams?.get("year"));
+    const month = Number(searchParams?.get("month"));
+    if (year >= 1970 && month >= 1 && month <= 12) {
+      setMyPayslipYear(year);
+      setMyPayslipMonth(month);
+    }
+    deepLinkApplied.current = true;
+  }, [searchParams, setMyPayslipYear, setMyPayslipMonth]);
 
   useEffect(() => {
-    loadMyPayslipData(myPayslipYear, myPayslipMonth);
+    loadMyPayslips();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myPayslipYear]);
+
+  useEffect(() => {
+    if (!deepLinkApplied.current) return;
+    loadMySnapshot(myPayslipYear, myPayslipMonth);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myPayslipYear, myPayslipMonth]);
 
-  const handleYearChange = (year: number) => {
-    setMyPayslipYear(year);
-  };
-
-  const handleMonthSelect = (month: number) => {
-    setMyPayslipMonth(month);
-  };
+  const availableMonths = myPayslipList.map((p) => p.payrollMonth);
+  const revoked = myPayslipList.find(
+    (p) => p.payrollMonth === myPayslipMonth && p.status === "REVOKED",
+  );
+  const period = payslipPeriod(myPayslipYear, myPayslipMonth);
 
   return (
     <div style={{ padding: 16 }}>
-      <div
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
         <MonthNavigator
           year={myPayslipYear}
           selectedMonth={myPayslipMonth}
           availableMonths={availableMonths}
-          onYearChange={handleYearChange}
-          onMonthSelect={handleMonthSelect}
+          onYearChange={setMyPayslipYear}
+          onMonthSelect={setMyPayslipMonth}
         />
-        <Button
-          type="primary"
-          icon={<DownloadOutlined />}
-          disabled={!myPayslipRenderData}
-          onClick={() => downloadMyPayslip(myPayslipYear, myPayslipMonth)}
-        >
-          Download PDF
-        </Button>
+        <Card size="small" style={{ minWidth: 230 }}>
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            block
+            loading={pdfGenerating}
+            disabled={!snapshot || !!revoked}
+            onClick={() => downloadMyPayslip(myPayslipYear, myPayslipMonth)}
+          >
+            Download PDF
+          </Button>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+            Opens with your PAN&apos;s first 4 letters followed by your date of birth (ddmm).
+          </Typography.Paragraph>
+        </Card>
       </div>
 
-      {myPayslipLoading && (
-        <Skeleton active style={{ width: 794, height: 1123 }} />
-      )}
+      <div style={{ marginTop: 20 }}>
+        {snapshotError && (
+          <Alert type="error" showIcon message={snapshotError} style={{ marginBottom: 16 }} />
+        )}
 
-      {!myPayslipLoading && !myPayslipRenderData && (
-        <Empty
-          description={
-            <Typography.Text type="secondary">
-              Payslip not yet generated for{" "}
-              {formatPeriodLabel(myPayslipYear, myPayslipMonth)}
-            </Typography.Text>
-          }
-        />
-      )}
+        {revoked && (
+          <Alert
+            type="warning"
+            showIcon
+            message="This payslip was withdrawn and replaced. Please download the reissued payslip for this month."
+            style={{ marginBottom: 16 }}
+          />
+        )}
 
-      {!myPayslipLoading && myPayslipRenderData && (
-        <PayslipRenderer data={myPayslipRenderData} />
-      )}
+        {snapshotLoading && <Skeleton active paragraph={{ rows: 12 }} />}
+
+        {!snapshotLoading && !snapshot && !revoked && !snapshotError && (
+          <Empty
+            description={
+              <Typography.Text type="secondary">
+                No payslip issued for {period} yet. Your payslip appears here once payroll for the
+                month is approved.
+              </Typography.Text>
+            }
+          />
+        )}
+
+        {!snapshotLoading && snapshot && !revoked && <PayslipRenderer snapshot={snapshot} />}
+      </div>
     </div>
   );
 };

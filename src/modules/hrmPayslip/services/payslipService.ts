@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import type {
+  PayslipSnapshot,
   PayslipListItem,
   PayslipTemplate,
   PayslipRenderData,
@@ -73,19 +74,28 @@ export class HrmPayslipService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
-  static async downloadMyPayslip(payload: DownloadPayslipRequest): Promise<Blob> {
-    const res = await api.post(`${BASE}/downloadMyPayslip`, payload, { responseType: "blob" });
-    return res.data as Blob;
+  /**
+   * Returns the frozen payslip DATA, not a file. be-spec §15.2: the server stores no PDF, so the
+   * browser renders it from this snapshot.
+   */
+  static async downloadMyPayslip(payload: DownloadPayslipRequest): Promise<PayslipSnapshot> {
+    const res = await api.post(`${BASE}/downloadMyPayslip`, payload);
+    return (res.data?.response ?? res.data) as PayslipSnapshot;
   }
 
-  static async downloadPayslipByHr(payload: DownloadPayslipByHrRequest): Promise<Blob> {
-    const res = await api.post(`${BASE}/downloadPayslipByHr`, payload, { responseType: "blob" });
-    return res.data as Blob;
+  static async downloadPayslipByHr(payload: DownloadPayslipByHrRequest): Promise<PayslipSnapshot> {
+    const res = await api.post(`${BASE}/downloadPayslipByHr`, payload);
+    return (res.data?.response ?? res.data) as PayslipSnapshot;
   }
 
-  static async downloadAllPayslipsZip(payload: DownloadAllZipRequest): Promise<Blob> {
-    const res = await api.post(`${BASE}/bulkDownload`, payload, { responseType: "blob" });
-    return res.data as Blob;
+  /**
+   * Returns every snapshot in the run. The browser renders each PDF and zips them — there is no
+   * archive on the server to fetch. be-spec §15.2.
+   */
+  static async fetchRunSnapshots(payload: DownloadAllZipRequest): Promise<PayslipSnapshot[]> {
+    const res = await api.post(`${BASE}/bulkDownload`, payload);
+    const body = res.data?.response ?? res.data;
+    return Array.isArray(body) ? (body as PayslipSnapshot[]) : [];
   }
 
   static async emailPayslips(payload: EmailPayslipsRequest): Promise<void> {
