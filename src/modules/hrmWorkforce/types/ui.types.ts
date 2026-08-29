@@ -2,7 +2,7 @@
 import type { Liveness } from './domain.types';
 
 /** The top-level tabs. Which ones exist at all is decided by the access grants. */
-export type WorkforceTabKey = 'fleet' | 'attendance' | 'reports' | 'networks';
+export type WorkforceTabKey = 'fleet' | 'attendance' | 'reports' | 'networks' | 'categories';
 
 /** The Reports tab's inner segmented control. */
 export type ReportSectionKey = 'utilization' | 'health';

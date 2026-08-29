@@ -12,6 +12,7 @@ import AttendanceTable from './components/organisms/AttendanceTable';
 import UtilizationPanel from './components/organisms/UtilizationPanel';
 import FleetHealthPanel from './components/organisms/FleetHealthPanel';
 import OfficeNetworksTable from './components/organisms/OfficeNetworksTable';
+import AppCategoriesTable from './components/organisms/AppCategoriesTable';
 import { useHrmWorkforceData } from './hooks/useHrmWorkforceData';
 import type { ReportSectionKey, WorkforceTabKey } from './types/ui.types';
 import { MODULE_CODE, OBJ } from './utils/workforceConstants';
@@ -75,6 +76,9 @@ const HrmWorkforceLanding: React.FC = () => {
         : []),
       ...(fleetPerms.canView
         ? [{ key: 'networks' as const, label: 'Office Networks', children: <OfficeNetworksTable /> }]
+        : []),
+      ...(fleetPerms.canView
+        ? [{ key: 'categories' as const, label: 'App Categories', children: <AppCategoriesTable /> }]
         : []),
     ],
     [fleetPerms.canView, attendancePerms.canView, reportPerms.canView, section],
