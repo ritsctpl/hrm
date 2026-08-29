@@ -191,6 +191,12 @@ api.interceptors.response.use(
         // "0 leave types processed" when the org has no leave config —
         // the unwrapped payload alone doesn't surface this signal).
         (response as any).messageDetails = data.message_details;
+        // Slice B: the server withholds salary figures unless the caller holds a live step-up grant,
+        // and says so on the envelope. Unwrapping would drop that, leaving the UI unable to tell
+        // "this person earns nothing" from "you are not allowed to see it" — so it is preserved here
+        // exactly as message_details already is.
+        (response as any).masked = data.masked === true;
+        (response as any).maskReason = data.maskReason;
         response.data = data.response ?? [];
       }
       // Backend wrapper format 2 (Employee/Holiday): { success, message, messageCode, data }

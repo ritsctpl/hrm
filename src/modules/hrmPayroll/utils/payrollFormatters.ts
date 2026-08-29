@@ -1,14 +1,19 @@
 import { PAYROLL_MONTHS } from './payrollConstants';
+import { MASKED_PLACEHOLDER, isMasked } from '@/utils/salaryAmount';
 
-export function formatINR(amount: number): string {
+export function formatINR(amount: number | null | undefined): string {
+  // A withheld figure arrives as null. Formatting it would print 0 -- which reads as "this person
+  // earns nothing" rather than "you are not allowed to see this", and is the wrong answer to a
+  // question the viewer simply has not stepped up to ask.
+  if (isMasked(amount)) return MASKED_PLACEHOLDER;
   if (amount === 0) return '0';
   return new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
-export function formatINRWithPrefix(amount: number): string {
-  return `₹${formatINR(amount)}`;
+export function formatINRWithPrefix(amount: number | null | undefined): string {
+  return isMasked(amount) ? MASKED_PLACEHOLDER : `₹${formatINR(amount)}`;
 }
 
 export function formatPayrollPeriod(year: number, month: number): string {

@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { Tabs } from "antd";
 import { parseCookies } from "nookies";
 import CommonAppBar from "@/components/CommonAppBar";
+import SalaryRevealControl from "@/components/SalaryRevealControl";
+import { getOrganizationId } from "@/utils/cookieUtils";
 import { useHrmPayslipStore } from "./stores/payslipStore";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
 import styles from "./styles/Payslip.module.css";
@@ -75,6 +77,9 @@ const HrmPayslipLanding: React.FC = () => {
     <ModuleAccessGate moduleCode="HRM_PAYSLIP" appTitle="Payslip Management">
       <div className={`hrm-module-root ${styles.payslipPage}`}>
         <CommonAppBar appTitle="Payslip Management" />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 16px 0' }}>
+          <SalaryRevealControl organizationId={getOrganizationId()} />
+        </div>
         <div className={styles.tabsWrapper}>
           <Tabs
             activeKey={activeTab}
