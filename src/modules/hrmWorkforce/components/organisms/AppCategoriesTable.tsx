@@ -170,9 +170,8 @@ const AppCategoriesTable: React.FC<Props> = ({ onRefresh }) => {
       </div>
 
       <Table<AppCategory>
-        // `id` is the registry handle and is unique; the index is the last resort so a row that
-        // somehow arrived without one cannot collide with another and lose the second.
-        rowKey={(row, index) => row.id || `row-${index ?? 0}`}
+        // `id` is the registry handle and is always present and unique on an AppCategory.
+        rowKey={(row) => row.id}
         size="small"
         columns={columns}
         dataSource={rows}

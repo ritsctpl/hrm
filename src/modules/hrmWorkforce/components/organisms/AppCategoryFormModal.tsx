@@ -125,7 +125,10 @@ const AppCategoryFormModal: React.FC<Props> = ({ open, editing, onClose }) => {
           name="category"
           label="Category"
           extra="Reuse an existing category, or type a new one."
-          rules={[{ required: true, whitespace: true, message: 'A category is required' }]}
+          rules={[
+            { required: true, whitespace: true, message: 'A category is required' },
+            { max: 120, message: 'Keep the category under 120 characters' },
+          ]}
         >
           <AutoComplete
             options={categoryOptions}
@@ -133,9 +136,7 @@ const AppCategoryFormModal: React.FC<Props> = ({ open, editing, onClose }) => {
             filterOption={(input, option) =>
               (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
             }
-          >
-            <Input maxLength={120} />
-          </AutoComplete>
+          />
         </Form.Item>
       </Form>
     </Modal>
