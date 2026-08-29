@@ -190,7 +190,7 @@ const WizardStepReviewResults: React.FC = () => {
               </Table.Summary.Row>
             </Table.Summary>
           )}
-          locale={{ emptyText: 'No results. Run calculation first (Step 4).' }}
+          locale={{ emptyText: 'No entries in this run. Creating a run computes it, so an empty result means no employee had approved compensation for this period.' }}
         />
       </Card>
     </div>

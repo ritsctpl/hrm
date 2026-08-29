@@ -16,11 +16,14 @@ export const PAYROLL_MONTHS = [
   { value: 12, label: 'December' },
 ];
 
+/**
+ * be-spec §9 / fe-spec §4: createPayrollRun computes the entries, so there is no separate Process
+ * step to wait on any more — the run is already worked out by the time inputs are reviewed.
+ */
 export const WIZARD_STEPS = [
   'Select Month',
   'Select Group',
   'Review Inputs',
-  'Process',
   'Review Results',
   'Approve & Lock',
 ] as const;

@@ -12,7 +12,7 @@ import type {
 import type { PayrollTabKey } from '../types/ui.types';
 
 export type { PayrollTabKey };
-export type WizardStep = 0 | 1 | 2 | 3 | 4 | 5;
+export type WizardStep = 0 | 1 | 2 | 3 | 4;
 
 export interface PayrollAdjustmentDraft {
   employeeId: string;
