@@ -5,6 +5,8 @@ import { Tag } from "antd";
 import type { PayslipStatus } from "../../types/domain.types";
 
 const STATUS_CONFIG: Record<PayslipStatus, { color: string; label: string }> = {
+  ISSUED: { color: "green", label: "Issued" },
+  REVOKED: { color: "red", label: "Withdrawn" },
   GENERATED: { color: "green", label: "Generated" },
   FAILED: { color: "red", label: "Failed" },
   REGENERATED: { color: "blue", label: "Regenerated" },

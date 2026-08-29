@@ -39,6 +39,7 @@
     "next": "^15",
     "next-i18next": "^15.3.1",
     "nookies": "^2.5.2",
+    "pdfmake": "^0.3.11",
     "react": "^19",
     "react-big-calendar": "^1.15.0",
     "react-calendar": "^5.1.0",
