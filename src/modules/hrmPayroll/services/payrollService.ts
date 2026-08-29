@@ -42,30 +42,12 @@ export class HrmPayrollService {
     return res.data;
   }
 
-  static async validatePayrollRun(
-    organizationId: string,
-    payrollRunId: string,
-    performedBy: string
-  ): Promise<PayrollRunSummary> {
-    const res = await api.post<PayrollRunSummary>(`${BASE}/validatePayrollRun`, {
-      organizationId,
-      payrollRunId,
-      performedBy,
-    });
-    return res.data;
-  }
-
   static async updateLop(payload: LopInputRequest): Promise<void> {
     await api.post(`${BASE}/updateLop`, payload);
   }
 
   static async addAdjustment(payload: PayrollAdjustmentRequest): Promise<PayrollEntry> {
     const res = await api.post<PayrollEntry>(`${BASE}/addPayrollAdjustment`, payload);
-    return res.data;
-  }
-
-  static async runCalculation(payload: RunCalculationRequest): Promise<PayrollRunSummary> {
-    const res = await api.post<PayrollRunSummary>(`${BASE}/runPayrollCalculation`, payload);
     return res.data;
   }
 

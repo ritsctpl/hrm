@@ -16,11 +16,14 @@ export const PAYROLL_MONTHS = [
   { value: 12, label: 'December' },
 ];
 
+/**
+ * be-spec §9 / fe-spec §4: createPayrollRun computes the entries, so there is no separate Process
+ * step to wait on any more — the run is already worked out by the time inputs are reviewed.
+ */
 export const WIZARD_STEPS = [
   'Select Month',
   'Select Group',
   'Review Inputs',
-  'Process',
   'Review Results',
   'Approve & Lock',
 ] as const;
@@ -35,9 +38,7 @@ export const ADJUSTMENT_TYPES: { value: AdjustmentType; label: string }[] = [
 ];
 
 export const PAYROLL_STATUS_COLORS: Record<PayrollRunStatus, string> = {
-  DRAFT: 'default',
-  PROCESSING: 'processing',
-  COMPUTED: 'cyan',
+  CREATED: 'default',
   APPROVED: 'warning',
   PAID: 'success',
   LOCKED: 'blue',
@@ -51,9 +52,7 @@ export const ENTRY_STATUS_COLORS: Record<PayrollEntryStatus, string> = {
 };
 
 export const PIPELINE_STEPS: PayrollRunStatus[] = [
-  'DRAFT',
-  'PROCESSING',
-  'COMPUTED',
+  'CREATED',
   'APPROVED',
   'PAID',
   'LOCKED',

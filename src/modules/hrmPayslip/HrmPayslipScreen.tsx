@@ -21,11 +21,11 @@ const HrmPayslipScreen: React.FC<HrmPayslipScreenProps> = ({
   payrollMonth,
   onBack,
 }) => {
-  const { myPayslipRenderData, myPayslipLoading, loadMyPayslipData, downloadMyPayslip } =
+  const { snapshot, snapshotLoading, loadMySnapshot, downloadMyPayslip } =
     useHrmPayslipStore();
 
   useEffect(() => {
-    loadMyPayslipData(payrollYear, payrollMonth);
+    loadMySnapshot(payrollYear, payrollMonth);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, payrollYear, payrollMonth]);
 
@@ -35,17 +35,15 @@ const HrmPayslipScreen: React.FC<HrmPayslipScreenProps> = ({
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 24px" }}>
         <Button
           icon={<DownloadOutlined />}
-          disabled={!myPayslipRenderData}
+          disabled={!snapshot}
           onClick={() => downloadMyPayslip(payrollYear, payrollMonth)}
         >
           Download PDF
         </Button>
       </div>
       <div className={styles.payslipScreenContent}>
-        {myPayslipLoading && <Skeleton active style={{ width: 794 }} />}
-        {!myPayslipLoading && myPayslipRenderData && (
-          <PayslipRenderer data={myPayslipRenderData} />
-        )}
+        {snapshotLoading && <Skeleton active style={{ width: 794 }} />}
+        {!snapshotLoading && snapshot && <PayslipRenderer snapshot={snapshot} />}
       </div>
     </div>
   );

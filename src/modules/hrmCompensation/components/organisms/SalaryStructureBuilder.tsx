@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Form, Input, Select, Button, Tag, Typography } from 'antd';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import { getAvailableComponents } from '../../utils/compensationTransformers';
-import { GRADE_OPTIONS } from '../../utils/compensationConstants';
+import { useGradeOptions } from '../../hooks/useGradeOptions';
 import type { SalaryStructure, SalaryStructureComponent } from '../../types/domain.types';
 import StructureComponentsTable from './StructureComponentsTable';
 import CompensationPreview from './CompensationPreview';
@@ -20,6 +20,7 @@ interface BuilderFormState {
 }
 
 const SalaryStructureBuilder: React.FC = () => {
+  const { gradeOptions, gradeOptionsLoading } = useGradeOptions();
   const [form] = Form.useForm<BuilderFormState>();
   const selectedStructure = useHrmCompensationStore((s) => s.selectedStructure);
   const payComponents = useHrmCompensationStore((s) => s.payComponents);
@@ -137,7 +138,7 @@ const SalaryStructureBuilder: React.FC = () => {
             label="Applicable Grade"
             rules={[{ required: true }]}
           >
-            <Select options={GRADE_OPTIONS} placeholder="Select grade" />
+            <Select options={gradeOptions} loading={gradeOptionsLoading} placeholder="Select grade" />
           </Form.Item>
           <Form.Item
             name="structureName"
