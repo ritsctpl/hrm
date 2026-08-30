@@ -57,6 +57,7 @@ interface CompensationStoreState {
   fetchCompensationHistory: (employeeId: string) => Promise<void>;
   runPreview: (req: unknown) => Promise<void>;
   saveCompensationDraft: (req: unknown) => Promise<void>;
+  updateEmployeeCompensation: (req: unknown) => Promise<void>;
   submitCompensationForApproval: (handle: string) => Promise<void>;
 
   // Salary Revision
@@ -213,6 +214,18 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
       req as Parameters<typeof HrmCompensationService.createEmployeeCompensation>[0],
     );
     message.success('Compensation saved as draft');
+  },
+
+  /**
+   * Employee-level override. Routes through updateEmployeeCompensation which the backend
+   * records as the NEXT revision for an employee who already has an active compensation —
+   * mirrors saveCompensationDraft's shape but hits the update endpoint. be-spec §8.
+   */
+  updateEmployeeCompensation: async (req) => {
+    await HrmCompensationService.updateEmployeeCompensation(
+      req as Parameters<typeof HrmCompensationService.updateEmployeeCompensation>[0],
+    );
+    message.success('Compensation override saved as a new revision');
   },
 
   submitCompensationForApproval: async (handle) => {
