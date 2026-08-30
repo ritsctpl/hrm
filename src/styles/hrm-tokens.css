@@ -132,6 +132,7 @@
 
   --comp-ok:       #15803d;  --comp-ok-bg:    rgba(21, 128, 61, 0.10);   --comp-ok-border:    rgba(21, 128, 61, 0.30);
   --comp-warn:     #b45309;  --comp-warn-bg:  rgba(180, 83, 9, 0.10);    --comp-warn-border:  rgba(180, 83, 9, 0.30);
+  --comp-warn-contrast: #ffffff;
   --comp-bad:      #dc2626;  --comp-bad-bg:   rgba(220, 38, 38, 0.10);   --comp-bad-border:   rgba(220, 38, 38, 0.30);
   --comp-draft:    #64748b;  --comp-draft-bg: rgba(100, 116, 139, 0.12); --comp-draft-border: rgba(100, 116, 139, 0.30);
   --comp-info:     #2563eb;  --comp-info-bg:  rgba(37, 99, 235, 0.10);   --comp-info-border:  rgba(37, 99, 235, 0.30);
@@ -195,6 +196,7 @@
 
   --comp-ok:       #4ade80;  --comp-ok-bg:    rgba(74, 222, 128, 0.14);  --comp-ok-border:    rgba(74, 222, 128, 0.35);
   --comp-warn:     #fbbf24;  --comp-warn-bg:  rgba(251, 191, 36, 0.14);  --comp-warn-border:  rgba(251, 191, 36, 0.35);
+  --comp-warn-contrast: #231a07;
   --comp-bad:      #f87171;  --comp-bad-bg:   rgba(248, 113, 113, 0.14); --comp-bad-border:   rgba(248, 113, 113, 0.35);
   --comp-draft:    #94a3b8;  --comp-draft-bg: rgba(148, 163, 184, 0.16); --comp-draft-border: rgba(148, 163, 184, 0.35);
   --comp-info:     #60a5fa;  --comp-info-bg:  rgba(96, 165, 250, 0.14);  --comp-info-border:  rgba(96, 165, 250, 0.35);

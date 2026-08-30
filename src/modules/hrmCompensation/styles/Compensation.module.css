@@ -693,7 +693,7 @@
 
 .railBadgeAlert :global(.ant-badge-count) {
   background: var(--comp-warn);
-  color: #ffffff;
+  color: var(--comp-warn-contrast);
   box-shadow: none;
 }
 
