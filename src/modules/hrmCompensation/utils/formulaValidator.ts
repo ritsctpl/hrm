@@ -173,11 +173,14 @@ export function validateEarningsTally(
     };
   }
 
-  // No earnings at all → nothing allocates CTC.
+  // No earnings at all → mirror the backend guard, which treats an empty earnings set as a no-op
+  // PASS (SalaryStructureTally.assertBalanced returns on empty). Blocking here would reject a
+  // structure the server accepts (e.g. one still being built, or deductions-only) — FE must not be
+  // stricter than the BE in the un-savable direction.
   return {
     totalPct: 0,
     hasBalance: false,
-    balanced: false,
-    message: 'No earnings allocate CTC · short by 100%',
+    balanced: true,
+    message: 'No earnings yet',
   };
 }

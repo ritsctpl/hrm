@@ -42,7 +42,8 @@ const SalaryStructureBuilder: React.FC = () => {
     () => validateEarningsTally(components, payComponents),
     [components, payComponents],
   );
-  const tallyBlocked = components.length > 0 && !tally.balanced;
+  // An empty earnings set is balanced (mirrors the BE no-op), so this now agrees with handleSave.
+  const tallyBlocked = !tally.balanced;
 
   // Sync form when structure changes
   useEffect(() => {

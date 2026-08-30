@@ -5,7 +5,7 @@
 
 export type ComponentType = 'EARNING' | 'DEDUCTION' | 'EMPLOYER_CONTRIBUTION';
 export type SubType = 'FIXED' | 'VARIABLE' | 'REIMBURSEMENT' | 'STATUTORY';
-export type CalcMethod = 'FIXED' | 'PERCENTAGE' | 'FORMULA';
+export type CalcMethod = 'FIXED' | 'PERCENTAGE' | 'FORMULA' | 'PERCENT_OF_CTC' | 'BALANCE';
 export type PayFrequency = 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
 export type StatutoryLinkage = 'PF' | 'ESI' | 'PT' | 'NONE';
 export type CompensationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
