@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Drawer, Grid } from 'antd';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
@@ -38,19 +38,43 @@ const renderStepBody = (key: CompensationTabKey): React.ReactNode => {
   }
 };
 
+const RAIL_COLLAPSE_KEY = 'hrmComp.railCollapsed';
+
 const CompensationTabLayout: React.FC = () => {
   const activeTab = useHrmCompensationStore((s) => s.activeTab);
   const screens = useBreakpoint();
   const isNarrow = !screens.lg;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(false);
+
+  // Restore the collapse preference once mounted (guarded — storage can throw/empty).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(RAIL_COLLAPSE_KEY) === '1') setRailCollapsed(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggleRail = () => {
+    setRailCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(RAIL_COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   const activeStep = WORKFLOW_STEPS.find((s) => s.key === activeTab);
 
   return (
     <div className={styles.workflowShell}>
       {!isNarrow && (
-        <aside className={styles.railColumn}>
-          <WorkflowRail />
+        <aside className={`${styles.railColumn} ${railCollapsed ? styles.railColumnCollapsed : ''}`}>
+          <WorkflowRail collapsed={railCollapsed} onToggleCollapse={toggleRail} />
         </aside>
       )}
 

@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Badge, Tooltip } from 'antd';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { CompensationTabKey } from '../../types/ui.types';
 import styles from '../../styles/Compensation.module.css';
@@ -41,9 +43,13 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
 interface WorkflowRailProps {
   /** Extra callback when a step is chosen (e.g. close the mobile drawer). */
   onNavigate?: (key: CompensationTabKey) => void;
+  /** Desktop collapse: when true the rail shows icons only. */
+  collapsed?: boolean;
+  /** Toggle handler for the collapse control (omitted in the mobile drawer). */
+  onToggleCollapse?: () => void;
 }
 
-const WorkflowRail: React.FC<WorkflowRailProps> = ({ onNavigate }) => {
+const WorkflowRail: React.FC<WorkflowRailProps> = ({ onNavigate, collapsed = false, onToggleCollapse }) => {
   const activeTab = useHrmCompensationStore((s) => s.activeTab);
   const setActiveTab = useHrmCompensationStore((s) => s.setActiveTab);
   const componentsCount = useHrmCompensationStore((s) => s.payComponents.length);
@@ -69,13 +75,33 @@ const WorkflowRail: React.FC<WorkflowRailProps> = ({ onNavigate }) => {
   };
 
   return (
-    <nav className={styles.rail} aria-label="Compensation workflow">
+    <nav
+      className={`${styles.rail} ${collapsed ? styles.railCollapsed : ''}`}
+      aria-label="Compensation workflow"
+    >
       <div className={styles.railBrand}>
         <span className={styles.railBrandMark}>₹</span>
         <div className={styles.railBrandText}>
           <span className={styles.railBrandTitle}>Compensation Studio</span>
           <span className={styles.railBrandSub}>Guided workflow</span>
         </div>
+        {onToggleCollapse && (
+          <Tooltip title={collapsed ? 'Expand' : 'Collapse'} placement="right">
+            <button
+              type="button"
+              className={styles.railCollapseBtn}
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? 'Expand workflow rail' : 'Collapse workflow rail'}
+              aria-expanded={!collapsed}
+            >
+              {collapsed ? (
+                <ChevronRightIcon style={{ fontSize: 18 }} />
+              ) : (
+                <ChevronLeftIcon style={{ fontSize: 18 }} />
+              )}
+            </button>
+          </Tooltip>
+        )}
       </div>
 
       <ul className={styles.railList}>
@@ -85,35 +111,37 @@ const WorkflowRail: React.FC<WorkflowRailProps> = ({ onNavigate }) => {
           const isOverview = step.key === 'overview';
           return (
             <li key={step.key}>
-              <button
-                type="button"
-                className={`${styles.railItem} ${isActive ? styles.railItemActive : ''}`}
-                aria-current={isActive ? 'step' : undefined}
-                data-step={step.key}
-                onClick={() => handleClick(step.key)}
-              >
-                <span className={styles.railChip} aria-hidden>
-                  {isOverview ? '◇' : step.index}
-                </span>
-                <span className={styles.railItemBody}>
-                  <span className={styles.railItemLabel}>{step.label}</span>
-                  <span className={styles.railItemHint}>{step.hint}</span>
-                </span>
-                {count !== null && (
-                  <Tooltip title={`${count} ${step.label.toLowerCase()}`}>
-                    <Badge
-                      count={count}
-                      overflowCount={999}
-                      showZero
-                      className={
-                        step.key === 'approvals' && count > 0
-                          ? styles.railBadgeAlert
-                          : styles.railBadge
-                      }
-                    />
-                  </Tooltip>
-                )}
-              </button>
+              <Tooltip title={collapsed ? step.label : ''} placement="right">
+                <button
+                  type="button"
+                  className={`${styles.railItem} ${isActive ? styles.railItemActive : ''}`}
+                  aria-current={isActive ? 'step' : undefined}
+                  data-step={step.key}
+                  onClick={() => handleClick(step.key)}
+                >
+                  <span className={styles.railChip} aria-hidden>
+                    {isOverview ? '◇' : step.index}
+                  </span>
+                  <span className={styles.railItemBody}>
+                    <span className={styles.railItemLabel}>{step.label}</span>
+                    <span className={styles.railItemHint}>{step.hint}</span>
+                  </span>
+                  {count !== null && (
+                    <Tooltip title={`${count} ${step.label.toLowerCase()}`}>
+                      <Badge
+                        count={count}
+                        overflowCount={999}
+                        showZero
+                        className={
+                          step.key === 'approvals' && count > 0
+                            ? styles.railBadgeAlert
+                            : styles.railBadge
+                        }
+                      />
+                    </Tooltip>
+                  )}
+                </button>
+              </Tooltip>
             </li>
           );
         })}

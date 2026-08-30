@@ -1261,3 +1261,87 @@
   color: var(--comp-accent);
   background: var(--comp-accent-soft);
 }
+
+/* ── Collapsible workflow rail ── */
+.railColumnCollapsed {
+  flex-basis: 68px;
+  width: 68px;
+}
+
+.railBrand {
+  position: relative;
+}
+
+.railCollapseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--hrm-border);
+  border-radius: var(--hrm-radius-sm, 6px);
+  background: var(--hrm-bg-white);
+  color: var(--hrm-text-secondary);
+  cursor: pointer;
+  flex: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.railCollapseBtn:hover {
+  background: var(--comp-accent-soft);
+  color: var(--comp-accent);
+}
+
+/* Collapsed rail: icons/numbers only */
+.railCollapsed {
+  padding-left: var(--hrm-space-sm);
+  padding-right: var(--hrm-space-sm);
+  align-items: center;
+}
+
+.railCollapsed .railBrandText,
+.railCollapsed .railItemBody,
+.railCollapsed .railBadge,
+.railCollapsed .railBadgeAlert {
+  display: none;
+}
+
+.railCollapsed .railBrand {
+  flex-direction: column;
+  gap: var(--hrm-space-xs);
+  padding: var(--hrm-space-xs) 0 var(--hrm-space-sm);
+  justify-content: center;
+}
+
+.railCollapsed .railCollapseBtn {
+  margin-left: 0;
+}
+
+.railCollapsed .railItem {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ── Collapsible "Structures by grade" list ── */
+.structuresGridCollapsed {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.structuresListPane {
+  position: relative;
+  min-width: 0;
+}
+
+.structuresListToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.structuresListToggle {
+  align-self: start;
+  height: 100%;
+  white-space: nowrap;
+}
