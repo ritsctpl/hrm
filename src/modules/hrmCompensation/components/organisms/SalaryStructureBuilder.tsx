@@ -20,7 +20,14 @@ interface BuilderFormState {
   description: string;
 }
 
-const SalaryStructureBuilder: React.FC = () => {
+interface SalaryStructureBuilderProps {
+  /** Called after a successful save — used by the Drawer host to close. */
+  onSaved?: () => void;
+  /** Called when the user cancels — used by the Drawer host to close. */
+  onCancel?: () => void;
+}
+
+const SalaryStructureBuilder: React.FC<SalaryStructureBuilderProps> = ({ onSaved, onCancel }) => {
   const { gradeOptions, gradeOptionsLoading } = useGradeOptions();
   const [form] = Form.useForm<BuilderFormState>();
   const selectedStructure = useHrmCompensationStore((s) => s.selectedStructure);
@@ -103,10 +110,11 @@ const SalaryStructureBuilder: React.FC = () => {
         modifiedDateTime: '',
       } as SalaryStructure;
       await saveSalaryStructure(payload);
+      onSaved?.();
     } finally {
       setSaving(false);
     }
-  }, [form, components, payComponents, selectedStructure, saveSalaryStructure]);
+  }, [form, components, payComponents, selectedStructure, saveSalaryStructure, onSaved]);
 
   const handlePreview = useCallback(async () => {
     await runPreview({
@@ -130,7 +138,8 @@ const SalaryStructureBuilder: React.FC = () => {
     selectStructure(null);
     form.resetFields();
     setComponents([]);
-  }, [selectStructure, form]);
+    onCancel?.();
+  }, [selectStructure, form, onCancel]);
 
   return (
     <div className={structureStyles.builderContainer}>

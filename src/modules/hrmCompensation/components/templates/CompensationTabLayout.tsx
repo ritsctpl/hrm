@@ -6,8 +6,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { CompensationTabKey } from '../../types/ui.types';
 import PayComponentsTable from '../organisms/PayComponentsTable';
-import SalaryStructureList from '../organisms/SalaryStructureList';
-import SalaryStructureBuilder from '../organisms/SalaryStructureBuilder';
+import StructuresView from '../organisms/StructuresView';
 import EmployeeCompensationForm from '../organisms/EmployeeCompensationForm';
 import SalaryRevisionTable from '../organisms/SalaryRevisionTable';
 import ApprovalInbox from '../organisms/ApprovalInbox';
@@ -25,16 +24,7 @@ const renderStepBody = (key: CompensationTabKey): React.ReactNode => {
     case 'components':
       return <PayComponentsTable />;
     case 'structures':
-      return (
-        <div className={styles.masterDetailGridStructure}>
-          <div className={styles.masterPanel}>
-            <SalaryStructureList />
-          </div>
-          <div className={styles.detailPanel}>
-            <SalaryStructureBuilder />
-          </div>
-        </div>
-      );
+      return <StructuresView />;
     case 'assignment':
       return <EmployeeCompensationForm />;
     case 'revision':
