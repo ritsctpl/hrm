@@ -55,7 +55,10 @@ const CompensationOverview: React.FC = () => {
       {
         key: 'assignment' as CompensationTabKey,
         label: 'Assignments',
-        value: compensationHistory.length || null,
+        // No org-wide employee-compensation list endpoint exists yet, and compensationHistory holds
+        // only one searched employee's revisions — so show a neutral placeholder rather than leak
+        // that per-employee count as an org total. Task 5 can bind a real assignments count.
+        value: null,
         icon: <PersonAddIcon style={{ fontSize: 22 }} />,
         tone: styles.statSuccess,
       },
