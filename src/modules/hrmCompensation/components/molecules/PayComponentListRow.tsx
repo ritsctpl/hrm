@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Tag, Switch, Typography, Button, Popconfirm, Tooltip } from 'antd';
+import { Tag, Typography, Button, Popconfirm, Tooltip } from 'antd';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import type { PayComponent } from '../../types/domain.types';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import Can from '../../../hrmAccess/components/Can';
@@ -25,13 +26,12 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
   const deletePayComponent = useHrmCompensationStore((s) => s.deletePayComponent);
   const hardDeletePayComponent = useHrmCompensationStore((s) => s.hardDeletePayComponent);
 
-  // Deactivate via the Switch (there is no re-activate endpoint; deactivated
-  // components drop out of the active list on refetch).
-  const handleToggle = useCallback(
-    async (checked: boolean) => {
-      if (!checked) {
-        await deletePayComponent(component.componentCode);
-      }
+  // Deactivate is irreversible (no re-activate endpoint; deactivated components drop out of the
+  // active list on refetch) — so it sits behind a Popconfirm like Delete and the form's own
+  // Deactivate, never a single mis-tappable toggle.
+  const handleDeactivate = useCallback(
+    async () => {
+      await deletePayComponent(component.componentCode);
     },
     [deletePayComponent, component.componentCode],
   );
@@ -77,6 +77,22 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
             />
           </Tooltip>
           <Popconfirm
+            title="Deactivate this component?"
+            description="It is removed from the active list; there is no undo."
+            okText="Deactivate"
+            cancelText="Cancel"
+            onConfirm={handleDeactivate}
+          >
+            <Tooltip title="Deactivate">
+              <Button
+                type="text"
+                size="small"
+                className={styles.componentActionBtn}
+                icon={<RemoveCircleOutlineIcon style={{ fontSize: 16 }} />}
+              />
+            </Tooltip>
+          </Popconfirm>
+          <Popconfirm
             title="Delete this component?"
             description="This permanently removes the component."
             okText="Delete"
@@ -96,22 +112,9 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
         </div>
       </Can>
 
-      <Can
-        I="edit"
-        fallback={
-          <Switch checked={component.active === 1} size="small" disabled style={{ flexShrink: 0 }} />
-        }
-      >
-        <Tooltip title={component.active === 1 ? 'Deactivate' : 'Inactive'}>
-          <Switch
-            checked={component.active === 1}
-            size="small"
-            onChange={handleToggle}
-            onClick={(_checked, e) => e.stopPropagation()}
-            style={{ flexShrink: 0 }}
-          />
-        </Tooltip>
-      </Can>
+      <Tag color={component.active === 1 ? 'green' : 'default'} style={{ fontSize: 10, margin: 0, flexShrink: 0 }}>
+        {component.active === 1 ? 'Active' : 'Inactive'}
+      </Tag>
     </div>
   );
 };
