@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { Form, Input, Select, Button, Tag, Typography } from 'antd';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Form, Input, Select, Button, Tag, Typography, Tooltip, message } from 'antd';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import { getAvailableComponents } from '../../utils/compensationTransformers';
+import { validateEarningsTally } from '../../utils/formulaValidator';
 import { useGradeOptions } from '../../hooks/useGradeOptions';
 import type { SalaryStructure, SalaryStructureComponent } from '../../types/domain.types';
 import StructureComponentsTable from './StructureComponentsTable';
@@ -34,6 +35,14 @@ const SalaryStructureBuilder: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
 
   const available = getAvailableComponents(payComponents, { ...selectedStructure, components } as SalaryStructure);
+
+  // Live 100%-of-CTC earnings tally, resolved against the pay-component masters. Mirrors the
+  // backend SalaryStructureTally guard (COMP_013, ±0.01) so a valid structure is never blocked here.
+  const tally = useMemo(
+    () => validateEarningsTally(components, payComponents),
+    [components, payComponents],
+  );
+  const tallyBlocked = components.length > 0 && !tally.balanced;
 
   // Sync form when structure changes
   useEffect(() => {
@@ -75,6 +84,12 @@ const SalaryStructureBuilder: React.FC = () => {
 
   const handleSave = useCallback(async () => {
     const values = await form.validateFields();
+    // Mirror the server guard: earnings must allocate 100% of CTC (or a BALANCE must absorb it).
+    const earningsTally = validateEarningsTally(components, payComponents);
+    if (!earningsTally.balanced) {
+      message.error(`Earnings must allocate 100% of CTC — ${earningsTally.message}`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -90,7 +105,7 @@ const SalaryStructureBuilder: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [form, components, selectedStructure, saveSalaryStructure]);
+  }, [form, components, payComponents, selectedStructure, saveSalaryStructure]);
 
   const handlePreview = useCallback(async () => {
     await runPreview({
@@ -195,7 +210,7 @@ const SalaryStructureBuilder: React.FC = () => {
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
           >
-            <StructureComponentsTable components={components} onChange={setComponents} />
+            <StructureComponentsTable components={components} onChange={setComponents} tally={tally} />
           </div>
         )}
       </div>
@@ -210,9 +225,16 @@ const SalaryStructureBuilder: React.FC = () => {
           Preview
         </Button>
         <Can I={selectedStructure ? 'edit' : 'add'}>
-          <Button type="primary" loading={saving} onClick={handleSave}>
-            Save Structure
-          </Button>
+          <Tooltip title={tallyBlocked ? `Earnings must allocate 100% of CTC — ${tally.message}` : ''}>
+            <Button
+              type="primary"
+              loading={saving}
+              onClick={handleSave}
+              disabled={tallyBlocked}
+            >
+              Save Structure
+            </Button>
+          </Tooltip>
         </Can>
       </div>
     </div>

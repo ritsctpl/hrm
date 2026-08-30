@@ -82,3 +82,68 @@
   color: #595959;
   margin: 8px 0 4px;
 }
+
+/* --- 100% earnings tally bar --- */
+.tallyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hrm-space-xs);
+  padding: var(--hrm-space-sm) var(--hrm-space-md);
+  margin-top: var(--hrm-space-sm);
+  border: 1px solid var(--hrm-border);
+  border-radius: var(--hrm-radius-md);
+  background: var(--hrm-bg-secondary);
+}
+
+.tallyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrm-space-sm);
+}
+
+.tallyLabel {
+  font-size: var(--hrm-font-size-sm);
+  font-weight: var(--hrm-font-weight-semi);
+  color: var(--hrm-text-secondary);
+}
+
+.tallyBadge {
+  font-size: var(--hrm-font-size-xs);
+  font-weight: var(--hrm-font-weight-semi);
+  padding: 2px 10px;
+  border-radius: var(--hrm-radius-full);
+  white-space: nowrap;
+}
+
+.tallyBadgeBalanced {
+  color: var(--hrm-text-on-accent);
+  background: var(--hrm-success);
+}
+
+.tallyBadgeUnbalanced {
+  color: var(--hrm-text-on-accent);
+  background: var(--hrm-warning);
+}
+
+.tallyTrack {
+  position: relative;
+  height: 8px;
+  border-radius: var(--hrm-radius-full);
+  background: var(--hrm-bg-active);
+  overflow: hidden;
+}
+
+.tallyFill {
+  height: 100%;
+  border-radius: var(--hrm-radius-full);
+  transition: width var(--hrm-duration-fast) var(--hrm-ease-default);
+}
+
+.tallyFillBalanced {
+  background: var(--hrm-success);
+}
+
+.tallyFillUnbalanced {
+  background: var(--hrm-warning);
+}

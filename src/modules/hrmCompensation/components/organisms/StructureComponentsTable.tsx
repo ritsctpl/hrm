@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import type { SalaryStructureComponent } from '../../types/domain.types';
+import type { EarningsTallyResult } from '../../utils/formulaValidator';
 import { CALC_METHOD_OPTIONS } from '../../utils/compensationConstants';
 import CalcMethodBadge from '../atoms/CalcMethodBadge';
 import Can from '../../../hrmAccess/components/Can';
@@ -14,11 +15,14 @@ import structureStyles from '../../styles/SalaryStructure.module.css';
 interface StructureComponentsTableProps {
   components: SalaryStructureComponent[];
   onChange: (components: SalaryStructureComponent[]) => void;
+  /** Live earnings-vs-CTC tally, resolved against the pay-component masters in the builder. */
+  tally?: EarningsTallyResult;
 }
 
 const StructureComponentsTable: React.FC<StructureComponentsTableProps> = ({
   components,
   onChange,
+  tally,
 }) => {
   const handleRemove = useCallback(
     (code: string) => {
@@ -99,7 +103,8 @@ const StructureComponentsTable: React.FC<StructureComponentsTableProps> = ({
             />
           );
         }
-        if (record.calculationMethod === 'PERCENTAGE') {
+        // PERCENTAGE (percent of base) and PERCENT_OF_CTC both edit a percentage override.
+        if (record.calculationMethod === 'PERCENTAGE' || String(record.calculationMethod) === 'PERCENT_OF_CTC') {
           return (
             <InputNumber
               min={0}
@@ -112,6 +117,9 @@ const StructureComponentsTable: React.FC<StructureComponentsTableProps> = ({
               placeholder="%"
             />
           );
+        }
+        if (String(record.calculationMethod) === 'BALANCE') {
+          return <CalcMethodBadge method="BALANCE" />;
         }
         return <CalcMethodBadge method="FORMULA" />;
       },
@@ -135,15 +143,51 @@ const StructureComponentsTable: React.FC<StructureComponentsTableProps> = ({
     },
   ];
 
+  // Bar fills to the percent-of-CTC total, capped at 100 for the track; BALANCE reads as full.
+  const fillPct = tally
+    ? tally.hasBalance
+      ? 100
+      : Math.max(0, Math.min(100, tally.totalPct))
+    : 0;
+
   return (
-    <Table
-      dataSource={components}
-      rowKey="componentCode"
-      columns={columns}
-      size="small"
-      pagination={false}
-      locale={{ emptyText: 'Drop components here to build the structure' }}
-    />
+    <>
+      <Table
+        dataSource={components}
+        rowKey="componentCode"
+        columns={columns}
+        size="small"
+        pagination={false}
+        locale={{ emptyText: 'Drop components here to build the structure' }}
+      />
+      {tally && components.length > 0 && (
+        <div className={structureStyles.tallyPanel} data-testid="earnings-tally">
+          <div className={structureStyles.tallyHeader}>
+            <span className={structureStyles.tallyLabel}>Earnings allocation of CTC</span>
+            <span
+              className={`${structureStyles.tallyBadge} ${
+                tally.balanced
+                  ? structureStyles.tallyBadgeBalanced
+                  : structureStyles.tallyBadgeUnbalanced
+              }`}
+              data-testid="earnings-tally-badge"
+            >
+              {tally.message}
+            </span>
+          </div>
+          <div className={structureStyles.tallyTrack}>
+            <div
+              className={`${structureStyles.tallyFill} ${
+                tally.balanced
+                  ? structureStyles.tallyFillBalanced
+                  : structureStyles.tallyFillUnbalanced
+              }`}
+              style={{ width: `${fillPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
