@@ -1069,3 +1069,37 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Mockup-fidelity: full-width table pages (Pay Components / Structures) ── */
+.tablePage {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableCellStack {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.tableCellPrimary {
+  font-weight: 600;
+  color: var(--hrm-text-primary);
+}
+
+.tableCellMuted {
+  font-size: 12px;
+  color: var(--hrm-text-tertiary);
+}
+
+.tableCellMono {
+  font-family: var(--comp-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12.5px;
+  color: var(--hrm-text-secondary);
+}
+
+.tableActions {
+  display: inline-flex;
+  gap: 2px;
+  justify-content: flex-end;
+}

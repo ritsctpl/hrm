@@ -5,8 +5,7 @@ import { Button, Drawer, Grid } from 'antd';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { CompensationTabKey } from '../../types/ui.types';
-import PayComponentList from '../organisms/PayComponentList';
-import PayComponentForm from '../organisms/PayComponentForm';
+import PayComponentsTable from '../organisms/PayComponentsTable';
 import SalaryStructureList from '../organisms/SalaryStructureList';
 import SalaryStructureBuilder from '../organisms/SalaryStructureBuilder';
 import EmployeeCompensationForm from '../organisms/EmployeeCompensationForm';
@@ -24,16 +23,7 @@ const renderStepBody = (key: CompensationTabKey): React.ReactNode => {
     case 'overview':
       return <CompensationOverview />;
     case 'components':
-      return (
-        <div className={styles.masterDetailGrid}>
-          <div className={styles.masterPanel}>
-            <PayComponentList />
-          </div>
-          <div className={styles.detailPanel}>
-            <PayComponentForm />
-          </div>
-        </div>
-      );
+      return <PayComponentsTable />;
     case 'structures':
       return (
         <div className={styles.masterDetailGridStructure}>

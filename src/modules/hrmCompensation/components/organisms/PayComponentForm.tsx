@@ -29,7 +29,14 @@ import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 import formStyles from '../../styles/PayComponent.module.css';
 
-const PayComponentForm: React.FC = () => {
+interface PayComponentFormProps {
+  /** Called after a successful create/update — used by the Drawer host to close. */
+  onSaved?: () => void;
+  /** Called when the user cancels — used by the Drawer host to close. */
+  onCancel?: () => void;
+}
+
+const PayComponentForm: React.FC<PayComponentFormProps> = ({ onSaved, onCancel }) => {
   const [form] = Form.useForm<PayComponentFormState>();
   const selectedComponent = useHrmCompensationStore((s) => s.selectedComponent);
   const payComponents = useHrmCompensationStore((s) => s.payComponents);
@@ -59,20 +66,23 @@ const PayComponentForm: React.FC = () => {
       const values = await form.validateFields();
       setSaving(true);
       await savePayComponent(values, selectedComponent?.handle);
+      onSaved?.();
     } finally {
       setSaving(false);
     }
-  }, [form, savePayComponent, selectedComponent]);
+  }, [form, savePayComponent, selectedComponent, onSaved]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedComponent?.componentCode) return;
     await deletePayComponent(selectedComponent.componentCode);
-  }, [selectedComponent, deletePayComponent]);
+    onSaved?.();
+  }, [selectedComponent, deletePayComponent, onSaved]);
 
   const handleCancel = useCallback(() => {
     selectComponent(null);
     form.setFieldsValue(emptyPayComponentFormState());
-  }, [selectComponent, form]);
+    onCancel?.();
+  }, [selectComponent, form, onCancel]);
 
   if (componentsLoading) {
     return (
