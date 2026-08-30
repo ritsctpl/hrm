@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Alert,
   InputNumber,
@@ -65,6 +65,32 @@ const EmployeeCompensationForm: React.FC = () => {
 
   const { gradeOptions, gradeOptionsLoading } = useGradeOptions();
 
+  /**
+   * The routing pivot: the LATEST revision, not "an APPROVED comp exists".
+   * getActiveCompensation returns ONLY the APPROVED record; getCompensationHistory returns every
+   * revision incl. the in-flight DRAFT/REJECTED. We fold both and take the highest revisionNumber.
+   *   latest DRAFT/REJECTED  → edit that draft in place (updateEmployeeCompensation).
+   *   latest APPROVED / none → create the next revision as a DRAFT (createEmployeeCompensation),
+   *                            which the backend mints with revisionNumber = max+1.
+   */
+  const latestComp: EmployeeCompensationResponse | null = useMemo(() => {
+    const pool: EmployeeCompensationResponse[] = [...compensationHistory];
+    if (currentCompensation) pool.push(currentCompensation);
+    // The backend returns employeeId as a DISPLAY string ("CODE - Name") for seeded records but the
+    // bare CODE for ones we create — normalise to the leading token before matching. Scope to the
+    // chosen employee so a previous selection's history can't bleed through the fetch window.
+    const empCodeOf = (c: EmployeeCompensationResponse) =>
+      (c.employeeId ?? '').split(' - ')[0].trim();
+    const candidates = pool.filter((c) => empCodeOf(c) === selectedEmployeeId);
+    if (candidates.length === 0) return null;
+    return candidates.reduce((a, b) =>
+      (b.revisionNumber ?? 0) >= (a.revisionNumber ?? 0) ? b : a,
+    );
+  }, [compensationHistory, currentCompensation, selectedEmployeeId]);
+
+  const editInPlace = !!latestComp
+    && (latestComp.status === 'DRAFT' || latestComp.status === 'REJECTED');
+
   // ── Employee search state ──────────────────────────────────────────────────
   const [searchResults, setSearchResults] = useState<EmployeeOption[]>([]);
   const [searching, setSearching] = useState(false);
@@ -114,14 +140,15 @@ const EmployeeCompensationForm: React.FC = () => {
     }
     setSearching(true);
     try {
-      // Directory keyword matches id / name / email server-side. Grade is NOT a
-      // directory param, so we fetch a generous page (dev set ≈ 92 employees) and
-      // filter by grade CLIENT-SIDE below. be: EmployeeSearchRequest has no grade field.
+      // Directory keyword matches id / name / email server-side. Grade is NOT a directory param,
+      // so we fetch a generous page and filter by grade CLIENT-SIDE below (EmployeeSearchRequest
+      // has no grade field). CAP: the grade filter only sees the first `size` keyword matches — set
+      // wide enough to cover a keyword's full result set (dev set ≈ 92 employees).
       const res = await HrmEmployeeService.fetchDirectory({
         organizationId: getOrganizationId(),
         keyword: kw,
         page: 0,
-        size: 100,
+        size: 200,
       });
       const rows = Array.isArray(res?.employees) ? res.employees : [];
       setSearchResults(
@@ -175,31 +202,36 @@ const EmployeeCompensationForm: React.FC = () => {
     [applyBreakdown],
   );
 
-  // Build read-only component rows from a grade's structure defaults (brand-new assignment).
-  const loadStructureComponents = useCallback(async (code: string) => {
-    try {
-      const structure = await HrmCompensationService.getSalaryStructure(getOrganizationId(), code);
-      const earnings: CompensationComponent[] = structure.components.map((sc, idx) => ({
-        componentCode: sc.componentCode,
-        componentName: sc.componentCode,
-        componentType: 'EARNING' as const,
-        calculationMethod: sc.calculationMethod,
-        amount: sc.defaultAmount,
-        percentage: sc.defaultPercentage,
-        formula: sc.formula,
-        derivedAmount: sc.defaultAmount ?? 0,
-        taxable: true,
-        displayOrder: sc.displayOrder ?? idx + 1,
-      }));
-      setEarningComponents(earnings);
-      setDeductionComponents([]);
-      baseComponentsRef.current = earnings.map(toRequest);
-    } catch {
-      setEarningComponents([]);
-      setDeductionComponents([]);
-      baseComponentsRef.current = [];
-    }
-  }, []);
+  /**
+   * Load the grade structure's component DEFINITIONS into the stable compute base (used by
+   * preview/reconciliation/create so the backend can re-derive from the CTC). Returns the default
+   * earning rows for display when there's no existing split to show yet.
+   */
+  const loadStructureBase = useCallback(
+    async (code: string): Promise<CompensationComponent[]> => {
+      try {
+        const structure = await HrmCompensationService.getSalaryStructure(getOrganizationId(), code);
+        const earnings: CompensationComponent[] = structure.components.map((sc, idx) => ({
+          componentCode: sc.componentCode,
+          componentName: sc.componentCode,
+          componentType: 'EARNING' as const,
+          calculationMethod: sc.calculationMethod,
+          amount: sc.defaultAmount,
+          percentage: sc.defaultPercentage,
+          formula: sc.formula,
+          derivedAmount: sc.defaultAmount ?? 0,
+          taxable: true,
+          displayOrder: sc.displayOrder ?? idx + 1,
+        }));
+        baseComponentsRef.current = earnings.map(toRequest);
+        return earnings;
+      } catch {
+        baseComponentsRef.current = [];
+        return [];
+      }
+    },
+    [],
+  );
 
   const handleEmployeeSelect = useCallback(
     (employeeId: string, option: EmployeeOption) => {
@@ -213,7 +245,8 @@ const EmployeeCompensationForm: React.FC = () => {
     [setSelectedEmployeeId, loadEmployeeCompensation, fetchCompensationHistory],
   );
 
-  // Sync assignment fields once the active compensation (or its absence) is known.
+  // Seed the assignment fields from the LATEST revision (or, for a brand-new employee, the grade's
+  // structure). The structure applies read-only either way; only the CTC is editable.
   useEffect(() => {
     if (!selectedEmployeeId) {
       setStructureCode('');
@@ -222,36 +255,36 @@ const EmployeeCompensationForm: React.FC = () => {
       setEarningComponents([]);
       setDeductionComponents([]);
       setAnnualCTC(null);
+      baseComponentsRef.current = [];
       return;
     }
-    if (currentCompensation) {
-      // Existing employee: grade's structure is already applied — show it read-only.
-      setStructureCode(currentCompensation.structureCode);
-      setEffectiveFrom(currentCompensation.effectiveFrom);
-      setRemarks(currentCompensation.remarks ?? '');
-      if (currentCompensation.annualCTC) setAnnualCTC(currentCompensation.annualCTC);
-      applyBreakdown(currentCompensation.components ?? []);
-      baseComponentsRef.current = (currentCompensation.components ?? [])
-        .filter((c) => c.componentType === 'EARNING')
-        .map(toRequest);
-      loadSalaryBreakdown(currentCompensation.employeeId);
+    // Structure comes from the latest revision when there is one, else from the employee's grade.
+    const code =
+      latestComp?.structureCode
+      || salaryStructures.find((s) => s.applicableGrade === selectedEmployee?.grade)?.structureCode
+      || '';
+    setStructureCode(code);
+    setEffectiveFrom(latestComp?.effectiveFrom ?? '');
+    setRemarks(latestComp?.remarks ?? '');
+    // annualCTC may come back masked/encrypted as a string — only adopt a real number.
+    if (latestComp && typeof latestComp.annualCTC === 'number') setAnnualCTC(latestComp.annualCTC);
+    else if (!latestComp) setAnnualCTC(null);
+
+    if (code) {
+      loadStructureBase(code).then((defaults) => {
+        // Show the latest revision's actual split when present; otherwise the structure defaults.
+        applyBreakdown(latestComp?.components?.length ? latestComp.components : defaults);
+      });
     } else {
-      // Brand-new assignment: resolve the structure from the employee's grade.
-      const grade = selectedEmployee?.grade;
-      const structure = salaryStructures.find((s) => s.applicableGrade === grade);
-      if (structure) {
-        setStructureCode(structure.structureCode);
-        loadStructureComponents(structure.structureCode);
-      } else {
-        setStructureCode('');
-        setEarningComponents([]);
-        setDeductionComponents([]);
-      }
-      setEffectiveFrom('');
-      setRemarks('');
+      baseComponentsRef.current = [];
+      setEarningComponents([]);
+      setDeductionComponents([]);
     }
+    // getSalaryBreakdown is APPROVED-only — refine the read-only split when the latest is approved.
+    // Use the bare selected code (the comp's employeeId may be the "CODE - Name" display form).
+    if (latestComp?.status === 'APPROVED') loadSalaryBreakdown(selectedEmployeeId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCompensation, selectedEmployeeId, selectedEmployee, salaryStructures]);
+  }, [selectedEmployeeId, latestComp, selectedEmployee, salaryStructures]);
 
   // A CTC-driven recompute returns the full derived split — render it read-only.
   useEffect(() => {
@@ -323,15 +356,15 @@ const EmployeeCompensationForm: React.FC = () => {
     const createdBy = cookies.rl_user_id ?? '';
     setSaving(true);
     try {
-      if (currentCompensation?.handle) {
-        // Employee already has an active comp → override at the employee level as a new revision.
+      if (editInPlace && latestComp?.handle) {
+        // Latest revision is a not-yet-approved DRAFT/REJECTED → edit it IN PLACE (same record,
+        // same revisionNumber). The update endpoint has no CTC field, so the override is expressed
+        // as the CTC-derived amounts already shown read-only in the breakdown.
         const payload: UpdateEmployeeCompensationRequest = {
           organizationId: getOrganizationId(),
-          handle: currentCompensation.handle,
+          handle: latestComp.handle,
           employeeId: selectedEmployeeId,
           effectiveFrom: effectiveFrom || undefined,
-          // The update endpoint carries no CTC field, so the override is expressed as the
-          // CTC-derived amounts already shown read-only in the breakdown.
           components: earningComponents.map((c) => ({
             componentCode: c.componentCode,
             calculationMethod: c.calculationMethod,
@@ -339,48 +372,50 @@ const EmployeeCompensationForm: React.FC = () => {
             percentage: c.percentage,
             formula: c.formula,
           })),
+          // The structure derives from the CTC — the backend requires it (COMP_092).
+          annualCTC,
           remarks,
           createdBy,
         };
         await updateEmployeeCompensation(payload);
       } else {
-        // Brand-new assignment → create.
-        const payload: EmployeeCompensationRequest = {
-          ...buildComputeRequest(),
-          components: earningComponents.map((c) => ({
-            componentCode: c.componentCode,
-            calculationMethod: c.calculationMethod,
-            amount: c.amount,
-            percentage: c.percentage,
-            formula: c.formula,
-          })),
-        };
-        await saveCompensationDraft(payload);
+        // Latest is APPROVED (or there is none) → CREATE the next revision. The backend writes a
+        // fresh DRAFT with revisionNumber = max+1, leaving the APPROVED record untouched.
+        await saveCompensationDraft(buildComputeRequest());
       }
+      // Refresh both sources so `latestComp` becomes the record we just wrote (a DRAFT), which flips
+      // the screen into edit-in-place mode and enables Submit-for-Approval on it.
       await loadEmployeeCompensation(selectedEmployeeId);
       await fetchCompensationHistory(selectedEmployeeId);
     } finally {
       setSaving(false);
     }
   }, [
-    selectedEmployeeId, currentCompensation, effectiveFrom, earningComponents, remarks,
+    selectedEmployeeId, editInPlace, latestComp, effectiveFrom, earningComponents, remarks,
     buildComputeRequest, updateEmployeeCompensation, saveCompensationDraft,
     loadEmployeeCompensation, fetchCompensationHistory,
   ]);
 
   const handleSubmit = useCallback(async () => {
-    if (!currentCompensation?.handle) return;
+    if (!latestComp?.handle || latestComp.status !== 'DRAFT') return;
     setSubmitting(true);
     try {
-      await submitCompensationForApproval(currentCompensation.handle);
+      await submitCompensationForApproval(latestComp.handle);
+      // Reflect the new SUBMITTED status (disables Submit, updates the header tag).
+      await fetchCompensationHistory(selectedEmployeeId!);
     } finally {
       setSubmitting(false);
     }
-  }, [currentCompensation, submitCompensationForApproval]);
+  }, [latestComp, submitCompensationForApproval, fetchCompensationHistory, selectedEmployeeId]);
 
   const resolvedStructure = salaryStructures.find((s) => s.structureCode === structureCode);
   const activeSummary: EmployeeCompensationResponse | undefined =
-    previewCompensation ?? currentCompensation ?? undefined;
+    previewCompensation ?? latestComp ?? undefined;
+  const saveLabel = editInPlace
+    ? 'Save Draft Changes'
+    : latestComp
+      ? 'Save as New Revision'
+      : 'Assign Compensation';
 
   // ── Search bar (always visible) ──────────────────────────────────────────────
   const searchBar = (
@@ -412,13 +447,13 @@ const EmployeeCompensationForm: React.FC = () => {
         </div>
         {selectedEmployee && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {currentCompensation && <CompensationStatusTag status={currentCompensation.status} />}
-            {currentCompensation && (
+            {latestComp && <CompensationStatusTag status={latestComp.status} />}
+            {latestComp && (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Rev #{currentCompensation.revisionNumber}
+                Rev #{latestComp.revisionNumber}
               </Typography.Text>
             )}
-            {!currentCompensation && selectedEmployeeId && !assignmentLoading && (
+            {!latestComp && selectedEmployeeId && !assignmentLoading && (
               <Tag color="blue">New assignment</Tag>
             )}
           </div>
@@ -453,14 +488,14 @@ const EmployeeCompensationForm: React.FC = () => {
                 <Descriptions.Item label="Email">{selectedEmployee.email ?? '—'}</Descriptions.Item>
                 <Descriptions.Item label="Grade">{selectedEmployee.grade ?? '—'}</Descriptions.Item>
                 <Descriptions.Item label="Department">
-                  {currentCompensation?.department ?? selectedEmployee.department ?? '—'}
+                  {latestComp?.department ?? selectedEmployee.department ?? '—'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Designation">
-                  {currentCompensation?.designation ?? selectedEmployee.designation ?? '—'}
+                  {latestComp?.designation ?? selectedEmployee.designation ?? '—'}
                 </Descriptions.Item>
-                {currentCompensation && (
+                {latestComp && (
                   <Descriptions.Item label="Effective From">
-                    {currentCompensation.effectiveFrom}
+                    {latestComp.effectiveFrom}
                   </Descriptions.Item>
                 )}
               </Descriptions>
@@ -594,21 +629,21 @@ const EmployeeCompensationForm: React.FC = () => {
               <Button onClick={handleRecalculate} loading={recomputing} disabled={!annualCTC || !structureCode}>
                 Preview
               </Button>
-              <Can I={currentCompensation ? 'edit' : 'add'}>
+              <Can I={latestComp ? 'edit' : 'add'}>
                 <Button
                   type="primary"
                   loading={saving}
                   onClick={handleSave}
                   disabled={!structureCode || !annualCTC}
                 >
-                  {currentCompensation ? 'Save Override' : 'Assign Compensation'}
+                  {saveLabel}
                 </Button>
               </Can>
               <Can I="edit">
                 <Button
                   loading={submitting}
                   onClick={handleSubmit}
-                  disabled={!currentCompensation?.handle || currentCompensation.status !== 'DRAFT'}
+                  disabled={!latestComp?.handle || latestComp.status !== 'DRAFT'}
                 >
                   Submit for Approval
                 </Button>

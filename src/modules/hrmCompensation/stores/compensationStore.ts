@@ -56,8 +56,8 @@ interface CompensationStoreState {
   loadEmployeeCompensation: (employeeId: string) => Promise<void>;
   fetchCompensationHistory: (employeeId: string) => Promise<void>;
   runPreview: (req: unknown) => Promise<void>;
-  saveCompensationDraft: (req: unknown) => Promise<void>;
-  updateEmployeeCompensation: (req: unknown) => Promise<void>;
+  saveCompensationDraft: (req: unknown) => Promise<EmployeeCompensationResponse>;
+  updateEmployeeCompensation: (req: unknown) => Promise<EmployeeCompensationResponse>;
   submitCompensationForApproval: (handle: string) => Promise<void>;
 
   // Salary Revision
@@ -209,23 +209,29 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
     set({ previewCompensation: data });
   },
 
+  /**
+   * Create = mint the NEXT revision. The backend reads history, sets revisionNumber = max+1 and
+   * writes a fresh DRAFT record (new handle, active=1) — it never touches the APPROVED record.
+   * Returns the new DRAFT so the caller can drive submit-for-approval off it.
+   */
   saveCompensationDraft: async (req) => {
-    await HrmCompensationService.createEmployeeCompensation(
+    const created = await HrmCompensationService.createEmployeeCompensation(
       req as Parameters<typeof HrmCompensationService.createEmployeeCompensation>[0],
     );
-    message.success('Compensation saved as draft');
+    message.success('New revision drafted');
+    return created;
   },
 
   /**
-   * Employee-level override. Routes through updateEmployeeCompensation which the backend
-   * records as the NEXT revision for an employee who already has an active compensation —
-   * mirrors saveCompensationDraft's shape but hits the update endpoint. be-spec §8.
+   * Update = in-place edit of an existing DRAFT/REJECTED record (keeps its revisionNumber).
+   * The backend rejects anything already APPROVED (COMP_021). NOT a revision — a draft edit.
    */
   updateEmployeeCompensation: async (req) => {
-    await HrmCompensationService.updateEmployeeCompensation(
+    const updated = await HrmCompensationService.updateEmployeeCompensation(
       req as Parameters<typeof HrmCompensationService.updateEmployeeCompensation>[0],
     );
-    message.success('Compensation override saved as a new revision');
+    message.success('Changes saved');
+    return updated;
   },
 
   submitCompensationForApproval: async (handle) => {

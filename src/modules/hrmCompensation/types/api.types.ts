@@ -108,6 +108,9 @@ export interface UpdateEmployeeCompensationRequest {
   employeeId?: string;
   effectiveFrom?: string;
   components: CompensationComponentRequest[];
+  /** Required by the backend when the structure uses PERCENT_OF_CTC/BALANCE (COMP_092): the split
+   *  is re-derived from the CTC on an in-place draft edit, just as on create. */
+  annualCTC?: number | null;
   remarks: string;
   createdBy: string;
 }
