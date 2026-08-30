@@ -31,6 +31,7 @@ import { parseCookies } from 'nookies';
 import { getOrganizationId } from '@/utils/cookieUtils';
 import EarningsGrid from './EarningsGrid';
 import DeductionsGrid from './DeductionsGrid';
+import CtcCompositionBar from '../molecules/CtcCompositionBar';
 import CompensationSummaryBar from '../molecules/CompensationSummaryBar';
 import RevisionHistoryTimeline from '../molecules/RevisionHistoryTimeline';
 import CompensationStatusTag from '../atoms/CompensationStatusTag';
@@ -567,6 +568,16 @@ const EmployeeCompensationForm: React.FC = () => {
               style={{ marginBottom: 16 }}
               message="Enter the annual CTC to see the split."
             />
+          )}
+
+          {/* Earnings composition — stacked share of gross */}
+          {earningComponents.length > 0 && (
+            <Card size="small" title="CTC composition" style={{ marginBottom: 12 }}>
+              <CtcCompositionBar
+                components={earningComponents}
+                gross={earningComponents.reduce((sum, c) => sum + (c.derivedAmount ?? 0), 0)}
+              />
+            </Card>
           )}
 
           {/* Earnings — read-only, derived from the CTC */}

@@ -1176,3 +1176,88 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Mockup-fidelity: assignment CTC composition bar ── */
+.ctcBarWrap {
+  margin: 4px 0 14px;
+}
+
+.ctcBarTrack {
+  display: flex;
+  width: 100%;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--hrm-bg-secondary);
+}
+
+.ctcBarSeg {
+  height: 100%;
+  min-width: 2px;
+  transition: flex-basis 0.3s ease;
+}
+
+.ctcLegend {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 4px 14px;
+}
+
+.ctcLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.ctcLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.ctcLegendName {
+  color: var(--hrm-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctcLegendMeta {
+  color: var(--hrm-text-tertiary);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Mockup-fidelity: approval old→new CTC delta ── */
+.ctcDeltaLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ctcPrev {
+  color: var(--hrm-text-tertiary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Mockup-fidelity: overview pipeline node count badge ── */
+.pipelineCount {
+  display: inline-block;
+  margin-top: 4px;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--comp-accent);
+  background: var(--comp-accent-soft);
+}

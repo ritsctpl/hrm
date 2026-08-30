@@ -102,7 +102,16 @@ const CompensationOverview: React.FC = () => {
 
       {/* Pipeline diagram */}
       <section className={styles.pipeline} aria-label="Compensation pipeline">
-        {PIPELINE.map((node, i) => (
+        {PIPELINE.map((node, i) => {
+          const count =
+            node.key === 'components'
+              ? payComponents.length
+              : node.key === 'structures'
+                ? salaryStructures.length
+                : node.key === 'approvals'
+                  ? pendingApprovals.length
+                  : null;
+          return (
           <React.Fragment key={node.key}>
             <button
               type="button"
@@ -111,6 +120,7 @@ const CompensationOverview: React.FC = () => {
             >
               <span className={styles.pipelineIcon}>{node.icon}</span>
               <span className={styles.pipelineLabel}>{node.label}</span>
+              {count != null && <span className={styles.pipelineCount}>{count}</span>}
             </button>
             {i < PIPELINE.length - 1 && (
               <span className={styles.pipelineArrow} aria-hidden>
@@ -118,7 +128,8 @@ const CompensationOverview: React.FC = () => {
               </span>
             )}
           </React.Fragment>
-        ))}
+          );
+        })}
       </section>
 
       {/* Stat cards */}

@@ -8,7 +8,11 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { EmployeeCompensationResponse } from '../../types/domain.types';
 import { formatINRPlain } from '../../utils/compensationFormatters';
+import { HrmCompensationService } from '../../services/compensationService';
+import { getOrganizationId } from '@/utils/cookieUtils';
 import CompensationStatusTag from '../atoms/CompensationStatusTag';
+import VariancePill from '../atoms/VariancePill';
+import { computeDelta } from '../molecules/CtcCompositionBar';
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 
@@ -25,10 +29,49 @@ const ApprovalInbox: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectTouched, setRejectTouched] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // Previous approved CTC per pending item handle, for the old→new delta pill.
+  const [prevCtcByHandle, setPrevCtcByHandle] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchPendingApprovals();
   }, [fetchPendingApprovals]);
+
+  // For each pending item, look up the employee's prior APPROVED revision so the card can show the
+  // increment. One history call per distinct employee; failures degrade to no pill.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (pendingApprovals.length === 0) {
+        setPrevCtcByHandle({});
+        return;
+      }
+      const org = getOrganizationId();
+      const byEmployee = new Map<string, EmployeeCompensationResponse[]>();
+      await Promise.all(
+        Array.from(new Set(pendingApprovals.map((p) => p.employeeId))).map(async (empId) => {
+          try {
+            const hist = await HrmCompensationService.getCompensationHistory(org, empId);
+            byEmployee.set(empId, hist ?? []);
+          } catch {
+            byEmployee.set(empId, []);
+          }
+        }),
+      );
+      if (cancelled) return;
+      const map: Record<string, number> = {};
+      for (const item of pendingApprovals) {
+        const hist = byEmployee.get(item.employeeId) ?? [];
+        const prior = hist
+          .filter((h) => h.status === 'APPROVED' && h.revisionNumber < item.revisionNumber)
+          .sort((a, b) => b.revisionNumber - a.revisionNumber)[0];
+        if (prior && prior.annualCTC > 0) map[item.handle] = prior.annualCTC;
+      }
+      setPrevCtcByHandle(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingApprovals]);
 
   const handleApprove = useCallback(
     async (item: EmployeeCompensationResponse) => {
@@ -114,9 +157,21 @@ const ApprovalInbox: React.FC = () => {
               </div>
               <div className={styles.figure}>
                 <span className={styles.figureLabel}>Annual CTC</span>
-                <span className={`${styles.figureMoney} ${styles.figureCtc}`}>
-                  {formatINRPlain(item.annualCTC)}
-                </span>
+                {(() => {
+                  const prev = prevCtcByHandle[item.handle];
+                  const { deltaPct } = computeDelta(prev, item.annualCTC);
+                  return (
+                    <span className={styles.ctcDeltaLine}>
+                      {prev != null && (
+                        <span className={styles.ctcPrev}>{formatINRPlain(prev)} →</span>
+                      )}
+                      <span className={`${styles.figureMoney} ${styles.figureCtc}`}>
+                        {formatINRPlain(item.annualCTC)}
+                      </span>
+                      {deltaPct != null && <VariancePill value={deltaPct} />}
+                    </span>
+                  );
+                })()}
               </div>
               <div className={styles.figure}>
                 <span className={styles.figureLabel}>Net Pay</span>

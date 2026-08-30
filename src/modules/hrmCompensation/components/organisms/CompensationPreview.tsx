@@ -4,6 +4,7 @@ import React from 'react';
 import { Divider } from 'antd';
 import type { CompensationPreviewProps } from '../../types/ui.types';
 import { formatINRPlain } from '../../utils/compensationFormatters';
+import CtcCompositionBar from '../molecules/CtcCompositionBar';
 import previewStyles from '../../styles/CompensationPreview.module.css';
 
 const CompensationPreview: React.FC<CompensationPreviewProps> = ({ data }) => {
@@ -13,6 +14,8 @@ const CompensationPreview: React.FC<CompensationPreviewProps> = ({ data }) => {
   return (
     <div className={previewStyles.previewCard}>
       <div className={previewStyles.previewTitle}>Salary Preview</div>
+
+      <CtcCompositionBar components={data.components ?? []} gross={data.grossEarnings} />
 
       {earnings.length > 0 && (
         <>
