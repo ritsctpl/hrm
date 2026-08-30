@@ -36,6 +36,7 @@ interface CompensationStoreState {
   selectComponent: (component: PayComponent | null) => void;
   savePayComponent: (data: PayComponentFormState, handle?: string) => Promise<void>;
   deletePayComponent: (componentCode: string) => Promise<void>;
+  hardDeletePayComponent: (handle: string) => Promise<void>;
 
   // Salary Structures
   salaryStructures: SalaryStructure[];
@@ -126,7 +127,18 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
       updatedBy: getUser(),
     });
     message.success('Pay component deactivated');
-    set({ selectedComponent: null });
+    if (get().selectedComponent?.componentCode === componentCode) {
+      set({ selectedComponent: null });
+    }
+    await get().fetchPayComponents();
+  },
+
+  hardDeletePayComponent: async (handle) => {
+    await HrmCompensationService.deletePayComponent(getOrganizationId(), handle, getUser());
+    message.success('Pay component deleted');
+    if (get().selectedComponent?.handle === handle) {
+      set({ selectedComponent: null });
+    }
     await get().fetchPayComponents();
   },
 
