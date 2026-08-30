@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Tabs } from 'antd';
+import React, { useState } from 'react';
+import { Button, Drawer, Grid } from 'antd';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useHrmCompensationStore } from '../../stores/compensationStore';
 import type { CompensationTabKey } from '../../types/ui.types';
 import PayComponentList from '../organisms/PayComponentList';
@@ -11,17 +12,19 @@ import SalaryStructureBuilder from '../organisms/SalaryStructureBuilder';
 import EmployeeCompensationForm from '../organisms/EmployeeCompensationForm';
 import SalaryRevisionTable from '../organisms/SalaryRevisionTable';
 import ApprovalInbox from '../organisms/ApprovalInbox';
+import CompensationOverview from '../organisms/CompensationOverview';
+import CompensationHistory from '../organisms/CompensationHistory';
+import WorkflowRail, { WORKFLOW_STEPS } from './WorkflowRail';
 import styles from '../../styles/Compensation.module.css';
 
-const CompensationTabLayout: React.FC = () => {
-  const activeTab = useHrmCompensationStore((s) => s.activeTab);
-  const setActiveTab = useHrmCompensationStore((s) => s.setActiveTab);
+const { useBreakpoint } = Grid;
 
-  const tabItems = [
-    {
-      key: 'components' as CompensationTabKey,
-      label: 'Pay Components',
-      children: (
+const renderStepBody = (key: CompensationTabKey): React.ReactNode => {
+  switch (key) {
+    case 'overview':
+      return <CompensationOverview />;
+    case 'components':
+      return (
         <div className={styles.masterDetailGrid}>
           <div className={styles.masterPanel}>
             <PayComponentList />
@@ -30,12 +33,9 @@ const CompensationTabLayout: React.FC = () => {
             <PayComponentForm />
           </div>
         </div>
-      ),
-    },
-    {
-      key: 'structures' as CompensationTabKey,
-      label: 'Salary Structures',
-      children: (
+      );
+    case 'structures':
+      return (
         <div className={styles.masterDetailGridStructure}>
           <div className={styles.masterPanel}>
             <SalaryStructureList />
@@ -44,34 +44,66 @@ const CompensationTabLayout: React.FC = () => {
             <SalaryStructureBuilder />
           </div>
         </div>
-      ),
-    },
-    {
-      key: 'assignment' as CompensationTabKey,
-      label: 'Assignment',
-      children: <EmployeeCompensationForm />,
-    },
-    {
-      key: 'revision' as CompensationTabKey,
-      label: 'Revision',
-      children: <SalaryRevisionTable />,
-    },
-    {
-      key: 'approvals' as CompensationTabKey,
-      label: 'Approvals',
-      children: <ApprovalInbox />,
-    },
-  ];
+      );
+    case 'assignment':
+      return <EmployeeCompensationForm />;
+    case 'revision':
+      return <SalaryRevisionTable />;
+    case 'approvals':
+      return <ApprovalInbox />;
+    case 'history':
+      return <CompensationHistory />;
+    default:
+      return null;
+  }
+};
+
+const CompensationTabLayout: React.FC = () => {
+  const activeTab = useHrmCompensationStore((s) => s.activeTab);
+  const screens = useBreakpoint();
+  const isNarrow = !screens.lg;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const activeStep = WORKFLOW_STEPS.find((s) => s.key === activeTab);
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={(key) => setActiveTab(key as CompensationTabKey)}
-      items={tabItems}
-      className={styles.mainTabs}
-      size="small"
-      tabBarStyle={{ marginBottom: 0, padding: '0 16px', borderBottom: '1px solid #e8e8e8' }}
-    />
+    <div className={styles.workflowShell}>
+      {!isNarrow && (
+        <aside className={styles.railColumn}>
+          <WorkflowRail />
+        </aside>
+      )}
+
+      {isNarrow && (
+        <Drawer
+          placement="left"
+          width={272}
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          styles={{ body: { padding: 0 } }}
+          className={styles.railDrawer}
+        >
+          <WorkflowRail onNavigate={() => setDrawerOpen(false)} />
+        </Drawer>
+      )}
+
+      <section className={styles.workflowContent}>
+        {isNarrow && (
+          <div className={styles.contentTopbar}>
+            <Button
+              type="text"
+              icon={<MenuIcon />}
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open workflow menu"
+            />
+            <span className={styles.contentTopbarTitle}>{activeStep?.label ?? 'Compensation'}</span>
+          </div>
+        )}
+        <div className={styles.workflowBody} key={activeTab}>
+          {renderStepBody(activeTab)}
+        </div>
+      </section>
+    </div>
   );
 };
 

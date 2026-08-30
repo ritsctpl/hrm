@@ -80,7 +80,7 @@ interface CompensationStoreState {
 }
 
 export const useHrmCompensationStore = create<CompensationStoreState>((set, get) => ({
-  activeTab: 'components',
+  activeTab: 'overview',
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   // ------------------------------------------------------------------
@@ -298,7 +298,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   // ------------------------------------------------------------------
   reset: () =>
     set({
-      activeTab: 'components',
+      activeTab: 'overview',
       payComponents: [],
       selectedComponent: null,
       salaryStructures: [],

@@ -10,7 +10,14 @@ import type {
   SalaryRevisionRow,
 } from './domain.types';
 
-export type CompensationTabKey = 'components' | 'structures' | 'assignment' | 'revision' | 'approvals';
+export type CompensationTabKey =
+  | 'overview'
+  | 'components'
+  | 'structures'
+  | 'assignment'
+  | 'revision'
+  | 'approvals'
+  | 'history';
 export type RevisionMode = 'individual' | 'bulk';
 
 export interface PayComponentFormState {
