@@ -94,7 +94,7 @@ const SalaryStructureList: React.FC = () => {
         </div>
       )}
 
-      <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--hrm-text-tertiary)' }}>
         {filtered.length} of {salaryStructures.length} structures
       </div>
     </div>

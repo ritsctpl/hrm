@@ -118,7 +118,7 @@ const SalaryRevisionTable: React.FC = () => {
       dataIndex: 'currentBasic',
       width: 110,
       align: 'right',
-      render: (v: number) => formatINRPlain(v),
+      render: (v: number) => <span className={styles.money}>{formatINRPlain(v)}</span>,
     },
     {
       title: 'Incr %',
@@ -140,16 +140,14 @@ const SalaryRevisionTable: React.FC = () => {
       dataIndex: 'newBasic',
       width: 110,
       align: 'right',
-      render: (v: number) => (
-        <span style={{ fontWeight: 600, color: '#389e0d' }}>{formatINRPlain(v)}</span>
-      ),
+      render: (v: number) => <span className={styles.moneyPos}>{formatINRPlain(v)}</span>,
     },
     {
       title: 'New Gross',
       dataIndex: 'newGross',
       width: 120,
       align: 'right',
-      render: (v: number) => formatINRPlain(v),
+      render: (v: number) => <span className={styles.money}>{formatINRPlain(v)}</span>,
     },
   ];
 
@@ -173,8 +171,8 @@ const SalaryRevisionTable: React.FC = () => {
       {/* Individual Revision */}
       {revisionMode === 'individual' && (
         <Card size="small" className={styles.indivCard}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Employee</div>
+          <div className={styles.blockGap}>
+            <div className={styles.fieldLabel}>Employee</div>
             <Input.Search
               placeholder="Enter employee ID"
               value={selectedEmployeeId ?? ''}
@@ -211,9 +209,9 @@ const SalaryRevisionTable: React.FC = () => {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12, alignItems: 'flex-end' }}>
-            <div style={{ flex: 1, minWidth: 120 }}>
-              <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Increment %</div>
+          <div className={styles.inlineRow}>
+            <div className={styles.field}>
+              <div className={styles.fieldLabel}>Increment %</div>
               <InputNumber
                 min={0}
                 max={100}
@@ -222,8 +220,8 @@ const SalaryRevisionTable: React.FC = () => {
                 style={{ width: '100%' }}
               />
             </div>
-            <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Effective From</div>
+            <div className={styles.fieldWide}>
+              <div className={styles.fieldLabel}>Effective From</div>
               <DatePicker
                 value={indivEffectiveFrom ? dayjs(indivEffectiveFrom) : null}
                 onChange={(d) => setIndivEffectiveFrom(d ? d.format('YYYY-MM-DD') : '')}
@@ -232,19 +230,19 @@ const SalaryRevisionTable: React.FC = () => {
               />
             </div>
             {currentCompensation && indivIncrementPct > 0 && (
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Estimated Result</div>
-                <div style={{ fontSize: 13 }}>
-                  <span>New Basic: <strong style={{ color: '#389e0d' }}>{formatINRPlain(newBasicEstimate)}</strong></span>
+              <div className={styles.fieldEstimate}>
+                <div className={styles.fieldLabel}>Estimated Result</div>
+                <div className={styles.estimateText}>
+                  <span>New Basic: <strong className={styles.moneyPos}>{formatINRPlain(newBasicEstimate)}</strong></span>
                   {' | '}
-                  <span>New Gross: <strong>{formatINRPlain(newGrossEstimate)}</strong></span>
+                  <span>New Gross: <strong className={styles.money}>{formatINRPlain(newGrossEstimate)}</strong></span>
                 </div>
               </div>
             )}
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: '#595959', marginBottom: 4 }}>Remarks</div>
+          <div className={styles.blockGap}>
+            <div className={styles.fieldLabel}>Remarks</div>
             <Input.TextArea
               rows={2}
               value={indivRemarks}
@@ -253,7 +251,7 @@ const SalaryRevisionTable: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div className={styles.actionsRow}>
             <Button
               onClick={() => {
                 if (!selectedEmployeeId || !currentCompensation) return;

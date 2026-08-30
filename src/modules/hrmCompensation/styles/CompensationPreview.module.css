@@ -1,8 +1,8 @@
 /* HRM Compensation — Preview Card Styles */
 
 .previewCard {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  background: var(--hrm-bg-subtle);
+  border: 1px solid var(--hrm-border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -10,10 +10,10 @@
 .previewTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #1f1f1f;
+  color: var(--hrm-text-primary);
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--hrm-border-light);
 }
 
 .previewRow {
@@ -25,16 +25,18 @@
 }
 
 .previewRowName {
-  color: #595959;
+  color: var(--hrm-text-secondary);
 }
 
 .previewRowAmount {
   font-weight: 500;
-  color: #1f1f1f;
+  color: var(--hrm-text-primary);
+  font-family: var(--comp-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .previewDivider {
-  border-top: 1px solid #d9d9d9;
+  border-top: 1px solid var(--hrm-border);
   margin: 8px 0;
 }
 
@@ -44,25 +46,27 @@
   padding: 6px 0;
   font-size: 14px;
   font-weight: 600;
+  font-family: var(--comp-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .previewGross {
-  color: #52c41a;
+  color: var(--comp-ok);
 }
 
 .previewDeduction {
-  color: #ff4d4f;
+  color: var(--comp-bad);
 }
 
 .previewNet {
-  color: #1890ff;
+  color: var(--comp-accent);
   font-size: 16px;
 }
 
 .sectionHeader {
   font-size: 12px;
   font-weight: 600;
-  color: #8c8c8c;
+  color: var(--hrm-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 12px 0 4px;

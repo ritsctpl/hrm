@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { Tag, Typography, Button, Popconfirm, Tooltip } from 'antd';
+import { Button, Popconfirm, Tooltip } from 'antd';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -21,7 +21,7 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
   selected,
   onClick,
 }) => {
-  const typeColor = component.componentType === 'EARNING' ? 'green' : 'red';
+  const isEarning = component.componentType === 'EARNING';
 
   const deletePayComponent = useHrmCompensationStore((s) => s.deletePayComponent);
   const hardDeletePayComponent = useHrmCompensationStore((s) => s.hardDeletePayComponent);
@@ -49,20 +49,14 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
     >
       <div className={styles.componentMain}>
         <div className={styles.componentCodeLine}>
-          <Typography.Text strong style={{ fontSize: 13 }}>
-            {component.componentCode}
-          </Typography.Text>
-          <Tag color={typeColor} style={{ fontSize: 10, lineHeight: '16px', margin: 0 }}>
+          <span className={styles.componentCode}>{component.componentCode}</span>
+          <span
+            className={`${styles.typeChip} ${isEarning ? styles.typeEarning : styles.typeDeduction}`}
+          >
             {component.componentType}
-          </Tag>
+          </span>
         </div>
-        <Typography.Text
-          type="secondary"
-          style={{ fontSize: 12, display: 'block' }}
-          ellipsis
-        >
-          {component.componentName}
-        </Typography.Text>
+        <span className={styles.componentName}>{component.componentName}</span>
       </div>
 
       <Can I="edit">
@@ -112,9 +106,11 @@ const PayComponentListRow: React.FC<PayComponentListRowProps> = ({
         </div>
       </Can>
 
-      <Tag color={component.active === 1 ? 'green' : 'default'} style={{ fontSize: 10, margin: 0, flexShrink: 0 }}>
+      <span
+        className={`${styles.stateChip} ${component.active === 1 ? styles.stateActive : styles.stateInactive}`}
+      >
         {component.active === 1 ? 'Active' : 'Inactive'}
-      </Tag>
+      </span>
     </div>
   );
 };

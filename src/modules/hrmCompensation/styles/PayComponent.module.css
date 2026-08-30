@@ -26,12 +26,12 @@
 }
 
 .formulaError {
-  color: #ff4d4f;
+  color: var(--comp-bad);
   font-size: 12px;
 }
 
 .formulaOk {
-  color: #52c41a;
+  color: var(--comp-ok);
   font-size: 12px;
 }
 
@@ -81,6 +81,48 @@
   align-items: center;
   gap: 6px;
 }
+
+.componentCode {
+  font-size: 13px;
+  font-weight: var(--hrm-font-weight-semi);
+  color: var(--hrm-text-primary);
+  font-family: var(--comp-mono);
+}
+
+.componentName {
+  font-size: 12px;
+  color: var(--hrm-text-secondary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small semantic type/status chips (replace AntD Tag color props) */
+.typeChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--hrm-radius-sm);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: var(--hrm-font-weight-medium);
+}
+.typeEarning { color: var(--comp-ok); background: var(--comp-ok-bg); border: 1px solid var(--comp-ok-border); }
+.typeDeduction { color: var(--comp-bad); background: var(--comp-bad-bg); border: 1px solid var(--comp-bad-border); }
+
+.stateChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--hrm-radius-sm);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: var(--hrm-font-weight-medium);
+  flex-shrink: 0;
+}
+.stateActive { color: var(--comp-ok); background: var(--comp-ok-bg); border: 1px solid var(--comp-ok-border); }
+.stateInactive { color: var(--comp-draft); background: var(--comp-draft-bg); border: 1px solid var(--comp-draft-border); }
 
 .componentActions {
   display: flex;

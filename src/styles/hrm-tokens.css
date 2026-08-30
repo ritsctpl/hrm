@@ -111,6 +111,32 @@
   --hrm-appbar-height:   48px;
   --hrm-sidebar-width:   260px;
   --hrm-content-max:     1440px;
+
+  /* ================================================================
+     COMPENSATION STUDIO — module-scoped tokens (--comp-*)
+     Deliberate TEAL accent, GOLD reserved for CTC/money, semantic
+     status colours. Referenced by the hrmCompensation CSS modules;
+     declared here (not in the module css) because Next's CSS-Modules
+     loader runs in `pure` mode and rejects a bare :root/[data-theme].
+     ================================================================ */
+  --comp-accent:          #0d9488;
+  --comp-accent-hover:    #0f766e;
+  --comp-accent-soft:     rgba(13, 148, 136, 0.10);
+  --comp-accent-border:   rgba(13, 148, 136, 0.28);
+  --comp-accent-contrast: #ffffff;
+  --comp-accent-gradient: linear-gradient(135deg, #0d9488, #0891b2);
+  --comp-accent-subtle:   linear-gradient(135deg, rgba(13, 148, 136, 0.06), rgba(8, 145, 178, 0.06));
+
+  --comp-ctc:             #a16207;
+  --comp-ctc-soft:        rgba(161, 98, 7, 0.10);
+
+  --comp-ok:       #15803d;  --comp-ok-bg:    rgba(21, 128, 61, 0.10);   --comp-ok-border:    rgba(21, 128, 61, 0.30);
+  --comp-warn:     #b45309;  --comp-warn-bg:  rgba(180, 83, 9, 0.10);    --comp-warn-border:  rgba(180, 83, 9, 0.30);
+  --comp-bad:      #dc2626;  --comp-bad-bg:   rgba(220, 38, 38, 0.10);   --comp-bad-border:   rgba(220, 38, 38, 0.30);
+  --comp-draft:    #64748b;  --comp-draft-bg: rgba(100, 116, 139, 0.12); --comp-draft-border: rgba(100, 116, 139, 0.30);
+  --comp-info:     #2563eb;  --comp-info-bg:  rgba(37, 99, 235, 0.10);   --comp-info-border:  rgba(37, 99, 235, 0.30);
+
+  --comp-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Roboto Mono', 'Courier New', monospace;
 }
 
 /* ================================================================
@@ -154,6 +180,24 @@
   --hrm-shadow-md:       0 4px 6px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
   --hrm-shadow-lg:       0 10px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
   --hrm-shadow-xl:       0 20px 40px rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.2);
+
+  /* ---- Compensation Studio — dark overrides ---- */
+  --comp-accent:          #2dd4bf;
+  --comp-accent-hover:    #5eead4;
+  --comp-accent-soft:     rgba(45, 212, 191, 0.14);
+  --comp-accent-border:   rgba(45, 212, 191, 0.35);
+  --comp-accent-contrast: #04262b;
+  --comp-accent-gradient: linear-gradient(135deg, #2dd4bf, #22d3ee);
+  --comp-accent-subtle:   linear-gradient(135deg, rgba(45, 212, 191, 0.10), rgba(34, 211, 238, 0.10));
+
+  --comp-ctc:             #fcd34d;
+  --comp-ctc-soft:        rgba(252, 211, 77, 0.14);
+
+  --comp-ok:       #4ade80;  --comp-ok-bg:    rgba(74, 222, 128, 0.14);  --comp-ok-border:    rgba(74, 222, 128, 0.35);
+  --comp-warn:     #fbbf24;  --comp-warn-bg:  rgba(251, 191, 36, 0.14);  --comp-warn-border:  rgba(251, 191, 36, 0.35);
+  --comp-bad:      #f87171;  --comp-bad-bg:   rgba(248, 113, 113, 0.14); --comp-bad-border:   rgba(248, 113, 113, 0.35);
+  --comp-draft:    #94a3b8;  --comp-draft-bg: rgba(148, 163, 184, 0.16); --comp-draft-border: rgba(148, 163, 184, 0.35);
+  --comp-info:     #60a5fa;  --comp-info-bg:  rgba(96, 165, 250, 0.14);  --comp-info-border:  rgba(96, 165, 250, 0.35);
 }
 
 /* Dark mode global overrides */

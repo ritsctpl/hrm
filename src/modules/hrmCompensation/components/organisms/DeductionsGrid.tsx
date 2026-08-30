@@ -24,7 +24,7 @@ const DeductionsGrid: React.FC<DeductionsGridProps> = ({ components }) => {
       render: (_: unknown, r) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 13 }}>{r.componentName}</div>
-          <div style={{ color: '#8c8c8c', fontSize: 11 }}>{r.componentCode}</div>
+          <div style={{ color: 'var(--hrm-text-tertiary)', fontSize: 11 }}>{r.componentCode}</div>
         </div>
       ),
     },
@@ -51,7 +51,7 @@ const DeductionsGrid: React.FC<DeductionsGridProps> = ({ components }) => {
       width: 130,
       align: 'right',
       render: (val: number) => (
-        <span style={{ fontWeight: 500, color: '#cf1322' }}>{formatINRPlain(val ?? 0)}</span>
+        <span style={{ fontWeight: 500, color: 'var(--comp-bad)' }}>{formatINRPlain(val ?? 0)}</span>
       ),
     },
   ];

@@ -14,8 +14,8 @@
 
 .availablePool {
   padding: 12px;
-  background: #f0f7ff;
-  border: 1px dashed #91caff;
+  background: var(--comp-accent-soft);
+  border: 1px dashed var(--comp-accent-border);
   border-radius: 8px;
   min-height: 60px;
   display: flex;
@@ -27,7 +27,7 @@
 .availablePoolTitle {
   font-size: 13px;
   font-weight: 600;
-  color: #595959;
+  color: var(--hrm-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -42,22 +42,22 @@
 
 .dropZone {
   min-height: 48px;
-  border: 2px dashed #d9d9d9;
+  border: 2px dashed var(--hrm-border);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #bfbfbf;
+  color: var(--hrm-text-tertiary);
   font-size: 13px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--hrm-bg-subtle);
   transition: border-color 0.2s;
 }
 
 .dropZone.dragOver {
-  border-color: #1890ff;
-  background: #e6f4ff;
-  color: #1890ff;
+  border-color: var(--comp-accent);
+  background: var(--comp-accent-soft);
+  color: var(--comp-accent);
 }
 
 .componentRow {
@@ -68,7 +68,7 @@
 
 .dragHandle {
   cursor: grab;
-  color: #bfbfbf;
+  color: var(--hrm-text-tertiary);
   font-size: 16px;
 }
 
@@ -79,8 +79,65 @@
 .sectionTitle {
   font-size: 13px;
   font-weight: 600;
-  color: #595959;
+  color: var(--hrm-text-secondary);
   margin: 8px 0 4px;
+}
+
+/* ---- Structure list row (master panel) ---- */
+.structureRow {
+  padding: 8px 12px;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  transition: background var(--hrm-duration-fast) var(--hrm-ease-default),
+    border-color var(--hrm-duration-fast) var(--hrm-ease-default);
+}
+
+.structureRow:hover {
+  background: var(--comp-accent-soft);
+}
+
+.structureRowSelected {
+  background: var(--comp-accent-soft);
+  border-left-color: var(--comp-accent);
+}
+
+.structureCodeLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.structureCode {
+  font-size: 13px;
+  font-weight: var(--hrm-font-weight-semi);
+  color: var(--hrm-text-primary);
+  font-family: var(--comp-mono);
+}
+
+.structureGrade {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: var(--hrm-radius-sm);
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--comp-accent);
+  background: var(--comp-accent-soft);
+  border: 1px solid var(--comp-accent-border);
+}
+
+.structureName {
+  font-size: 12px;
+  color: var(--hrm-text-secondary);
+}
+
+.structureMeta {
+  font-size: 11px;
+  color: var(--hrm-text-tertiary);
+  margin-top: 2px;
 }
 
 /* --- 100% earnings tally bar --- */
@@ -117,13 +174,15 @@
 }
 
 .tallyBadgeBalanced {
-  color: var(--hrm-text-on-accent);
-  background: var(--hrm-success);
+  color: var(--comp-ok);
+  background: var(--comp-ok-bg);
+  border: 1px solid var(--comp-ok-border);
 }
 
 .tallyBadgeUnbalanced {
-  color: var(--hrm-text-on-accent);
-  background: var(--hrm-warning);
+  color: var(--comp-warn);
+  background: var(--comp-warn-bg);
+  border: 1px solid var(--comp-warn-border);
 }
 
 .tallyTrack {
@@ -141,9 +200,9 @@
 }
 
 .tallyFillBalanced {
-  background: var(--hrm-success);
+  background: var(--comp-ok);
 }
 
 .tallyFillUnbalanced {
-  background: var(--hrm-warning);
+  background: var(--comp-warn);
 }

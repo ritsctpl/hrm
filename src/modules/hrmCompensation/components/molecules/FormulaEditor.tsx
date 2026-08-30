@@ -46,12 +46,12 @@ const FormulaEditor: React.FC<FormulaEditorProps> = ({ value, onChange, disabled
       {validationMsg && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {isValid ? (
-            <CheckCircleOutlinedIcon style={{ fontSize: 14, color: '#52c41a' }} />
+            <CheckCircleOutlinedIcon style={{ fontSize: 14, color: 'var(--comp-ok)' }} />
           ) : (
-            <ErrorOutlinedIcon style={{ fontSize: 14, color: '#ff4d4f' }} />
+            <ErrorOutlinedIcon style={{ fontSize: 14, color: 'var(--comp-bad)' }} />
           )}
           <Typography.Text
-            style={{ fontSize: 12, color: isValid ? '#52c41a' : '#ff4d4f' }}
+            style={{ fontSize: 12, color: isValid ? 'var(--comp-ok)' : 'var(--comp-bad)' }}
           >
             {validationMsg}
           </Typography.Text>

@@ -22,7 +22,7 @@ const CompensationPreview: React.FC<CompensationPreviewProps> = ({ data }) => {
               <span className={previewStyles.previewRowName}>
                 {c.componentName}
                 {c.calculationMethod === 'PERCENTAGE' && c.percentage != null && (
-                  <span style={{ color: '#8c8c8c', fontSize: 11, marginLeft: 4 }}>
+                  <span style={{ color: 'var(--hrm-text-tertiary)', fontSize: 11, marginLeft: 4 }}>
                     ({c.percentage}%)
                   </span>
                 )}

@@ -1,16 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
 import type { CalcMethodBadgeProps } from '../../types/ui.types';
-import { CALC_METHOD_COLOR_MAP, CALC_METHOD_LABEL_MAP } from '../../utils/compensationConstants';
+import { CALC_METHOD_LABEL_MAP } from '../../utils/compensationConstants';
+import styles from '../../styles/Compensation.module.css';
+
+/** Token-driven badge: gold reserves for BALANCE (money-of-the-remainder), info for FORMULA. */
+const CALC_CLASS: Record<string, string> = {
+  BALANCE: styles.calcGold,
+  FORMULA: styles.calcInfo,
+};
 
 const CalcMethodBadge: React.FC<CalcMethodBadgeProps> = ({ method }) => {
-  const color = CALC_METHOD_COLOR_MAP[method] ?? 'default';
+  const cls = CALC_CLASS[method] ?? styles.calcDefault;
   return (
-    <Tag color={color} style={{ fontSize: 11 }}>
+    <span className={`${styles.calcBadge} ${cls}`}>
       {CALC_METHOD_LABEL_MAP[method] ?? method}
-    </Tag>
+    </span>
   );
 };
 

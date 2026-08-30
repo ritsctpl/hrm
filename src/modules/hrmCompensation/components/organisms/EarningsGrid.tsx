@@ -46,7 +46,7 @@ const EarningsGrid: React.FC<EarningsGridProps> = ({ components, onChange, disab
       render: (_: unknown, r) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 13 }}>{r.componentName}</div>
-          <div style={{ color: '#8c8c8c', fontSize: 11 }}>{r.componentCode}</div>
+          <div style={{ color: 'var(--hrm-text-tertiary)', fontSize: 11 }}>{r.componentCode}</div>
         </div>
       ),
     },
@@ -86,7 +86,7 @@ const EarningsGrid: React.FC<EarningsGridProps> = ({ components, onChange, disab
             />
           );
         }
-        return <span style={{ color: '#8c8c8c', fontSize: 12 }}>formula</span>;
+        return <span style={{ color: 'var(--hrm-text-tertiary)', fontSize: 12 }}>formula</span>;
       },
     },
     {

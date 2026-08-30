@@ -33,16 +33,7 @@ const HrmCompensationScreen: React.FC<HrmCompensationScreenProps> = ({
 
   return (
     <div className={styles.compensationScreen}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 24px',
-          borderBottom: '1px solid #f0f0f0',
-          background: '#fff',
-        }}
-      >
+      <div className={styles.screenHeader}>
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}

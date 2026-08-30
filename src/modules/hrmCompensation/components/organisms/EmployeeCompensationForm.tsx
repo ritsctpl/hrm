@@ -38,12 +38,7 @@ import EmployeeLookupSelect, { type EmployeeOption } from '../molecules/Employee
 import Can from '../../../hrmAccess/components/Can';
 import styles from '../../styles/Compensation.module.css';
 
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: 'var(--hrm-font-size-xs)',
-  color: 'var(--hrm-text-secondary)',
-  marginBottom: 4,
-};
-const REQ_MARK = <span style={{ color: 'var(--hrm-warning)' }}>*</span>;
+const REQ_MARK = <span className={styles.reqMark}>*</span>;
 
 const EmployeeCompensationForm: React.FC = () => {
   const {
@@ -419,10 +414,10 @@ const EmployeeCompensationForm: React.FC = () => {
 
   // ── Search bar (always visible) ──────────────────────────────────────────────
   const searchBar = (
-    <Card size="small" style={{ marginBottom: 16 }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 2, minWidth: 280 }}>
-          <div style={LABEL_STYLE}>Employee</div>
+    <Card size="small" className={styles.cardGap}>
+      <div className={styles.searchRow}>
+        <div className={styles.flex2}>
+          <div className={styles.fieldLabel}>Employee</div>
           <EmployeeLookupSelect
             value={selectedEmployeeId ?? undefined}
             options={filteredOptions}
@@ -431,8 +426,8 @@ const EmployeeCompensationForm: React.FC = () => {
             onChange={handleEmployeeSelect}
           />
         </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={LABEL_STYLE}>Filter by grade</div>
+        <div className={styles.flex1}>
+          <div className={styles.fieldLabel}>Filter by grade</div>
           <Select
             allowClear
             showSearch
@@ -446,7 +441,7 @@ const EmployeeCompensationForm: React.FC = () => {
           />
         </div>
         {selectedEmployee && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div className={styles.statusInline}>
             {latestComp && <CompensationStatusTag status={latestComp.status} />}
             {latestComp && (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -480,7 +475,7 @@ const EmployeeCompensationForm: React.FC = () => {
         <>
           {/* Employee header */}
           {selectedEmployee && (
-            <Card size="small" style={{ marginBottom: 16 }}>
+            <Card size="small" className={styles.cardGap}>
               <Descriptions size="small" column={3}>
                 <Descriptions.Item label="Employee">
                   {selectedEmployee.employeeName} ({selectedEmployee.employeeId})
@@ -503,28 +498,19 @@ const EmployeeCompensationForm: React.FC = () => {
           )}
 
           {/* Structure (read-only, applied from grade) + CTC (the sole input) + Effective date */}
-          <Card size="small" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div style={{ flex: 2, minWidth: 280 }}>
-                <div style={LABEL_STYLE}>Salary Structure (from grade)</div>
-                <div
-                  style={{
-                    padding: '6px 11px',
-                    border: '1px solid var(--hrm-border)',
-                    borderRadius: 'var(--hrm-radius-sm)',
-                    background: 'var(--hrm-bg-secondary)',
-                    color: 'var(--hrm-text-primary)',
-                    minHeight: 32,
-                  }}
-                >
+          <Card size="small" className={styles.cardGap}>
+            <div className={styles.rowWrap}>
+              <div className={styles.flex2}>
+                <div className={styles.fieldLabel}>Salary Structure (from grade)</div>
+                <div className={styles.readonlyField}>
                   {resolvedStructure
                     ? `${resolvedStructure.structureCode} — ${resolvedStructure.structureName}`
                     : structureCode || 'No structure resolved for this grade'}
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={LABEL_STYLE}>Annual CTC {REQ_MARK}</div>
-                <Space.Compact style={{ width: '100%' }}>
+              <div className={styles.ctcCol}>
+                <div className={styles.fieldLabel}>Annual CTC {REQ_MARK}</div>
+                <Space.Compact style={{ width: '100%' }} className={styles.ctcInput}>
                   <InputNumber
                     value={annualCTC ?? undefined}
                     onChange={(v) => setAnnualCTC(typeof v === 'number' ? v : null)}
@@ -538,12 +524,12 @@ const EmployeeCompensationForm: React.FC = () => {
                     Recalculate
                   </Button>
                 </Space.Compact>
-                <div style={{ fontSize: 11, color: 'var(--hrm-text-tertiary)', marginTop: 2 }}>
+                <div className={styles.hint}>
                   The only editable value — the breakdown below is derived from it.
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={LABEL_STYLE}>Effective From {REQ_MARK}</div>
+              <div className={styles.dateCol}>
+                <div className={styles.fieldLabel}>Effective From {REQ_MARK}</div>
                 <DatePicker
                   value={effectiveFrom ? dayjs(effectiveFrom) : null}
                   onChange={(d) => setEffectiveFrom(d ? d.format('YYYY-MM-DD') : '')}
@@ -587,7 +573,7 @@ const EmployeeCompensationForm: React.FC = () => {
           {earningComponents.length > 0 && (
             <Card
               size="small"
-              title={<span style={{ color: 'var(--hrm-success)' }}>Earnings (derived — read-only)</span>}
+              title={<span className={styles.earningsTitle}>Earnings (derived — read-only)</span>}
               style={{ marginBottom: 12 }}
             >
               <EarningsGrid components={earningComponents} onChange={setEarningComponents} disabled />
@@ -598,7 +584,7 @@ const EmployeeCompensationForm: React.FC = () => {
           {deductionComponents.length > 0 && (
             <Card
               size="small"
-              title={<span style={{ color: 'var(--hrm-warning)' }}>Deductions (Statutory — read-only)</span>}
+              title={<span className={styles.deductionsTitle}>Deductions (Statutory — read-only)</span>}
               style={{ marginBottom: 12 }}
             >
               <DeductionsGrid components={deductionComponents} />
@@ -613,8 +599,8 @@ const EmployeeCompensationForm: React.FC = () => {
           )}
 
           {/* Remarks */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={LABEL_STYLE}>Remarks</div>
+          <div className={styles.cardGap}>
+            <div className={styles.fieldLabel}>Remarks</div>
             <Input.TextArea
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}

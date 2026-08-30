@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Tag, Typography } from 'antd';
 import type { SalaryStructure } from '../../types/domain.types';
+import styles from '../../styles/SalaryStructure.module.css';
 
 interface StructureListRowProps {
   structure: SalaryStructure;
@@ -18,26 +18,14 @@ const StructureListRow: React.FC<StructureListRowProps> = ({
   return (
     <div
       onClick={onClick}
-      style={{
-        padding: '8px 12px',
-        cursor: 'pointer',
-        background: selected ? '#e6f4ff' : 'transparent',
-        borderRadius: 6,
-        borderLeft: selected ? '3px solid #1890ff' : '3px solid transparent',
-      }}
+      className={`${styles.structureRow} ${selected ? styles.structureRowSelected : ''}`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-        <Typography.Text strong style={{ fontSize: 13 }}>
-          {structure.structureCode}
-        </Typography.Text>
-        <Tag color="cyan" style={{ fontSize: 10, lineHeight: '16px', margin: 0 }}>
-          {structure.applicableGrade}
-        </Tag>
+      <div className={styles.structureCodeLine}>
+        <span className={styles.structureCode}>{structure.structureCode}</span>
+        <span className={styles.structureGrade}>{structure.applicableGrade}</span>
       </div>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }} ellipsis>
-        {structure.structureName}
-      </Typography.Text>
-      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+      <div className={styles.structureName}>{structure.structureName}</div>
+      <div className={styles.structureMeta}>
         {structure.components?.length ?? 0} components
       </div>
     </div>
