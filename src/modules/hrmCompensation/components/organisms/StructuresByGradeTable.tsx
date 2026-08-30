@@ -33,8 +33,11 @@ const StructuresByGradeTable: React.FC<StructuresByGradeTableProps> = ({ onNew }
             s.structureName.toLowerCase().includes(q) ||
             (s.applicableGrade ?? '').toLowerCase().includes(q),
         );
-    // Default grouping: by grade, then name.
+    // Active (current) structures first, then by grade, then name — superseded history sinks below.
     return [...list].sort((a, b) => {
+      if ((b.active === 1 ? 1 : 0) !== (a.active === 1 ? 1 : 0)) {
+        return (b.active === 1 ? 1 : 0) - (a.active === 1 ? 1 : 0);
+      }
       const g = (a.applicableGrade ?? '').localeCompare(b.applicableGrade ?? '');
       return g !== 0 ? g : a.structureName.localeCompare(b.structureName);
     });
@@ -83,10 +86,10 @@ const StructuresByGradeTable: React.FC<StructuresByGradeTableProps> = ({ onNew }
       {
         title: 'Status',
         key: 'status',
-        width: 100,
+        width: 110,
         render: (_, s) => (
           <Tag color={s.active === 1 ? 'green' : 'default'} bordered={false}>
-            {s.active === 1 ? 'Active' : 'Inactive'}
+            {s.active === 1 ? 'Current' : 'Superseded'}
           </Tag>
         ),
       },
@@ -133,9 +136,13 @@ const StructuresByGradeTable: React.FC<StructuresByGradeTableProps> = ({ onNew }
           dataSource={filtered}
           pagination={{ pageSize: 12, hideOnSinglePage: true }}
           onRow={(record) => ({ onClick: () => handleSelect(record) })}
-          rowClassName={(record) =>
-            record.structureCode === selectedStructure?.structureCode ? styles.tableRowSelected : styles.tableRowClickable
-          }
+          rowClassName={(record) => {
+            const base =
+              record.structureCode === selectedStructure?.structureCode
+                ? styles.tableRowSelected
+                : styles.tableRowClickable;
+            return record.active === 1 ? base : `${base} ${styles.tableRowMuted}`;
+          }}
           locale={{ emptyText: 'No structures found' }}
         />
       )}

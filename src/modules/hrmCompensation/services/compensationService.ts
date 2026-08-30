@@ -69,6 +69,19 @@ export class HrmCompensationService {
     return Array.isArray(res.data) ? res.data : [];
   }
 
+  /**
+   * Active + superseded structures, current first. Falls back to the active-only list when the
+   * backend has not yet been deployed with the history endpoint (404), so the UI degrades cleanly.
+   */
+  static async fetchAllSalaryStructuresWithHistory(organizationId: string): Promise<SalaryStructure[]> {
+    try {
+      const res = await api.post<SalaryStructure[]>(`${BASE}/getAllSalaryStructuresWithHistory`, { organizationId });
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return HrmCompensationService.fetchAllSalaryStructures(organizationId);
+    }
+  }
+
   static async getSalaryStructure(organizationId: string, structureCode: string): Promise<SalaryStructure> {
     const res = await api.post<SalaryStructure>(`${BASE}/getSalaryStructure`, { organizationId, structureCode });
     return res.data;

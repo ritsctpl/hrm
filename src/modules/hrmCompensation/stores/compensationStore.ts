@@ -153,7 +153,7 @@ export const useHrmCompensationStore = create<CompensationStoreState>((set, get)
   fetchSalaryStructures: async () => {
     set({ structuresLoading: true });
     try {
-      const data = await HrmCompensationService.fetchAllSalaryStructures(getOrganizationId());
+      const data = await HrmCompensationService.fetchAllSalaryStructuresWithHistory(getOrganizationId());
       set({ salaryStructures: data });
     } finally {
       set({ structuresLoading: false });
