@@ -309,7 +309,7 @@ small and single-purpose, consistent with the module's current file sizes.
 - `emailUploadBatch` with `hrm.mail.enabled=false` → items marked, no send
 - password derivation for each pattern, including the missing-source failure
 
-**Frontend** — `tests/unit/payslip-upload-summary.spec.ts` (`npm run test:unit`,
+**Frontend** — `tests/unit/payslip-upload-helpers.spec.ts` (`npm run test:unit`,
 Playwright pure-logic, no browser/server, matching the existing four specs):
 
 - the filename parse helper (shared shape with the backend cases)
