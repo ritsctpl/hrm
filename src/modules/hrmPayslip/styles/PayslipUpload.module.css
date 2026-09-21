@@ -1,0 +1,25 @@
+.uploadRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.namingHint { margin-bottom: 0; }
+.dragger { padding: 12px 0; }
+.actions { margin-top: 4px; }
+.summaryTitle { margin: 8px 0 0; }
+
+.summaryRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.summaryStats { align-items: flex-end; flex-wrap: wrap; }
+.summaryNote { margin-bottom: 0; }
+
+.problemRow { background: #fff7f6; }
