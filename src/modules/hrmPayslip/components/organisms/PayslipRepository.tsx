@@ -1,7 +1,7 @@
 'use client';
 
 import React from "react";
-import { Button, Space, Table, Typography } from "antd";
+import { Button, Space, Table, Tag, Typography } from "antd";
 import { DownloadOutlined, EyeOutlined, SyncOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
@@ -15,10 +15,27 @@ import styles from "../../styles/PayslipRepository.module.css";
 const PayslipRepository: React.FC = () => {
   const store = useHrmPayslipStore();
 
+  // Uploaded payslips are stored PDFs fetched by handle; generated ones are rendered from a snapshot.
+  const download = (record: PayslipListItem) =>
+    record.source === "UPLOADED"
+      ? store.downloadUploadedOne(record.handle, record.fileName)
+      : store.downloadOne(record.employeeId, record.payrollYear, record.payrollMonth);
+
   const columns: ColumnsType<PayslipListItem> = [
     { title: "Emp ID", dataIndex: "employeeId", key: "employeeId", width: 100 },
     { title: "Emp No", dataIndex: "employeeNumber", key: "employeeNumber", width: 110 },
     { title: "Name", dataIndex: "employeeName", key: "employeeName" },
+    {
+      title: "Source",
+      dataIndex: "source",
+      key: "source",
+      width: 110,
+      render: (source: string) => (
+        <Tag color={source === "UPLOADED" ? "blue" : "default"}>
+          {source === "UPLOADED" ? "Uploaded" : "Generated"}
+        </Tag>
+      ),
+    },
     { title: "Department", dataIndex: "department", key: "department", width: 130 },
     {
       title: "Period",
@@ -46,24 +63,26 @@ const PayslipRepository: React.FC = () => {
       width: 120,
       render: (_, record) => (
         <Space>
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            title="View"
-            onClick={() =>
-              store.downloadOne(record.employeeId, record.payrollYear, record.payrollMonth)
-            }
-          />
-          <Button
-            size="small"
-            icon={<DownloadOutlined />}
-            title="Download"
-            onClick={() =>
-              store.downloadOne(record.employeeId, record.payrollYear, record.payrollMonth)
-            }
-          />
+          {/* Reading another employee's payslip is DOWNLOAD_ANY on the backend (R7). */}
+          {/* One <Can> per button: <Space> treats a fragment as a single item. */}
+          <Can I="view" object="payslip_download">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              title="View"
+              onClick={() => download(record)}
+            />
+          </Can>
+          <Can I="view" object="payslip_download">
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              title="Download"
+              onClick={() => download(record)}
+            />
+          </Can>
           {record.status === "FAILED" && (
-            <Can I="edit">
+            <Can I="edit" object="payslip_generate">
               <Button
                 size="small"
                 icon={<SyncOutlined />}

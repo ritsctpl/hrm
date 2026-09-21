@@ -3,12 +3,14 @@
 import React, { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Tabs } from "antd";
-import { parseCookies } from "nookies";
 import CommonAppBar from "@/components/CommonAppBar";
 import SalaryRevealControl from "@/components/SalaryRevealControl";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { useHrmPayslipStore } from "./stores/payslipStore";
 import ModuleAccessGate from "../hrmAccess/components/ModuleAccessGate";
+import { useCan } from "../hrmAccess/hooks/useCan";
+import { visiblePayslipTabs } from "./utils/payslipTabs";
+import type { PayslipTabKey } from "./types/ui.types";
 import styles from "./styles/Payslip.module.css";
 
 const PayslipGenerationPanel = dynamic(
@@ -28,50 +30,84 @@ const PayslipTabLayout = dynamic(
   { ssr: false }
 );
 
+const PayslipUploadPanel = dynamic(
+  () => import("./components/organisms/PayslipUploadPanel"),
+  { ssr: false }
+);
+const UploadHistoryPanel = dynamic(
+  () => import("./components/organisms/UploadHistoryPanel"),
+  { ssr: false }
+);
+
+const TAB_LABELS: Record<PayslipTabKey, string> = {
+  upload: "Upload",
+  myPayslips: "My Payslips",
+  repository: "Repository",
+  uploadHistory: "Upload History",
+  generate: "Generate",
+  templates: "Templates",
+};
+
+function tabContent(key: PayslipTabKey): React.ReactNode {
+  switch (key) {
+    case "upload": return <PayslipUploadPanel />;
+    case "myPayslips": return <EmployeePayslipView />;
+    case "repository": return <PayslipRepository />;
+    case "uploadHistory": return <UploadHistoryPanel />;
+    case "generate": return <PayslipGenerationPanel />;
+    case "templates": return <PayslipTabLayout />;
+  }
+}
+
 const HrmPayslipLanding: React.FC = () => {
   const { activeTab, setActiveTab, loadMyPayslips, fetchTemplates } = useHrmPayslipStore();
 
-  const role = parseCookies().role ?? "EMPLOYEE";
-  const isAdminOrHr = role === "ADMIN" || role === "HR" || role === "FINANCE";
+  // This component renders ABOVE <ModuleAccessGate>, so there is no module context here: the module
+  // code must be passed explicitly or useCan resolves nothing and denies everything (ruling R6).
+  // The gates mirror the backend's PayslipPermission rules.
+  const root = useCan("HRM_PAYSLIP", "payslip_module");
+  const repository = useCan("HRM_PAYSLIP", "payslip_repository");
+  const generation = useCan("HRM_PAYSLIP", "payslip_generate");
+  const templates = useCan("HRM_PAYSLIP", "payslip_template");
+
+  // Backend UPLOAD accepts payslip_repository|ADD or payslip_module|ADD. The FE maps object-level
+  // canAdd to canEdit, so only the root grant gives exact parity (R6, option i).
+  const canUpload = root.canAdd;
+  // Backend VIEW_REPOSITORY is payslip_repository|VIEW with no root cascade.
+  const canViewRepository = repository.canView;
 
   useEffect(() => {
     loadMyPayslips();
-    if (isAdminOrHr) {
-      fetchTemplates();
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const tabItems = useMemo(() => {
-    const items = [];
-    if (isAdminOrHr) {
-      items.push({
-        key: "generate",
-        label: "Generate",
-        children: <PayslipGenerationPanel />,
-      });
+  // Permissions load after first render (the section cache is filled once the gate mounts), so this
+  // must re-run when the template grant arrives.
+  useEffect(() => {
+    if (templates.canView) {
+      fetchTemplates();
     }
-    items.push({
-      key: "myPayslips",
-      label: "My Payslips",
-      children: <EmployeePayslipView />,
-    });
-    if (isAdminOrHr) {
-      items.push({
-        key: "repository",
-        label: "Repository",
-        children: <PayslipRepository />,
-      });
-      items.push({
-        key: "templates",
-        label: "Templates",
-        children: <PayslipTabLayout />,
-      });
-    }
-    return items;
-  }, [isAdminOrHr]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templates.canView]);
 
-  const defaultTab = isAdminOrHr ? "generate" : "myPayslips";
+  const visibleKeys = useMemo(
+    () => visiblePayslipTabs({
+      canUpload,
+      canViewRepository,
+      canViewGeneration: generation.canView,
+      canViewTemplates: templates.canView,
+    }),
+    [canUpload, canViewRepository, generation.canView, templates.canView]
+  );
+
+  const tabItems = useMemo(
+    () => visibleKeys.map((key) => ({ key, label: TAB_LABELS[key], children: tabContent(key) })),
+    [visibleKeys]
+  );
+
+  // activeTab is controlled by the store (default "myPayslips", always visible). If it points at a
+  // tab this user can't see, show My Payslips rather than an empty pane.
+  const shownTab: PayslipTabKey = visibleKeys.includes(activeTab) ? activeTab : "myPayslips";
 
   return (
     <ModuleAccessGate moduleCode="HRM_PAYSLIP" appTitle="Payslip Management">
@@ -82,9 +118,8 @@ const HrmPayslipLanding: React.FC = () => {
         </div>
         <div className={styles.tabsWrapper}>
           <Tabs
-            activeKey={activeTab}
-            defaultActiveKey={defaultTab}
-            onChange={(key) => setActiveTab(key as typeof activeTab)}
+            activeKey={shownTab}
+            onChange={(key) => setActiveTab(key as PayslipTabKey)}
             items={tabItems}
             className={styles.mainTabs}
             size="small"

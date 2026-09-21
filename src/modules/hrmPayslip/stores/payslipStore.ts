@@ -46,6 +46,8 @@ interface PayslipState {
     payrollYear: number,
     payrollMonth: number
   ) => Promise<void>;
+  /** HR download of an UPLOADED payslip by its handle (backend DOWNLOAD_ANY). */
+  downloadUploadedOne: (handle: string, fileName: string | null) => Promise<void>;
   downloadAllZip: () => Promise<void>;
 
   myPayslipYear: number;
@@ -238,6 +240,26 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
         accessType: "DOWNLOAD",
       });
       await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
+    } catch {
+      message.error("Failed to download payslip");
+    }
+  },
+
+  downloadUploadedOne: async (handle, fileName) => {
+    try {
+      // An uploaded payslip is a stored PDF with no snapshot; fetch its bytes by handle. The backend
+      // checks payslip_download|VIEW on this path (R7).
+      const blob = await HrmPayslipService.downloadUploadedPayslip({
+        organizationId: getOrganizationId(),
+        handle,
+        requestedBy: getEmployeeId(),
+      });
+      const row = get().repositoryList.find((r) => r.handle === handle);
+      saveBlob(
+        blob,
+        fileName
+          ?? (row ? payslipFileName(row.employeeId, row.payrollYear, row.payrollMonth) : `payslip-${handle}.pdf`)
+      );
     } catch {
       message.error("Failed to download payslip");
     }
