@@ -15,7 +15,7 @@ import { useHrmAnnouncementStore } from "../../stores/hrmAnnouncementStore";
 import { useAnnouncementPermissions } from "../../hooks/useAnnouncementPermissions";
 import { useEmployeeIdentity } from "@/modules/hrmAccess/hooks/useEmployeeIdentity";
 import { useAnnouncementCategories } from "../../hooks/useAnnouncementCategories";
-import { parseAnnouncementError } from "../../utils/announcementErrors";
+import { parseAnnouncementError, serverErrorMessage } from "../../utils/announcementErrors";
 import { canDeleteFromComposer, composerDeleteLabel } from "../../utils/announcementHelpers";
 import { useCan } from "../../../hrmAccess/hooks/useCan";
 import AudienceSelector, { EMPTY_AUDIENCE, isAudienceEmpty, type AudienceValue } from "./AudienceSelector";
@@ -24,12 +24,17 @@ import Can from "../../../hrmAccess/components/Can";
 
 const EMPTY_AUDIENCE_ERROR = "EMPTY_AUDIENCE";
 
-/** Shows the recipient error when that was the cause, the generic one otherwise. */
+/**
+ * Shows the recipient error when that was the cause, the server's own validation message
+ * otherwise (HRM issue #11 — saving a title under 3 characters failed server-side with
+ * `"title: size must be between 3 and 200"`, but every save path here showed the generic
+ * `fallback` no matter what the server said, because it never looked at the error at all).
+ */
 const reportSaveError = (e: unknown, fallback: string) =>
   message.error(
     e instanceof Error && e.message === EMPTY_AUDIENCE_ERROR
       ? "Select at least one recipient"
-      : fallback
+      : serverErrorMessage(e, fallback)
   );
 
 const { Option } = Select;
@@ -406,8 +411,18 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
           />
         )}
 
-        <Form.Item name="title" label="Title" rules={[{ required: true }]}>
-          <Input placeholder="Announcement title" />
+        {/* Mirrors AnnouncementRequest.title's @Size(min = 3, max = 200) (HRM issue #11) — the
+            server 400s on anything shorter than 3 characters, so catch it before the round trip
+            rather than relying only on the toast the fixed error path now shows. */}
+        <Form.Item
+          name="title"
+          label="Title"
+          rules={[
+            { required: true, whitespace: true, message: "Title is required" },
+            { min: 3, max: 200, message: "Title must be 3–200 characters" },
+          ]}
+        >
+          <Input placeholder="Announcement title" maxLength={200} />
         </Form.Item>
         <Form.Item name="category" label="Category" rules={[{ required: true }]}>
           <Select
@@ -421,7 +436,13 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
             }))}
           />
         </Form.Item>
-        <Form.Item name="content" label="Content" rules={[{ required: true }]}>
+        {/* AnnouncementRequest.content is @NotBlank (no @Size) — `whitespace: true` mirrors that
+            a spaces-only value is blank server-side too, the same as the title's rule above. */}
+        <Form.Item
+          name="content"
+          label="Content"
+          rules={[{ required: true, whitespace: true, message: "Content is required" }]}
+        >
           <TextArea rows={8} placeholder="Announcement content (HTML supported)" />
         </Form.Item>
 

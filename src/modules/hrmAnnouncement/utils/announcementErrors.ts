@@ -10,10 +10,37 @@ interface ApiErrorBody {
   errorCode?: string;
   message?: string;
   error?: string;
+  /** Bean-validation failures (e.g. AnnouncementRequest's `title` @Size) land here. */
+  message_details?: { msg?: string };
+  /** The MessageModel shape some endpoints answer with: `{errorCode, response}`. */
+  response?: unknown;
 }
 
 interface AxiosLikeError {
   response?: { status?: number; data?: ApiErrorBody };
+  message?: string;
+}
+
+/**
+ * Pulls the literal text hrm-service sent for an error, across every shape the announcement
+ * endpoints answer in (mirrors hrmTimesheet's `extractBackendMsg`). `message_details.msg` wins —
+ * that's where a bean-validation failure like `"title: size must be between 3 and 200"` lands —
+ * then the flatter body shapes, then the thrown Error's own `.message` (api.ts's response
+ * interceptor already copies `message_details.msg` onto it, so this also covers an error that
+ * reaches here already unwrapped). Never returns undefined or empty — a caller with nothing
+ * server-sourced to show gets its own `fallback` back.
+ */
+export function serverErrorMessage(err: unknown, fallback: string): string {
+  const e = err as AxiosLikeError;
+  const data = e?.response?.data;
+  const fromBody =
+    data?.message_details?.msg ||
+    data?.message ||
+    (typeof data?.response === 'string' ? data.response : undefined) ||
+    data?.error;
+  if (fromBody) return fromBody;
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
 }
 
 /**
@@ -81,10 +108,15 @@ export function parseAnnouncementError(
 
   // HRM_ANN_NO_APPROVER is already written for the user and names the fix —
   // show the server text rather than a generic of our own.
+  //
+  // HRM issue #11: this used to fall back to `body?.message`, a field the announcement error
+  // envelope doesn't carry — the real text sits at `body.message_details.msg` (e.g. a
+  // bean-validation failure like "title: size must be between 3 and 200"). That silently
+  // discarded every message not already covered by MESSAGES/NO_APPROVER and left `fallback` as
+  // the only thing ever shown. serverErrorMessage reads the shape the server actually sends.
   const message =
     (errorCode === NO_APPROVER ? body?.message : MESSAGES[errorCode ?? ""]) ??
-    body?.message ??
-    fallback;
+    serverErrorMessage(err, fallback);
 
   // Developer-facing: the payload was built wrong. Log loudly so it surfaces
   // in testing rather than being mistaken for a permissions problem.
