@@ -17,14 +17,10 @@ const PayslipRepository: React.FC = () => {
   const store = useHrmPayslipStore();
 
   // Reading another employee's payslip is DOWNLOAD_ANY on the backend (payslip_download|VIEW, R7).
-  const { canView: canDownload } = useCan(undefined, "payslip_download");
+  const { canView: canDownload } = useCan("HRM_PAYSLIP", "payslip_download");
 
-  // Both paths are the HR by-handle endpoints: uploaded payslips are stored PDFs; generated ones are
-  // rendered from the snapshot. The self-service /downloadMyPayslip would refuse another employee.
-  const download = (record: PayslipListItem) =>
-    record.source === "UPLOADED"
-      ? store.downloadUploadedOne(record.handle, record.fileName)
-      : store.downloadGeneratedByHr(record.handle);
+  // HR by-handle endpoints, routed by source in the store (shared with the Generate panel).
+  const download = (record: PayslipListItem) => store.downloadListedPayslip(record);
 
   const columns: ColumnsType<PayslipListItem> = [
     { title: "Emp ID", dataIndex: "employeeId", key: "employeeId", width: 100 },

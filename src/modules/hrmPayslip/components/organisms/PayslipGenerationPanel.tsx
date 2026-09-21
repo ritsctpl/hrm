@@ -30,6 +30,7 @@ import type { PayslipListItem } from "../../types/domain.types";
 import { MONTHS, YEAR_OPTIONS } from "../../utils/payslipConstants";
 import { formatDate } from "../../utils/payslipFormatters";
 import Can from "../../../hrmAccess/components/Can";
+import { useCan } from "../../../hrmAccess/hooks/useCan";
 import styles from "../../styles/Payslip.module.css";
 
 const { Text } = Typography;
@@ -43,6 +44,8 @@ const MOCK_EMPLOYEES = [
 const PayslipGenerationPanel: React.FC = () => {
   const store = useHrmPayslipStore();
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Same gate as the Repository: these rows are other employees' payslips (DOWNLOAD_ANY, R7).
+  const { canView: canDownload } = useCan("HRM_PAYSLIP", "payslip_download");
 
   useEffect(() => {
     store.loadGenerationContext(store.generationYear, store.generationMonth);
@@ -74,20 +77,22 @@ const PayslipGenerationPanel: React.FC = () => {
       width: 120,
       render: (_, record) => (
         <Space>
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() =>
-              store.downloadOne(record.employeeId, record.payrollYear, record.payrollMonth)
-            }
-          />
-          <Button
-            size="small"
-            icon={<DownloadOutlined />}
-            onClick={() =>
-              store.downloadOne(record.employeeId, record.payrollYear, record.payrollMonth)
-            }
-          />
+          {canDownload && (
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              title="View"
+              onClick={() => store.downloadListedPayslip(record)}
+            />
+          )}
+          {canDownload && (
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              title="Download"
+              onClick={() => store.downloadListedPayslip(record)}
+            />
+          )}
           {record.status === "FAILED" && (
             <Can I="edit">
               <Button

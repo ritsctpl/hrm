@@ -6,7 +6,7 @@ import { message } from "antd";
 import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
 import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
-import { payslipFileName } from "../utils/payslipFormat";
+import { hrDownloadRoute, payslipFileName } from "../utils/payslipFormat";
 import { chunkFiles, summarise } from "../utils/uploadHelpers";
 import { saveBlob } from "../utils/saveBlob";
 import type { PayslipSnapshot, PayslipUploadBatch } from "../types/domain.types";
@@ -41,11 +41,11 @@ interface PayslipState {
   loadGenerationContext: (year: number, month: number) => Promise<void>;
   runGeneration: () => Promise<void>;
   regenerateOne: (employeeId: string) => Promise<void>;
-  downloadOne: (
-    employeeId: string,
-    payrollYear: number,
-    payrollMonth: number
-  ) => Promise<void>;
+  /**
+   * HR download of one listed payslip (Repository and the Generate panel). Routes by source:
+   * UPLOADED -> downloadUploadedOne, otherwise -> downloadGeneratedByHr. Never self-service.
+   */
+  downloadListedPayslip: (record: PayslipListItem) => Promise<void>;
   /** HR download of a GENERATED payslip by its handle: renders the PDF from the HR snapshot. */
   downloadGeneratedByHr: (handle: string) => Promise<void>;
   /** HR download of an UPLOADED payslip by its handle (backend DOWNLOAD_ANY). */
@@ -230,27 +230,21 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
     }
   },
 
-  downloadOne: async (employeeId, payrollYear, payrollMonth) => {
-    try {
-      // The server returns the frozen snapshot; the PDF is built here. be-spec §12.
-      const snapshot = await HrmPayslipService.downloadMyPayslip({
-        organizationId: getOrganizationId(),
-        employeeId,
-        payrollYear,
-        payrollMonth,
-        requestedBy: getUser(),
-        accessType: "DOWNLOAD",
-      });
-      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
-    } catch {
-      message.error("Failed to download payslip");
+  downloadListedPayslip: async (record) => {
+    // One routing rule for every HR list: the self-service /downloadMyPayslip would refuse another
+    // employee (403) and has no snapshot for an uploaded row (PAYSLIP_020).
+    const route = hrDownloadRoute(record);
+    if (route.kind === "uploaded") {
+      await get().downloadUploadedOne(route.handle, route.fileName);
+    } else {
+      await get().downloadGeneratedByHr(route.handle);
     }
   },
 
   downloadGeneratedByHr: async (handle) => {
     try {
       // /downloadMyPayslip is self-service only, so HR must use the by-handle endpoint. It returns
-      // the same frozen snapshot, and the PDF and its password are built exactly as in downloadOne.
+      // the same frozen snapshot, and the PDF and its password are built exactly as in downloadMyPayslip.
       const snapshot = await HrmPayslipService.downloadPayslipByHr({
         organizationId: getOrganizationId(),
         handle,

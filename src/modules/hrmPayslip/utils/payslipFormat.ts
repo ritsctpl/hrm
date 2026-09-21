@@ -82,3 +82,34 @@ export function myPayslipYearOptions(
 export function shouldLoadMySnapshot(linkResolved: boolean, myPayslipListLoaded: boolean): boolean {
   return linkResolved && myPayslipListLoaded;
 }
+
+/** How an HR screen downloads one listed payslip. */
+export type HrDownloadRoute =
+  | { kind: "uploaded"; handle: string; fileName: string }
+  | { kind: "generated"; handle: string };
+
+/**
+ * Routes an HR download of a listed payslip (Repository, and the Generate panel's distribution
+ * list). Both screens list OTHER employees' payslips of either source, so neither may use the
+ * self-service /downloadMyPayslip: it refuses another employee (403) and has no snapshot for an
+ * uploaded row (PAYSLIP_020). Uploaded rows fetch their stored PDF by handle; everything else
+ * renders from the HR snapshot by handle.
+ */
+export function hrDownloadRoute(record: {
+  handle: string;
+  employeeId: string | null;
+  payrollYear: number;
+  payrollMonth: number;
+  source?: string | null;
+  fileName?: string | null;
+}): HrDownloadRoute {
+  if (record.source === "UPLOADED") {
+    return {
+      kind: "uploaded",
+      handle: record.handle,
+      fileName: record.fileName
+        ?? payslipFileName(record.employeeId, record.payrollYear, record.payrollMonth),
+    };
+  }
+  return { kind: "generated", handle: record.handle };
+}
