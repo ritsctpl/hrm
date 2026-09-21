@@ -66,3 +66,19 @@ export function myPayslipYearOptions(
     (a, b) => b - a
   );
 }
+
+/**
+ * Whether the "My Payslips" view should ask the store to load a snapshot for the selected period
+ * right now.
+ *
+ * `myPayslipList` is what tells `loadMySnapshot` whether a period is UPLOADED (no snapshot to
+ * fetch) or GENERATED (fetch and render it). Until that list has loaded at least once, the answer
+ * is unknown, and calling the endpoint for what turns out to be an uploaded month fails
+ * (PAYSLIP_020) and leaves a "couldn't load your payslip" banner with nothing left to clear it —
+ * the effect that loads the snapshot does not depend on the list, so it never runs again to
+ * correct the mistake. Waiting for the list to finish loading removes that wrong call entirely,
+ * rather than racing to clean up after it (preflight fix round 1, finding 1).
+ */
+export function shouldLoadMySnapshot(linkResolved: boolean, myPayslipListLoaded: boolean): boolean {
+  return linkResolved && myPayslipListLoaded;
+}

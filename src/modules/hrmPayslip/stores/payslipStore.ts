@@ -56,6 +56,12 @@ interface PayslipState {
   pdfGenerating: boolean;
   bulkProgress: { done: number; total: number } | null;
   myPayslipList: PayslipListItem[];
+  /**
+   * True once `loadMyPayslips` has completed (success or failure) at least once. The snapshot
+   * effect must wait for this before it can trust `myPayslipList` to say whether a period is
+   * UPLOADED — see `loadMySnapshot` and `shouldLoadMySnapshot` (fix round 1, finding 1).
+   */
+  myPayslipListLoaded: boolean;
   myPayslipRenderData: PayslipRenderData | null;
   myPayslipLoading: boolean;
 
@@ -286,6 +292,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   pdfGenerating: false,
   bulkProgress: null,
   myPayslipList: [],
+  myPayslipListLoaded: false,
   myPayslipRenderData: null,
   myPayslipLoading: false,
 
@@ -298,6 +305,8 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       set({ myPayslipList: data });
     } catch {
       // silent — empty list shown
+    } finally {
+      set({ myPayslipListLoaded: true });
     }
   },
 
@@ -351,7 +360,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
           payrollYear: year,
           payrollMonth: month,
         });
-        saveBlob(blob, row.fileName ?? `payslip-${month}-${year}.pdf`);
+        saveBlob(blob, row.fileName ?? payslipFileName(getEmployeeId(), year, month));
         return;
       }
       // Render from the snapshot already on screen when we have it, so the file and the preview
@@ -558,6 +567,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       distributionList: [],
       selectedEmployeeIds: [],
       myPayslipList: [],
+      myPayslipListLoaded: false,
       myPayslipRenderData: null,
       repositoryList: [],
       templates: [],

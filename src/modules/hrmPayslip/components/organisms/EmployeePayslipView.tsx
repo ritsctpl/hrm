@@ -6,7 +6,7 @@ import { Alert, Button, Card, Empty, Select, Skeleton, Space, Typography } from 
 import { DownloadOutlined } from "@ant-design/icons";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
 import PayslipRenderer from "./PayslipRenderer";
-import { payslipPeriod, myPayslipYearOptions } from "../../utils/payslipFormat";
+import { payslipPeriod, myPayslipYearOptions, shouldLoadMySnapshot } from "../../utils/payslipFormat";
 import { payslipPasswordHint } from "../../utils/payslipPdf";
 import { MONTHS } from "../../utils/payslipConstants";
 
@@ -20,6 +20,7 @@ const EmployeePayslipView: React.FC = () => {
     myPayslipYear,
     myPayslipMonth,
     myPayslipList,
+    myPayslipListLoaded,
     snapshot,
     snapshotLoading,
     snapshotError,
@@ -67,10 +68,15 @@ const EmployeePayslipView: React.FC = () => {
   }, [myPayslipYear]);
 
   useEffect(() => {
-    if (!linkResolved) return;
+    // Wait for the employee's own list to load at least once: loadMySnapshot decides whether the
+    // selected period is UPLOADED by looking that list up, and calling it before the list has
+    // landed (first render, or right after a deep link) makes it wrongly treat an uploaded month
+    // as generated, fail the snapshot fetch, and set an error banner that nothing then clears
+    // (fix round 1, finding 1).
+    if (!shouldLoadMySnapshot(linkResolved, myPayslipListLoaded)) return;
     loadMySnapshot(myPayslipYear, myPayslipMonth);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkResolved, myPayslipYear, myPayslipMonth]);
+  }, [linkResolved, myPayslipListLoaded, myPayslipYear, myPayslipMonth]);
 
   const revoked = myPayslipList.find(
     (p) => p.payrollMonth === myPayslipMonth && p.status === "REVOKED",
@@ -128,7 +134,12 @@ const EmployeePayslipView: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        {snapshotError && (
+        {/*
+          Belt-and-suspenders alongside the effect's shouldLoadMySnapshot gate: once the period
+          resolves to an uploaded payslip, the error banner must never show next to the uploaded
+          card, even if a stale snapshotError is still sitting in the store (fix round 1, finding 1).
+        */}
+        {snapshotError && !uploaded && (
           <Alert type="error" showIcon message={snapshotError} style={{ marginBottom: 16 }} />
         )}
 
@@ -141,9 +152,9 @@ const EmployeePayslipView: React.FC = () => {
           />
         )}
 
-        {snapshotLoading && <Skeleton active paragraph={{ rows: 12 }} />}
+        {(!myPayslipListLoaded || snapshotLoading) && <Skeleton active paragraph={{ rows: 12 }} />}
 
-        {!snapshotLoading && !snapshot && !uploaded && !revoked && !snapshotError && (
+        {myPayslipListLoaded && !snapshotLoading && !snapshot && !uploaded && !revoked && !snapshotError && (
           <Empty
             description={
               <Typography.Text type="secondary">
