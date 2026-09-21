@@ -283,7 +283,7 @@ const HrmAnnouncementLanding: React.FC = () => {
    * Deletes a draft. Soft delete server-side (`active: 0`) with an audit row, and refused for
    * anything past the DELETABLE statuses — a published announcement is withdrawn, never deleted.
    */
-  const handleDelete = async (announcement: Announcement) => {
+  const handleDelete = async (announcement: Announcement): Promise<boolean> => {
     setDeletingHandle(announcement.handle);
     try {
       await HrmAnnouncementService.deleteAnnouncement({
@@ -296,12 +296,14 @@ const HrmAnnouncementLanding: React.FC = () => {
       message.success('Draft deleted');
       loadAdminAnnouncements();
       loadFeed();
+      return true;
     } catch (err) {
       // HRM_ANN_NOT_DELETABLE names the status that blocked it, which tells the user what to do
       // instead. A blanket "Failed to delete" would throw that away.
       const info = parseAnnouncementError(err, 'Failed to delete announcement');
       message.error(info.message);
       if (info.shouldRefetch) loadAdminAnnouncements();
+      return false;
     } finally {
       setDeletingHandle(null);
     }
@@ -611,6 +613,8 @@ const HrmAnnouncementLanding: React.FC = () => {
           organizationId={organizationId}
           onClose={closeComposeDrawer}
           onSaved={handleDrawerSaved}
+          // The Admin row's delete handler, so "Delete draft" inside the editor behaves the same.
+          onDelete={handleDelete}
         />
         {/* Overlays the list rather than replacing it, so closing returns you to
             the same row you were on and the next announcement is one click away. */}

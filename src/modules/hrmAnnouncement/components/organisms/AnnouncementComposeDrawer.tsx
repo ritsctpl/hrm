@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Alert, Drawer, Form, Input, Select, DatePicker, Switch, Button, Space, message } from "antd";
+import { Alert, Drawer, Form, Input, Select, DatePicker, Switch, Button, Space, Popconfirm, message } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 import { toLocalDateTime } from "@/utils/dateUtils";
 import { AnnouncementComposeDrawerProps } from "../../types/ui.types";
 import { HrmAnnouncementService } from "../../services/hrmAnnouncementService";
@@ -15,6 +16,7 @@ import { useAnnouncementPermissions } from "../../hooks/useAnnouncementPermissio
 import { useEmployeeIdentity } from "@/modules/hrmAccess/hooks/useEmployeeIdentity";
 import { useAnnouncementCategories } from "../../hooks/useAnnouncementCategories";
 import { parseAnnouncementError } from "../../utils/announcementErrors";
+import { canDeleteFromComposer } from "../../utils/announcementHelpers";
 import AudienceSelector, { EMPTY_AUDIENCE, isAudienceEmpty, type AudienceValue } from "./AudienceSelector";
 import EmergencyPublishModal from "./EmergencyPublishModal";
 import Can from "../../../hrmAccess/components/Can";
@@ -38,6 +40,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
   organizationId,
   onClose,
   onSaved,
+  onDelete,
 }) => {
   const [form] = Form.useForm();
   const { saving, setSaving } = useHrmAnnouncementStore();
@@ -51,6 +54,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
   const [categoryCode, setCategoryCode] = useState<string>("");
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const [acting, setActing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   // Audience lives outside the antd Form — it's a composite value, not a field.
   const [audience, setAudience] = useState<AudienceValue>(EMPTY_AUDIENCE);
   // Categories are per-site records, not an enum — never hardcode them.
@@ -287,6 +291,21 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
     }
   };
 
+  /** Deletes the open draft through the landing's handler; closes the drawer once it is gone. */
+  const handleDeleteDraft = async () => {
+    if (!editAnnouncement || !onDelete) return;
+    setDeleting(true);
+    try {
+      if (await onDelete(editAnnouncement)) onClose();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // HRM issue #1: the draft editor had no Delete/Discard at all, so an author who opened a
+  // draft had to know to go back to the Admin row's unlabelled trash icon.
+  const showDeleteDraft = !!onDelete && canDeleteFromComposer(editAnnouncement);
+
   const isEmergency = normalizePriority(priority) === "EMERGENCY";
 
   // One primary action, chosen by the category — never both.
@@ -322,6 +341,24 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       open={open}
       onClose={onClose}
       width={640}
+      footer={
+        showDeleteDraft ? (
+          // Same grant and object as the Admin row's Delete button.
+          <Can I="delete" object="announcement_record">
+            <Popconfirm
+              title="Delete this draft?"
+              description={`"${editAnnouncement?.title ?? "This announcement"}" will be removed from the list.`}
+              onConfirm={handleDeleteDraft}
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger icon={<DeleteOutlined />} loading={deleting} disabled={acting || saving}>
+                Delete draft
+              </Button>
+            </Popconfirm>
+          </Can>
+        ) : null
+      }
       extra={
         <Space>
           <Button onClick={onClose}>Cancel</Button>

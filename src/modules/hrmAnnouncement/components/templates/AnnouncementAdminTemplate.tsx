@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Table, Button, Space, Popconfirm, Tag, Select } from "antd";
+import { Table, Button, Space, Popconfirm, Tag, Select, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, SendOutlined, StopOutlined, PlusOutlined, BarChartOutlined, DeleteOutlined } from "@ant-design/icons";
 import { formatDateTime } from "@/utils/dateUtils";
@@ -130,16 +130,28 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
               against the module root ("Module Access"), a different grant from the one
               the Admin tab itself is gated on. */}
           <Can I="edit" object="announcement_record">
+            {/* Icon-only row buttons carry a tooltip + aria-label: with no text, the trash
+                icon in particular was not recognisable as Delete (HRM issue #1). */}
+            <Tooltip title="Edit">
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                aria-label="Edit"
+                // Opening now fetches the full record first (the list row has no body), so the
+                // click is no longer instant — say so rather than looking like a no-op.
+                loading={openingEditHandle === record.handle}
+                onClick={() => onEdit(record)}
+              />
+            </Tooltip>
+          </Can>
+          <Tooltip title="Stats">
             <Button
               size="small"
-              icon={<EditOutlined />}
-              // Opening now fetches the full record first (the list row has no body), so the
-              // click is no longer instant — say so rather than looking like a no-op.
-              loading={openingEditHandle === record.handle}
-              onClick={() => onEdit(record)}
+              icon={<BarChartOutlined />}
+              aria-label="Stats"
+              onClick={() => onViewStats(record)}
             />
-          </Can>
-          <Button size="small" icon={<BarChartOutlined />} onClick={() => onViewStats(record)} />
+          </Tooltip>
           {record.status === "DRAFT" && (
             // Publishing is an "add" — it creates the published announcement — and the
             // grant it needs is `announcement_publish` ("Publish (General)"), because that
@@ -150,7 +162,9 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
             // through useAnnouncementPermissions().publishGeneral.
             <Can I="add" object="announcement_publish">
               <Popconfirm title="Publish?" onConfirm={() => onPublish(record.handle)} okText="Publish">
-                <Button size="small" icon={<SendOutlined />} type="primary" />
+                <Tooltip title="Publish">
+                  <Button size="small" icon={<SendOutlined />} type="primary" aria-label="Publish" />
+                </Tooltip>
               </Popconfirm>
             </Can>
           )}
@@ -160,12 +174,15 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
                   audit trail, which a Popconfirm can't collect. The server has no
                   permission check on withdraw beyond the status, so this gate is
                   usability: it puts the control with the people who own the record. */}
-              <Button
-                size="small"
-                icon={<StopOutlined />}
-                danger
-                onClick={() => onWithdraw(record)}
-              />
+              <Tooltip title="Withdraw">
+                <Button
+                  size="small"
+                  icon={<StopOutlined />}
+                  danger
+                  aria-label="Withdraw"
+                  onClick={() => onWithdraw(record)}
+                />
+              </Tooltip>
             </Can>
           )}
           {isDeletableStatus(record.status) && (
@@ -186,12 +203,15 @@ const AnnouncementAdminTemplate: React.FC<AnnouncementAdminTemplateProps> = ({
                 okText="Delete"
                 okButtonProps={{ danger: true }}
               >
-                <Button
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  danger
-                  loading={deletingHandle === record.handle}
-                />
+                <Tooltip title="Delete">
+                  <Button
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    danger
+                    aria-label="Delete"
+                    loading={deletingHandle === record.handle}
+                  />
+                </Tooltip>
               </Popconfirm>
             </Can>
           )}

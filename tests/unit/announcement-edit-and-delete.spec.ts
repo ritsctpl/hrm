@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { mergeAnnouncementDetail } from '../../src/modules/hrmAnnouncement/utils/announcementHelpers';
+import {
+  mergeAnnouncementDetail,
+  canDeleteFromComposer,
+} from '../../src/modules/hrmAnnouncement/utils/announcementHelpers';
 import { isDeletableStatus, DELETABLE_STATUSES } from '../../src/modules/hrmAnnouncement/utils/constants';
 import { Announcement } from '../../src/modules/hrmAnnouncement/types/domain.types';
 
@@ -114,4 +117,23 @@ test('an unknown or missing status offers nothing', () => {
   expect(isDeletableStatus(undefined)).toBe(false);
   expect(isDeletableStatus('')).toBe(false);
   expect(isDeletableStatus('SOMETHING_NEW')).toBe(false);
+});
+
+// ── HRM issue #1: "Delete draft" inside the compose drawer ─────────────────────
+
+test('the composer offers Delete draft for a saved draft', () => {
+  expect(canDeleteFromComposer(DETAIL)).toBe(true);
+  expect(canDeleteFromComposer(mergeAnnouncementDetail(SEARCH_ROW, DETAIL))).toBe(true);
+});
+
+test('the composer offers no delete for a new, never-saved announcement', () => {
+  expect(canDeleteFromComposer(null)).toBe(false);
+  expect(canDeleteFromComposer(undefined)).toBe(false);
+  expect(canDeleteFromComposer({ ...DETAIL, handle: '' } as Announcement)).toBe(false);
+});
+
+test('the composer offers no delete once the announcement is past the deletable statuses', () => {
+  for (const status of ['PUBLISHED', 'PENDING_APPROVAL', 'SCHEDULED', 'WITHDRAWN']) {
+    expect(canDeleteFromComposer({ ...DETAIL, status } as Announcement)).toBe(false);
+  }
 });

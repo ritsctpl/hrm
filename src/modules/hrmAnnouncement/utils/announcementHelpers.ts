@@ -1,4 +1,5 @@
 import { Announcement } from '../types/domain.types';
+import { isDeletableStatus } from './constants';
 
 /**
  * Merges the full `/get` record over the list row the user clicked.
@@ -37,3 +38,13 @@ export const formatFileSize = (bytes?: number): string => {
   const mb = kb / 1024;
   return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
 };
+
+/**
+ * Whether the compose drawer offers "Delete draft" for what it has open (HRM issue #1).
+ *
+ * Only for a record that already exists on the server (a new, never-saved announcement has
+ * nothing to delete — Cancel discards it) and only in a status the server lets be deleted.
+ * The RBAC half (`announcement_record` → delete) is the drawer's `<Can>`, as on the Admin row.
+ */
+export const canDeleteFromComposer = (announcement?: Announcement | null): boolean =>
+  !!announcement?.handle && isDeletableStatus(announcement.status);

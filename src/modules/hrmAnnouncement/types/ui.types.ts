@@ -19,4 +19,9 @@ export interface AnnouncementComposeDrawerProps {
   organizationId: string;
   onClose: () => void;
   onSaved: () => void;
+  /**
+   * Deletes the open draft — the landing's own delete handler, shared with the Admin row.
+   * Resolves true on success, when the drawer closes itself.
+   */
+  onDelete?: (announcement: Announcement) => Promise<boolean>;
 }
