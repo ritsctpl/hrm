@@ -8,6 +8,7 @@ import Holidays from 'date-holidays';
 import { HrmHolidayService } from '../../services/hrmHolidayService';
 import { getCustomHolidays, addCustomHoliday } from '../../utils/customHolidayStore';
 import { useCan } from '../../../hrmAccess/hooks/useCan';
+import { matchesHolidayStatsFilter, type HolidayStatsFilter } from '../../utils/calendarHelpers';
 import type { Holiday, HolidayCategoryConfig } from '../../types/domain.types';
 import styles from '../../styles/HolidayYearCalendar.module.css';
 
@@ -118,7 +119,13 @@ function monthCells(year: number, month: number): (number | null)[] {
 
 interface Props {
   year: number;
+  /** Every holiday of the group — the day editor needs all of them, whatever the filter. */
   holidays: Holiday[];
+  /**
+   * The Total / Upcoming / Done selection. Holidays outside it stay on the calendar (and
+   * stay clickable) but are dimmed and left out of the month counts.
+   */
+  highlightFilter?: HolidayStatsFilter;
   categories: HolidayCategoryConfig[];
   organizationId: string;
   groupHandle: string;
@@ -135,6 +142,7 @@ interface Props {
 export default function HolidayYearCalendar({
   year,
   holidays,
+  highlightFilter = 'all',
   categories,
   organizationId,
   groupHandle,
@@ -165,14 +173,17 @@ export default function HolidayYearCalendar({
     return m;
   }, [holidays]);
 
+  const inFilter = (h: Holiday) => matchesHolidayStatsFilter(String(h.date), highlightFilter, todayStr);
+
   const monthCounts = useMemo(() => {
     const counts = Array(12).fill(0);
-    holidays.forEach((h) => {
+    holidays.filter(inFilter).forEach((h) => {
       const mo = dayjs(String(h.date).slice(0, 10)).month();
       if (mo >= 0 && mo < 12) counts[mo] += 1;
     });
     return counts;
-  }, [holidays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holidays, highlightFilter, todayStr]);
 
   const colorFor = (h: Holiday) => h.categoryColorHex || CAT_COLOR[h.category] || '#5b8def';
 
@@ -328,6 +339,11 @@ export default function HolidayYearCalendar({
             · Click any date to add a holiday
           </Text>
         )}
+        {highlightFilter !== 'all' && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            · Showing {highlightFilter === 'upcoming' ? 'upcoming' : 'completed'} holidays; the rest are greyed out
+          </Text>
+        )}
       </div>
 
       <div className={styles.yearGrid}>
@@ -350,10 +366,14 @@ export default function HolidayYearCalendar({
                 const date = ymd(year, m, d);
                 const list = byDate.get(date);
                 const has = !!list?.length;
+                // Holidays on this date that match the Total / Upcoming / Done filter.
+                const shown = list?.filter(inFilter) ?? [];
+                const dimmed = has && shown.length === 0;
                 const isToday = date === todayStr;
                 const cls = [
                   styles.dayCell,
-                  has ? styles.dayHoliday : '',
+                  has && !dimmed ? styles.dayHoliday : '',
+                  dimmed ? styles.dayHolidayDimmed : '',
                   (editable || has) ? styles.dayClickable : '',
                   isToday ? styles.dayToday : '',
                 ]
@@ -363,17 +383,20 @@ export default function HolidayYearCalendar({
                   <div
                     key={date}
                     className={cls}
-                    style={has ? { background: colorFor(list![0]) } : undefined}
+                    style={has && !dimmed ? { background: colorFor(shown[0]) } : undefined}
                     onClick={() => openDay(date, has)}
                   >
                     {d}
-                    {has && list!.some((h) => h.optional) && <span className={styles.dayOptionalDot} />}
+                    {!dimmed && shown.some((h) => h.optional) && <span className={styles.dayOptionalDot} />}
                   </div>
                 );
                 return has ? (
                   <Tooltip
                     key={date}
-                    title={list!.map((h) => `${h.name}${h.optional ? ' (optional)' : ''}`).join(', ')}
+                    title={
+                      list!.map((h) => `${h.name}${h.optional ? ' (optional)' : ''}`).join(', ') +
+                      (dimmed ? ` — not ${highlightFilter === 'upcoming' ? 'upcoming' : 'completed'}` : '')
+                    }
                   >
                     {cell}
                   </Tooltip>

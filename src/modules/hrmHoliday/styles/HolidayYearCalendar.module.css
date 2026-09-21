@@ -131,3 +131,11 @@
   font-weight: 600;
   font-size: 13px;
 }
+
+/* A holiday outside the active Total / Upcoming / Done filter: still clickable (so it can
+   be viewed / removed), but visibly de-emphasised. */
+.dayHolidayDimmed {
+  background: #f0f0f0;
+  color: #bfbfbf;
+  text-decoration: line-through;
+}

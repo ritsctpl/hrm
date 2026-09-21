@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Tabs, Button, Space, message } from 'antd';
 import { parseCookies } from 'nookies';
+import dayjs from 'dayjs';
 import { LockOutlined, UnlockOutlined, ApartmentOutlined, DownloadOutlined, CalendarOutlined, BulbOutlined } from '@ant-design/icons';
 import HolidayGroupDetailLayout from './components/templates/HolidayGroupDetailLayout';
 import HolidayListTable from './components/organisms/HolidayListTable';
@@ -22,6 +23,7 @@ import { useHrmHolidayStore } from './stores/hrmHolidayStore';
 import { HrmHolidayService } from './services/hrmHolidayService';
 import type { Holiday } from './types/domain.types';
 import { useHolidayDetail } from './hooks/useHolidayDetail';
+import { matchesHolidayStatsFilter, type HolidayStatsFilter } from './utils/calendarHelpers';
 import type { HrmHolidayScreenProps } from './types/ui.types';
 import Can from '../hrmAccess/components/Can';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
@@ -83,7 +85,7 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
   const { loadHolidays, loadCategories } = useHolidayDetail(organizationId, group.handle);
 
   // Filter state for stats bar
-  const [statsFilter, setStatsFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [statsFilter, setStatsFilter] = useState<HolidayStatsFilter>('all');
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingIcal, setExportingIcal] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
@@ -102,15 +104,9 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
 
   // Filter holidays based on stats filter
   const filteredHolidays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (statsFilter === 'upcoming') {
-      return holidays.filter(h => new Date(h.date) >= today);
-    } else if (statsFilter === 'completed') {
-      return holidays.filter(h => new Date(h.date) < today);
-    }
-    return holidays; // 'all'
+    if (statsFilter === 'all') return holidays;
+    const todayStr = dayjs().format('YYYY-MM-DD');
+    return holidays.filter((h) => matchesHolidayStatsFilter(String(h.date), statsFilter, todayStr));
   }, [holidays, statsFilter]);
 
   useEffect(() => {
@@ -227,7 +223,10 @@ export default function HrmHolidayScreen({ group, organizationId, permissions }:
       children: (
         <HolidayYearCalendar
           year={group.year}
+          // Full list: the day editor must still see every existing holiday on a date.
           holidays={holidays}
+          // The Total / Upcoming / Done selection, so the Year view reflects it too.
+          highlightFilter={statsFilter}
           categories={categories}
           organizationId={organizationId}
           groupHandle={group.handle}

@@ -74,3 +74,23 @@ export function getHolidaysForMonth(holidays: Holiday[], year: number, month: nu
     return d.getFullYear() === year && d.getMonth() + 1 === month;
   });
 }
+
+/** The Total / Upcoming / Done selection above the holiday tabs. */
+export type HolidayStatsFilter = 'all' | 'upcoming' | 'completed';
+
+/**
+ * Whether a holiday on `date` (YYYY-MM-DD, or an ISO timestamp — only the date part is
+ * read) belongs to the Total / Upcoming / Done selection. Today counts as upcoming.
+ * `todayStr` is the viewer's local YYYY-MM-DD; comparing date strings avoids the UTC
+ * shift `new Date('YYYY-MM-DD')` introduces.
+ */
+export function matchesHolidayStatsFilter(
+  date: string,
+  filter: HolidayStatsFilter,
+  todayStr: string
+): boolean {
+  const d = String(date).slice(0, 10);
+  if (filter === 'upcoming') return d >= todayStr;
+  if (filter === 'completed') return d < todayStr;
+  return true;
+}
