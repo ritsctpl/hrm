@@ -7,7 +7,8 @@ import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
 import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
 import { payslipFileName } from "../utils/payslipFormat";
-import type { PayslipSnapshot } from "../types/domain.types";
+import { chunkFiles, summarise } from "../utils/uploadHelpers";
+import type { PayslipSnapshot, PayslipUploadBatch } from "../types/domain.types";
 import type {
   PayslipListItem,
   PayslipTemplate,
@@ -91,6 +92,17 @@ interface PayslipState {
   saveTemplate: (template: PayslipTemplate) => Promise<void>;
   setActiveTemplateFlag: (handle: string) => Promise<void>;
   setTemplatePreviewData: (template: PayslipTemplate | null) => void;
+
+  uploadBatch: PayslipUploadBatch | null;
+  uploading: boolean;
+  uploadProgress: { done: number; total: number };
+  batchHistory: PayslipUploadBatch[];
+  batchHistoryLoading: boolean;
+
+  uploadFiles: (files: File[]) => Promise<void>;
+  loadBatchHistory: () => Promise<void>;
+  openBatch: (handle: string) => Promise<void>;
+  clearUploadBatch: () => void;
 
   reset: () => void;
 }
@@ -440,6 +452,77 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
 
   setTemplatePreviewData: (template) => set({ templatePreviewData: template }),
 
+  uploadBatch: null,
+  uploading: false,
+  uploadProgress: { done: 0, total: 0 },
+  batchHistory: [],
+  batchHistoryLoading: false,
+
+  clearUploadBatch: () => set({ uploadBatch: null, uploadProgress: { done: 0, total: 0 } }),
+
+  uploadFiles: async (files) => {
+    const organizationId = getOrganizationId();
+    const uploadedBy = getEmployeeId();
+    const chunks = chunkFiles(files);
+    set({ uploading: true, uploadProgress: { done: 0, total: files.length } });
+    try {
+      let batch: PayslipUploadBatch | null = null;
+      for (const chunk of chunks) {
+        // Sequential, not parallel: each call appends to the same batch document, and
+        // concurrent appends would race the read-modify-write on items[].
+        // eslint-disable-next-line no-await-in-loop
+        batch = await HrmPayslipService.uploadPayslipBatch({
+          organizationId,
+          uploadedBy,
+          batchHandle: batch?.handle,
+          files: chunk,
+        });
+        set({
+          uploadBatch: batch,
+          uploadProgress: {
+            done: Math.min(files.length, batch?.items?.length ?? 0),
+            total: files.length,
+          },
+        });
+      }
+      const summary = batch ? summarise(batch) : null;
+      if (summary) {
+        message.success(`${summary.stored} stored, ${summary.skipped} need attention`);
+      }
+    } catch {
+      message.error("Payslip upload failed");
+    } finally {
+      set({ uploading: false });
+    }
+  },
+
+  loadBatchHistory: async () => {
+    set({ batchHistoryLoading: true });
+    try {
+      const data = await HrmPayslipService.getUploadBatches(getOrganizationId(), getEmployeeId());
+      set({ batchHistory: data });
+    } catch {
+      message.error("Could not load upload history");
+    } finally {
+      set({ batchHistoryLoading: false });
+    }
+  },
+
+  // R8: opening a batch from history only loads it into `uploadBatch` — it never switches tabs.
+  // The panel that shows history renders the summary inline alongside its table.
+  openBatch: async (handle) => {
+    try {
+      const batch = await HrmPayslipService.getUploadBatch({
+        organizationId: getOrganizationId(),
+        requestedBy: getEmployeeId(),
+        handle,
+      });
+      set({ uploadBatch: batch });
+    } catch {
+      message.error("Could not open that batch");
+    }
+  },
+
   reset: () =>
     set({
       activeTab: "myPayslips",
@@ -451,5 +534,10 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       repositoryList: [],
       templates: [],
       selectedTemplate: null,
+      uploadBatch: null,
+      uploading: false,
+      uploadProgress: { done: 0, total: 0 },
+      batchHistory: [],
+      batchHistoryLoading: false,
     }),
 }));
