@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   mergeAnnouncementDetail,
   canDeleteFromComposer,
+  composerDeleteLabel,
 } from '../../src/modules/hrmAnnouncement/utils/announcementHelpers';
 import { isDeletableStatus, DELETABLE_STATUSES } from '../../src/modules/hrmAnnouncement/utils/constants';
 import { Announcement } from '../../src/modules/hrmAnnouncement/types/domain.types';
@@ -136,4 +137,14 @@ test('the composer offers no delete once the announcement is past the deletable 
   for (const status of ['PUBLISHED', 'PENDING_APPROVAL', 'SCHEDULED', 'WITHDRAWN']) {
     expect(canDeleteFromComposer({ ...DETAIL, status } as Announcement)).toBe(false);
   }
+});
+
+test('the composer button says "Delete draft" only for a draft', () => {
+  // REJECTED / RETURNED are deletable on the server too (AnnouncementStatus.DELETABLE), so the
+  // button is offered, but they are not drafts.
+  expect(composerDeleteLabel('DRAFT')).toBe('Delete draft');
+  expect(composerDeleteLabel('REJECTED')).toBe('Delete');
+  expect(composerDeleteLabel('RETURNED')).toBe('Delete');
+  expect(canDeleteFromComposer({ ...DETAIL, status: 'REJECTED' } as Announcement)).toBe(true);
+  expect(canDeleteFromComposer({ ...DETAIL, status: 'RETURNED' } as Announcement)).toBe(true);
 });

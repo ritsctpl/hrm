@@ -48,3 +48,11 @@ export const formatFileSize = (bytes?: number): string => {
  */
 export const canDeleteFromComposer = (announcement?: Announcement | null): boolean =>
   !!announcement?.handle && isDeletableStatus(announcement.status);
+
+/**
+ * Label for the composer's delete button. The server deletes DRAFT, REJECTED and RETURNED
+ * announcements (AnnouncementStatus.DELETABLE), so the button is offered for all three, but
+ * only a DRAFT is called a draft.
+ */
+export const composerDeleteLabel = (status?: string): string =>
+  status === "DRAFT" ? "Delete draft" : "Delete";

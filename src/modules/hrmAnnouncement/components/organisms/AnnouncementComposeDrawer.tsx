@@ -16,7 +16,8 @@ import { useAnnouncementPermissions } from "../../hooks/useAnnouncementPermissio
 import { useEmployeeIdentity } from "@/modules/hrmAccess/hooks/useEmployeeIdentity";
 import { useAnnouncementCategories } from "../../hooks/useAnnouncementCategories";
 import { parseAnnouncementError } from "../../utils/announcementErrors";
-import { canDeleteFromComposer } from "../../utils/announcementHelpers";
+import { canDeleteFromComposer, composerDeleteLabel } from "../../utils/announcementHelpers";
+import { useCan } from "../../../hrmAccess/hooks/useCan";
 import AudienceSelector, { EMPTY_AUDIENCE, isAudienceEmpty, type AudienceValue } from "./AudienceSelector";
 import EmergencyPublishModal from "./EmergencyPublishModal";
 import Can from "../../../hrmAccess/components/Can";
@@ -304,7 +305,12 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
 
   // HRM issue #1: the draft editor had no Delete/Discard at all, so an author who opened a
   // draft had to know to go back to the Admin row's unlabelled trash icon.
-  const showDeleteDraft = !!onDelete && canDeleteFromComposer(editAnnouncement);
+  // Same grant and object as the Admin row's <Can I="delete" object="announcement_record">,
+  // resolved here rather than with <Can> inside the footer: a denied <Can> still left a
+  // non-null footer, i.e. an empty footer strip for users without delete rights.
+  const canDeleteRecord = useCan(undefined, "announcement_record").canDelete;
+  const showDeleteDraft = !!onDelete && canDeleteRecord && canDeleteFromComposer(editAnnouncement);
+  const deleteLabel = composerDeleteLabel(editAnnouncement?.status);
 
   const isEmergency = normalizePriority(priority) === "EMERGENCY";
 
@@ -343,21 +349,18 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       width={640}
       footer={
         showDeleteDraft ? (
-          // Same grant and object as the Admin row's Delete button.
-          <Can I="delete" object="announcement_record">
-            <Popconfirm
-              title="Delete this draft?"
-              description={`"${editAnnouncement?.title ?? "This announcement"}" will be removed from the list.`}
-              onConfirm={handleDeleteDraft}
-              okText="Delete"
-              okButtonProps={{ danger: true }}
-            >
-              <Button danger icon={<DeleteOutlined />} loading={deleting} disabled={acting || saving}>
-                Delete draft
-              </Button>
-            </Popconfirm>
-          </Can>
-        ) : null
+          <Popconfirm
+            title={editAnnouncement?.status === "DRAFT" ? "Delete this draft?" : "Delete this announcement?"}
+            description={`"${editAnnouncement?.title ?? "This announcement"}" will be removed from the list.`}
+            onConfirm={handleDeleteDraft}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />} loading={deleting} disabled={acting || saving}>
+              {deleteLabel}
+            </Button>
+          </Popconfirm>
+        ) : undefined
       }
       extra={
         <Space>
