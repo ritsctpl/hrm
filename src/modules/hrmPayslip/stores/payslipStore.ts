@@ -46,6 +46,8 @@ interface PayslipState {
     payrollYear: number,
     payrollMonth: number
   ) => Promise<void>;
+  /** HR download of a GENERATED payslip by its handle: renders the PDF from the HR snapshot. */
+  downloadGeneratedByHr: (handle: string) => Promise<void>;
   /** HR download of an UPLOADED payslip by its handle (backend DOWNLOAD_ANY). */
   downloadUploadedOne: (handle: string, fileName: string | null) => Promise<void>;
   downloadAllZip: () => Promise<void>;
@@ -238,6 +240,21 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
         payrollMonth,
         requestedBy: getUser(),
         accessType: "DOWNLOAD",
+      });
+      await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
+    } catch {
+      message.error("Failed to download payslip");
+    }
+  },
+
+  downloadGeneratedByHr: async (handle) => {
+    try {
+      // /downloadMyPayslip is self-service only, so HR must use the by-handle endpoint. It returns
+      // the same frozen snapshot, and the PDF and its password are built exactly as in downloadOne.
+      const snapshot = await HrmPayslipService.downloadPayslipByHr({
+        organizationId: getOrganizationId(),
+        handle,
+        requestedBy: getUser(),
       });
       await downloadPayslipPdf(snapshot, buildPayslipPassword(snapshot));
     } catch {
