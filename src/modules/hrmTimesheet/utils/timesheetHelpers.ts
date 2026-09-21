@@ -265,21 +265,25 @@ export function pendingSubmissionWeeks(
 }
 
 // ─── Work-from-home days (HRM issue #4) ─────────────────────────────────────
-// WFH is stored as an ordinary (auto-approved) leave request with leave type code "WFH",
-// so the backend may still report such a day with leaveDay=true / leaveType="WFH".
-// It is a WORKING day: it must never lock time entry the way real leave (CL/SL/EL…) does.
+// WFH is stored as an ordinary (auto-approved) leave request whose leave type code starts
+// with "WFH" (e.g. "WFH", "WFH_FULL" — the backend's TimesheetServiceImpl.isWfhLeave uses the
+// same "WFH" prefix match). It is a WORKING day: it must never lock time entry the way real
+// leave (CL/SL/EL…) does. Two backend shapes exist for such a day:
+//   - before the backend fix: leaveDay=true,  leaveType="WFH…"
+//   - after it:               leaveDay=false, leaveType="WFH…"
+// Both unlock entry and both are labelled WFH.
 
-/** Leave type codes that mean "working, just not at the office". */
-export const WORKING_LEAVE_TYPE_CODES: readonly string[] = ['WFH'];
+/** Prefix of every leave type code that means "working, just not at the office". */
+export const WORKING_LEAVE_TYPE_PREFIX = 'WFH';
 
-/** True for a leave type code that is a working day (WFH), not time off. */
+/** True for a leave type code that is a working day (WFH*), not time off. */
 export function isWorkingLeaveType(leaveType?: string | null): boolean {
-  return !!leaveType && WORKING_LEAVE_TYPE_CODES.includes(leaveType.trim().toUpperCase());
+  return !!leaveType && leaveType.trim().toUpperCase().startsWith(WORKING_LEAVE_TYPE_PREFIX);
 }
 
 type LeaveFlags = { leaveDay?: boolean; leaveType?: string | null } | null | undefined;
 
-/** A work-from-home day — show it as WFH, and let hours be entered. */
+/** A work-from-home day — show it as WFH, and let hours be entered. Ignores leaveDay. */
 export function isWfhDay(day: LeaveFlags): boolean {
   return isWorkingLeaveType(day?.leaveType);
 }

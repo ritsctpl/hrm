@@ -45,3 +45,29 @@ test.describe('WFH is a working day', () => {
     expect(isWfhDay(null)).toBe(false);
   });
 });
+
+test.describe('WFH code match follows the backend (prefix "WFH")', () => {
+  test('any WFH-prefixed code is a working day', () => {
+    for (const code of ['WFH', 'WFH_FULL', 'wfh-half', 'WFHX']) {
+      expect(isWorkingLeaveType(code)).toBe(true);
+      expect(isBlockingLeaveDay({ leaveDay: true, leaveType: code })).toBe(false);
+    }
+  });
+
+  test('a code that merely contains WFH elsewhere is not', () => {
+    expect(isWorkingLeaveType('NO_WFH')).toBe(false);
+    expect(isWorkingLeaveType('')).toBe(false);
+  });
+
+  test('the new backend shape (leaveDay=false, leaveType WFH*) is labelled WFH and is open', () => {
+    const day = { leaveDay: false, leaveType: 'WFH_FULL' };
+    expect(isWfhDay(day)).toBe(true);
+    expect(isBlockingLeaveDay(day)).toBe(false);
+  });
+
+  test('the old backend shape (leaveDay=true, leaveType WFH) is labelled WFH and is open', () => {
+    const day = { leaveDay: true, leaveType: 'WFH' };
+    expect(isWfhDay(day)).toBe(true);
+    expect(isBlockingLeaveDay(day)).toBe(false);
+  });
+});
