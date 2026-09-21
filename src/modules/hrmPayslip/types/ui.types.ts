@@ -17,14 +17,6 @@ export interface PayslipRendererProps {
   printMode?: boolean;
 }
 
-export interface MonthNavigatorProps {
-  year: number;
-  selectedMonth: number;
-  availableMonths: number[];
-  onYearChange: (year: number) => void;
-  onMonthSelect: (month: number) => void;
-}
-
 export interface PayslipTemplateFormProps {
   template: PayslipTemplate | null;
   onSave: (template: PayslipTemplate) => Promise<void>;

@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Alert, Button, Card, Empty, Skeleton, Typography } from "antd";
+import { Alert, Button, Card, Empty, Select, Skeleton, Space, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
-import MonthNavigator from "../molecules/MonthNavigator";
 import PayslipRenderer from "./PayslipRenderer";
-import { payslipPeriod } from "../../utils/payslipFormat";
+import { payslipPeriod, myPayslipYearOptions } from "../../utils/payslipFormat";
 import { payslipPasswordHint } from "../../utils/payslipPdf";
+import { MONTHS } from "../../utils/payslipConstants";
 
 /**
  * The employee's own payslips. fe-spec §1.
@@ -72,29 +72,49 @@ const EmployeePayslipView: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkResolved, myPayslipYear, myPayslipMonth]);
 
-  const availableMonths = myPayslipList.map((p) => p.payrollMonth);
   const revoked = myPayslipList.find(
     (p) => p.payrollMonth === myPayslipMonth && p.status === "REVOKED",
   );
   const period = payslipPeriod(myPayslipYear, myPayslipMonth);
+  // The uploaded row for the selected period, if any. Uploaded payslips are real PDF bytes in
+  // storage — there is no snapshot to render, so the view and the download button both branch on
+  // this instead of on `snapshot`.
+  const uploaded = myPayslipList.find(
+    (p) =>
+      p.payrollYear === myPayslipYear &&
+      p.payrollMonth === myPayslipMonth &&
+      p.source === "UPLOADED",
+  );
 
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
-        <MonthNavigator
-          year={myPayslipYear}
-          selectedMonth={myPayslipMonth}
-          availableMonths={availableMonths}
-          onYearChange={setMyPayslipYear}
-          onMonthSelect={setMyPayslipMonth}
-        />
+        <Space>
+          <Select
+            style={{ width: 110 }}
+            value={myPayslipYear}
+            onChange={setMyPayslipYear}
+            options={myPayslipYearOptions(myPayslipYear, myPayslipList).map((y) => ({
+              value: y,
+              label: String(y),
+            }))}
+            placeholder="Year"
+          />
+          <Select
+            style={{ width: 130 }}
+            value={myPayslipMonth}
+            onChange={setMyPayslipMonth}
+            options={MONTHS.map((m) => ({ value: m.value, label: m.label }))}
+            placeholder="Month"
+          />
+        </Space>
         <Card size="small" style={{ minWidth: 230 }}>
           <Button
             type="primary"
             icon={<DownloadOutlined />}
             block
             loading={pdfGenerating}
-            disabled={!snapshot || !!revoked}
+            disabled={(!snapshot && !uploaded) || !!revoked}
             onClick={() => downloadMyPayslip(myPayslipYear, myPayslipMonth)}
           >
             Download PDF
@@ -123,18 +143,25 @@ const EmployeePayslipView: React.FC = () => {
 
         {snapshotLoading && <Skeleton active paragraph={{ rows: 12 }} />}
 
-        {!snapshotLoading && !snapshot && !revoked && !snapshotError && (
+        {!snapshotLoading && !snapshot && !uploaded && !revoked && !snapshotError && (
           <Empty
             description={
               <Typography.Text type="secondary">
-                No payslip issued for {period} yet. Your payslip appears here once payroll for the
-                month is approved.
+                No payslip available for {period}.
               </Typography.Text>
             }
           />
         )}
 
-        {!snapshotLoading && snapshot && !revoked && <PayslipRenderer snapshot={snapshot} />}
+        {!snapshotLoading && uploaded && !revoked && (
+          <Card size="small">
+            <Typography.Text>{uploaded.fileName} — uploaded payslip</Typography.Text>
+          </Card>
+        )}
+
+        {!snapshotLoading && !uploaded && snapshot && !revoked && (
+          <PayslipRenderer snapshot={snapshot} />
+        )}
       </div>
     </div>
   );

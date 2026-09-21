@@ -52,3 +52,17 @@ export function payslipPeriod(year: number, month: number, fallback?: string | n
 export function payslipFileName(employeeId: string | null, year: number, month: number): string {
   return `${employeeId ?? "payslip"}_${payslipPeriod(year, month)}.pdf`;
 }
+
+/**
+ * Year options for the employee's own Year select. The currently selected year always appears —
+ * even before the list has loaded, or for a deep-linked year with no rows yet — plus every year
+ * present in the employee's own payslip list. Sorted newest first.
+ */
+export function myPayslipYearOptions(
+  selectedYear: number,
+  list: Array<{ payrollYear: number }>
+): number[] {
+  return Array.from(new Set([selectedYear, ...list.map((p) => p.payrollYear)])).sort(
+    (a, b) => b - a
+  );
+}

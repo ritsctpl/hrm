@@ -8,6 +8,7 @@ import { HrmPayslipService } from "../services/payslipService";
 import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
 import { payslipFileName } from "../utils/payslipFormat";
 import { chunkFiles, summarise } from "../utils/uploadHelpers";
+import { saveBlob } from "../utils/saveBlob";
 import type { PayslipSnapshot, PayslipUploadBatch } from "../types/domain.types";
 import type {
   PayslipListItem,
@@ -126,6 +127,13 @@ const currentMonth = new Date().getMonth() + 1;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * Finds the employee's own list row for a period, so the snapshot and download paths can branch
+ * on `source` without each re-deriving the lookup. Not part of the store's public state.
+ */
+const myRow = (get: () => PayslipState, year: number, month: number) =>
+  get().myPayslipList.find((p) => p.payrollYear === year && p.payrollMonth === month);
 
 export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   activeTab: "myPayslips",
@@ -301,6 +309,12 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
 
   /** Loads the frozen snapshot for a month and renders the preview from it. */
   loadMySnapshot: async (year, month) => {
+    // An uploaded payslip is a real PDF in storage, not a rendered snapshot — there is nothing
+    // for this endpoint to return, and calling it throws (PAYSLIP_020).
+    if (myRow(get, year, month)?.source === "UPLOADED") {
+      set({ snapshot: null, snapshotLoading: false, snapshotError: null });
+      return;
+    }
     set({ snapshotLoading: true, snapshotError: null });
     try {
       const snapshot = await HrmPayslipService.downloadMyPayslip({
@@ -326,6 +340,20 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   downloadMyPayslip: async (year, month) => {
     set({ pdfGenerating: true });
     try {
+      const row = myRow(get, year, month);
+      if (row?.source === "UPLOADED") {
+        // An uploaded payslip is a real PDF in storage; fetch its bytes and hand them to the
+        // browser. There is no snapshot to render, and the existing password-protecting
+        // generated-download path below does not apply.
+        const blob = await HrmPayslipService.downloadUploadedPayslip({
+          organizationId: getOrganizationId(),
+          employeeId: getEmployeeId(),
+          payrollYear: year,
+          payrollMonth: month,
+        });
+        saveBlob(blob, row.fileName ?? `payslip-${month}-${year}.pdf`);
+        return;
+      }
       // Render from the snapshot already on screen when we have it, so the file and the preview
       // are provably the same data. Only fetch when the user downloads without viewing.
       const existing = get().snapshot;
