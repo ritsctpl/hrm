@@ -33,6 +33,7 @@ import {
   ELIGIBILITY_FLAGS,
   ELIGIBILITY_ERROR_CODES,
 } from "../../utils/constants";
+import { earliestAllowedLeaveStart, isBackdatedBeyondWindow } from "../../utils/backdating";
 import type { HolidayResponse } from "../../../hrmHoliday/types/api.types";
 import type { TeamCalendarEntry, LeaveBlackoutPeriod } from "../../types/api.types";
 import styles from "../../styles/HrmLeaveForm.module.css";
@@ -144,8 +145,9 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // picker path; backend will still accept a handle-shaped value).
   const effectiveEmployeeId = formTargetEmployeeId ?? employeeId;
   const effectiveEmployeeHandle = formTargetEmployeeId ?? identity.handle ?? employeeId;
-  // HR users (indicated by allowEmployeeSelection) can submit any date
-  // without backdated restrictions.
+  // HR users (indicated by allowEmployeeSelection) may submit through a
+  // blackout period. They get NO backdating override (HRM issue #3): the
+  // backdated window applies to everyone, as it does on the server.
   const isHrUser = allowEmployeeSelection;
 
   const [submitting, setSubmitting] = useState(false);
@@ -887,21 +889,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
   // Non-blocking warning: balance goes negative but the policy allows it.
   const negativeWarning = goesNegative && !exceedsBalance;
 
-  // ── Backdated handling (item 16) ───────────────────────────────────
-  // Past-dated leave is allowed. Non-HR users may freely backdate anywhere
-  // within the current calendar month, plus the last 10 days of the
-  // previous month; earlier dates must be routed through HR.
-  const isBackdated =
-    !!leaveFormState.startDate &&
-    dayjs(leaveFormState.startDate).isBefore(dayjs(), "day");
-  const daysBackdated = isBackdated
-    ? dayjs().diff(dayjs(leaveFormState.startDate), "day")
-    : 0;
-  const earliestAllowed = dayjs().startOf("month").subtract(10, "day");
-  const tooOld =
-    !!leaveFormState.startDate &&
-    dayjs(leaveFormState.startDate).isBefore(earliestAllowed, "day");
-  const backdatedBlocked = tooOld && !isHrUser;
+  // ── Backdated handling (item 16, HRM issue #3) ─────────────────────
+  // Past-dated leave is allowed anywhere within the current calendar month,
+  // plus the last 10 days of the previous month. Earlier dates are blocked for
+  // EVERYONE, HR included — the server rejects them (LeaveBackdatingRules), so
+  // the old "HR Override" only led to a failed submit.
+  const todayStr = dayjs().format("YYYY-MM-DD");
+  const earliestAllowed = earliestAllowedLeaveStart(todayStr);
+  const backdatedBlocked = isBackdatedBeyondWindow(leaveFormState.startDate, todayStr);
 
   // ── Duplicate handling (item 22) ───────────────────────────────────
   // Cancelled / rejected (and deleted) requests must not block re-applying
@@ -921,8 +916,8 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
     !exceedsBalance &&
     !hasBlockingDuplicate &&
     requestPerms.canAdd &&
-    // Block non-HR users from backdating before the allowed window
-    // (current month + last 10 days of the previous month)
+    // Block backdating before the allowed window (current month + last 10
+    // days of the previous month) — for every user, HR included.
     !backdatedBlocked &&
     // Block non-HR users from submitting during a blackout period
     !(overlappingBlackout && !isHrUser) &&
@@ -1185,14 +1180,14 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               >
                 {policyApplicabilityError
                   ? "Not Eligible"
-                  : exceedsBalance
-                    ? negativeAllowed && negativeFloor != null
-                      ? "Exceeds Negative Limit"
-                      : "Insufficient Balance"
-                    // : hasBlockingDuplicate
-                    //   ? "Duplicate Request Exists"
-                      : backdatedBlocked
-                        ? "Backdated Beyond Allowed Window"
+                  : backdatedBlocked
+                    ? "Backdated Beyond Allowed Window"
+                    : exceedsBalance
+                      ? negativeAllowed && negativeFloor != null
+                        ? "Exceeds Negative Limit"
+                        : "Insufficient Balance"
+                      // : hasBlockingDuplicate
+                      //   ? "Duplicate Request Exists"
                         : overlappingBlackout && !isHrUser
                           ? "Blackout Period"
                           : "Submit Request"}
@@ -1306,29 +1301,18 @@ const LeaveRequestFormDrawer: React.FC<LeaveRequestFormDrawerProps> = ({ organiz
               onTotalDaysChange={(days) => updateLeaveFormState({ totalDays: days })}
             />
 
-            {/* Backdated leave warnings (item 16).
-                Non-HR users may backdate anywhere within the current month
-                plus the last 10 days of the previous month; earlier dates
-                are blocked and must be routed through HR. HR users get an
-                override notice but can still submit. Requests within the
-                window submit normally and any HR-approval routing happens
-                in the backend. */}
-            {tooOld && !isHrUser && (
+            {/* Backdated leave (item 16, HRM issue #3). Anything within the
+                current month plus the last 10 days of the previous month
+                submits normally; earlier dates are blocked for everyone,
+                HR included, matching the server. */}
+            {backdatedBlocked && (
               <Alert
                 type="error"
                 showIcon
                 message="Backdated Request Not Allowed"
-                description="Backdated leave is only allowed within the current month or the last 10 days of the previous month. Please contact HR for earlier dates."
-                style={{ marginTop: 8 }}
-              />
-            )}
-
-            {tooOld && isHrUser && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Backdated Leave Request (HR Override)"
-                description={`This request is ${daysBackdated} day(s) in the past, beyond the current month and last 10 days of the previous month. Submitting as HR.`}
+                description={`Leave can only be applied from ${dayjs(earliestAllowed).format(
+                  "DD MMM YYYY"
+                )} onward (the current month and the last 10 days of the previous month). Change the start date to submit.`}
                 style={{ marginTop: 8 }}
               />
             )}
