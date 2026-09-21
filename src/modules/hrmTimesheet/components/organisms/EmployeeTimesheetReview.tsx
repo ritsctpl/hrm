@@ -24,6 +24,7 @@ import {
   shiftWeekStart,
   weekIntersectsMonth,
   WEEKDAY_LABELS,
+  isBlockingLeaveDay,
 } from '../../utils/timesheetHelpers';
 import { LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
 import ApprovalGate from '../atoms/ApprovalGate';
@@ -290,7 +291,7 @@ export default function EmployeeTimesheetReview() {
                         </div>
                         {ts?.status === 'SUBMITTED' ? (
                           <span className={styles.reviewForApproval}>For Approval</span>
-                        ) : hours === 0 && !ts?.holiday && !ts?.leaveDay ? (
+                        ) : hours === 0 && !ts?.holiday && !isBlockingLeaveDay(ts) ? (
                           <span className={styles.calNoEntry}>No Entry</span>
                         ) : (
                           ts?.status && <span style={{ fontSize: 10, color: '#8c8c8c' }}>{ts.status}</span>

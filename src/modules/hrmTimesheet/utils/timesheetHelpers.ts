@@ -263,3 +263,28 @@ export function pendingSubmissionWeeks(
       days: Array.from(set).sort(),
     }));
 }
+
+// ─── Work-from-home days (HRM issue #4) ─────────────────────────────────────
+// WFH is stored as an ordinary (auto-approved) leave request with leave type code "WFH",
+// so the backend may still report such a day with leaveDay=true / leaveType="WFH".
+// It is a WORKING day: it must never lock time entry the way real leave (CL/SL/EL…) does.
+
+/** Leave type codes that mean "working, just not at the office". */
+export const WORKING_LEAVE_TYPE_CODES: readonly string[] = ['WFH'];
+
+/** True for a leave type code that is a working day (WFH), not time off. */
+export function isWorkingLeaveType(leaveType?: string | null): boolean {
+  return !!leaveType && WORKING_LEAVE_TYPE_CODES.includes(leaveType.trim().toUpperCase());
+}
+
+type LeaveFlags = { leaveDay?: boolean; leaveType?: string | null } | null | undefined;
+
+/** A work-from-home day — show it as WFH, and let hours be entered. */
+export function isWfhDay(day: LeaveFlags): boolean {
+  return isWorkingLeaveType(day?.leaveType);
+}
+
+/** A full-day leave that locks time entry: any leave day except a WFH one. */
+export function isBlockingLeaveDay(day: LeaveFlags): boolean {
+  return !!day?.leaveDay && !isWorkingLeaveType(day.leaveType);
+}

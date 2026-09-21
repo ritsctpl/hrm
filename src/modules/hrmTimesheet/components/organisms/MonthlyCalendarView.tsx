@@ -17,6 +17,8 @@ import {
   isWeekendDate,
   pendingSubmissionWeeks,
   WEEKDAY_LABELS,
+  isBlockingLeaveDay,
+  isWfhDay,
 } from '../../utils/timesheetHelpers';
 import type { TimesheetHeader } from '../../types/domain.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
@@ -135,7 +137,10 @@ export default function MonthlyCalendarView() {
                 const hours = ts?.totalHours ?? 0;
                 const holiday = cell.inMonth && (isHoliday(cell.date) || !!ts?.holiday);
                 const holidayName = getHolidayName(cell.date);
-                const leave = cell.inMonth && !!ts?.leaveDay && !holiday;
+                // WFH arrives as a "WFH" leave day but is a working day: open for entry,
+                // labelled WFH rather than Leave (HRM issue #4).
+                const leave = cell.inMonth && isBlockingLeaveDay(ts) && !holiday;
+                const wfh = cell.inMonth && isWfhDay(ts) && !holiday;
                 const travel = cell.inMonth && isTravelDay(cell.date);
                 const travelLabel = getTravelLabel(cell.date);
                 const weekend = cell.inMonth && isWeekendDate(cell.date);
@@ -168,7 +173,12 @@ export default function MonthlyCalendarView() {
                         )}
                         {holiday && <span title={holidayName}>🎉</span>}
                         {leave && <Tag color="orange" style={{ margin: 0 }}>Lve</Tag>}
-                        {weekend && !holiday && !leave && (
+                        {wfh && (
+                          <Tag color="cyan" style={{ margin: 0 }} title="Work from home">
+                            WFH
+                          </Tag>
+                        )}
+                        {weekend && !holiday && !leave && !wfh && (
                           <span className={styles.weekOffBadge}>W/O</span>
                         )}
                       </span>
@@ -186,7 +196,7 @@ export default function MonthlyCalendarView() {
                         ) : (
                           <>
                             <div className={styles.calHours}>{decimalToHHMM(hours)}</div>
-                            {hours === 0 && !future && !ts?.leaveDay && (
+                            {hours === 0 && !future && !leave && (
                               <span className={styles.calNoEntry}>No Entry</span>
                             )}
                           </>

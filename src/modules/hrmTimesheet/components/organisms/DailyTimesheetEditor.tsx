@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
 import { useTimesheetCompOff } from '../../hooks/useTimesheetCompOff';
-import { isFutureDate, isWeekendDate } from '../../utils/timesheetHelpers';
+import { isFutureDate, isWeekendDate, isBlockingLeaveDay, isWfhDay } from '../../utils/timesheetHelpers';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import Can from '../../../hrmAccess/components/Can';
@@ -48,10 +48,13 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
     currentDayTimesheet?.status === 'SUBMITTED' ||
     currentDayTimesheet?.status === 'APPROVED';
 
-  const isHolidayOrLeave =
-    (currentDayTimesheet?.holiday && !onCompOff) || currentDayTimesheet?.leaveDay;
+  // A full-day WFH request comes back as a leave day with leaveType "WFH", but it is a
+  // working day — only real leave locks entry (HRM issue #4).
+  const onLeave = isBlockingLeaveDay(currentDayTimesheet);
+  const onWfh = isWfhDay(currentDayTimesheet);
+  const isHolidayOrLeave = (currentDayTimesheet?.holiday && !onCompOff) || onLeave;
   // Entry is blocked for holidays, approved leave, and future dates — but a
-  // worked holiday with an approved comp-off stays open.
+  // worked holiday with an approved comp-off, and a WFH day, stay open.
   const entryBlocked = isHolidayOrLeave || isFuture;
 
   const lines = currentDayTimesheet?.lines ?? [];
@@ -86,13 +89,14 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
               <Tag color="blue">🔄 Comp-off</Tag>
             </Tooltip>
           )}
-          {currentDayTimesheet?.leaveDay && <Tag color="orange">Leave{currentDayTimesheet.leaveType ? `: ${currentDayTimesheet.leaveType}` : ''}</Tag>}
+          {onLeave && <Tag color="orange">Leave{currentDayTimesheet?.leaveType ? `: ${currentDayTimesheet.leaveType}` : ''}</Tag>}
+          {onWfh && <Tag color="cyan">🏠 WFH</Tag>}
           {onTravel && (
             <Tooltip title={getTravelLabel(selectedDate)}>
               <Tag color="blue">✈️ Travel</Tag>
             </Tooltip>
           )}
-          {isWeekend && !currentDayTimesheet?.holiday && !currentDayTimesheet?.leaveDay && (
+          {isWeekend && !currentDayTimesheet?.holiday && !onLeave && !onWfh && (
             <Tag>W/O</Tag>
           )}
         </Space>
@@ -143,7 +147,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
           <Text type="secondary">
             {currentDayTimesheet?.holiday
               ? 'Holiday — no timesheet required'
-              : currentDayTimesheet?.leaveDay
+              : onLeave
                 ? 'Leave day — no timesheet required'
                 : 'Future date — timesheet entry is not allowed yet'}
           </Text>

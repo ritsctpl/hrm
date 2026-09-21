@@ -23,6 +23,8 @@ import {
   weekOfMonthIndex,
   buildMonthMatrix,
   isWeekendDate,
+  isBlockingLeaveDay,
+  isWfhDay,
 } from '../../utils/timesheetHelpers';
 import { HOURS_STEP, LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
 import Can from '../../../hrmAccess/components/Can';
@@ -117,7 +119,9 @@ export default function WeeklyMatrixGrid() {
     // holiday and earned an APPROVED/CREDITED comp-off for it, in which case
     // they may log the hours actually worked on that one date.
     if ((isHoliday(date) || ts?.holiday) && !isCompOffDay(date)) return false;
-    if (ts?.leaveDay) return false; // approved-leave days are locked from time entry
+    // Approved-leave days are locked from time entry — but not a WFH day, which is a
+    // working day that merely arrives as a "WFH" leave record (HRM issue #4).
+    if (isBlockingLeaveDay(ts)) return false;
     return !(ts && (ts.status === 'SUBMITTED' || ts.status === 'APPROVED'));
   }
 
@@ -136,7 +140,7 @@ export default function WeeklyMatrixGrid() {
 
   // Leave days present in the visible week — surfaced as a validation notice.
   const weekLeaveDays = useMemo(
-    () => dates.filter((d) => byDate.get(d)?.leaveDay),
+    () => dates.filter((d) => isBlockingLeaveDay(byDate.get(d))),
     [dates, byDate]
   );
 
@@ -350,7 +354,7 @@ export default function WeeklyMatrixGrid() {
     const editable = dayEditable(date) && withinAllocation;
     const val = cellHours(row.key, date);
     if (!editable) {
-      if (byDate.get(date)?.leaveDay) {
+      if (isBlockingLeaveDay(byDate.get(date))) {
         return (
           <span className={styles.matrixDayLeave} title="Approved leave — no time entry allowed">
             Leave
@@ -444,7 +448,8 @@ export default function WeeklyMatrixGrid() {
                 // A worked holiday with an approved comp-off is unlocked, so it
                 // no longer reads as a locked Holiday — the comp-off badge wins.
                 const hol = (isHoliday(d) || !!byDate.get(d)?.holiday) && !compOff;
-                const leave = !!byDate.get(d)?.leaveDay;
+                const leave = isBlockingLeaveDay(byDate.get(d));
+                const wfh = !hol && isWfhDay(byDate.get(d));
                 const travel = isTravelDay(d);
                 const weekend = isWeekendDate(d);
                 const colClass = hol
@@ -484,7 +489,12 @@ export default function WeeklyMatrixGrid() {
                     )}
                     {hol && <div className={styles.matrixDayHoliday} style={{ fontSize: 10 }}>Holiday</div>}
                     {leave && !hol && <div className={styles.matrixDayLeave} style={{ fontSize: 10 }}>Leave</div>}
-                    {weekend && !hol && !leave && !compOff && (
+                    {wfh && (
+                      <div style={{ fontSize: 10, color: '#13c2c2' }} title="Work from home">
+                        WFH
+                      </div>
+                    )}
+                    {weekend && !hol && !leave && !compOff && !wfh && (
                       <div className={styles.weekOffBadge}>W/O</div>
                     )}
                   </th>

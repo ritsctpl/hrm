@@ -9,6 +9,7 @@ import HoursDisplay from '../atoms/HoursDisplay';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import Can from '../../../hrmAccess/components/Can';
 import ApprovalGate from '../atoms/ApprovalGate';
+import { isBlockingLeaveDay, isWfhDay } from '../../utils/timesheetHelpers';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 const { Text, Title } = Typography;
@@ -64,7 +65,8 @@ export default function TimesheetApprovalDetail({ onApprove, onReopen }: Props) 
       </div>
 
       {ts.holiday && <Tag color="blue">Holiday</Tag>}
-      {ts.leaveDay && <Tag color="orange">Leave{ts.leaveType ? `: ${ts.leaveType}` : ''}</Tag>}
+      {isBlockingLeaveDay(ts) && <Tag color="orange">Leave{ts.leaveType ? `: ${ts.leaveType}` : ''}</Tag>}
+      {isWfhDay(ts) && <Tag color="cyan">WFH</Tag>}
 
       <TimesheetLinesTable
         lines={ts.lines}

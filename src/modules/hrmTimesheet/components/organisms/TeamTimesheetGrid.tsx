@@ -3,6 +3,7 @@ import { Spin, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import DayColorIndicator from '../atoms/DayColorIndicator';
+import { isBlockingLeaveDay } from '../../utils/timesheetHelpers';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import type { DayColorCode, TimesheetStatus } from '../../types/domain.types';
 import styles from '../../styles/HrmTimesheetGrid.module.css';
@@ -71,7 +72,8 @@ export default function TeamTimesheetGrid() {
                       </td>
                     );
                   }
-                  if (day.leaveDay) {
+                  // WFH is a working day: show its hours like any other day (HRM issue #4).
+                  if (isBlockingLeaveDay(day)) {
                     return (
                       <td key={date} className={styles.dayCell}>
                         <span className={styles.leaveCell}>

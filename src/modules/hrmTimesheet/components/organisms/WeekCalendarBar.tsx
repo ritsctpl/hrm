@@ -6,6 +6,7 @@ import DaySummaryCard from '../molecules/DaySummaryCard';
 import WeekNavigator from '../molecules/WeekNavigator';
 import type { WeekDaySummary } from '../../types/ui.types';
 import type { TimesheetHeader } from '../../types/domain.types';
+import { isBlockingLeaveDay } from '../../utils/timesheetHelpers';
 import styles from '../../styles/HrmTimesheet.module.css';
 
 interface Props {
@@ -25,7 +26,8 @@ function buildWeekDays(weekStart: string, timesheets: TimesheetHeader[] = []): W
       colorCode: ts?.colorCode ?? 'GREY',
       status: ts?.status ?? 'EMPTY',
       isHoliday: ts?.holiday ?? false,
-      isLeave: ts?.leaveDay ?? false,
+      // A WFH day is a working day, not leave (HRM issue #4).
+      isLeave: isBlockingLeaveDay(ts),
       timesheetHandle: ts?.handle,
     });
   }

@@ -7,7 +7,7 @@ import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useHrmTimesheetData } from '../../hooks/useHrmTimesheetData';
 import { useHrmTimesheetUI } from '../../hooks/useHrmTimesheetUI';
 import WeekNavigator from '../molecules/WeekNavigator';
-import { decimalToHHMM } from '../../utils/timesheetHelpers';
+import { decimalToHHMM, isBlockingLeaveDay } from '../../utils/timesheetHelpers';
 import ApprovalGate from '../atoms/ApprovalGate';
 import type { TeamTimesheetSummary } from '../../types/domain.types';
 import type { ManagerStatusFilter } from '../../types/ui.types';
@@ -36,7 +36,8 @@ function deriveStatus(emp: TeamTimesheetSummary): CardStatus {
   if (withHours.length === 0) {
     // Every day in the period is a synthesized leave placeholder — the employee
     // was out the whole time, not simply missing entries.
-    if (days.length > 0 && days.every((d) => d.leaveDay)) return 'ON_LEAVE';
+    // WFH days are working days, so a WFH week with no hours is NO_ENTRY, not ON_LEAVE.
+    if (days.length > 0 && days.every((d) => isBlockingLeaveDay(d))) return 'ON_LEAVE';
     return 'NO_ENTRY';
   }
   return 'DRAFT';
