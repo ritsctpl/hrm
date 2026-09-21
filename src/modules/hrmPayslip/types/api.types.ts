@@ -126,3 +126,32 @@ export interface UploadTemplateLogoRequest {
   logoUrl: string;
   updatedBy?: string;
 }
+
+/**
+ * The RBAC actor is taken from the gateway-stamped X-User-ID header (see PayslipUploadController),
+ * never from these body fields — they are accepted for backward compatibility but ignored by the
+ * backend. Kept here because the service method signatures call for them.
+ */
+export interface UploadPayslipBatchRequest {
+  organizationId: string;
+  uploadedBy: string;
+  batchHandle?: string;
+  files: File[];
+}
+
+export interface GetUploadBatchRequest {
+  organizationId: string;
+  requestedBy: string;
+  handle: string;
+}
+
+export interface DownloadUploadedPayslipRequest {
+  organizationId: string;
+  /** HR path: identifies the payslip directly. Requires the download permission. */
+  handle?: string;
+  requestedBy?: string;
+  /** Self-service path: the employee's own code plus the period. */
+  employeeId?: string;
+  payrollYear?: number;
+  payrollMonth?: number;
+}

@@ -5,6 +5,7 @@ import type {
   PayslipTemplate,
   PayslipRenderData,
   PayslipGenerationResult,
+  PayslipUploadBatch,
 } from "../types/domain.types";
 import type {
   GeneratePayslipsRequest,
@@ -21,6 +22,9 @@ import type {
   PasswordConfig,
   RevokePayslipRequest,
   UploadTemplateLogoRequest,
+  UploadPayslipBatchRequest,
+  GetUploadBatchRequest,
+  DownloadUploadedPayslipRequest,
 } from "../types/api.types";
 
 const BASE = "/hrm-service/payslip";
@@ -132,6 +136,51 @@ export class HrmPayslipService {
     reason: string
   ): Promise<void> {
     await api.post(`${BASE}/revokePayslip`, { organizationId, payslipId, revokedBy, reason });
+  }
+
+  /**
+   * Uploads one chunk. Pass batchHandle to append to a batch already started. The RBAC actor is
+   * the gateway-stamped X-User-ID header (added by the shared `api` client's Authorization token),
+   * not the `uploadedBy` field below — the backend ignores that field.
+   */
+  static async uploadPayslipBatch(
+    payload: UploadPayslipBatchRequest
+  ): Promise<PayslipUploadBatch> {
+    const form = new FormData();
+    payload.files.forEach((f) => form.append("files", f));
+    form.append("organizationId", payload.organizationId);
+    form.append("uploadedBy", payload.uploadedBy);
+    if (payload.batchHandle) form.append("batchHandle", payload.batchHandle);
+    const res = await api.post<PayslipUploadBatch>(`${BASE}/uploadPayslipBatch`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  }
+
+  static async getUploadBatch(payload: GetUploadBatchRequest): Promise<PayslipUploadBatch> {
+    const res = await api.post<PayslipUploadBatch>(`${BASE}/getUploadBatch`, payload);
+    return res.data;
+  }
+
+  static async getUploadBatches(
+    organizationId: string,
+    requestedBy: string
+  ): Promise<PayslipUploadBatch[]> {
+    const res = await api.post<PayslipUploadBatch[]>(`${BASE}/getUploadBatches`, {
+      organizationId,
+      requestedBy,
+    });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  /** Returns raw PDF bytes — the one endpoint in this module that isn't JSON. */
+  static async downloadUploadedPayslip(
+    payload: DownloadUploadedPayslipRequest
+  ): Promise<Blob> {
+    const res = await api.post(`${BASE}/downloadUploadedPayslip`, payload, {
+      responseType: "blob",
+    });
+    return res.data as Blob;
   }
 }
 

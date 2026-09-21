@@ -2,6 +2,44 @@
 
 export type PayslipStatus = "ISSUED" | "REVOKED" | "GENERATED" | "FAILED" | "REGENERATED";
 
+export type PayslipSource = "GENERATED" | "UPLOADED";
+
+export type PayslipParseStatus =
+  | "OK"
+  | "REPLACED_EXISTING"
+  | "EMPLOYEE_NO_EMAIL"
+  | "BAD_FILENAME"
+  | "EMPLOYEE_NOT_FOUND"
+  | "NOT_A_PDF"
+  | "STORAGE_FAILED";
+
+export interface PayslipUploadItem {
+  fileName: string;
+  parseStatus: PayslipParseStatus;
+  reason: string | null;
+  employeeCode: string | null;
+  employeeName: string | null;
+  workEmail: string | null;
+  payrollYear: number | null;
+  payrollMonth: number | null;
+  payslipHandle: string | null;
+  emailStatus: string | null;
+}
+
+export interface PayslipUploadBatch {
+  handle: string;
+  site: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  totalFiles: number;
+  matchedCount: number;
+  skippedCount: number;
+  emailedCount: number;
+  failedEmailCount: number;
+  status: string;
+  items: PayslipUploadItem[];
+}
+
 export interface PayslipListItem {
   handle: string;
   site: string;
@@ -20,6 +58,8 @@ export interface PayslipListItem {
   generatedAt: string;
   regenerationCount: number;
   status: PayslipStatus;
+  source: PayslipSource;
+  fileName: string | null;
 }
 
 export interface PayslipGenerationResult {

@@ -2,7 +2,13 @@
 
 import { PayslipRenderData, PayslipTemplate, PayslipListItem } from "./domain.types";
 
-export type PayslipTabKey = "generate" | "myPayslips" | "repository" | "templates";
+export type PayslipTabKey =
+  | "generate"
+  | "myPayslips"
+  | "repository"
+  | "upload"
+  | "uploadHistory"
+  | "templates";
 
 export type UserRole = "ADMIN" | "HR" | "FINANCE" | "EMPLOYEE";
 
