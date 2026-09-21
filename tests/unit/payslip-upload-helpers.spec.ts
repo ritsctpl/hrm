@@ -165,3 +165,25 @@ test('splitAtFailedChunk: never loses or duplicates a file', () => {
   expect(sent).toHaveLength(25);
   expect([...sent, ...unsent]).toEqual(files);
 });
+
+// --- Final review, minor 12: the error CSV is opened in Excel; a cell must never run as a formula. ---
+
+const onlyRow = (csv: string) => csv.split('\n')[1];
+
+test('errorRowsToCsv neutralises a file name that starts with a formula character', () => {
+  for (const lead of ['=', '+', '-', '@']) {
+    const csv = errorRowsToCsv(batch([item(`${lead}HYPERLINK("x").pdf`, 'BAD_FILENAME')]));
+    // Prefixed with a single quote so Excel shows it as text; quoted because it holds a quote.
+    expect(onlyRow(csv).startsWith(`"'${lead}HYPERLINK(""x"").pdf"`)).toBe(true);
+  }
+});
+
+test('errorRowsToCsv leaves an ordinary value alone', () => {
+  expect(onlyRow(errorRowsToCsv(batch([item('R1_Aug-2026.pdf', 'BAD_FILENAME')]))))
+    .toBe('R1_Aug-2026.pdf,BAD_FILENAME,,,');
+});
+
+test('errorRowsToCsv quotes a value containing a carriage return', () => {
+  const csv = errorRowsToCsv(batch([item('x.pdf', 'BAD_FILENAME', 'line one\rline two')]));
+  expect(csv).toContain('"line one\rline two"');
+});

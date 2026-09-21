@@ -118,9 +118,15 @@ export function summarise(batch: PayslipUploadBatch): UploadSummary {
 
 const CSV_HEADER = "File name,Problem,Details,Employee code,Period";
 
+/**
+ * One CSV cell. A leading = + - @ is prefixed with a single quote so a spreadsheet shows the value
+ * as text instead of running it as a formula (file names are chosen by whoever made the files).
+ * A comma, double quote, CR or LF forces quoting.
+ */
 function cell(value: string | number | null | undefined): string {
-  const text = value === null || value === undefined ? "" : String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  const raw = value === null || value === undefined ? "" : String(value);
+  const text = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 /**
