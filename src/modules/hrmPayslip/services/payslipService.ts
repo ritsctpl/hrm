@@ -149,11 +149,12 @@ export class HrmPayslipService {
     const form = new FormData();
     payload.files.forEach((f) => form.append("files", f));
     form.append("organizationId", payload.organizationId);
-    form.append("uploadedBy", payload.uploadedBy);
+    if (payload.uploadedBy) form.append("uploadedBy", payload.uploadedBy);
     if (payload.batchHandle) form.append("batchHandle", payload.batchHandle);
-    const res = await api.post<PayslipUploadBatch>(`${BASE}/uploadPayslipBatch`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // Do NOT set Content-Type here. Axios/the browser auto-sets
+    // `multipart/form-data; boundary=...` from the FormData body. Setting
+    // it manually drops the boundary and the BE multipart parser 500s.
+    const res = await api.post<PayslipUploadBatch>(`${BASE}/uploadPayslipBatch`, form);
     return res.data;
   }
 

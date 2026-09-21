@@ -134,14 +134,14 @@ export interface UploadTemplateLogoRequest {
  */
 export interface UploadPayslipBatchRequest {
   organizationId: string;
-  uploadedBy: string;
+  uploadedBy?: string;
   batchHandle?: string;
   files: File[];
 }
 
 export interface GetUploadBatchRequest {
   organizationId: string;
-  requestedBy: string;
+  requestedBy?: string;
   handle: string;
 }
 
@@ -149,6 +149,9 @@ export interface DownloadUploadedPayslipRequest {
   organizationId: string;
   /** HR path: identifies the payslip directly. Requires the download permission. */
   handle?: string;
+  /** Ignored by the backend on the HR (handle) path — the actor is the X-User-ID header, same as
+   *  above. On the self-service path it is unused too; the caller identity there is the raw
+   *  X-User-ID header value, resolved internally by PayslipServiceImpl.assertSelfService. */
   requestedBy?: string;
   /** Self-service path: the employee's own code plus the period. */
   employeeId?: string;
