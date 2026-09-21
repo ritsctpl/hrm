@@ -189,6 +189,27 @@ export function buildMonthMatrix(monthStart: string): { date: string; inMonth: b
 }
 
 /**
+ * The date range (inclusive, YYYY-MM-DD) the month grid for `monthStart` shows: from the
+ * Monday of the week holding the 1st to the Sunday of the week holding the last day —
+ * i.e. the first and last cells of buildMonthMatrix(monthStart).
+ *
+ * Load timesheets for THIS range, not just the calendar month: a Mon→Sun week that crosses
+ * a month boundary (e.g. Mon 27 Jul – Sun 02 Aug viewed in August) otherwise shows the other
+ * month's days as empty but editable, and saving the week would overwrite what is really
+ * stored on those days.
+ */
+export function monthGridRange(monthStart: string): { start: string; end: string } {
+  const first = parseLocalDate(monthStart);
+  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+  return { start: mondayOf(ymd(first)), end: shiftDays(mondayOf(ymd(last)), 6) };
+}
+
+/** True when `dateStr` falls in the calendar month of `monthStart` (YYYY-MM-01). */
+export function isInMonth(dateStr: string, monthStart: string): boolean {
+  return String(dateStr).slice(0, 7) === String(monthStart).slice(0, 7);
+}
+
+/**
  * 1-based index of the (Mon→Sun) week that `dateStr` falls in, counted within a month:
  * week 1 is the week containing the month's 1st.
  *

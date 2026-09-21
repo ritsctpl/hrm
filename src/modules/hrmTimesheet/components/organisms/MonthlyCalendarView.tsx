@@ -19,6 +19,7 @@ import {
   WEEKDAY_LABELS,
   isBlockingLeaveDay,
   isWfhDay,
+  isInMonth,
 } from '../../utils/timesheetHelpers';
 import type { TimesheetHeader } from '../../types/domain.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
@@ -42,17 +43,23 @@ export default function MonthlyCalendarView() {
   }, [monthlyTimesheets]);
 
   const weeks = useMemo(() => buildMonthMatrix(selectedMonth), [selectedMonth]);
+  // monthlyTimesheets spans the whole visible grid (neighbouring months' days included);
+  // month-level figures only count this month's days.
+  const monthDays = useMemo(
+    () => monthlyTimesheets.filter((t) => isInMonth(t.date, selectedMonth)),
+    [monthlyTimesheets, selectedMonth]
+  );
   const monthTotal = useMemo(
-    () => monthlyTimesheets.reduce((s, t) => s + (t.totalHours ?? 0), 0),
-    [monthlyTimesheets]
+    () => monthDays.reduce((s, t) => s + (t.totalHours ?? 0), 0),
+    [monthDays]
   );
 
   const monthLabel = dayjs(selectedMonth).format('MMMM YYYY');
   const atCurrentMonth = isInCurrentMonth(selectedMonth);
 
   // Status banners
-  const hasApproved = monthlyTimesheets.some((t) => t.status === 'APPROVED');
-  const hasRejected = monthlyTimesheets.some((t) => t.status === 'REJECTED');
+  const hasApproved = monthDays.some((t) => t.status === 'APPROVED');
+  const hasRejected = monthDays.some((t) => t.status === 'REJECTED');
   // Mon→Sun weeks with at least one unsubmitted day, each carrying the days that caused it
   // (HRM issue #6: the banner used Sun→Sat weeks, so a leftover day from the previous
   // Mon–Sun week flagged the next one, and the message never said which day was pending).

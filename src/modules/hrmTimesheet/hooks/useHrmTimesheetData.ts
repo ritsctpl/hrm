@@ -8,6 +8,7 @@ import { HrmTimesheetService } from '../services/hrmTimesheetService';
 import { HrmProjectService } from '../../hrmProject/services/hrmProjectService';
 import { useEmployeeIdentity } from '../../hrmAccess/hooks/useEmployeeIdentity';
 import type { TimesheetHeader, TimesheetLine } from '../types/domain.types';
+import { monthGridRange } from '../utils/timesheetHelpers';
 
 /** Last day of the month as local YYYY-MM-DD (avoids the toISOString UTC shift
  *  that dropped the final day of the month in positive-offset timezones). */
@@ -88,13 +89,12 @@ export function useHrmTimesheetData() {
     if (!isReady) return;
     store.setLoadingMonth(true);
     try {
-      const monthStart = store.selectedMonth; // YYYY-MM-01
-      const data = await HrmTimesheetService.listTimesheets(
-        organizationId,
-        employeeId,
-        monthStart,
-        monthEndLocal(monthStart)
-      );
+      // The whole visible grid (Mon before the 1st → Sun after the last day), not just the
+      // month: the week matrix edits cross-month weeks, and a day it cannot see would show
+      // empty and editable, and saving would overwrite its real entries. Consumers that are
+      // month-scoped (totals, banners) filter with isInMonth.
+      const { start, end } = monthGridRange(store.selectedMonth);
+      const data = await HrmTimesheetService.listTimesheets(organizationId, employeeId, start, end);
       store.setMonthlyTimesheets(data.map(mapTimesheetResponse));
     } catch (err) {
       console.error('Failed to load monthly timesheets:', err);
@@ -263,13 +263,9 @@ export function useHrmTimesheetData() {
     if (!target) return;
     store.setLoadingTargetEmployee(true);
     try {
-      const monthStart = store.selectedMonth;
-      const data = await HrmTimesheetService.listTimesheets(
-        organizationId,
-        target.employeeId,
-        monthStart,
-        monthEndLocal(monthStart)
-      );
+      // Whole visible grid, so the review's weekly view shows cross-month days' real data.
+      const { start, end } = monthGridRange(store.selectedMonth);
+      const data = await HrmTimesheetService.listTimesheets(organizationId, target.employeeId, start, end);
       store.setTargetEmployeeTimesheets(data.map(mapTimesheetResponse));
     } catch (err) {
       console.error('Failed to load employee timesheets for review:', err);

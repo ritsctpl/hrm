@@ -25,6 +25,7 @@ import {
   weekIntersectsMonth,
   WEEKDAY_LABELS,
   isBlockingLeaveDay,
+  isInMonth,
 } from '../../utils/timesheetHelpers';
 import { LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
 import ApprovalGate from '../atoms/ApprovalGate';
@@ -88,13 +89,19 @@ export default function EmployeeTimesheetReview() {
   }, [targetEmployeeTimesheets]);
 
   const weeks = useMemo(() => buildMonthMatrix(selectedMonth), [selectedMonth]);
+  // The load spans the whole visible grid; month-level total and "approve/reject all" stay
+  // scoped to this month's days, as before.
+  const monthDays = useMemo(
+    () => targetEmployeeTimesheets.filter((t) => isInMonth(t.date, selectedMonth)),
+    [targetEmployeeTimesheets, selectedMonth]
+  );
   const monthTotal = useMemo(
-    () => targetEmployeeTimesheets.reduce((s, t) => s + (t.totalHours ?? 0), 0),
-    [targetEmployeeTimesheets]
+    () => monthDays.reduce((s, t) => s + (t.totalHours ?? 0), 0),
+    [monthDays]
   );
   const submittedHandles = useMemo(
-    () => targetEmployeeTimesheets.filter((t) => t.status === 'SUBMITTED').map((t) => t.handle),
-    [targetEmployeeTimesheets]
+    () => monthDays.filter((t) => t.status === 'SUBMITTED').map((t) => t.handle),
+    [monthDays]
   );
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
@@ -282,7 +289,7 @@ export default function EmployeeTimesheetReview() {
                       <span className={`${styles.calDateNum} ${isToday(cell.date) ? styles.calDateToday : ''}`}>
                         {dayjs(cell.date).format('D')}
                       </span>
-                      {ts?.holiday && <Tag color="blue" style={{ margin: 0 }}>Hol</Tag>}
+                      {cell.inMonth && ts?.holiday && <Tag color="blue" style={{ margin: 0 }}>Hol</Tag>}
                     </div>
                     {cell.inMonth && (
                       <>

@@ -7,6 +7,8 @@ import {
   isWeekendDate,
   pendingSubmissionWeeks,
   WEEKDAY_LABELS,
+  monthGridRange,
+  isInMonth,
 } from '../../src/modules/hrmTimesheet/utils/timesheetHelpers';
 
 /**
@@ -164,5 +166,44 @@ test.describe('pending-submission banner weeks', () => {
       { date: '2026-08-04', status: 'DRAFT', totalHours: 8 },
     ];
     expect(pendingSubmissionWeeks(days, '2026-08-01', today).map((w) => w.week)).toEqual([2, 4]);
+  });
+});
+
+test.describe('month grid load range (cross-month weeks show real data)', () => {
+  test('August 2026 loads Mon 27 Jul through Sun 06 Sep', () => {
+    expect(monthGridRange('2026-08-01')).toEqual({ start: '2026-07-27', end: '2026-09-06' });
+  });
+
+  test('the range is exactly the grid\'s first and last cell, for every month of two years', () => {
+    for (const y of [2026, 2028]) {
+      for (let m = 1; m <= 12; m++) {
+        const monthStart = `${y}-${String(m).padStart(2, '0')}-01`;
+        const grid = buildMonthMatrix(monthStart);
+        expect(monthGridRange(monthStart)).toEqual({
+          start: grid[0][0].date,
+          end: grid[grid.length - 1][6].date,
+        });
+      }
+    }
+  });
+
+  test('a cross-month week is fully inside the range', () => {
+    const { start, end } = monthGridRange('2026-08-01');
+    for (const d of weekDates('2026-07-27')) {
+      expect(d >= start && d <= end).toBe(true);
+    }
+  });
+
+  test('a month that starts on Monday has no leading days; Feb 2027 (Mon 1 – Sun 28) is exact', () => {
+    // March 2027: Mon 01 Mar … Wed 31 Mar → ends Sun 04 Apr.
+    expect(monthGridRange('2027-03-01')).toEqual({ start: '2027-03-01', end: '2027-04-04' });
+    // February 2027: Mon 01 Feb … Sun 28 Feb — exactly the month.
+    expect(monthGridRange('2027-02-01')).toEqual({ start: '2027-02-01', end: '2027-02-28' });
+  });
+
+  test('isInMonth separates the displayed month from the neighbouring cells', () => {
+    expect(isInMonth('2026-08-02', '2026-08-01')).toBe(true);
+    expect(isInMonth('2026-07-27', '2026-08-01')).toBe(false);
+    expect(isInMonth('2026-09-06', '2026-08-01')).toBe(false);
   });
 });
