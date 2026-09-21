@@ -73,8 +73,8 @@ export interface CreateAnnouncementPayload {
   title: string;
   content: string;
   /**
-   * PLAIN (the server default when omitted) strips every tag; HTML keeps an allow-listed set.
-   * Must be sent for a body with markup, or the server stores it stripped (HRM issue #5).
+   * PLAIN (the server default when omitted) strips every tag, so the composer sends its literal
+   * text escaped as PLAIN; an existing HTML record is sent back as HTML (HRM issue #5).
    */
   contentFormat?: 'PLAIN' | 'HTML';
   category: AnnouncementCategory;

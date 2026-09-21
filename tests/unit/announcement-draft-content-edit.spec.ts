@@ -5,9 +5,10 @@ import {
   mergeAnnouncementDetail,
   createLatestRequestGuard,
   loadAnnouncementForEdit,
-  contentFormatFor,
   editorContentFrom,
-  contentHasVisibleText,
+  contentForSave,
+  escapePlainText,
+  decodeEntities,
 } from '../../src/modules/hrmAnnouncement/utils/announcementHelpers';
 import { Announcement } from '../../src/modules/hrmAnnouncement/types/domain.types';
 
@@ -17,12 +18,12 @@ import { Announcement } from '../../src/modules/hrmAnnouncement/types/domain.typ
  *
  * The CT-2026-477 fix (load `/get` before opening the editor) is intact. What was still wrong:
  *
- *  1. The composer never sent `contentFormat`, so hrm-service stored every body as PLAIN and ran
- *     it through `Jsoup.clean(content, Safelist.none())` — every tag stripped, even though the
- *     box says "HTML supported". A body written as markup (`<p>…</p>` survives as bare text,
- *     `<img …>` or `<Draft content>` survive as NOTHING) came back empty. `@NotBlank` is checked
- *     before sanitising, so the empty draft still saved. PLAIN storage also HTML-escapes, so
- *     "Q&A" reopened as "Q&amp;A" and grew another `amp;` on every save.
+ *  1. The textarea's literal text went to hrm-service unescaped, and a PLAIN body is stored as
+ *     `Jsoup.clean(content, Safelist.none())`, which strips anything that parses as a tag.
+ *     "<Draft content>" was stored as "" (`@NotBlank` is checked before sanitising, so it still
+ *     saved) and reopened blank; "a <b> c" lost its middle; "Q&A" reopened as "Q&amp;A". The
+ *     composer now sends the text escaped as PLAIN (an HTML record stays HTML) and decodes it
+ *     once on reopen, so the text round-trips exactly.
  *  2. Opening draft A then draft B could show A (the old guard ignored B's click; the new guard
  *     makes the latest click win and drops A's late answer).
  *  3. The drawer only populated once the employee identity was ready — a blank editor for as long
@@ -153,36 +154,64 @@ test('list-row merge never blanks content', () => {
 });
 
 // ── the body the server stores is the body the author wrote ──────────────────────────────────
+//
+// The server side of the round trip: hrm-service stores a PLAIN body as
+// `Jsoup.clean(content, "", Safelist.none(), prettyPrint(false))`. For text escaped by
+// `escapePlainText` that call returns its input unchanged — checked against jsoup 1.18.3 for every
+// sample below ("SAME" for each; the only rewrite is U+00A0 -> &nbsp;, which escapePlainText
+// already does). So the stored value is exactly what the composer sent.
 
-test('markup is sent as HTML so the server keeps it; plain text stays PLAIN', () => {
-  expect(contentFormatFor('<p>Office closed on <b>Friday</b></p>')).toBe('HTML');
-  expect(contentFormatFor('<img src="https://x/y.png">')).toBe('HTML');
-  expect(contentFormatFor('Line one\nLine two')).toBe('PLAIN');
-  expect(contentFormatFor('a < b and c > d')).toBe('PLAIN');
-  expect(contentFormatFor('Q&A at 3pm')).toBe('PLAIN');
+const saveAndReopen = (typed: string, storedFormat?: string) => {
+  const sent = contentForSave(typed, storedFormat);
+  const stored = sent.content; // Safelist.none() leaves escaped text untouched (see above)
+  return { sent, reopened: editorContentFrom(stored, sent.contentFormat) };
+};
+
+const LITERALS = [
+  '<Draft content>',
+  'Q&A a < b > c',
+  '&lt;literal',
+  'Line one\n\n  Line two\twith a tab\nLine three',
+  '<p>not markup, just text</p> & <!-- neither is this -->',
+  '"quoted" \'apos\' non breaking',
+];
+
+for (const typed of LITERALS) {
+  test(`typed text round-trips exactly: ${JSON.stringify(typed)}`, () => {
+    const { sent, reopened } = saveAndReopen(typed);
+    expect(sent.contentFormat).toBe('PLAIN');
+    // Nothing left that jsoup could read as a tag or comment — nothing for it to strip.
+    expect(sent.content).not.toMatch(/[<>]/);
+    expect(reopened).toBe(typed);
+    // …and saving again without touching it sends the same thing (no &amp;amp; creep).
+    expect(contentForSave(reopened).content).toBe(sent.content);
+  });
+}
+
+test('the exact escapes: & first, so nothing is escaped twice', () => {
+  expect(escapePlainText('Q&A a < b > c')).toBe('Q&amp;A a &lt; b &gt; c');
+  expect(escapePlainText('&lt;literal')).toBe('&amp;lt;literal');
+  expect(escapePlainText('<Draft content>')).toBe('&lt;Draft content&gt;');
+  expect(decodeEntities('&amp;lt;')).toBe('&lt;'); // decoded once, not twice
 });
 
-test('a PLAIN body reopens as the text that was typed, not its HTML escape', () => {
-  // Exactly what Jsoup.clean(…, Safelist.none()) stores for "Q&A: a < b > c" + non-breaking space.
+test('a new record, or any non-HTML record, is sent as PLAIN — never switched by what was typed', () => {
+  expect(contentForSave('<b>bold?</b>').contentFormat).toBe('PLAIN');
+  expect(contentForSave('<b>bold?</b>', 'PLAIN').contentFormat).toBe('PLAIN');
+  expect(contentForSave('<b>bold?</b>', null).contentFormat).toBe('PLAIN');
+});
+
+test('an HTML record stays HTML: its source is edited as-is and sent back unchanged', () => {
+  const source = '<p>Office closed <b>Friday</b></p>\n<p>Q&amp;A after</p>';
+  expect(editorContentFrom(source, 'HTML')).toBe(source);
+  expect(editorContentFrom(source, 'html')).toBe(source);
+  expect(contentForSave(source, 'HTML')).toEqual({ content: source, contentFormat: 'HTML' });
+});
+
+test('a body stored escaped before this fix reopens decoded; empty stays empty', () => {
+  // What the old composer produced for "Q&A: a < b > c" + NBSP (server-escaped PLAIN).
   expect(editorContentFrom('Q&amp;A: a &lt; b &gt; c&nbsp;x', 'PLAIN')).toBe('Q&A: a < b > c x');
-  expect(editorContentFrom('&#39;quoted&#x27; &quot;x&quot;', 'PLAIN')).toBe('\'quoted\' "x"');
-  expect(editorContentFrom('&amp;lt;', 'PLAIN')).toBe('&lt;'); // decoded once, not twice
-  // HTML bodies are shown as their source — that IS what the author edits.
-  expect(editorContentFrom('<p>Q&amp;A</p>', 'HTML')).toBe('<p>Q&amp;A</p>');
+  expect(editorContentFrom('&#39;q&#x27; &quot;x&quot;', 'PLAIN')).toBe('\'q\' "x"');
   expect(editorContentFrom(undefined, 'PLAIN')).toBe('');
   expect(editorContentFrom(null, undefined)).toBe('');
-});
-
-test('a body the server would sanitise to nothing is refused before saving', () => {
-  // Each of these saved as an EMPTY body before (verified against jsoup 1.18.3 as used by hrm-service).
-  expect(contentHasVisibleText('<Draft content>')).toBe(false);
-  expect(contentHasVisibleText('<!-- note -->')).toBe(false);
-  expect(contentHasVisibleText('<p> </p><br>')).toBe(false);
-  expect(contentHasVisibleText('&nbsp;')).toBe(false);
-  expect(contentHasVisibleText('<script>alert(1)</script>')).toBe(false);
-  // …and these keep something.
-  expect(contentHasVisibleText('Hello')).toBe(true);
-  expect(contentHasVisibleText('<p>para</p>')).toBe(true);
-  expect(contentHasVisibleText('a < b')).toBe(true);
-  expect(contentHasVisibleText('<img src="https://x/y.png">')).toBe(true);
 });

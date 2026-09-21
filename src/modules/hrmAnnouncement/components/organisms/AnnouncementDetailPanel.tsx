@@ -71,8 +71,14 @@ const AnnouncementDetailPanel: React.FC<AnnouncementDetailPanelProps> = ({
         )}
       </Space>
       <Divider style={{ margin: "8px 0" }} />
+      {/* A PLAIN body is escaped text with no tags (jsoup output), so it is set as HTML to show
+          "&" rather than "&amp;"; plainContent (pre-wrap) keeps its line breaks (HRM issue #5). */}
       <div
-        className={styles.detailContent}
+        className={
+          (announcement.contentFormat ?? "HTML").toUpperCase() === "HTML"
+            ? styles.detailContent
+            : `${styles.detailContent} ${styles.plainContent}`
+        }
         dangerouslySetInnerHTML={{ __html: announcement.content }}
       />
       {announcement.attachments && announcement.attachments.length > 0 && (

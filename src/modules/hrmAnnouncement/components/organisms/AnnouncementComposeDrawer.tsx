@@ -19,8 +19,7 @@ import { parseAnnouncementError, serverErrorMessage } from "../../utils/announce
 import {
   canDeleteFromComposer,
   composerDeleteLabel,
-  contentFormatFor,
-  contentHasVisibleText,
+  contentForSave,
   editorContentFrom,
 } from "../../utils/announcementHelpers";
 import { useCan } from "../../../hrmAccess/hooks/useCan";
@@ -124,7 +123,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       const p = normalizePriority(editAnnouncement.priority);
       form.setFieldsValue({
         title: editAnnouncement.title,
-        // A PLAIN body is stored HTML-escaped; show the text that was typed, not "&amp;".
+        // A PLAIN body is stored escaped; show the text that was typed, not "&amp;" (#5).
         content: editorContentFrom(editAnnouncement.content, editAnnouncement.contentFormat),
         priority: p,
         category: editAnnouncement.category,
@@ -184,9 +183,10 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
     if (isAudienceEmpty(audience)) throw new Error(EMPTY_AUDIENCE_ERROR);
     const payload = {
       ...values,
-      // Without a format the server stores PLAIN and strips every tag, so a body written as
-      // markup came back stripped or empty (HRM issue #5). Plain text is still sent as PLAIN.
-      contentFormat: contentFormatFor(values.content),
+      // The textarea holds literal text: sent escaped as PLAIN so the server's tag stripping
+      // finds nothing to strip ("<Draft content>" used to be stored empty — HRM issue #5). An
+      // existing HTML record keeps HTML. The format never changes with what was typed.
+      ...contentForSave(values.content, editAnnouncement?.contentFormat),
       organizationId,
       scheduledPublishAt: values.scheduledPublishAt?.toISOString(),
       expiresAt: values.expiresAt?.toISOString(),
@@ -454,21 +454,9 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         <Form.Item
           name="content"
           label="Content"
-          rules={[
-            { required: true, whitespace: true, message: "Content is required" },
-            {
-              // The server sanitises the body; one that is only markup (text wrapped in < >, a
-              // comment, an empty tag) would be stored empty and reopen as a blank editor (#5).
-              validator: (_, value?: string) =>
-                !value?.trim() || contentHasVisibleText(value)
-                  ? Promise.resolve()
-                  : Promise.reject(
-                      new Error("Content has no visible text — anything inside < > is treated as markup and removed")
-                    ),
-            },
-          ]}
+          rules={[{ required: true, whitespace: true, message: "Content is required" }]}
         >
-          <TextArea rows={8} placeholder="Announcement content (HTML supported)" />
+          <TextArea rows={8} placeholder="Announcement content" />
         </Form.Item>
 
         {/* Deliberately outside Form.Item — the audience is a composite value held

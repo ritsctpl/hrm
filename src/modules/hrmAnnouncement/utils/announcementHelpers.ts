@@ -81,18 +81,28 @@ export const loadAnnouncementForEdit = async (
 
 // ── Content format (HRM issue #5) ─────────────────────────────────────────────────────────────
 //
-// hrm-service's `AnnouncementContentSanitizer` stores a body without `contentFormat` as PLAIN and
-// cleans it with `Jsoup.clean(content, Safelist.none())`: every tag is removed and the text is
-// HTML-escaped. The composer never sent a format, so a body written as markup (which the box
-// invites: "HTML supported") lost its markup, a body that was ONLY markup — `<img …>`, a comment,
-// `<Draft content>` — was stored empty, and "Q&A" reopened as "Q&amp;A".
+// The Content box is a plain textarea, so what the author types is literal text. hrm-service
+// stores a PLAIN body through `Jsoup.clean(content, Safelist.none())`, which strips anything that
+// parses as a tag: "<Draft content>" was stored as "" and reopened as a blank editor, "a <b> c"
+// lost its middle, and "Q&A" reopened as "Q&amp;A". Escaping the text before it is sent leaves
+// nothing that parses as a tag, and jsoup keeps an already-escaped string unchanged (newlines
+// included), so the stored value decodes back to exactly what was typed.
+//
+// A record whose stored format is HTML (created by another client) keeps HTML: its source is
+// edited as-is and sent back unchanged. The format of a record is never switched on what was typed.
 
-/** A start/end tag or a comment, as an HTML parser would read it. */
-const MARKUP = /<\/?[a-z][^<>]*>|<!--/i;
+export type ContentFormat = 'PLAIN' | 'HTML';
 
-/** HTML when the body contains markup, so the server keeps it; PLAIN otherwise (as before). */
-export const contentFormatFor = (content?: string | null): 'HTML' | 'PLAIN' =>
-  content && MARKUP.test(content) ? 'HTML' : 'PLAIN';
+const isHtmlFormat = (format?: string | null): boolean => (format ?? '').toUpperCase() === 'HTML';
+
+/** Escapes literal text for a PLAIN body — `&` first, so nothing is escaped twice. */
+export const escapePlainText = (text: string): string =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // jsoup writes U+00A0 as &nbsp;; sending it that way makes the stored value equal the sent one.
+    .replace(/\u00a0/g, '&nbsp;');
 
 const NAMED_ENTITIES: Record<string, string> = {
   amp: '&',
@@ -100,10 +110,11 @@ const NAMED_ENTITIES: Record<string, string> = {
   gt: '>',
   quot: '"',
   apos: "'",
-  nbsp: ' ',
+  nbsp: '\u00a0',
 };
 
-const decodeEntities = (text: string): string =>
+/** Decodes HTML entities once (a single pass, so "&amp;lt;" becomes "&lt;", not "<"). */
+export const decodeEntities = (text: string): string =>
   text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
     if (entity[0] === '#') {
       const code =
@@ -118,28 +129,26 @@ const decodeEntities = (text: string): string =>
   });
 
 /**
- * The text to put in the Content box for a stored body. A PLAIN body is stored HTML-escaped, so
- * it is decoded once back to what was typed; an HTML body is shown as its source.
+ * The text to put in the Content box for a stored body: a non-HTML body is stored escaped, so it
+ * is decoded once back to what was typed; an HTML body is shown as its source.
  */
 export const editorContentFrom = (content?: string | null, format?: string | null): string => {
   if (!content) return '';
-  return (format ?? '').toUpperCase() === 'PLAIN' ? decodeEntities(content) : content;
+  return isHtmlFormat(format) ? content : decodeEntities(content);
 };
 
 /**
- * Whether a body keeps anything once the server has sanitised it: visible text outside tags,
- * comments and script/style blocks, or an http(s) image (the one bare element the HTML allow-list
- * keeps). A body that fails this would be stored empty and reopen as a blank editor.
+ * What the composer sends for the Content box. `storedFormat` is the open record's format (absent
+ * for a new record): HTML stays HTML and is sent unchanged; everything else is sent as escaped
+ * PLAIN text. Inverse of `editorContentFrom`.
  */
-export const contentHasVisibleText = (content?: string | null): boolean => {
-  if (!content) return false;
-  if (/<img\b[^<>]*\bsrc\s*=\s*["']?https?:/i.test(content)) return true;
-  const text = content
-    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/<(script|style)\b[\s\S]*?(?:<\/\1\s*>|$)/gi, '')
-    .replace(/<\/?[a-z][^<>]*>/gi, '');
-  return decodeEntities(text).replace(/ /g, ' ').trim() !== '';
-};
+export const contentForSave = (
+  text: string,
+  storedFormat?: string | null
+): { content: string; contentFormat: ContentFormat } =>
+  isHtmlFormat(storedFormat)
+    ? { content: text, contentFormat: 'HTML' }
+    : { content: escapePlainText(text), contentFormat: 'PLAIN' };
 
 /**
  * Formats a byte count for the attachment list (design §14.2.2 — "892 KB").

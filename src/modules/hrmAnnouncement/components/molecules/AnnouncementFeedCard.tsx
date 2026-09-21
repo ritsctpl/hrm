@@ -8,7 +8,7 @@ import type { Announcement } from "../../types/domain.types";
 import { useSeen } from "../../hooks/useSeen";
 import { useEmployeeNames } from "../../hooks/useEmployeeNames";
 import ApprovalStatusLine from "./ApprovalStatusLine";
-import { formatFileSize } from "../../utils/announcementHelpers";
+import { decodeEntities, formatFileSize } from "../../utils/announcementHelpers";
 import AnnouncementPriorityTag from "../atoms/AnnouncementPriorityTag";
 import AnnouncementCategoryBadge from "../atoms/AnnouncementCategoryBadge";
 import AcknowledgementBanner from "./AcknowledgementBanner";
@@ -143,12 +143,19 @@ const AnnouncementFeedCard: React.FC<AnnouncementFeedCardProps> = ({
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
-            <div className={`${styles.detailContent} ${styles.plainContent}`}>{content}</div>
+            // A PLAIN body is stored as jsoup output: entity-escaped text with no tags. Rendered as
+            // React text it showed readers "&amp;" (HRM issue #5), so it is set as HTML — safe,
+            // there is no markup in it — inside pre-wrap so the author's line breaks stay.
+            <div
+              className={`${styles.detailContent} ${styles.plainContent}`}
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
           )
         ) : announcement.summary ? (
           // Stands in until the body lands, and stays if it never does (denied,
           // withdrawn, or the fetch failed) — it is the same text, cut short.
-          <Text type="secondary">{announcement.summary}</Text>
+          // The server's summary is jsoup output too — decoded once, still rendered as text.
+          <Text type="secondary">{decodeEntities(announcement.summary)}</Text>
         ) : bodyLoading ? (
           <Skeleton active paragraph={{ rows: 2 }} title={false} />
         ) : (
