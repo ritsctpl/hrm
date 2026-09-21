@@ -6,6 +6,7 @@ import { InboxOutlined, UploadOutlined } from "@ant-design/icons";
 import type { UploadFile } from "antd/es/upload/interface";
 import { useHrmPayslipStore } from "../../stores/payslipStore";
 import UploadSummaryTable from "./UploadSummaryTable";
+import { MAX_FILES_PER_BATCH, exceedsBatchLimit } from "../../utils/uploadHelpers";
 import styles from "../../styles/PayslipUpload.module.css";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -44,7 +45,18 @@ const PayslipUploadPanel: React.FC = () => {
       <Upload.Dragger
         multiple
         accept="application/pdf,.pdf"
-        beforeUpload={(file) => {
+        beforeUpload={(file, dropped) => {
+          // The whole drop is refused, not trimmed: a silently truncated month is worse than a
+          // clear "too many". `selected` is still the pre-drop list while beforeUpload runs.
+          if (exceedsBatchLimit(selected.length, dropped.length)) {
+            if (file.uid === dropped[0]?.uid) {
+              message.error(
+                `An upload holds at most ${MAX_FILES_PER_BATCH} files. ${dropped.length} were dropped `
+                  + `onto ${selected.length} already selected — none of them were added.`
+              );
+            }
+            return Upload.LIST_IGNORE;
+          }
           if (file.size > MAX_FILE_BYTES) {
             message.error(`${file.name} is over 10 MB and was not added`);
             return Upload.LIST_IGNORE;
@@ -59,7 +71,7 @@ const PayslipUploadPanel: React.FC = () => {
         <p className="ant-upload-drag-icon"><InboxOutlined /></p>
         <p className="ant-upload-text">Drop this month&apos;s payslip PDFs here</p>
         <p className="ant-upload-hint">
-          Up to 200 files at a time. They upload in batches of 25.
+          Up to {MAX_FILES_PER_BATCH} files at a time. They upload in batches of 25.
         </p>
       </Upload.Dragger>
 

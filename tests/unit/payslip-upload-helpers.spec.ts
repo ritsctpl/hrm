@@ -5,6 +5,8 @@ import {
   errorRowsToCsv,
   isStoredStatus,
   splitAtFailedChunk,
+  exceedsBatchLimit,
+  MAX_FILES_PER_BATCH,
 } from '../../src/modules/hrmPayslip/utils/uploadHelpers';
 import type {
   PayslipUploadBatch,
@@ -186,4 +188,20 @@ test('errorRowsToCsv leaves an ordinary value alone', () => {
 test('errorRowsToCsv quotes a value containing a carriage return', () => {
   const csv = errorRowsToCsv(batch([item('x.pdf', 'BAD_FILENAME', 'line one\rline two')]));
   expect(csv).toContain('"line one\rline two"');
+});
+
+// --- Final review, minor 13: a batch holds at most 200 files (the server refuses more with 400). ---
+
+test('the browser cap matches the server cap of 200', () => {
+  expect(MAX_FILES_PER_BATCH).toBe(200);
+});
+
+test('exceedsBatchLimit allows a selection up to exactly 200', () => {
+  expect(exceedsBatchLimit(0, 200)).toBe(false);
+  expect(exceedsBatchLimit(150, 50)).toBe(false);
+});
+
+test('exceedsBatchLimit refuses a drop that would take the selection past 200', () => {
+  expect(exceedsBatchLimit(0, 201)).toBe(true);
+  expect(exceedsBatchLimit(190, 11)).toBe(true);
 });

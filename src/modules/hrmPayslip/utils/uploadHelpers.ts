@@ -10,6 +10,21 @@ import type {
 export const UPLOAD_CHUNK_SIZE = 25;
 
 /**
+ * Files one upload batch may hold. The server refuses a chunk that would take a batch past this
+ * with a 400 (PAYSLIP_013); the browser refuses the selection first so HR hears it up front.
+ */
+export const MAX_FILES_PER_BATCH = 200;
+
+/** True when adding `adding` files to a selection of `current` would pass MAX_FILES_PER_BATCH. */
+export function exceedsBatchLimit(
+  current: number,
+  adding: number,
+  max: number = MAX_FILES_PER_BATCH
+): boolean {
+  return current + adding > max;
+}
+
+/**
  * Default byte ceiling per chunk. A 25-file chunk of legal (up to 10MB) files can reach 250MB, well
  * past max-request-size (50MB), so chunking by count alone is not enough — a chunk must also close
  * when the running byte total would tip it over this limit.
