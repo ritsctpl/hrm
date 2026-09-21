@@ -326,3 +326,11 @@ export const LEDGER_REF_TYPE_LABELS: Record<string, string> = {
   CO: "Comp Off",
   WFH: "Work From Home",
 };
+
+/** Days a leave request waits with the supervisor before it is SLA-breached /
+ *  escalated. Default for a NEW leave policy (HRM issue #9: 2 → 7 days); an
+ *  existing policy keeps whatever value it was saved with. */
+export const DEFAULT_SUPERVISOR_SLA_DAYS = 7;
+
+/** Extra days after the supervisor SLA before the escalation SLA is breached. */
+export const DEFAULT_ESCALATION_SLA_DAYS = 1;

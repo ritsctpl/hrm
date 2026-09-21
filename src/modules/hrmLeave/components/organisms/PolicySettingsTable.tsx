@@ -43,6 +43,8 @@ import {
   ACCRUAL_START_BASIS,
   ACCRUAL_START_BASIS_LABELS,
   summariseCountingRules,
+  DEFAULT_SUPERVISOR_SLA_DAYS,
+  DEFAULT_ESCALATION_SLA_DAYS,
 } from "../../utils/constants";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEmployeeIdentity } from "../../../hrmAccess/hooks/useEmployeeIdentity";
@@ -244,8 +246,8 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
       carryForwardCap: 0,
       encashmentAllowed: false,
       negativeBalanceAllowed: false,
-      supervisorSlaDays: 2,
-      escalationSlaDays: 1,
+      supervisorSlaDays: DEFAULT_SUPERVISOR_SLA_DAYS,
+      escalationSlaDays: DEFAULT_ESCALATION_SLA_DAYS,
       // Earned-Leave defaults. These mirror the backend defaults so a policy
       // saved without touching the EL section behaves exactly as it did
       // before the fields existed.
@@ -340,8 +342,8 @@ const PolicySettingsTable: React.FC<PolicySettingsTableProps> = ({
         negativeBalanceAllowed: values.negativeBalanceAllowed,
         negativeFloor: values.negativeFloor,
         coExpiryDays: values.coExpiryDays,
-        supervisorSlaDays: Number(values.supervisorSlaDays ?? 2),
-        escalationSlaDays: Number(values.escalationSlaDays ?? 1),
+        supervisorSlaDays: Number(values.supervisorSlaDays ?? DEFAULT_SUPERVISOR_SLA_DAYS),
+        escalationSlaDays: Number(values.escalationSlaDays ?? DEFAULT_ESCALATION_SLA_DAYS),
         // Retired in favour of `eligibilityMonths`, which means the same
         // thing. Sent as 0 rather than omitted so a legacy value is actively
         // cleared — otherwise the backend keeps enforcing a waiting period
