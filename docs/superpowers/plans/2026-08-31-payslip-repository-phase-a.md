@@ -1319,12 +1319,17 @@ public record PayslipFileBytes(String fileName, String contentType, byte[] conte
 Add to `PayslipUploadService`:
 
 ```java
-    /** Bytes for one uploaded payslip. Callers must have already authorised the read. */
-    PayslipFileBytes downloadUploaded(String site, String payslipHandle);
+    /**
+     * Bytes for one uploaded payslip. Callers must have already authorised the read.
+     *
+     * @param requestedBy the employee code of whoever is READING it — recorded in the access log.
+     *                    Not the payslip's owner: on this path they are usually different people.
+     */
+    PayslipFileBytes downloadUploaded(String site, String payslipHandle, String requestedBy);
 
     /** Bytes for an employee's payslip in one period — the self-service path. */
     PayslipFileBytes downloadUploadedForEmployee(String site, String employeeCode,
-                                                 int year, int month);
+                                                 int year, int month, String requestedBy);
 ```
 
 (with `import com.rits.hrmservice.payslip.dto.PayslipFileBytes;`)
@@ -1333,29 +1338,29 @@ Add to `PayslipUploadServiceImpl`:
 
 ```java
     @Override
-    public PayslipFileBytes downloadUploaded(String site, String payslipHandle) {
+    public PayslipFileBytes downloadUploaded(String site, String payslipHandle, String requestedBy) {
         Payslip payslip = payslipRepository.findById(payslipHandle)
                 .orElseThrow(() -> new HrmException("Payslip not found: " + payslipHandle, "PAYSLIP_006"));
-        return readFile(site, payslip);
+        return readFile(site, payslip, requestedBy);
     }
 
     @Override
     public PayslipFileBytes downloadUploadedForEmployee(String site, String employeeCode,
-                                                        int year, int month) {
+                                                        int year, int month, String requestedBy) {
         Payslip payslip = payslipRepository
                 .findBySiteAndEmployeeIdAndPayrollYearAndPayrollMonthAndActive(
                         site, employeeCode, year, month, 1)
                 .orElseThrow(() -> new HrmException(
                         "No payslip for " + employeeCode + " in " + periodLabel(year, month),
                         "PAYSLIP_006"));
-        return readFile(site, payslip);
+        return readFile(site, payslip, requestedBy);
     }
 
     /**
      * The only place GridFS bytes are read. Listing endpoints never call this — a month of
      * payslips is 200 PDFs, and the asset module already paid for learning that lesson.
      */
-    private PayslipFileBytes readFile(String site, Payslip payslip) {
+    private PayslipFileBytes readFile(String site, Payslip payslip, String requestedBy) {
         if (!site.equals(payslip.getSite())) {
             throw new HrmException("Payslip does not belong to site: " + site, "PAYSLIP_008");
         }
@@ -1378,7 +1383,9 @@ Add to `PayslipUploadServiceImpl`:
             payslip.setAccessLog(new ArrayList<>());
         }
         payslip.getAccessLog().add(PayslipAccessLog.builder()
-                .accessedBy(payslip.getEmployeeId())
+                // WHO read it, not whose it is. Stamping the owner here would make the log
+                // unable to tell "HR pulled this" from "the employee opened their own".
+                .accessedBy(EmployeeIdentityUtils.parseCode(requestedBy))
                 .accessType("DOWNLOAD")
                 .accessedAt(LocalDateTime.now())
                 .build());
@@ -1580,6 +1587,20 @@ public enum PayslipPermission {
     public PermissionAction action() {
         return action;
     }
+
+    /**
+     * Whether a grant on the module root ({@link #ROOT_OBJECT}) of the same action carries this
+     * capability.
+     *
+     * <p>Only the administrative actions cascade. VIEW deliberately does NOT: {@code
+     * payslip_module|VIEW} is how an employee reaches the Payslip screen at all -- ModuleAccessGate
+     * 403s without it -- so cascading VIEW would hand every employee the whole company's payslip
+     * list and the ability to download any of them. Reading someone else's salary document is
+     * granted explicitly on {@code payslip_download}, or not at all.
+     */
+    public boolean satisfiedByModuleGrant() {
+        return action == PermissionAction.ADD || action == PermissionAction.EDIT;
+    }
 }
 ```
 
@@ -1619,8 +1640,12 @@ public class PayslipAccessService {
             return false;
         }
         Set<String> held = heldCodes(site, actorCode);
-        return held.contains(key(permission.objectName(), permission.action().name()))
-                || held.contains(key(PayslipPermission.ROOT_OBJECT, permission.action().name()));
+        if (held.contains(key(permission.objectName(), permission.action().name()))) {
+            return true;
+        }
+        // Only administrative actions cascade from the module root -- see satisfiedByModuleGrant().
+        return permission.satisfiedByModuleGrant()
+                && held.contains(key(PayslipPermission.ROOT_OBJECT, permission.action().name()));
     }
 
     public void require(String site, String actor, PayslipPermission permission) {
@@ -1662,6 +1687,11 @@ public class PayslipAccessService {
 ```
 
 **Before running:** confirm `rbacService.getEffectivePermissions` takes `(String, Collection<String>)` and that `AnnouncementAccessService.identitiesFor` does not do extra identity expansion this needs. If it does, mirror it here rather than passing a bare `Set.of(employeeCode)`.
+
+**It does.** `identitiesFor` also resolves the employee's Keycloak username (`userId`) and work email
+via `EmployeeRepository`, because role assignments are not keyed consistently across the three. A
+bare `Set.of(employeeCode)` silently denies any grant recorded under a username or an email, so
+inject `EmployeeRepository` and replicate `identitiesFor` with the same TtlCache pattern.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -1771,7 +1801,7 @@ class PayslipUploadControllerTest {
 
     @Test
     void anEmployeeDownloadingTheirOwnPayslipGoesThroughTheSelfServiceGuard() throws Exception {
-        when(uploadService.downloadUploadedForEmployee("RITS", "R10101", 2026, 8))
+        when(uploadService.downloadUploadedForEmployee("RITS", "R10101", 2026, 8, "R10101"))
                 .thenReturn(new PayslipFileBytes("R10101_Aug-2026.pdf", "application/pdf", "%PDF".getBytes()));
 
         mvc.perform(post("/app/v1/hrm-service/payslip/downloadUploadedPayslip")
@@ -1789,7 +1819,7 @@ class PayslipUploadControllerTest {
 
     @Test
     void hrDownloadingByHandleRequiresTheDownloadAnyPermission() throws Exception {
-        when(uploadService.downloadUploaded("RITS", "PS_1"))
+        when(uploadService.downloadUploaded("RITS", "PS_1", "HRADMIN"))
                 .thenReturn(new PayslipFileBytes("R10101_Aug-2026.pdf", "application/pdf", "%PDF".getBytes()));
 
         mvc.perform(post("/app/v1/hrm-service/payslip/downloadUploadedPayslip")
@@ -1912,14 +1942,16 @@ public class PayslipUploadController {
 
         PayslipFileBytes file;
         if (handle != null && !handle.isBlank()) {
-            accessService.require(site, (String) body.get("requestedBy"),
-                    PayslipPermission.DOWNLOAD_ANY);
-            file = uploadService.downloadUploaded(site, handle);
+            String requestedBy = (String) body.get("requestedBy");
+            accessService.require(site, requestedBy, PayslipPermission.DOWNLOAD_ANY);
+            file = uploadService.downloadUploaded(site, handle, requestedBy);
         } else {
             String employeeId = (String) body.get("employeeId");
+            // assertSelfService has just proven the caller IS this employee, so the employee code
+            // is an accurate reader identity on this path.
             payslipService.assertSelfService(site, callerUserId, employeeId);
             file = uploadService.downloadUploadedForEmployee(site, employeeId,
-                    asInt(body.get("payrollYear")), asInt(body.get("payrollMonth")));
+                    asInt(body.get("payrollYear")), asInt(body.get("payrollMonth")), employeeId);
         }
 
         return ResponseEntity.ok()
@@ -2150,7 +2182,8 @@ export type PayslipParseStatus =
   | "EMPLOYEE_NO_EMAIL"
   | "BAD_FILENAME"
   | "EMPLOYEE_NOT_FOUND"
-  | "NOT_A_PDF";
+  | "NOT_A_PDF"
+  | "STORAGE_FAILED";
 
 export interface PayslipUploadItem {
   fileName: string;
@@ -2417,6 +2450,8 @@ test('isStoredStatus agrees with the backend enum', () => {
   expect(isStoredStatus('BAD_FILENAME')).toBe(false);
   expect(isStoredStatus('EMPLOYEE_NOT_FOUND')).toBe(false);
   expect(isStoredStatus('NOT_A_PDF')).toBe(false);
+  // Infra failure, not user error: nothing was stored, so it is a "needs attention" row.
+  expect(isStoredStatus('STORAGE_FAILED')).toBe(false);
 });
 
 test('errorRowsToCsv exports only the files HR must fix', () => {
@@ -2513,6 +2548,7 @@ export function summarise(batch: PayslipUploadBatch): UploadSummary {
     BAD_FILENAME: 0,
     EMPLOYEE_NOT_FOUND: 0,
     NOT_A_PDF: 0,
+    STORAGE_FAILED: 0,
   } as Record<PayslipParseStatus, number>;
 
   items.forEach((i) => {
@@ -2728,6 +2764,11 @@ const LABELS: Record<PayslipParseStatus, { text: string; color: string; hint: st
     hint: "No active employee holds that code at this site.",
   },
   NOT_A_PDF: { text: "Not a PDF", color: "red", hint: "Only PDF files can be uploaded." },
+  STORAGE_FAILED: {
+    text: "Storage failed",
+    color: "red",
+    hint: "The file was fine but could not be stored. Upload it again; if it keeps failing, this is a system issue, not a problem with the file.",
+  },
 };
 
 const ParseStatusTag: React.FC<{ status: PayslipParseStatus }> = ({ status }) => {

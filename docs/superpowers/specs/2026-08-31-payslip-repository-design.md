@@ -120,7 +120,10 @@ items[]: {
 ```
 
 `parseStatus ∈ OK | BAD_FILENAME | EMPLOYEE_NOT_FOUND | EMPLOYEE_NO_EMAIL |
-NOT_A_PDF | REPLACED_EXISTING`.
+NOT_A_PDF | STORAGE_FAILED | REPLACED_EXISTING`.
+
+`STORAGE_FAILED` was added during implementation: reporting a storage-layer failure as
+`NOT_A_PDF` would send HR to re-check a file that was never the problem.
 
 `items[]` is bounded by the batch size (≤200), so it is a safe embedded array
 rather than an unbounded one.
