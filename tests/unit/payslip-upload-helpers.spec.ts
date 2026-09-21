@@ -4,6 +4,7 @@ import {
   summarise,
   errorRowsToCsv,
   isStoredStatus,
+  splitAtFailedChunk,
 } from '../../src/modules/hrmPayslip/utils/uploadHelpers';
 import type {
   PayslipUploadBatch,
@@ -136,4 +137,31 @@ test('errorRowsToCsv quotes a reason containing a comma', () => {
 test('errorRowsToCsv returns just a header when every file landed', () => {
   const csv = errorRowsToCsv(batch([item('a.pdf', 'OK')]));
   expect(csv.trim().split('\n')).toHaveLength(1);
+});
+
+// --- Final review, finding 3: a mid-batch chunk failure must not drop the unsent files. ---
+
+test('splitAtFailedChunk: everything before the failed chunk was sent, the rest was not', () => {
+  const chunks = [['a', 'b'], ['c', 'd'], ['e']];
+  expect(splitAtFailedChunk(chunks, 1)).toEqual({ sent: ['a', 'b'], unsent: ['c', 'd', 'e'] });
+});
+
+test('splitAtFailedChunk: a failure on the first chunk sent nothing', () => {
+  expect(splitAtFailedChunk([['a'], ['b']], 0)).toEqual({ sent: [], unsent: ['a', 'b'] });
+});
+
+test('splitAtFailedChunk: a failure on the last chunk keeps only that chunk', () => {
+  expect(splitAtFailedChunk([['a'], ['b'], ['c']], 2)).toEqual({ sent: ['a', 'b'], unsent: ['c'] });
+});
+
+test('splitAtFailedChunk: no failure means everything was sent', () => {
+  expect(splitAtFailedChunk([['a'], ['b']], null)).toEqual({ sent: ['a', 'b'], unsent: [] });
+});
+
+test('splitAtFailedChunk: never loses or duplicates a file', () => {
+  const files = Array.from({ length: 60 }, (_, i) => file(`R${i}_Aug-2026.pdf`));
+  const chunks = chunkFiles(files);
+  const { sent, unsent } = splitAtFailedChunk(chunks, 1);
+  expect(sent).toHaveLength(25);
+  expect([...sent, ...unsent]).toEqual(files);
 });

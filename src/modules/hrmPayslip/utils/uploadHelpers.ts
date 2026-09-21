@@ -67,6 +67,20 @@ export function chunkFiles(
   return chunks;
 }
 
+/**
+ * Which files reached the server when the chunk at `failedIndex` failed. Chunks are sent in order,
+ * so everything before it was sent and everything from it on was not. `null` means no chunk failed.
+ * The unsent part is what the upload panel keeps selected for the retry — dropping it would lose
+ * files HR believes were uploaded.
+ */
+export function splitAtFailedChunk<T>(
+  chunks: T[][],
+  failedIndex: number | null
+): { sent: T[]; unsent: T[] } {
+  const cut = failedIndex === null ? chunks.length : Math.max(0, failedIndex);
+  return { sent: chunks.slice(0, cut).flat(), unsent: chunks.slice(cut).flat() };
+}
+
 export interface UploadSummary {
   total: number;
   stored: number;

@@ -14,14 +14,21 @@ const PayslipUploadPanel: React.FC = () => {
   const { uploadBatch, uploading, uploadProgress, uploadFiles, clearUploadBatch } =
     useHrmPayslipStore();
   const [selected, setSelected] = useState<UploadFile[]>([]);
+  // Files a failed chunk left behind. They stay selected so pressing Upload retries them.
+  const [notUploaded, setNotUploaded] = useState(0);
 
   const start = async () => {
     const files = selected
       .map((f) => f.originFileObj as File | undefined)
       .filter((f): f is File => Boolean(f));
     if (files.length === 0) return;
-    await uploadFiles(files);
-    setSelected([]);
+    const { unsent } = await uploadFiles(files);
+    const unsentSet = new Set<File>(unsent);
+    // Clear only what reached the server; anything unsent stays selected for the retry.
+    setSelected((current) =>
+      current.filter((f) => unsentSet.has(f.originFileObj as unknown as File))
+    );
+    setNotUploaded(unsent.length);
   };
 
   return (
@@ -56,6 +63,16 @@ const PayslipUploadPanel: React.FC = () => {
         </p>
       </Upload.Dragger>
 
+      {notUploaded > 0 && !uploading && (
+        <Alert
+          type="warning"
+          showIcon
+          message={`${notUploaded} file${notUploaded === 1 ? " was" : "s were"} not uploaded — press Upload to retry`}
+          description="They are still selected. Uploading them again adds them to the same batch as any files that did get through."
+          className={styles.namingHint}
+        />
+      )}
+
       <Space className={styles.actions}>
         <Button
           type="primary"
@@ -67,7 +84,14 @@ const PayslipUploadPanel: React.FC = () => {
           Upload {selected.length > 0 ? `${selected.length} file${selected.length === 1 ? "" : "s"}` : ""}
         </Button>
         {uploadBatch && !uploading && (
-          <Button onClick={clearUploadBatch}>Start another upload</Button>
+          <Button
+            onClick={() => {
+              clearUploadBatch();
+              setNotUploaded(0);
+            }}
+          >
+            Start another upload
+          </Button>
         )}
       </Space>
 

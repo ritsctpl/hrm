@@ -7,7 +7,7 @@ import { getOrganizationId } from "@/utils/cookieUtils";
 import { HrmPayslipService } from "../services/payslipService";
 import { buildPayslipPassword, downloadPayslipPdf, payslipPdfBlob } from "../utils/payslipPdf";
 import { hrDownloadRoute, payslipFileName } from "../utils/payslipFormat";
-import { chunkFiles, summarise } from "../utils/uploadHelpers";
+import { chunkFiles, splitAtFailedChunk, summarise } from "../utils/uploadHelpers";
 import { saveBlob } from "../utils/saveBlob";
 import type { PayslipSnapshot, PayslipUploadBatch } from "../types/domain.types";
 import type {
@@ -110,7 +110,16 @@ interface PayslipState {
   batchHistory: PayslipUploadBatch[];
   batchHistoryLoading: boolean;
 
-  uploadFiles: (files: File[]) => Promise<void>;
+  /**
+   * The batch a failed upload left part-way through. A retry appends to it rather than starting a
+   * second batch for the same month; cleared once an upload completes or HR starts another.
+   */
+  pendingBatchHandle: string | null;
+  /**
+   * Uploads in chunks. Resolves with the files that did NOT reach the server — empty on success —
+   * so the panel can keep them selected for a retry instead of silently dropping them.
+   */
+  uploadFiles: (files: File[]) => Promise<{ unsent: File[] }>;
   loadBatchHistory: () => Promise<void>;
   openBatch: (handle: string) => Promise<void>;
   clearUploadBatch: () => void;
@@ -528,39 +537,55 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
   batchHistory: [],
   batchHistoryLoading: false,
 
-  clearUploadBatch: () => set({ uploadBatch: null, uploadProgress: { done: 0, total: 0 } }),
+  pendingBatchHandle: null,
+
+  clearUploadBatch: () =>
+    set({ uploadBatch: null, pendingBatchHandle: null, uploadProgress: { done: 0, total: 0 } }),
 
   uploadFiles: async (files) => {
     const organizationId = getOrganizationId();
     const uploadedBy = getEmployeeId();
     const chunks = chunkFiles(files);
     set({ uploading: true, uploadProgress: { done: 0, total: files.length } });
+    // A retry after a failed chunk appends to the batch that failure left behind.
+    let handle: string | undefined = get().pendingBatchHandle ?? undefined;
+    let batch: PayslipUploadBatch | null = null;
+    let sentCount = 0;
+    let index = 0;
     try {
-      let batch: PayslipUploadBatch | null = null;
-      for (const chunk of chunks) {
+      for (; index < chunks.length; index += 1) {
         // Sequential, not parallel: each call appends to the same batch document, and
         // concurrent appends would race the read-modify-write on items[].
         // eslint-disable-next-line no-await-in-loop
         batch = await HrmPayslipService.uploadPayslipBatch({
           organizationId,
           uploadedBy,
-          batchHandle: batch?.handle,
-          files: chunk,
+          batchHandle: handle,
+          files: chunks[index],
         });
+        handle = batch?.handle ?? handle;
+        sentCount += chunks[index].length;
         set({
           uploadBatch: batch,
-          uploadProgress: {
-            done: Math.min(files.length, batch?.items?.length ?? 0),
-            total: files.length,
-          },
+          pendingBatchHandle: handle ?? null,
+          uploadProgress: { done: sentCount, total: files.length },
         });
       }
+      set({ pendingBatchHandle: null });
       const summary = batch ? summarise(batch) : null;
       if (summary) {
         message.success(`${summary.stored} stored, ${summary.skipped} need attention`);
       }
-    } catch {
-      message.error("Payslip upload failed");
+      return { unsent: [] };
+    } catch (err) {
+      // Chunk `index` failed; it and every later chunk never reached the server. Report them
+      // rather than dropping them, and keep the handle so the retry lands in the same batch.
+      const { unsent } = splitAtFailedChunk(chunks, index);
+      set({ pendingBatchHandle: handle ?? null, uploadProgress: { done: 0, total: 0 } });
+      const serverMsg = (err as { response?: { data?: { message_details?: { msg?: string } } } })
+        ?.response?.data?.message_details?.msg;
+      message.error(serverMsg ? `Payslip upload failed: ${serverMsg}` : "Payslip upload failed");
+      return { unsent };
     } finally {
       set({ uploading: false });
     }
@@ -606,6 +631,7 @@ export const useHrmPayslipStore = create<PayslipState>((set, get) => ({
       templates: [],
       selectedTemplate: null,
       uploadBatch: null,
+      pendingBatchHandle: null,
       uploading: false,
       uploadProgress: { done: 0, total: 0 },
       batchHistory: [],
