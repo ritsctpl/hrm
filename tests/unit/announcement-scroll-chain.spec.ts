@@ -26,18 +26,22 @@ const CSS = readFileSync(
   'utf8'
 );
 
-/** The declaration block of the first rule whose selector contains every given fragment. */
-const block = (...fragments: string[]): string => {
+/** The first rule whose selector contains every given fragment, as [selector, declarations]. */
+const rule = (...fragments: string[]): [string, string] => {
   // Comments are dropped before anything else: a rule may carry one above it or inside it, and
   // either would otherwise be read as part of a selector or a declaration.
   const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '').split('}');
-  const hit = rules.find((rule) => {
-    const [selector, declarations] = rule.split('{');
+  const hit = rules.find((r) => {
+    const [selector, declarations] = r.split('{');
     return declarations !== undefined && fragments.every((f) => selector.includes(f));
   });
   expect(hit, `no rule found for selector containing ${fragments.join(' + ')}`).toBeTruthy();
-  return (hit as string).split('{')[1];
+  const [selector, declarations] = (hit as string).split('{');
+  return [selector, declarations];
 };
+
+/** The declaration block of the first rule whose selector contains every given fragment. */
+const block = (...fragments: string[]): string => rule(...fragments)[1];
 
 /** A flex child only shrinks below its content when min-height is cleared. */
 const isBoundedFlexColumn = (declarations: string) =>
@@ -65,6 +69,20 @@ test('the tab pane is the last link — it must be a bounded flex column too', (
   const declarations = block('ant-tabs-tabpane');
   expect(/height:\s*100%/.test(declarations)).toBe(true);
   expect(isBoundedFlexColumn(declarations)).toBe(true);
+});
+
+/**
+ * HRM issue #12: this rule must only ever match the active pane. rc-tabs keeps a visited tab's
+ * pane mounted and marks it `.ant-tabs-tabpane-hidden` (→ Ant's own `display: none`) once you
+ * leave it, but that is a single class selector — a bare `.ant-tabs-tabpane` override here, five
+ * chained class selectors deep, always outranks it and forces the pane back to `display: flex`.
+ * That let the Admin tab's list keep rendering underneath the Feed tab forever, once opened
+ * once. Requiring `.ant-tabs-tabpane-active` in the same compound selector means the rule
+ * simply does not match a hidden pane, so Ant's `display: none` is free to apply.
+ */
+test('the tab pane rule only ever matches the active pane, never a hidden one', () => {
+  const [selector] = rule('ant-tabs-tabpane');
+  expect(selector).toContain('ant-tabs-tabpane.ant-tabs-tabpane-active');
 });
 
 test('the feed template can shrink, so its scroller gets a real height', () => {

@@ -36,11 +36,22 @@
   flex-direction: column;
 }
 
+/*
+ * `.ant-tabs-tabpane-active` on purpose (HRM issue #12): rc-tabs keeps a visited tab's pane
+ * mounted after you leave it and hides it by adding `.ant-tabs-tabpane-hidden` (rc-tabs'
+ * TabPanelList, `leavedClassName`), which Ant's stylesheet turns into `display: none`. That
+ * rule is a single class selector, so a bare `.ant-tabs-tabpane` override here — five chained
+ * class selectors deep — always outranks it and forces the hidden pane back to `display: flex`.
+ * Once the Admin tab had been opened once, its pane never hid again: it kept rendering,
+ * stacked under the Feed tab's own pane in this flex column, for the rest of the session.
+ * Matching `.ant-tabs-tabpane-active` too means the rule simply does not apply to a hidden
+ * pane, so Ant's own `display: none` is free to take effect.
+ */
 .landing
   > :global(.ant-tabs)
   > :global(.ant-tabs-content-holder)
   > :global(.ant-tabs-content)
-  > :global(.ant-tabs-tabpane) {
+  > :global(.ant-tabs-tabpane.ant-tabs-tabpane-active) {
   height: 100%;
   min-height: 0;
   display: flex;
