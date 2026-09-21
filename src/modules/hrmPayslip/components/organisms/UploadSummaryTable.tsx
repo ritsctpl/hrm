@@ -5,7 +5,7 @@ import { Button, Space, Statistic, Table, Typography } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import ParseStatusTag from "../atoms/ParseStatusTag";
-import { errorRowsToCsv, isStoredStatus, summarise } from "../../utils/uploadHelpers";
+import { errorRowsToCsv, isStoredStatus, summarise, withRowKeys } from "../../utils/uploadHelpers";
 import { saveBlob } from "../../utils/saveBlob";
 import type { PayslipUploadBatch, PayslipUploadItem } from "../../types/domain.types";
 import styles from "../../styles/PayslipUpload.module.css";
@@ -16,6 +16,7 @@ interface Props {
 
 const UploadSummaryTable: React.FC<Props> = ({ batch }) => {
   const summary = useMemo(() => summarise(batch), [batch]);
+  const rows = useMemo(() => withRowKeys(batch.items), [batch]);
 
   const downloadErrorCsv = () => {
     const blob = new Blob([errorRowsToCsv(batch)], { type: "text/csv;charset=utf-8" });
@@ -72,9 +73,9 @@ const UploadSummaryTable: React.FC<Props> = ({ batch }) => {
       )}
 
       <Table
-        dataSource={batch.items}
+        dataSource={rows}
         columns={columns}
-        rowKey={(r) => `${r.fileName}|${r.payslipHandle ?? r.parseStatus}`}
+        rowKey="rowKey"
         size="small"
         pagination={{ pageSize: 25 }}
         rowClassName={(r) => (isStoredStatus(r.parseStatus) ? "" : styles.problemRow)}

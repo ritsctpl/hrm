@@ -96,6 +96,20 @@ export function splitAtFailedChunk<T>(
   return { sent: chunks.slice(0, cut).flat(), unsent: chunks.slice(cut).flat() };
 }
 
+/**
+ * Items with a unique table key. The row index is part of it: two identical items (the same bad
+ * file dropped twice, or re-sent on a retry) share fileName and status, and a colliding React key
+ * makes the table drop or merge rows.
+ */
+export function withRowKeys<T extends { fileName: string | null; payslipHandle: string | null; parseStatus: string }>(
+  items: T[] | null | undefined
+): Array<T & { rowKey: string }> {
+  return (items ?? []).map((i, index) => ({
+    ...i,
+    rowKey: `${index}|${i.fileName}|${i.payslipHandle ?? i.parseStatus}`,
+  }));
+}
+
 export interface UploadSummary {
   total: number;
   stored: number;

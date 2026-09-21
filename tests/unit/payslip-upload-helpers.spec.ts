@@ -7,6 +7,7 @@ import {
   splitAtFailedChunk,
   exceedsBatchLimit,
   MAX_FILES_PER_BATCH,
+  withRowKeys,
 } from '../../src/modules/hrmPayslip/utils/uploadHelpers';
 import type {
   PayslipUploadBatch,
@@ -204,4 +205,15 @@ test('exceedsBatchLimit allows a selection up to exactly 200', () => {
 test('exceedsBatchLimit refuses a drop that would take the selection past 200', () => {
   expect(exceedsBatchLimit(0, 201)).toBe(true);
   expect(exceedsBatchLimit(190, 11)).toBe(true);
+});
+
+// --- Final review, T10 minor: the summary table's row keys must be unique. ---
+
+test('withRowKeys gives two identical failed rows distinct keys', () => {
+  // The same bad file dropped twice (or re-sent on a retry) yields two identical items; a key
+  // built from fileName + status alone collides and React drops or merges a row.
+  const rows = withRowKeys([item('bad.pdf', 'BAD_FILENAME'), item('bad.pdf', 'BAD_FILENAME')]);
+  expect(rows).toHaveLength(2);
+  expect(rows[0].rowKey).not.toBe(rows[1].rowKey);
+  expect(rows[0].fileName).toBe('bad.pdf');
 });
