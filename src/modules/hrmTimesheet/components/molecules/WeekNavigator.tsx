@@ -3,24 +3,20 @@ import { Button, Space, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
+import { mondayOf, shiftWeekStart } from '../../utils/timesheetHelpers';
 
 const { Text } = Typography;
-
-function getMondayOf(d: dayjs.Dayjs): dayjs.Dayjs {
-  const day = d.day();
-  const diff = day === 0 ? -6 : 1 - day;
-  return d.add(diff, 'day').startOf('day');
-}
 
 export default function WeekNavigator() {
   const { selectedWeekStart, setSelectedWeekStart } = useHrmTimesheetStore();
 
-  const prevWeek = () => setSelectedWeekStart(dayjs(selectedWeekStart).subtract(7, 'day').format('YYYY-MM-DD'));
-  const nextWeek = () => setSelectedWeekStart(dayjs(selectedWeekStart).add(7, 'day').format('YYYY-MM-DD'));
+  // Weeks run Mon→Sun; shiftWeekStart always lands on a Monday.
+  const prevWeek = () => setSelectedWeekStart(shiftWeekStart(selectedWeekStart, -1));
+  const nextWeek = () => setSelectedWeekStart(shiftWeekStart(selectedWeekStart, 1));
 
   const weekEnd = dayjs(selectedWeekStart).add(6, 'day');
-  const currentWeekStart = getMondayOf(dayjs());
-  const isCurrentWeek = dayjs(selectedWeekStart).isSame(currentWeekStart, 'day');
+  const currentWeekStart = mondayOf(dayjs().format('YYYY-MM-DD'));
+  const isCurrentWeek = mondayOf(selectedWeekStart) === currentWeekStart;
 
   return (
     <Space>

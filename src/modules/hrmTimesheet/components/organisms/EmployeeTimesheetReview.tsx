@@ -23,6 +23,7 @@ import {
   weekOfMonthIndex,
   shiftWeekStart,
   weekIntersectsMonth,
+  WEEKDAY_LABELS,
 } from '../../utils/timesheetHelpers';
 import { LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
 import ApprovalGate from '../atoms/ApprovalGate';
@@ -30,7 +31,6 @@ import type { TimesheetHeader, TimesheetLine } from '../../types/domain.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
 
 const { Text } = Typography;
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function rowKeyOf(l: TimesheetLine): string {
   if (l.lineType === 'PROJECT' || l.lineType === 'ALLOCATED')
@@ -247,7 +247,7 @@ export default function EmployeeTimesheetReview() {
             <Text strong>{dayjs(selectedMonth).format('MMMM YYYY')}</Text>
           </div>
           <div className={styles.weekdayRow}>
-            {WEEKDAYS.map((d) => (
+            {WEEKDAY_LABELS.map((d) => (
               <div key={d} className={styles.weekdayCell}>
                 {d}
               </div>
@@ -368,7 +368,7 @@ export default function EmployeeTimesheetReview() {
               title={canStepWeek(-1) ? 'Previous week' : 'Start of the selected month'}
             />
             <Text strong>
-              Week {weekOfMonthIndex(dates[0])}: {dayjs(dates[0]).format('MMM DD')} –{' '}
+              Week {weekOfMonthIndex(dates[0], selectedMonth)}: {dayjs(dates[0]).format('MMM DD')} –{' '}
               {dayjs(dates[6]).format('MMM DD, YYYY')}
             </Text>
             <Button

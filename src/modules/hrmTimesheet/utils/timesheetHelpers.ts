@@ -12,14 +12,9 @@ export function formatHours(hours: number): string {
   return `${hours.toFixed(1)} h`;
 }
 
-/** Returns the Monday of the week containing the given date. */
+/** Returns the Monday (local midnight) of the week containing the given date. */
 export function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return parseLocalDate(mondayOf(ymd(date)));
 }
 
 /** Returns ISO date string (YYYY-MM-DD) */
@@ -60,26 +55,60 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-/** Sunday of the week containing the given date (PRD weeks run Sun→Sat). */
-export function sundayOf(dateStr: string): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() - d.getDay());
+/**
+ * Parses YYYY-MM-DD (or the date part of an ISO timestamp) as LOCAL midnight.
+ * `new Date('YYYY-MM-DD')` is UTC midnight, which is the previous day in any
+ * negative-offset zone.
+ */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Local-calendar day arithmetic on YYYY-MM-DD strings (DST-safe). */
+function shiftDays(dateStr: string, days: number): string {
+  const d = parseLocalDate(dateStr);
+  d.setDate(d.getDate() + days);
   return ymd(d);
 }
 
-/** The 7 dates (Sun→Sat) of the week containing `dateStr`. */
+// ─── Week convention ────────────────────────────────────────────────────────
+// Timesheet weeks run MONDAY → SUNDAY (HRM issue #2 — the original PRD had Sun→Sat,
+// which made the team log hours on Sunday by mistake, and put the "Week-N not
+// submitted" banner on different weeks from the ones people submit; HRM issue #6).
+// This matches the backend (CompliancePeriod uses Monday weeks; /retrieveWeekly and
+// /bulkSubmitWeekly take the Monday as weekStartDate). Every week computation in the
+// module goes through mondayOf(); do not derive a week start anywhere else.
+
+/** Column headers for a Mon→Sun week. */
+export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+/** Monday of the (Mon→Sun) week containing `dateStr` (YYYY-MM-DD). */
+export function mondayOf(dateStr: string): string {
+  const d = parseLocalDate(dateStr);
+  // getDay(): 0 = Sun … 6 = Sat. Days since Monday: Mon 0 … Sun 6.
+  return shiftDays(ymd(d), -((d.getDay() + 6) % 7));
+}
+
+/** Saturday or Sunday — the weekly-off days, whatever day the week starts on. */
+export function isWeekendDate(dateStr: string): boolean {
+  const day = parseLocalDate(dateStr).getDay();
+  return day === 0 || day === 6;
+}
+
+/** The 7 dates (Mon→Sun) of the week containing `dateStr`. */
 export function weekDates(dateStr: string): string[] {
-  const start = sundayOf(dateStr);
-  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  const start = mondayOf(dateStr);
+  return Array.from({ length: 7 }, (_, i) => shiftDays(start, i));
 }
 
 /**
- * Sunday of the week `delta` whole weeks away from the week containing `dateStr`.
- * `delta` of 0 normalises to the current week's Sunday, so callers can use this as the
+ * Monday of the week `delta` whole weeks away from the week containing `dateStr`.
+ * `delta` of 0 normalises to the current week's Monday, so callers can use this as the
  * single way to express "the week I am on" and "the week next to it".
  */
 export function shiftWeekStart(dateStr: string, delta: number): string {
-  return addDays(sundayOf(dateStr), delta * 7);
+  return shiftDays(mondayOf(dateStr), delta * 7);
 }
 
 /**
@@ -135,17 +164,16 @@ export function decimalToHHMM(hours: number): string {
 }
 
 /**
- * Builds the month calendar grid as full Sun→Sat weeks covering `monthStart`
+ * Builds the month calendar grid as full Mon→Sun weeks covering `monthStart`
  * (YYYY-MM-01). Leading/trailing cells from adjacent months are included so
  * every row has 7 days; `inMonth` flags which belong to the displayed month.
  */
 export function buildMonthMatrix(monthStart: string): { date: string; inMonth: boolean }[][] {
-  const first = new Date(monthStart);
+  const first = parseLocalDate(monthStart);
   const year = first.getFullYear();
   const month = first.getMonth();
-  const gridStart = new Date(sundayOf(ymd(first)));
   const weeks: { date: string; inMonth: boolean }[][] = [];
-  const cursor = new Date(gridStart);
+  const cursor = parseLocalDate(mondayOf(ymd(first)));
   // Up to 6 rows; stop once we've passed the month and completed the week.
   for (let w = 0; w < 6; w++) {
     const row: { date: string; inMonth: boolean }[] = [];
@@ -160,11 +188,78 @@ export function buildMonthMatrix(monthStart: string): { date: string; inMonth: b
   return weeks;
 }
 
-/** 1-based index of the week (within its month) that `dateStr` falls in. */
-export function weekOfMonthIndex(dateStr: string): number {
-  const d = new Date(dateStr);
-  const monthFirst = new Date(d.getFullYear(), d.getMonth(), 1);
-  const firstSunday = new Date(sundayOf(ymd(monthFirst)));
-  const diffDays = Math.round((new Date(sundayOf(dateStr)).getTime() - firstSunday.getTime()) / 86400000);
+/**
+ * 1-based index of the (Mon→Sun) week that `dateStr` falls in, counted within a month:
+ * week 1 is the week containing the month's 1st.
+ *
+ * The month defaults to `dateStr`'s own month. Pass `monthStart` (YYYY-MM-01) to number a
+ * week that straddles two months against the month being displayed — e.g. the row
+ * Mon 27 Jul – Sun 02 Aug 2026 is "Week 1" of August, not "Week 5" of July.
+ */
+export function weekOfMonthIndex(dateStr: string, monthStart?: string): number {
+  const d = parseLocalDate(dateStr);
+  const monthFirst = monthStart
+    ? ymd(new Date(parseLocalDate(monthStart).getFullYear(), parseLocalDate(monthStart).getMonth(), 1))
+    : ymd(new Date(d.getFullYear(), d.getMonth(), 1));
+  const firstMonday = parseLocalDate(mondayOf(monthFirst));
+  const weekMonday = parseLocalDate(mondayOf(dateStr));
+  const diffDays = Math.round((weekMonday.getTime() - firstMonday.getTime()) / 86400000);
   return Math.floor(diffDays / 7) + 1;
+}
+
+/** A day that still counts against the employee for the "not submitted" banner. */
+export interface PendingSubmissionDay {
+  date: string;
+  status?: string;
+  totalHours?: number;
+}
+
+/** One week of the "Week-N … has not been submitted" banner and the days that caused it. */
+export interface PendingWeek {
+  /** 1-based week-of-month index (Mon→Sun weeks, see weekOfMonthIndex). */
+  week: number;
+  /** Monday and Sunday of that week. */
+  start: string;
+  end: string;
+  /** The pending days, ascending — always inside [start, end] and inside the month. */
+  days: string[];
+}
+
+const NOT_SUBMITTED_STATUSES = new Set(['DRAFT', 'REOPENED', 'REJECTED']);
+
+/**
+ * The weeks of `monthStart`'s month that still have unsubmitted days, for the
+ * "Week-N … has not been submitted" banner (HRM issue #6).
+ *
+ * A day is pending when it has hours logged, is not in the future (relative to
+ * `todayStr`), and its status is DRAFT / REOPENED / REJECTED — SUBMITTED and APPROVED
+ * both count as submitted. Days are grouped into Mon→Sun weeks, and only days that are
+ * both inside the displayed month and inside that week are ever attributed to it, so a
+ * leftover day of the previous week (e.g. Sun 02 Aug) can no longer flag the next one.
+ */
+export function pendingSubmissionWeeks(
+  days: PendingSubmissionDay[],
+  monthStart: string,
+  todayStr: string,
+): PendingWeek[] {
+  const monthKey = String(monthStart).slice(0, 7);
+  const byWeek = new Map<string, Set<string>>();
+  days.forEach((t) => {
+    const date = String(t.date ?? '').slice(0, 10);
+    if (!date || date.slice(0, 7) !== monthKey) return;
+    if (date > todayStr) return;
+    if (!NOT_SUBMITTED_STATUSES.has(String(t.status))) return;
+    if ((t.totalHours ?? 0) <= 0) return;
+    const monday = mondayOf(date);
+    if (!byWeek.has(monday)) byWeek.set(monday, new Set());
+    byWeek.get(monday)!.add(date);
+  });
+  return Array.from(byWeek.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([monday, set]) => ({
+      week: weekOfMonthIndex(monday, monthStart),
+      start: monday,
+      end: shiftDays(monday, 6),
+      days: Array.from(set).sort(),
+    }));
 }

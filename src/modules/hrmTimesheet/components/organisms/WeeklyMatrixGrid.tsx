@@ -22,6 +22,7 @@ import {
   isWithinTimesheetWindow,
   weekOfMonthIndex,
   buildMonthMatrix,
+  isWeekendDate,
 } from '../../utils/timesheetHelpers';
 import { HOURS_STEP, LINE_TYPE_LABELS } from '../../utils/timesheetConstants';
 import Can from '../../../hrmAccess/components/Can';
@@ -330,17 +331,18 @@ export default function WeeklyMatrixGrid() {
   const weekOptions = useMemo(() => {
     const weeks = buildMonthMatrix(selectedMonth);
     return weeks.map((w) => {
-      const sun = w[0].date;
-      const sat = w[6].date;
+      const mon = w[0].date;
+      const sun = w[6].date;
       return {
-        value: sun,
-        label: `Week ${weekOfMonthIndex(sun)}: ${dayjs(sun).format('MMM DD')} – ${dayjs(sat).format('MMM DD')}`,
+        value: mon,
+        label: `Week ${weekOfMonthIndex(mon, selectedMonth)}: ${dayjs(mon).format('MMM DD')} – ${dayjs(sun).format('MMM DD')}`,
       };
     });
   }, [selectedMonth]);
 
-  const weekStartSun = dates[0];
-  const weekEndSat = dates[6];
+  // Weeks run Mon→Sun (see mondayOf in timesheetHelpers).
+  const weekFirstDay = dates[0];
+  const weekLastDay = dates[6];
   const anyEditable = dates.some(dayEditable);
 
   const renderCell = (row: MatrixRow, date: string) => {
@@ -397,14 +399,14 @@ export default function WeeklyMatrixGrid() {
           <Select
             size="small"
             style={{ width: 240 }}
-            value={weekStartSun}
+            value={weekFirstDay}
             options={weekOptions}
             onChange={(v) => openWeekForDate(v)}
           />
         </Space>
         <span className={styles.matrixWeekLabel}>
-          Week {weekOfMonthIndex(weekStartSun)}: {dayjs(weekStartSun).format('MMM DD')} –{' '}
-          {dayjs(weekEndSat).format('MMM DD, YYYY')}
+          Week {weekOfMonthIndex(weekFirstDay, selectedMonth)}: {dayjs(weekFirstDay).format('MMM DD')} –{' '}
+          {dayjs(weekLastDay).format('MMM DD, YYYY')}
         </span>
       </div>
 
@@ -444,7 +446,7 @@ export default function WeeklyMatrixGrid() {
                 const hol = (isHoliday(d) || !!byDate.get(d)?.holiday) && !compOff;
                 const leave = !!byDate.get(d)?.leaveDay;
                 const travel = isTravelDay(d);
-                const weekend = [0, 6].includes(dayjs(d).day());
+                const weekend = isWeekendDate(d);
                 const colClass = hol
                   ? styles.matrixColHoliday
                   : leave

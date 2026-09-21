@@ -13,6 +13,8 @@ import type {
   AssignedAllocation,
 } from '../types/domain.types';
 import type { ManagerScope, ManagerStatusFilter, ManagerTargetEmployee } from '../types/ui.types';
+// The module's single week-start rule (weeks run Mon→Sun).
+import { mondayOf } from '../utils/timesheetHelpers';
 
 /** Local YYYY-MM-DD — NEVER use toISOString() here: it converts to UTC and
  *  shifts the date back a day in positive-offset timezones (e.g. IST), which
@@ -23,24 +25,8 @@ function ymdLocal(d: Date): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function getMonday(d: Date): string {
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const m = new Date(d);
-  m.setDate(diff);
-  return ymdLocal(m);
-}
-
 function firstDayOfMonth(d: Date): string {
   return ymdLocal(new Date(d.getFullYear(), d.getMonth(), 1));
-}
-
-function mondayOf(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`); // parse as local, not UTC
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return ymdLocal(d);
 }
 
 /** Last calendar day of the month `monthStart` (YYYY-MM-01) belongs to. */
@@ -203,7 +189,7 @@ export const useHrmTimesheetStore = create<HrmTimesheetStore>()(
       myViewMode: 'month',
       selectedMonth: firstDayOfMonth(new Date()),
       selectedDate: today,
-      selectedWeekStart: getMonday(new Date()),
+      selectedWeekStart: mondayOf(ymdLocal(new Date())),
       activeTab: 'my',
       activeReportTab: 'payroll',
       selectedTimesheetHandle: null,

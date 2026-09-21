@@ -212,9 +212,9 @@ export function useHrmTimesheetUI() {
   }, [organizationId, employeeId, store.selectedDate]);
 
   // ── Weekly matrix (PRD redesign) ──────────────────────────────────────────
-  // The matrix edits a Sun→Sat week as a project×day grid. We persist per day
-  // (the /save endpoint is day-scoped), so this is week-boundary agnostic and
-  // avoids the Monday/Sunday mismatch with the backend's weekly endpoints.
+  // The matrix edits a Mon→Sun week (timesheetHelpers.mondayOf) as a project×day grid —
+  // the same week the backend's weekly endpoints and compliance periods use. We persist
+  // per day (the /save endpoint is day-scoped), so saving itself is week-boundary agnostic.
 
   const saveMatrixDays = useCallback(
     async (days: { date: string; lines: MatrixLineInput[]; notes?: string }[]) => {
@@ -263,7 +263,7 @@ export function useHrmTimesheetUI() {
     [organizationId, employeeId, loadMonthlyTimesheets]
   );
 
-  /** Submit the given already-saved day handles (Sun→Sat week), per day. */
+  /** Submit the given already-saved day handles (a Mon→Sun week), per day. */
   const submitMatrixDays = useCallback(
     async (handles: string[]) => {
       if (handles.length === 0) {

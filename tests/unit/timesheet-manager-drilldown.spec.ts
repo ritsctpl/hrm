@@ -27,7 +27,7 @@ function ymd(d: Date): string {
 
 test.describe('drill-down seed date', () => {
   // A fixed "now" so these assertions mean the same thing on every day of the year.
-  const now = new Date('2026-08-07T09:00:00'); // Friday; the week runs Sun 02 -> Sat 08
+  const now = new Date('2026-08-07T09:00:00'); // Friday; the week runs Mon 03 -> Sun 09
 
   test('current month seeds today, not the 1st', () => {
     expect(drillDownSeedDate('month', '2026-08-01', '2026-08-03', now)).toBe('2026-08-07');
@@ -91,23 +91,31 @@ test.describe('openEmployeeReview (the real store action)', () => {
 });
 
 test.describe('weekly navigation helpers', () => {
-  test('steps a whole week at a time and lands on the Sunday', () => {
-    expect(shiftWeekStart('2026-08-05', -1)).toBe('2026-07-26');
-    expect(shiftWeekStart('2026-08-05', 0)).toBe('2026-08-02');
-    expect(shiftWeekStart('2026-08-05', 1)).toBe('2026-08-09');
+  // Weeks run Mon -> Sun (HRM issue #2).
+  test('steps a whole week at a time and lands on the Monday', () => {
+    expect(shiftWeekStart('2026-08-05', -1)).toBe('2026-07-27');
+    expect(shiftWeekStart('2026-08-05', 0)).toBe('2026-08-03');
+    expect(shiftWeekStart('2026-08-05', 1)).toBe('2026-08-10');
+  });
+
+  test('a Sunday steps from its own (Mon-started) week, not the next one', () => {
+    expect(shiftWeekStart('2026-08-09', 0)).toBe('2026-08-03');
+    expect(shiftWeekStart('2026-08-09', 1)).toBe('2026-08-10');
   });
 
   test('crosses a year boundary without drifting', () => {
-    expect(shiftWeekStart('2026-01-01', -1)).toBe('2025-12-21');
+    // Thu 01 Jan 2026 is in the week of Mon 29 Dec 2025.
+    expect(shiftWeekStart('2026-01-01', 0)).toBe('2025-12-29');
+    expect(shiftWeekStart('2026-01-01', -1)).toBe('2025-12-22');
   });
 
   test('a week is navigable while any of its days belong to the loaded month', () => {
-    // Sun 26 Jul -> Sat 01 Aug still touches August.
-    expect(weekIntersectsMonth('2026-07-26', '2026-08-01')).toBe(true);
-    // Sun 30 Aug -> Sat 05 Sep still touches August.
-    expect(weekIntersectsMonth('2026-08-30', '2026-08-01')).toBe(true);
-    // Wholly July, and wholly September.
-    expect(weekIntersectsMonth('2026-07-19', '2026-08-01')).toBe(false);
-    expect(weekIntersectsMonth('2026-09-06', '2026-08-01')).toBe(false);
+    // Mon 27 Jul -> Sun 02 Aug still touches August.
+    expect(weekIntersectsMonth('2026-07-27', '2026-08-01')).toBe(true);
+    // Mon 31 Aug -> Sun 06 Sep still touches August.
+    expect(weekIntersectsMonth('2026-08-31', '2026-08-01')).toBe(true);
+    // Wholly July (Mon 20 -> Sun 26 Jul), and wholly September (Mon 07 -> Sun 13 Sep).
+    expect(weekIntersectsMonth('2026-07-26', '2026-08-01')).toBe(false);
+    expect(weekIntersectsMonth('2026-09-07', '2026-08-01')).toBe(false);
   });
 });

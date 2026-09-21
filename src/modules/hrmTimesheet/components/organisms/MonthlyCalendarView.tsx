@@ -14,12 +14,12 @@ import {
   isFutureDate,
   isInCurrentMonth,
   isWithinTimesheetWindow,
-  weekOfMonthIndex,
+  isWeekendDate,
+  pendingSubmissionWeeks,
+  WEEKDAY_LABELS,
 } from '../../utils/timesheetHelpers';
 import type { TimesheetHeader } from '../../types/domain.types';
 import styles from '../../styles/TimesheetCalendar.module.css';
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function MonthlyCalendarView() {
   const { selectedMonth, monthlyTimesheets, loadingMonth, setSelectedMonth, openWeekForDate } =
@@ -51,17 +51,13 @@ export default function MonthlyCalendarView() {
   // Status banners
   const hasApproved = monthlyTimesheets.some((t) => t.status === 'APPROVED');
   const hasRejected = monthlyTimesheets.some((t) => t.status === 'REJECTED');
+  // Mon→Sun weeks with at least one unsubmitted day, each carrying the days that caused it
+  // (HRM issue #6: the banner used Sun→Sat weeks, so a leftover day from the previous
+  // Mon–Sun week flagged the next one, and the message never said which day was pending).
   const unsubmittedWeeks = useMemo(() => {
     if (!atCurrentMonth) return [];
-    const set = new Set<number>();
-    monthlyTimesheets.forEach((t) => {
-      const notSubmitted = t.status === 'DRAFT' || t.status === 'REOPENED' || t.status === 'REJECTED';
-      if (notSubmitted && (t.totalHours ?? 0) > 0 && !isFutureDate(t.date)) {
-        set.add(weekOfMonthIndex(t.date));
-      }
-    });
-    return Array.from(set).sort((a, b) => a - b);
-  }, [monthlyTimesheets, atCurrentMonth]);
+    return pendingSubmissionWeeks(monthlyTimesheets, selectedMonth, dayjs().format('YYYY-MM-DD'));
+  }, [monthlyTimesheets, atCurrentMonth, selectedMonth]);
 
   const prevMonth = () =>
     setSelectedMonth(dayjs(selectedMonth).subtract(1, 'month').format('YYYY-MM-01'));
@@ -100,9 +96,17 @@ export default function MonthlyCalendarView() {
         <Alert
           type="error"
           showIcon
-          message={`Week-${unsubmittedWeeks.join(', Week-')} timesheet(s) of ${dayjs(selectedMonth).format('MMMM')} ${
-            unsubmittedWeeks.length > 1 ? 'have' : 'has'
-          } not been submitted.`}
+          message={`Week-${unsubmittedWeeks.map((w) => w.week).join(', Week-')} timesheet(s) of ${dayjs(
+            selectedMonth
+          ).format('MMMM')} ${unsubmittedWeeks.length > 1 ? 'have' : 'has'} not been submitted.`}
+          description={unsubmittedWeeks
+            .map(
+              (w) =>
+                `Week-${w.week} (${dayjs(w.start).format('DD MMM')} – ${dayjs(w.end).format('DD MMM')}): ${w.days
+                  .map((d) => dayjs(d).format('ddd DD MMM'))
+                  .join(', ')} pending`
+            )
+            .join('; ')}
           style={{ marginBottom: 12 }}
         />
       )}
@@ -114,7 +118,7 @@ export default function MonthlyCalendarView() {
       ) : (
         <>
           <div className={styles.weekdayRow}>
-            {WEEKDAYS.map((d) => (
+            {WEEKDAY_LABELS.map((d) => (
               <div key={d} className={styles.weekdayCell}>
                 {d}
               </div>
@@ -134,7 +138,7 @@ export default function MonthlyCalendarView() {
                 const leave = cell.inMonth && !!ts?.leaveDay && !holiday;
                 const travel = cell.inMonth && isTravelDay(cell.date);
                 const travelLabel = getTravelLabel(cell.date);
-                const weekend = cell.inMonth && [0, 6].includes(dayjs(cell.date).day());
+                const weekend = cell.inMonth && isWeekendDate(cell.date);
                 // Holiday, approved-leave, future, and out-of-window days are
                 // all locked from entry.
                 const clickable = cell.inMonth && editable && !holiday && !leave;

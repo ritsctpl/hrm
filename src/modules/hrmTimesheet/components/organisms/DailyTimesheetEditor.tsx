@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
 import { useTimesheetCompOff } from '../../hooks/useTimesheetCompOff';
-import { isFutureDate } from '../../utils/timesheetHelpers';
+import { isFutureDate, isWeekendDate } from '../../utils/timesheetHelpers';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
 import Can from '../../../hrmAccess/components/Can';
@@ -42,7 +42,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
   // time entry on that one date — the holiday block no longer applies to it.
   const onCompOff = selectedDate ? isCompOffDay(selectedDate) : false;
   const isFuture = selectedDate ? isFutureDate(selectedDate) : false;
-  const isWeekend = selectedDate ? [0, 6].includes(dayjs(selectedDate).day()) : false;
+  const isWeekend = selectedDate ? isWeekendDate(selectedDate) : false;
 
   const isReadOnly =
     currentDayTimesheet?.status === 'SUBMITTED' ||
