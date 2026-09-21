@@ -72,6 +72,11 @@ export interface CreateAnnouncementPayload {
   organizationId: string;
   title: string;
   content: string;
+  /**
+   * PLAIN (the server default when omitted) strips every tag; HTML keeps an allow-listed set.
+   * Must be sent for a body with markup, or the server stores it stripped (HRM issue #5).
+   */
+  contentFormat?: 'PLAIN' | 'HTML';
   category: AnnouncementCategory;
   priority?: AnnouncementPriority;
   scheduledPublishAt?: string;

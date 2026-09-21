@@ -16,7 +16,13 @@ import { useAnnouncementPermissions } from "../../hooks/useAnnouncementPermissio
 import { useEmployeeIdentity } from "@/modules/hrmAccess/hooks/useEmployeeIdentity";
 import { useAnnouncementCategories } from "../../hooks/useAnnouncementCategories";
 import { parseAnnouncementError, serverErrorMessage } from "../../utils/announcementErrors";
-import { canDeleteFromComposer, composerDeleteLabel } from "../../utils/announcementHelpers";
+import {
+  canDeleteFromComposer,
+  composerDeleteLabel,
+  contentFormatFor,
+  contentHasVisibleText,
+  editorContentFrom,
+} from "../../utils/announcementHelpers";
 import { useCan } from "../../../hrmAccess/hooks/useCan";
 import AudienceSelector, { EMPTY_AUDIENCE, isAudienceEmpty, type AudienceValue } from "./AudienceSelector";
 import EmergencyPublishModal from "./EmergencyPublishModal";
@@ -52,9 +58,9 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
   const { saving, setSaving } = useHrmAnnouncementStore();
   const can = useAnnouncementPermissions();
   // Employee CODE, not the login email — the server resolves the actor by code
-  // and 403s on anything else. Gate calls on isReady so we never send the
-  // cookie fallback (which is typically the email).
-  const { employeeCode: actorId, isReady: identityReady } = useEmployeeIdentity();
+  // and 403s on anything else. Only the server calls need it; filling the form
+  // does not wait for it (see the populate effect below).
+  const { employeeCode: actorId } = useEmployeeIdentity();
 
   const [priority, setPriority] = useState<string>("GENERAL");
   const [categoryCode, setCategoryCode] = useState<string>("");
@@ -108,14 +114,18 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
     }
   };
 
+  // Populates on open and on a change of record only (HRM issue #5). This used to wait for the
+  // employee identity as well, though filling the form calls nothing: while the identity was not
+  // ready the editor stayed blank, and each later identity change re-ran it over the author's
+  // unsaved edits. The save paths still check the identity through the server calls they make.
   useEffect(() => {
-    // A blank actorId can never succeed — treat it as not-ready.
-    if (!open || !identityReady || !actorId) return;
+    if (!open) return;
     if (editAnnouncement) {
       const p = normalizePriority(editAnnouncement.priority);
       form.setFieldsValue({
         title: editAnnouncement.title,
-        content: editAnnouncement.content,
+        // A PLAIN body is stored HTML-escaped; show the text that was typed, not "&amp;".
+        content: editorContentFrom(editAnnouncement.content, editAnnouncement.contentFormat),
         priority: p,
         category: editAnnouncement.category,
         // Every field the editor offers is restored here, including this one.
@@ -146,7 +156,7 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
       setCategoryCode("");
       setAudience(EMPTY_AUDIENCE);
     }
-  }, [open, identityReady, actorId, editAnnouncement, form]);
+  }, [open, editAnnouncement, form]);
 
   /**
    * Preselect the first category once the server list arrives. Deliberately
@@ -174,6 +184,9 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
     if (isAudienceEmpty(audience)) throw new Error(EMPTY_AUDIENCE_ERROR);
     const payload = {
       ...values,
+      // Without a format the server stores PLAIN and strips every tag, so a body written as
+      // markup came back stripped or empty (HRM issue #5). Plain text is still sent as PLAIN.
+      contentFormat: contentFormatFor(values.content),
       organizationId,
       scheduledPublishAt: values.scheduledPublishAt?.toISOString(),
       expiresAt: values.expiresAt?.toISOString(),
@@ -441,7 +454,19 @@ const AnnouncementComposeDrawer: React.FC<AnnouncementComposeDrawerProps> = ({
         <Form.Item
           name="content"
           label="Content"
-          rules={[{ required: true, whitespace: true, message: "Content is required" }]}
+          rules={[
+            { required: true, whitespace: true, message: "Content is required" },
+            {
+              // The server sanitises the body; one that is only markup (text wrapped in < >, a
+              // comment, an empty tag) would be stored empty and reopen as a blank editor (#5).
+              validator: (_, value?: string) =>
+                !value?.trim() || contentHasVisibleText(value)
+                  ? Promise.resolve()
+                  : Promise.reject(
+                      new Error("Content has no visible text — anything inside < > is treated as markup and removed")
+                    ),
+            },
+          ]}
         >
           <TextArea rows={8} placeholder="Announcement content (HTML supported)" />
         </Form.Item>

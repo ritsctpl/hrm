@@ -19,7 +19,7 @@ import ApprovalActionModal, { type ApprovalAction } from './components/organisms
 import RatifyConfirmModal from './components/organisms/RatifyConfirmModal';
 import { useAnnouncementPermissions } from './hooks/useAnnouncementPermissions';
 import { parseAnnouncementError } from './utils/announcementErrors';
-import { mergeAnnouncementDetail } from './utils/announcementHelpers';
+import { createLatestRequestGuard, loadAnnouncementForEdit } from './utils/announcementHelpers';
 import ModuleAccessGate from '../hrmAccess/components/ModuleAccessGate';
 import { useCan } from '../hrmAccess/hooks/useCan';
 import { useEmployeeIdentity } from '../hrmAccess/hooks/useEmployeeIdentity';
@@ -106,6 +106,8 @@ const HrmAnnouncementLanding: React.FC = () => {
   // Cards come into view together, so the store flag alone would let two of
   // them fire the same fetch in one tick. This is the synchronous guard.
   const requestedBodies = React.useRef<Set<string>>(new Set());
+  /** Latest "open for edit" wins — see openForEdit (HRM issue #5). */
+  const editRequest = React.useRef(createLatestRequestGuard());
 
   const { loadFeed, loadAdminAnnouncements, loadEngagementStats } = useHrmAnnouncementData();
 
@@ -249,19 +251,27 @@ const HrmAnnouncementLanding: React.FC = () => {
    * So fetch the full record first and open on that. On failure the drawer stays shut: a blank
    * editor IS the reported bug, and offering one here would let the author "fix" it by retyping
    * over a record we never actually loaded.
+   *
+   * The latest click wins (HRM issue #5). The old guard ignored any click while a fetch was in
+   * flight, so opening draft A and then draft B opened A; and nothing stopped a late answer from
+   * replacing what the drawer already showed. A superseded fetch now resolves to null and is
+   * dropped, and "+ New" supersedes a pending one too.
    */
   const openForEdit = React.useCallback(
     async (announcement: Announcement) => {
-      // A second click while the first fetch is in flight would open two drawers on the same row.
-      if (openingEditHandle) return;
       setOpeningEditHandle(announcement.handle);
       try {
-        const full = await HrmAnnouncementService.getDetail({
-          organizationId,
-          announcementHandle: announcement.handle,
-          actorId: employeeId,
-        });
-        openComposeDrawer(mergeAnnouncementDetail(announcement, full));
+        const merged = await loadAnnouncementForEdit(
+          announcement,
+          (row) =>
+            HrmAnnouncementService.getDetail({
+              organizationId,
+              announcementHandle: row.handle,
+              actorId: employeeId,
+            }),
+          editRequest.current
+        );
+        if (merged) openComposeDrawer(merged);
       } catch (err) {
         // `/get` is audience-scoped and answers HRM_ANN_NOT_FOUND for an announcement this user
         // may not read — which the archive search still lists for anyone holding CREATE. The
@@ -272,12 +282,20 @@ const HrmAnnouncementLanding: React.FC = () => {
           parseAnnouncementError(err, 'Could not open this announcement for editing').message
         );
       } finally {
-        setOpeningEditHandle(null);
+        // Clear the row spinner only if it is still ours — a later click owns it otherwise.
+        setOpeningEditHandle((current) => (current === announcement.handle ? null : current));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [organizationId, employeeId, openingEditHandle]
+    [organizationId, employeeId]
   );
+
+  /** "+ New" also supersedes an edit still loading, so its late answer cannot take the drawer over. */
+  const openNewComposer = () => {
+    editRequest.current.invalidate();
+    setOpeningEditHandle(null);
+    openComposeDrawer();
+  };
 
   /**
    * Deletes a draft. Soft delete server-side (`active: 0`) with an audit row, and refused for
@@ -548,7 +566,7 @@ const HrmAnnouncementLanding: React.FC = () => {
           onCategoryFilter={setFilterCategory}
           onPriorityFilter={setFilterPriority}
           onMarkAllRead={handleMarkAllRead}
-          onCreateNew={() => openComposeDrawer()}
+          onCreateNew={openNewComposer}
         />
       ),
     },
@@ -585,7 +603,7 @@ const HrmAnnouncementLanding: React.FC = () => {
           onWithdraw={openWithdrawConfirm}
           onDelete={handleDelete}
           onViewStats={handleViewStats}
-          onCreateNew={() => openComposeDrawer()}
+          onCreateNew={openNewComposer}
           openingEditHandle={openingEditHandle}
           deletingHandle={deletingHandle}
         />
