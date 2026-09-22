@@ -117,6 +117,8 @@ export const useHrmTicketStore = create<HrmTicketState>((set) => ({
 
   filters: {
     my: baseFilter({ scope: 'MY' }),
+    // Tickets the caller was added to as "Keep informed" (watcherCodes).
+    watching: baseFilter({ scope: 'WATCHING' }),
     // The queue opens on unresolved work only — a triage screen that starts by showing
     // everything ever closed is one filter away from useful and nobody sets it.
     queue: baseFilter({ scope: 'GROUP', statuses: OPEN_STATUSES, sortBy: 'resolutionDueAt', sortDirection: 'ASC' }),

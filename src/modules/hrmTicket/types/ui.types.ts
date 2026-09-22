@@ -10,7 +10,7 @@ import type { TicketScope } from './api.types';
  * from grants, so a user whose access is revoked mid-session cannot be left on a tab that no
  * longer renders.
  */
-export type TicketTabKey = 'my' | 'queue' | 'assigned' | 'all' | 'categories' | 'groups' | 'dashboard';
+export type TicketTabKey = 'my' | 'watching' | 'queue' | 'assigned' | 'all' | 'categories' | 'groups' | 'dashboard';
 
 export interface TicketFilterState {
   scope: TicketScope;

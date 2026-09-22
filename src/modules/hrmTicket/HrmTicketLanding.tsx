@@ -62,7 +62,7 @@ const HrmTicketLanding: React.FC = () => {
   ]);
 
   const { activeTab, filters } = store;
-  const listTabs: TicketTabKey[] = useMemo(() => ['my', 'queue', 'assigned', 'all'], []);
+  const listTabs: TicketTabKey[] = useMemo(() => ['my', 'watching', 'queue', 'assigned', 'all'], []);
   const isListTab = listTabs.includes(activeTab);
   const currentFilter = filters[activeTab];
 
@@ -274,6 +274,11 @@ const HrmTicketLanding: React.FC = () => {
       key: 'my',
       label: 'My tickets',
       children: listTab('my', { emptyText: 'You have not raised any tickets' }),
+    },
+    {
+      key: 'watching',
+      label: 'Keep informed',
+      children: listTab('watching', { emptyText: 'You have not been added to keep informed on any tickets' }),
     },
     ...(isAgent
       ? [
