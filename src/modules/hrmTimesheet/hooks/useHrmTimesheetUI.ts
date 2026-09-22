@@ -304,20 +304,32 @@ export function useHrmTimesheetUI() {
         return;
       }
       store.setSubmittingWeek(true);
+      // One refused day (e.g. hours over the cap on a half-day leave, TKT-0015) must not leave
+      // the rest of the week unsubmitted, so every day is tried and each refusal is listed.
+      const dateOf = (handle: string) =>
+        useHrmTimesheetStore.getState().monthlyTimesheets.find((t) => t.handle === handle)?.date ?? handle;
+      const failures: string[] = [];
+      let submitted = 0;
       try {
         for (const handle of handles) {
-          await HrmTimesheetService.submitTimesheet({
-            organizationId,
-            employeeId,
-            timesheetHandle: handle,
-            submittedBy: employeeId,
-          });
+          try {
+            await HrmTimesheetService.submitTimesheet({
+              organizationId,
+              employeeId,
+              timesheetHandle: handle,
+              submittedBy: employeeId,
+            });
+            submitted++;
+          } catch (err: any) {
+            console.error('[submitMatrixDays] response:', err?.response?.data);
+            failures.push(`${dateOf(handle)}: ${extractBackendMsg(err, 'Failed to submit timesheet')}`);
+          }
         }
-        message.success(`Submitted ${handles.length} day(s)`);
+        if (submitted > 0) message.success(`Submitted ${submitted} day(s)`);
+        if (failures.length) {
+          message.error({ content: `Not submitted:\n${failures.join('\n')}`, style: { whiteSpace: 'pre-line' }, duration: 8 });
+        }
         await loadMonthlyTimesheets();
-      } catch (err: any) {
-        console.error('[submitMatrixDays] response:', err?.response?.data);
-        message.error(extractBackendMsg(err, 'Failed to submit timesheet'));
       } finally {
         store.setSubmittingWeek(false);
       }

@@ -1,6 +1,6 @@
 'use client';
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { Alert, Button, Input, InputNumber, message, Select, Space, Typography } from 'antd';
 import {
   ArrowLeftOutlined,
   DownOutlined,
@@ -347,6 +347,13 @@ export default function WeeklyMatrixGrid() {
       .filter((t) => !isBlockingLeaveDay(t))
       .map((t) => t.handle);
     await submitMatrixDays(handles);
+    const skippedLeaveDays = leaveDaysWithHours.filter((d) => {
+      const status = byDate.get(d)?.status;
+      return status !== 'SUBMITTED' && status !== 'APPROVED';
+    });
+    if (skippedLeaveDays.length > 0) {
+      message.warning(`${skippedLeaveDays.length} leave day(s) with hours were not submitted`);
+    }
   }
 
   // Week dropdown options for the current month.
