@@ -1,11 +1,12 @@
 'use client';
-import { Button, Input, Space, Spin, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Input, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import { CopyOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
 import { useTimesheetTravel } from '../../hooks/useTimesheetTravel';
 import { useTimesheetCompOff } from '../../hooks/useTimesheetCompOff';
+import { useHrmTimesheetUI } from '../../hooks/useHrmTimesheetUI';
 import { isFutureDate, isWeekendDate, isBlockingLeaveDay, isWfhDay } from '../../utils/timesheetHelpers';
 import TimesheetStatusBadge from '../atoms/TimesheetStatusBadge';
 import TimesheetLinesTable from './TimesheetLinesTable';
@@ -37,6 +38,7 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
 
   const { isTravelDay, getTravelLabel } = useTimesheetTravel(dayjs(selectedDate).year());
   const { isCompOffDay, getCompOffLabel } = useTimesheetCompOff(dayjs(selectedDate).year());
+  const { clearLeaveDayHours } = useHrmTimesheetUI();
   const onTravel = selectedDate ? isTravelDay(selectedDate) : false;
   // A holiday the employee worked (APPROVED/CREDITED comp-off) is unlocked for
   // time entry on that one date — the holiday block no longer applies to it.
@@ -58,6 +60,9 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
   const entryBlocked = isHolidayOrLeave || isFuture;
 
   const lines = currentDayTimesheet?.lines ?? [];
+  // Hours logged before the leave was applied (TKT-0015). The backend will not submit them, so
+  // they are shown read-only with a warning, not hidden behind "no timesheet required".
+  const leaveWithHours = onLeave && !currentDayTimesheet?.holiday && lines.length > 0;
 
   const [notes, setNotes] = useState<string>(currentDayTimesheet?.notes ?? '');
 
@@ -142,7 +147,39 @@ export default function DailyTimesheetEditor({ onSave, onSubmit, onCopyFromPrev 
         )}
       </div>
 
-      {entryBlocked ? (
+      {leaveWithHours ? (
+        <>
+          <Alert
+            type="warning"
+            showIcon
+            message="Hours logged before the leave was applied — they will not be submitted. Clear them to tidy up."
+            action={
+              !isReadOnly && (
+                <Can I="edit">
+                  <Button
+                    size="small"
+                    danger
+                    loading={savingTimesheet}
+                    onClick={() => void clearLeaveDayHours(selectedDate)}
+                  >
+                    Clear hours
+                  </Button>
+                </Can>
+              )
+            }
+            style={{ marginBottom: 12 }}
+          />
+          <TimesheetLinesTable
+            lines={lines}
+            allocations={allocationsForDay}
+            categories={unplannedCategories}
+            readOnly
+            onUpdate={(lineId, partial) => updateLineInCurrentDay(lineId, partial)}
+            onRemove={(lineId) => removeLineFromCurrentDay(lineId)}
+            onAddLine={(line: TimesheetLine) => addLineToCurrentDay(line)}
+          />
+        </>
+      ) : entryBlocked ? (
         <div className={styles.emptyState}>
           <Text type="secondary">
             {currentDayTimesheet?.holiday

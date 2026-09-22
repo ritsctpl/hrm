@@ -106,8 +106,10 @@ export function useHrmTimesheetUI() {
       } else {
         message.success(`Week submitted: ${result.submittedDays} day(s) submitted`);
       }
+      // Each entry is "<date>: <reason>" (e.g. a day that leave was applied for after its hours
+      // were logged, TKT-0015). A bare count left the employee guessing which day and why.
       if (result.errors?.length) {
-        message.warning(`${result.errors.length} day(s) failed to submit`);
+        message.warning(`${result.errors.length} day(s) not submitted — ${result.errors.join('; ')}`, 8);
       }
       await loadWeeklyTimesheets();
     } catch (err: any) {
@@ -263,6 +265,37 @@ export function useHrmTimesheetUI() {
     [organizationId, employeeId, loadMonthlyTimesheets]
   );
 
+  /**
+   * Clears the hours on a leave day (TKT-0015). Hours logged before the leave was applied can no
+   * longer be submitted, so all that is left is to remove them. The backend accepts an empty save
+   * only on a full-day leave day, and drops that day's entry.
+   */
+  const clearLeaveDayHours = useCallback(
+    async (date: string) => {
+      store.setSavingTimesheet(true);
+      try {
+        await HrmTimesheetService.saveTimesheet({
+          organizationId,
+          employeeId,
+          date,
+          lines: [],
+          createdBy: employeeId,
+        });
+        message.success(`Hours cleared for ${date}`);
+        await loadMonthlyTimesheets();
+        if (useHrmTimesheetStore.getState().selectedDate === date) {
+          await loadDayTimesheet(date);
+        }
+      } catch (err: any) {
+        console.error('[clearLeaveDayHours] response:', err?.response?.data);
+        message.error(extractBackendMsg(err, 'Failed to clear hours'));
+      } finally {
+        store.setSavingTimesheet(false);
+      }
+    },
+    [organizationId, employeeId, loadMonthlyTimesheets, loadDayTimesheet]
+  );
+
   /** Submit the given already-saved day handles (a Mon→Sun week), per day. */
   const submitMatrixDays = useCallback(
     async (handles: string[]) => {
@@ -302,5 +335,6 @@ export function useHrmTimesheetUI() {
     copyFromPreviousDay,
     saveMatrixDays,
     submitMatrixDays,
+    clearLeaveDayHours,
   };
 }

@@ -162,6 +162,12 @@
   font-weight: 700;
 }
 
+/* Hours left on a leave day, logged before the leave was applied (TKT-0015) */
+.matrixLeaveHours {
+  color: #cf1322;
+  font-weight: 600;
+}
+
 /* Worked holiday with an approved comp-off (blue) — UNLOCKED for time entry */
 .matrixDayCompOff {
   color: #1677ff;

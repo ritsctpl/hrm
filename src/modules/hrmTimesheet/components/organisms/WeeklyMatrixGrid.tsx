@@ -7,6 +7,7 @@ import {
   RightOutlined,
   SaveOutlined,
   SendOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useHrmTimesheetStore } from '../../stores/hrmTimesheetStore';
@@ -70,7 +71,7 @@ export default function WeeklyMatrixGrid() {
     openWeekForDate,
   } = useHrmTimesheetStore();
   const { loadMonthlyTimesheets, loadAssignedAllocations } = useHrmTimesheetData();
-  const { saveMatrixDays, submitMatrixDays } = useHrmTimesheetUI();
+  const { saveMatrixDays, submitMatrixDays, clearLeaveDayHours } = useHrmTimesheetUI();
   const { isHoliday, getHolidayName } = useTimesheetHolidays(dayjs(selectedMonth).year());
   const { isTravelDay, getTravelLabel } = useTimesheetTravel(dayjs(selectedMonth).year());
   const { isCompOffDay, getCompOffLabel } = useTimesheetCompOff(dayjs(selectedMonth).year());
@@ -143,6 +144,20 @@ export default function WeeklyMatrixGrid() {
     () => dates.filter((d) => isBlockingLeaveDay(byDate.get(d))),
     [dates, byDate]
   );
+
+  // Leave days that still carry hours — logged before the leave was applied (TKT-0015). The
+  // backend refuses to submit or approve them, so the employee is told, and can clear them.
+  const leaveDaysWithHours = useMemo(
+    () => weekLeaveDays.filter((d) => (byDate.get(d)?.lines?.length ?? 0) > 0),
+    [weekLeaveDays, byDate]
+  );
+
+  // Clearing is a save, so it is only possible where a save would be: an unsubmitted day
+  // inside the editable window. A submitted or approved day has to go back through the approver.
+  function leaveHoursClearable(date: string): boolean {
+    const status = byDate.get(date)?.status;
+    return isWithinTimesheetWindow(date) && status !== 'SUBMITTED' && status !== 'APPROVED';
+  }
 
   // Allocation lookup so saved lines (which only carry allocationHandle) can
   // recover their task/project labels from hrm-project.
@@ -327,6 +342,9 @@ export default function WeeklyMatrixGrid() {
       .map((d) => fresh.find((t) => t.date === d))
       .filter((t): t is TimesheetHeader => !!t?.handle)
       .filter((t) => t.status === 'DRAFT' || t.status === 'REOPENED' || t.status === 'REJECTED')
+      // Hours left on a leave day are refused by the backend (TKT-0015), and one refusal stops
+      // the per-day loop, so those days are left out. The warning above the grid covers them.
+      .filter((t) => !isBlockingLeaveDay(t))
       .map((t) => t.handle);
     await submitMatrixDays(handles);
   }
@@ -355,6 +373,21 @@ export default function WeeklyMatrixGrid() {
     const val = cellHours(row.key, date);
     if (!editable) {
       if (isBlockingLeaveDay(byDate.get(date))) {
+        // Hours logged before the leave was applied: still shown, so they are not hidden
+        // behind the locked cell while they sit there unsubmittable (TKT-0015).
+        if (val > 0) {
+          return (
+            <span
+              className={styles.matrixDayLeave}
+              title="Hours logged before the leave was applied — they will not be submitted. Clear them to tidy up."
+            >
+              Leave{' '}
+              <span className={styles.matrixLeaveHours}>
+                <WarningOutlined /> {val.toFixed(1)}
+              </span>
+            </span>
+          );
+        }
         return (
           <span className={styles.matrixDayLeave} title="Approved leave — no time entry allowed">
             Leave
@@ -434,6 +467,51 @@ export default function WeeklyMatrixGrid() {
             .join(', ')} because approved leave covers ${
             weekLeaveDays.length > 1 ? 'those days' : 'that day'
           }.`}
+          style={{ marginBottom: 12 }}
+        />
+      )}
+
+      {leaveDaysWithHours.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Hours logged on leave days"
+          description={
+            <>
+              <div>
+                These hours were logged before the leave was applied. They will not be submitted —
+                clear them to tidy up.
+              </div>
+              {leaveDaysWithHours.map((d) => {
+                const ts = byDate.get(d);
+                return (
+                  <div key={d} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                    <span>
+                      {dayjs(d).format('ddd, DD MMM')} — {(ts?.totalHours ?? 0).toFixed(1)}h
+                    </span>
+                    {leaveHoursClearable(d) ? (
+                      <Can I="edit">
+                        <Button
+                          size="small"
+                          danger
+                          loading={savingTimesheet}
+                          onClick={() => void clearLeaveDayHours(d)}
+                        >
+                          Clear hours
+                        </Button>
+                      </Can>
+                    ) : (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {ts?.status === 'SUBMITTED' || ts?.status === 'APPROVED'
+                          ? `Already ${ts.status.toLowerCase()} — ask your approver to reject or reopen it.`
+                          : 'Outside the editable window.'}
+                      </Text>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          }
           style={{ marginBottom: 12 }}
         />
       )}
